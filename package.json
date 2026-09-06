@@ -1,0 +1,18 @@
+{
+  "name": "qgraphflow",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supermax92/qgraphflow.git"
+  },
+  "homepage": "https://github.com/supermax92/qgraphflow#readme",
+  "bugs": "https://github.com/supermax92/qgraphflow/issues",
+  "files": [
+    ".codex-plugin/", ".claude-plugin/", ".qoder-plugin/",
+    ".cursor-plugin/", ".agents/plugins/", "skills/",
+    "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md", "docs/clients.md",
+    "examples/", "docs/images/"
+  ]
+}

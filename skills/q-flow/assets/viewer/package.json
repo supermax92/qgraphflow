@@ -1,0 +1,22 @@
+{
+  "name": "qgraphflow-viewer",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.11.5",
+    "d3-force": "3.0.0",
+    "motion": "13.1.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.1.1",
+    "vite": "8.2.2",
+    "vite-plugin-singlefile": "2.3.3"
+  }
+}
