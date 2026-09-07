@@ -1,84 +1,116 @@
-# 多客户端安装与分发
+# Client installation and distribution
 
-先从 [GitHub Releases](https://github.com/supermax92/qgraphflow/releases) 下载 `qgraphflow-0.0.1.zip`，解压后的根目录应同时包含 `skills/`、`LICENSE` 及各客户端的隐藏清单目录。保留完整目录，不要只复制 `SKILL.md`。
+The default branch contains the **0.0.2 development version**, including the multilingual Kafka showcase and slim packaging. The latest packaged software Release remains **v0.0.1**; use the source checkout to try the new version. The separate `showcase-v1` Release hosts README animations.
 
-生成器的独立使用方法见 [README](../README.md#先运行一个示例)。安装插件后，客户端读取项目和调用模型的权限仍由客户端管理。
+For a release installation, download `qgraphflow-<version>.zip` from [GitHub Releases](https://github.com/supermax92/qgraphflow/releases) and extract it. The plugin root contains `skills/`, `LICENSE`, and the four hidden manifest directories. Keep the entire extracted directory; copying only `SKILL.md` loses required runtime files.
+
+Node.js 22 is required. Ordinary generation needs no `npm install`, API key, or backend. AI authoring uses the selected client's model service and permissions. Try the [English Kafka example](../README.md#try-all-nine-kafka-views) or the included `examples/order-flow.graph.json`.
+
+For local-directory installation, always point the client at an extracted runtime package. Some clients copy the whole local directory, including ignored recordings, build dependencies, and test outputs. `.gitignore` protects Git distribution; it does not constrain a client's local-directory copy.
 
 ## Codex App / CLI
 
-以下命令已核对本地 Codex CLI 0.144.1 的 `--help`。在插件根目录执行：
+Manifest: `.codex-plugin/plugin.json`. Local marketplace: `.agents/plugins/marketplace.json`.
+
+Run from the extracted plugin root:
 
 ```bash
 codex plugin marketplace add .
 codex plugin add qgraphflow@qgraphflow-local
 ```
 
-仓库发布后，也可以将第一条命令改为 `codex plugin marketplace add supermax92/qgraphflow`，从 GitHub 添加市场。仓库中的 `.agents/plugins/marketplace.json` 使用相对路径指向自身；`qgraphflow-local` 是市场标识，在本地和 Git 安装中保持一致。
+For Git installation, replace the first command with:
 
-重新打开任务后选择 `$q-flow`。如果 CLI 没有 `plugin` 子命令，请先升级到支持插件的版本；App 使用其插件管理入口，CLI 和 App 的安装状态需分别确认。入口清单为 `.codex-plugin/plugin.json`。[OpenAI 插件文档](https://learn.chatgpt.com/docs/plugins)。
+```bash
+codex plugin marketplace add supermax92/qgraphflow
+```
 
-Git 市场更新：先执行 `codex plugin marketplace upgrade qgraphflow-local`，再执行上面的 `plugin add`。本地安装更新：替换为新版本目录后重新执行安装命令。卸载：`codex plugin remove qgraphflow@qgraphflow-local`。
+Start a fresh task and select `$q-flow`. Check the installed version with `codex plugin list --json`. CLI and App discovery must be checked separately after installation.
+
+Update a Git source with `codex plugin marketplace upgrade qgraphflow-local`, then run `codex plugin add qgraphflow@qgraphflow-local` again. For an extracted release, replace the same source directory with the complete new release, then repeat `plugin add`. If the new release is in a different directory, first run `codex plugin marketplace remove qgraphflow-local`, add the new directory, and repeat `plugin add`; Codex rejects changing the source path while the old marketplace registration exists. Uninstall with:
+
+```bash
+codex plugin remove qgraphflow@qgraphflow-local
+```
+
+These commands match Codex CLI 0.144.1. [OpenAI plugin documentation](https://developers.openai.com/plugins).
 
 ## Claude Code
 
-在插件根目录执行：
+Manifest: `.claude-plugin/plugin.json`. Marketplace: `.claude-plugin/marketplace.json`.
 
 ```bash
 claude plugin marketplace add .
 claude plugin install qgraphflow@qgraphflow-local
 ```
 
-仓库发布后，第一条命令也可使用 `claude plugin marketplace add supermax92/qgraphflow`。重新加载插件或新建会话，调用 `/qgraphflow:q-flow`。
+For Git installation, use `claude plugin marketplace add supermax92/qgraphflow`. Start a fresh session and call `/qgraphflow:q-flow`. A signed-in Claude Code account is needed for model-based authoring.
 
-入口清单为 `.claude-plugin/plugin.json`，市场文件为 `.claude-plugin/marketplace.json`。命令已核对本地 Claude Code 2.1.227 帮助及[官方安装文档](https://code.claude.com/docs/en/discover-plugins)。更新与卸载在 `/plugin` 的 Installed / Marketplaces 页面操作。
+After refreshing the Git marketplace or replacing the extracted source directory, run:
+
+```bash
+claude plugin marketplace update qgraphflow-local
+claude plugin update qgraphflow@qgraphflow-local
+```
+
+Restart the session. Uninstall with `claude plugin uninstall qgraphflow@qgraphflow-local`. [Claude Code documentation](https://code.claude.com/docs/en/discover-plugins).
 
 ## Qoder CLI / IDE
 
-Qoder CLI 可以按当前帮助所示，为本次会话加载本地目录：
+Manifest: `.qoder-plugin/plugin.json`. Qoder CLI 1.0.13 supports persistent installation from a local directory:
 
 ```bash
-qodercli --plugin-dir /absolute/path/to/qgraphflow
+qodercli plugins validate /absolute/path/to/qgraphflow
+qodercli plugins install /absolute/path/to/qgraphflow
+qodercli plugins list --json
 ```
 
-请将路径替换为解压后的插件根目录；路径含空格时加双引号。入口清单为 `.qoder-plugin/plugin.json`。
+Quote paths containing spaces. Reload plugins or start a new session and select `q-flow`. For session-only loading, use `qodercli --plugin-dir /absolute/path/to/qgraphflow`; this does not test persistent installation or uninstall.
 
-Qoder IDE：在 Settings → Plugins 中使用 Import，或在插件市场的 Create Plugin 中选择导入本地目录。选择完整插件根目录，再确认 `q-flow` 出现在技能入口。更新和卸载使用同一插件管理页。[Qoder IDE 官方说明](https://docs.qoder.com/extensions/plugins)。
+This CLI version has no `plugins update` command. Install the complete new version from its directory and verify the listed version. Uninstall with `qodercli plugins uninstall qgraphflow@local`.
 
-Qoder 桌面 / QoderWork 的导入能力与 IDE 不等同，本版尚未完成该入口的安装验证。
+Qoder IDE has a separate Settings → Plugins → Import entry. Confirm skill discovery in that IDE after import; CLI installation and Qoder/QoderWork desktop imports are not interchangeable acceptance evidence. [Qoder plugin documentation](https://docs.qoder.com/extensions/plugins).
 
 ## Cursor
 
-将完整插件目录放入 `~/.cursor/plugins/local/qgraphflow/`，确认其中存在 `.cursor-plugin/plugin.json`，然后运行 Developer: Reload Window，在 Customize 中检查 `q-flow`。此入口属于本地插件加载。[Cursor 官方说明](https://cursor.com/docs/plugins)。
+Manifest: `.cursor-plugin/plugin.json`. Place the complete plugin directory at `~/.cursor/plugins/local/qgraphflow/`. Reload the window, then check Customize → Plugins and Skills for `qgraphflow` and `q-flow`.
 
-更新时替换该目录并重新加载；卸载时通过文件管理器将该插件目录移到回收站，再重新加载。组织策略可能限制本地插件导入；同名市场插件也可能优先于本地副本。
+To update, replace the whole local plugin directory with the new extracted release and reload. To uninstall, move that directory out of `plugins/local/` and reload. Preserve a backup until the new version works. Organization policy or a same-name marketplace plugin may change local discovery. [Cursor plugin documentation](https://cursor.com/docs/reference/plugins).
 
-## 本版验证状态
+## What gets downloaded
 
-| 范围 | 状态 |
+| Installation | Contents |
 | --- | --- |
-| 四类清单、版本一致性、打包文件完整性 | 由本仓库自动测试检查 |
-| ZIP / npm 压缩包解压后的校验与独立生成 | 由本仓库自动测试检查，覆盖中文和空格路径、不同工作目录及防覆盖 |
-| Codex / Claude Code / Qoder CLI 命令形式 | 已核对本机 CLI 帮助；不代表原生绘图验收通过 |
-| Qoder IDE / Cursor 本地导入入口 | 已核对官方文档；尚未完成本版原生端到端验收 |
-| 各客户端发现技能 → 模型取证 → 生成 → 页面检查 → 导出 | 本版尚未完成全客户端端到端验收 |
-| npm、客户端官方插件市场 | 本次未上架 |
+| Release ZIP / npm-format archive | Shared runtime and required JS imports, four manifests, skill references, licenses, seven READMEs, the order-flow example, and the English Kafka collection |
+| Git repository | Source, tests, build files, lightweight docs, and all seven Kafka JSON collections |
+| Reading a README online | That language's GIFs, fetched separately from the fixed `showcase-v1` Release |
 
-每个客户端完成验收时，应记录客户端版本及上述完整链路；清单存在或命令成功不足以证明模型实际使用了插件。
+No GIFs or recordings belong in the Git branches/tags or install packages. Reading a README may download images into the browser cache; generating and viewing a diagram offline does not require these images. Do not use `git push --mirror` to publish local development references.
 
-## 本地打包
+## Build locally
 
-在仓库根目录预览发布文件：
+From a source checkout:
 
 ```bash
 npm pack --ignore-scripts --dry-run
+npm run package
 ```
 
-生成 npm 格式压缩包（本地打包，不会上传 npm）：
+The second command creates `dist/qgraphflow-0.0.2.tgz` and `dist/qgraphflow-0.0.2.zip` without uploading anything. To keep multiple builds, use `node scripts/package.mjs /absolute/new-output-directory`. Existing archives are never overwritten.
 
-```bash
-npm pack --ignore-scripts
-```
+The `.tgz` has a `package/` top-level directory. The ZIP starts at the plugin root, including hidden manifests. Both use the same `package.json` runtime allowlist. Development sources, tests, recordings, and `node_modules` are excluded.
 
-生成的 `.tgz` 带有 `package/` 顶层目录；插件根目录是解压后的 `package/`。Release ZIP 从插件根目录打包，直接包含隐藏清单目录。安装包必须包含四个客户端清单、市场文件、`skills/q-flow/`、示例、README 和许可证；不得包含 `node_modules`、测试输出或 IDE 配置。
+Versions must agree across the root package, four client manifests, Claude marketplace entry, and Viewer package/lock root. Automated checks extract the real archives into paths containing spaces and Chinese characters, generate the two output files from another working directory, and verify overwrite protection and all nine Kafka views.
 
-版本需同步根 `package.json`、四个插件清单、Claude 市场条目及 Viewer 包/锁文件根版本。
+## Acceptance status (2026-09-07)
+
+| Client | Install / update / uninstall | Discover / analyze / generate | View / SVG / PNG |
+| --- | --- | --- | --- |
+| Codex CLI 0.144.1 | Passed, 0.0.1 → 0.0.2 | Passed using the installed 0.0.2 skill and gpt-5.5 | Passed in Chrome using the client-generated files; CLI browser tooling was unavailable |
+| Claude Code 2.1.227 | Passed, 0.0.1 → 0.0.2 | Blocked: Claude Code login required | Not run |
+| Qoder CLI 1.0.13 | Passed, 0.0.1 → 0.0.2 | Skill discovered; model calls blocked by API FORBIDDEN code 112 | Not run |
+| Cursor 3.19.13 | Passed, 0.0.1 → 0.0.2; reload verified | Passed using the installed local skill | Passed in the native embedded browser and Chrome; actual SVG/PNG files saved and checked |
+
+The same Kafka `MemberState.java` source was used for each available model run. Qoder rejected both Qwen3.8-Max and Qwen3.8-Flash for the signed-in CLI account. Qoder IDE 1.28.0 displayed the installed plugin, but its full generation workflow was not completed. Cursor hit its usage limit after generating and opening the artifact; manual native export checks then completed. Codex's configured gpt-6-astra was rejected as requiring a newer CLI, so this test used gpt-5.5 without changing the global model setting.
+
+Four-client acceptance remains incomplete until Claude Code and Qoder finish the source-to-export chain. The local client tests used a clone of the released base plus the 0.0.2 candidate files; they do not establish all clients' remote-marketplace behavior. Public marketplace submission is outside this run.

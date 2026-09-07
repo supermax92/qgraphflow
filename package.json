@@ -1,6 +1,6 @@
 {
   "name": "qgraphflow",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "repository": {
@@ -10,9 +10,36 @@
   "homepage": "https://github.com/supermax92/qgraphflow#readme",
   "bugs": "https://github.com/supermax92/qgraphflow/issues",
   "files": [
-    ".codex-plugin/", ".claude-plugin/", ".qoder-plugin/",
-    ".cursor-plugin/", ".agents/plugins/", "skills/",
-    "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md", "docs/clients.md",
-    "examples/", "docs/images/"
-  ]
+    ".codex-plugin/",
+    ".claude-plugin/",
+    ".qoder-plugin/",
+    ".cursor-plugin/",
+    ".agents/plugins/",
+    "skills/q-flow/SKILL.md",
+    "skills/q-flow/agents/",
+    "skills/q-flow/references/",
+    "skills/q-flow/scripts/generate-viewer.mjs",
+    "skills/q-flow/scripts/validate-graph.mjs",
+    "skills/q-flow/assets/viewer-dist/index.html",
+    "skills/q-flow/assets/viewer/package.json",
+    "skills/q-flow/assets/viewer/src/diagrams/",
+    "skills/q-flow/assets/viewer/src/edge-routing.js",
+    "skills/q-flow/assets/viewer/src/i18n.js",
+    "skills/q-flow/assets/viewer/src/i18n-messages.json",
+    "skills/q-flow/assets/viewer/src/playback.js",
+    "skills/q-flow/assets/viewer/src/radix-colors.js",
+    "skills/q-flow/assets/viewer/src/text-layout.js",
+    "skills/q-flow/assets/viewer/src/visual-style.js",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "README.md",
+    "docs/clients.md",
+    "docs/readme/",
+    "examples/order-flow.graph.json",
+    "examples/showcase/kafka.en.graph.json",
+    "docs/images/order-flow.svg"
+  ],
+  "scripts": {
+    "package": "node scripts/package.mjs"
+  }
 }

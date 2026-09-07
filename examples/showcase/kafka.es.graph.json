@@ -1,0 +1,1534 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Kafka: de send() al registro",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "scope": "Un recorrido por la escritura en el líder, basado en el código fuente. Los detalles de red, la replicación y las confirmaciones quedan fuera de esta vista.",
+        "diagramType": "architecture",
+        "locale": "es"
+      },
+      "groups": [
+        {
+          "id": "producer-jvm",
+          "label": "JVM del productor",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 25
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        },
+        {
+          "id": "broker",
+          "label": "Broker · escritura en el líder",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 345
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "KafkaProducer",
+          "kind": "service",
+          "subtitle": "Serializar y elegir partición",
+          "position": {
+            "x": 30,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "Serializa la clave y el valor, elige una partición y llama a accumulator.append().",
+            "Despierta a Sender cuando un lote está lleno o se crea uno nuevo."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1174,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "accumulator",
+          "label": "RecordAccumulator",
+          "kind": "data",
+          "subtitle": "Agrupar registros en lotes",
+          "position": {
+            "x": 505,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "Añade el registro a un lote existente o reserva uno nuevo para la partición.",
+            "Sender obtiene los lotes listos mediante accumulator.drain(). La flecha representa la entrega de lotes, no una llamada directa desde el búfer."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/RecordAccumulator.java",
+            "lineStart": 282,
+            "lineEnd": 360,
+            "symbol": "RecordAccumulator.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "component",
+          "subtitle": "Construir ProduceRequest",
+          "position": {
+            "x": 980,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "Obtiene los lotes listos en Sender.java:418 y envía ProduceRequest en las líneas 930–947.",
+            "El límite de red está simplificado. El broker dirige ApiKeys.PRODUCE a KafkaApis.handleProduceRequest."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 896,
+            "lineEnd": 948,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "subtitle": "Procesar la solicitud Produce",
+          "position": {
+            "x": 980,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "Procesa la solicitud y llama a replicaManager.handleProduceAppend() en las líneas 548–558.",
+            "La autorización, la validación y la gestión de respuestas se agrupan en este nodo."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 401,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "service",
+          "subtitle": "Coordinar escrituras en particiones",
+          "position": {
+            "x": 505,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "tags": [
+            "core"
+          ],
+          "facts": [
+            "handleProduceAppend() llama a appendRecords(); appendToLocalLog() delega en Partition.appendRecordsToLeader().",
+            "Partition.java:1219–1240 conduce a UnifiedLog.appendAsLeader(). El paso por Partition está resumido en este enlace."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1376,
+            "lineEnd": 1416,
+            "symbol": "ReplicaManager.appendToLocalLog",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "log",
+          "label": "UnifiedLog",
+          "kind": "data",
+          "subtitle": "Añadir al registro local",
+          "position": {
+            "x": 30,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "appendAsLeader() conduce a la ruta de escritura; localLog.append() escribe los registros en la línea 1262.",
+            "Llegar a este punto no demuestra que se haya completado la replicación, que el productor haya recibido una confirmación ni que el consumidor haya terminado el procesamiento. El volcado a disco sigue otras condiciones."
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1049,
+            "lineEnd": 1058,
+            "symbol": "UnifiedLog.appendAsLeader",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "enqueue",
+          "source": "producer",
+          "target": "accumulator",
+          "kind": "call",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "drain",
+          "source": "accumulator",
+          "target": "sender",
+          "kind": "data",
+          "label": "Lotes",
+          "evidence": "source"
+        },
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "request",
+          "label": "ProduceRequest",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 1380,
+                "y": 155
+              },
+              {
+                "x": 1380,
+                "y": 475
+              }
+            ],
+            "labelAt": {
+              "x": 1380,
+              "y": 312
+            }
+          }
+        },
+        {
+          "id": "handle",
+          "source": "apis",
+          "target": "replica",
+          "kind": "call",
+          "label": "Añadir",
+          "evidence": "source"
+        },
+        {
+          "id": "append",
+          "source": "replica",
+          "target": "log",
+          "kind": "call",
+          "label": "vía Partition",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "enqueue",
+          "drain",
+          "produce",
+          "handle",
+          "append"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: ¿cuándo despierta send() a Sender?",
+        "scope": "La bifurcación posterior a RecordAccumulator.append(). Se omiten las validaciones y excepciones anteriores. Devolver un Future no significa que el broker haya confirmado el registro.",
+        "diagramType": "flowchart",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "append",
+          "label": "Añadir registro",
+          "kind": "process",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Almacena el registro en el búfer y recibe batchIsFull, newBatchCreated y future del acumulador."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1227,
+            "lineEnd": 1231,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "decision",
+          "label": "¿Lote lleno o nuevo?",
+          "kind": "decision",
+          "position": {
+            "x": 540,
+            "y": 45
+          },
+          "size": {
+            "width": 310,
+            "height": 210
+          },
+          "facts": [
+            "La condición es result.batchIsFull || result.newBatchCreated."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "wake",
+          "label": "Despertar Sender",
+          "kind": "process",
+          "position": {
+            "x": 1060,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Llama a sender.wakeup() solo si el lote está lleno o acaba de crearse."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "future",
+          "label": "Devolver Future",
+          "kind": "end",
+          "position": {
+            "x": 540,
+            "y": 360
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "Ambas ramas devuelven result.future. La finalización en el broker es asíncrona."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "append",
+          "source": "append",
+          "target": "decision",
+          "kind": "flow",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "yes",
+          "source": "decision",
+          "target": "wake",
+          "kind": "yes",
+          "label": "Sí",
+          "evidence": "source"
+        },
+        {
+          "id": "no",
+          "source": "decision",
+          "target": "future",
+          "kind": "no",
+          "label": "No",
+          "evidence": "source"
+        },
+        {
+          "id": "return",
+          "source": "wake",
+          "target": "future",
+          "kind": "flow",
+          "label": "future",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "append",
+          "yes",
+          "return"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: una solicitud Produce con acks=1",
+        "scope": "Solicitud Produce exitosa y no transaccional. KafkaApis representa el límite de solicitudes del broker; la red y los detalles internos de las particiones se agrupan en los participantes. acks=1 no exige confirmación de los seguidores.",
+        "diagramType": "sequence",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "participant",
+          "position": {
+            "x": 40,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "Construye ProduceRequest con acks y lo envía mediante el cliente de red."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 930,
+            "lineEnd": 947,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "position": {
+            "x": 600,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "Pasa sendResponseCallback a ReplicaManager y envía ProduceResponse cuando acks no es cero."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 457,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "participant",
+          "position": {
+            "x": 1160,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "Añade registros a los logs de los líderes; solo espera la replicación cuando requiredAcks == -1."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1356,
+            "lineEnd": 1370,
+            "symbol": "delayedProduceRequestRequired",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "async",
+          "label": "ProduceRequest · acks=1",
+          "evidence": "source",
+          "order": 1
+        },
+        {
+          "id": "append",
+          "source": "apis",
+          "target": "replica",
+          "kind": "sync",
+          "label": "handleProduceAppend()",
+          "evidence": "source",
+          "order": 2
+        },
+        {
+          "id": "callback",
+          "source": "replica",
+          "target": "apis",
+          "kind": "async",
+          "label": "Resultado de escritura",
+          "evidence": "source",
+          "order": 3
+        },
+        {
+          "id": "response",
+          "source": "apis",
+          "target": "sender",
+          "kind": "return",
+          "label": "ProduceResponse",
+          "evidence": "source",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: la estructura de ProduceRequest v13",
+        "scope": "Relaciones de inclusión del protocolo, no tablas SQL. Los arrays se representan con relaciones de cero a muchos; no se suponen claves primarias ni foráneas de una base de datos. La versión 13 identifica los temas mediante TopicId.",
+        "diagramType": "er",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "request",
+          "label": "ProduceRequest",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 65
+          },
+          "size": {
+            "width": 450,
+            "height": 265
+          },
+          "subtitle": "Cuerpo de la solicitud",
+          "facts": [
+            "El esquema define TransactionalId, Acks, TimeoutMs y un array TopicData."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 50,
+            "lineEnd": 60,
+            "symbol": "ProduceRequest",
+            "kind": "schema"
+          },
+          "tags": [
+            "core"
+          ],
+          "fields": [
+            {
+              "name": "TransactionalId",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "Acks",
+              "type": "int16"
+            },
+            {
+              "name": "TimeoutMs",
+              "type": "int32"
+            },
+            {
+              "name": "TopicData",
+              "type": "TopicProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "topic",
+          "label": "TopicProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 900,
+            "y": 65
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "Entrada de tema · v13",
+          "facts": [
+            "TopicId sustituye al nombre Name del tema en la versión 13; PartitionData contiene las entradas de partición."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 59,
+            "lineEnd": 65,
+            "symbol": "TopicProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "TopicId",
+              "type": "uuid"
+            },
+            {
+              "name": "PartitionData",
+              "type": "PartitionProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "partition",
+          "label": "PartitionProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 425
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "Entrada de partición",
+          "facts": [
+            "Cada entrada de partición contiene Index y una carga Records que admite null."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 64,
+            "lineEnd": 70,
+            "symbol": "PartitionProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "Index",
+              "type": "int32"
+            },
+            {
+              "name": "Records",
+              "type": "records",
+              "nullable": true
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "topics",
+          "source": "request",
+          "target": "topic",
+          "kind": "relationship",
+          "label": "TopicData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "partitions",
+          "source": "topic",
+          "target": "partition",
+          "kind": "relationship",
+          "label": "PartitionData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: roles KRaft separados",
+        "scope": "El ejemplo Docker Compose con comunicación sin cifrar del repositorio: tres brokers y tres contenedores controller separados. El cuórum de controllers se resume en un único nodo visual. Esta configuración de desarrollo no es una recomendación para producción.",
+        "diagramType": "deployment",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [
+        {
+          "id": "compose",
+          "label": "Docker Compose · roles separados",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 10
+          },
+          "size": {
+            "width": 1490,
+            "height": 630
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "controllers",
+          "label": "Cuórum de controllers · 3 contenedores",
+          "kind": "container",
+          "position": {
+            "x": 535,
+            "y": 70
+          },
+          "size": {
+            "width": 490,
+            "height": 180
+          },
+          "subtitle": "controller-1 · controller-2 · controller-3",
+          "facts": [
+            "Tres servicios separados usan process.roles=controller y el mismo cuórum de tres votantes en el puerto 9093."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 18,
+            "lineEnd": 67,
+            "symbol": "controller-1 / controller-2 / controller-3",
+            "kind": "config"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "broker1",
+          "label": "kafka-1",
+          "kind": "container",
+          "position": {
+            "x": 40,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:29092 → :9092",
+          "facts": [
+            "Un servicio dedicado al rol broker anuncia su dirección para clientes y referencia a los tres controllers votantes."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 69,
+            "lineEnd": 95,
+            "symbol": "kafka-1",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker2",
+          "label": "kafka-2",
+          "kind": "container",
+          "position": {
+            "x": 560,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:39092 → :9092",
+          "facts": [
+            "Un servicio dedicado al rol broker anuncia su dirección para clientes y referencia a los tres controllers votantes."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 97,
+            "lineEnd": 123,
+            "symbol": "kafka-2",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker3",
+          "label": "kafka-3",
+          "kind": "container",
+          "position": {
+            "x": 1080,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:49092 → :9092",
+          "facts": [
+            "Un servicio dedicado al rol broker anuncia su dirección para clientes y referencia a los tres controllers votantes."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 125,
+            "lineEnd": 151,
+            "symbol": "kafka-3",
+            "kind": "config"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "quorum1",
+          "source": "broker1",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum2",
+          "source": "broker2",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum3",
+          "source": "broker3",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: la API del productor y sus implementaciones",
+        "scope": "Tipos y miembros Java seleccionados. KafkaProducer y MockProducer implementan Producer<K,V>; ProducerRecord contiene la entrada. Las firmas se abrevian y no se infieren relaciones de propiedad.",
+        "diagramType": "class",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "api",
+          "label": "Producer<K,V>",
+          "kind": "interface",
+          "position": {
+            "x": 555,
+            "y": 40
+          },
+          "size": {
+            "width": 360,
+            "height": 195
+          },
+          "facts": [
+            "La interfaz pública declara los métodos send asíncronos y flush()."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 110,
+            "symbol": "Producer",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ],
+          "methods": [
+            "+ send(record): Future",
+            "+ send(record, callback): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "real",
+          "label": "KafkaProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "La implementación de producción implementa Producer<K,V>."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 251,
+            "lineEnd": 258,
+            "symbol": "KafkaProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 555,
+            "y": 315
+          },
+          "size": {
+            "width": 360,
+            "height": 190
+          },
+          "facts": [
+            "El registro guarda topic, key y value; aquí se omiten partition, timestamp y headers."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          },
+          "attributes": [
+            "- topic: String",
+            "- key: K",
+            "- value: V"
+          ]
+        },
+        {
+          "id": "mock",
+          "label": "MockProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 1040,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "La implementación de prueba también implementa Producer<K,V>."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java",
+            "lineStart": 57,
+            "lineEnd": 64,
+            "symbol": "MockProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "real-api",
+          "source": "real",
+          "target": "api",
+          "kind": "implementation",
+          "label": "Implementa",
+          "evidence": "source"
+        },
+        {
+          "id": "mock-api",
+          "source": "mock",
+          "target": "api",
+          "kind": "implementation",
+          "label": "Implementa",
+          "evidence": "source"
+        },
+        {
+          "id": "input",
+          "source": "api",
+          "target": "record",
+          "kind": "dependency",
+          "label": "send(record)",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: un consumidor se une a su grupo",
+        "scope": "El ciclo normal de asignación de MemberState. Se omiten los estados de error, exclusión y salida. La reconciliación puede repetirse cuando el broker envía otra asignación.",
+        "diagramType": "state",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "unsubscribed",
+          "label": "Sin suscripción",
+          "kind": "state",
+          "position": {
+            "x": 30,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "UNSUBSCRIBED: no hay suscripción automática activa y no se envían heartbeats de grupo."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 29,
+            "lineEnd": 35,
+            "symbol": "UNSUBSCRIBED",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "joining",
+          "label": "Uniéndose",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "JOINING: envía heartbeats con epoch 0 mientras intenta unirse al grupo."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 37,
+            "lineEnd": 43,
+            "symbol": "JOINING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "reconciling",
+          "label": "Reconciliando",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "RECONCILING: aplica una nueva asignación objetivo, incluidos los callbacks y commits necesarios."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 45,
+            "lineEnd": 54,
+            "symbol": "RECONCILING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "acknowledging",
+          "label": "Confirmando",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "ACKNOWLEDGING: el siguiente heartbeat confirma la asignación aplicada."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 56,
+            "lineEnd": 65,
+            "symbol": "ACKNOWLEDGING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "stable",
+          "label": "Estable",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "STABLE: todas las asignaciones recibidas están procesadas y continúan los heartbeats periódicos."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 67,
+            "lineEnd": 71,
+            "symbol": "STABLE",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "subscribe",
+          "source": "unsubscribed",
+          "target": "joining",
+          "kind": "transition",
+          "label": "Suscribirse",
+          "evidence": "source"
+        },
+        {
+          "id": "assignment",
+          "source": "joining",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "Asignación",
+          "evidence": "source"
+        },
+        {
+          "id": "applied",
+          "source": "reconciling",
+          "target": "acknowledging",
+          "kind": "transition",
+          "label": "Asignación aplicada",
+          "evidence": "source"
+        },
+        {
+          "id": "ack",
+          "source": "acknowledging",
+          "target": "stable",
+          "kind": "transition",
+          "label": "Heartbeat enviado",
+          "evidence": "source"
+        },
+        {
+          "id": "again",
+          "source": "stable",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "Nueva asignación",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 695,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 160
+              }
+            ],
+            "labelAt": {
+              "x": 1160,
+              "y": 540
+            }
+          }
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "subscribe",
+          "assignment",
+          "applied",
+          "ack",
+          "again"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: qué puede hacer cada cliente",
+        "scope": "Roles de cliente vinculados a las API Java públicas. Las asociaciones de actores describen capacidades, no un orden de ejecución. Los commits de offsets y las operaciones administrativas siguen siendo decisiones explícitas de la aplicación.",
+        "diagramType": "usecase",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [
+        {
+          "id": "api-boundary",
+          "label": "Kafka · API Java públicas",
+          "kind": "system",
+          "position": {
+            "x": 600,
+            "y": 15
+          },
+          "size": {
+            "width": 610,
+            "height": 745
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "Aplicación productora",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 75
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "Una aplicación que utiliza la API pública Producer."
+          ]
+        },
+        {
+          "id": "consumer",
+          "label": "Aplicación consumidora",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "Una aplicación que utiliza la API pública Consumer."
+          ]
+        },
+        {
+          "id": "admin",
+          "label": "Cliente administrador",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 545
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "Un cliente que utiliza la API pública Admin."
+          ]
+        },
+        {
+          "id": "publish",
+          "label": "Publicar registros",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 75
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Producer.send() envía registros y devuelve un Future."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 105,
+            "symbol": "Producer.send",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "read",
+          "label": "Leer registros",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 310
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "KafkaConsumer.poll() devuelve registros del consumidor; el commit de offsets es una llamada de API independiente."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java",
+            "lineStart": 919,
+            "lineEnd": 924,
+            "symbol": "KafkaConsumer.poll",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "manage",
+          "label": "Gestionar temas",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 545
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Admin ofrece createTopics(), describeTopics() y deleteTopics()."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/admin/Admin.java",
+            "lineStart": 174,
+            "lineEnd": 215,
+            "symbol": "Admin.createTopics",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "publish",
+          "source": "producer",
+          "target": "publish",
+          "kind": "association",
+          "label": "send()",
+          "evidence": "source"
+        },
+        {
+          "id": "read",
+          "source": "consumer",
+          "target": "read",
+          "kind": "association",
+          "label": "poll()",
+          "evidence": "source"
+        },
+        {
+          "id": "manage",
+          "source": "admin",
+          "target": "manage",
+          "kind": "association",
+          "label": "createTopics()",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: de los valores de la aplicación a los registros del consumidor",
+        "scope": "El recorrido de los datos por la serialización, el almacenamiento por partición y la deserialización. Los lotes, la red Produce/Fetch y la replicación se simplifican; esta vista no modela commits de offsets ni garantías de procesamiento.",
+        "diagramType": "dataflow",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "es"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "Valores de la aplicación",
+          "facts": [
+            "ProducerRecord contiene topic, key y value proporcionados por la aplicación."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "serialize",
+          "label": "Serializar",
+          "kind": "process",
+          "position": {
+            "x": 580,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "key / value → bytes",
+          "facts": [
+            "KafkaProducer serializa la clave y el valor con los serializadores configurados."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1197,
+            "lineEnd": 1211,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "log",
+          "label": "Registro de partición",
+          "kind": "dataStore",
+          "position": {
+            "x": 1130,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "Lotes de registros",
+          "facts": [
+            "Tras la agrupación en lotes y una solicitud ProduceRequest, el broker añade los registros al log del líder mediante UnifiedLog."
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1255,
+            "lineEnd": 1287,
+            "symbol": "UnifiedLog.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "deserialize",
+          "label": "Deserializar",
+          "kind": "process",
+          "position": {
+            "x": 1130,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "bytes → key / value",
+          "facts": [
+            "CompletedFetch.parseRecord() deserializa los bytes de clave/valor obtenidos y crea ConsumerRecord."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 312,
+            "lineEnd": 338,
+            "symbol": "CompletedFetch.parseRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "consumer",
+          "label": "ConsumerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 580,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "Valores y metadatos",
+          "facts": [
+            "El registro devuelto contiene topic, partition, offset, timestamp, headers y los valores deserializados."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 334,
+            "lineEnd": 338,
+            "symbol": "ConsumerRecord",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "values",
+          "source": "record",
+          "target": "serialize",
+          "kind": "data",
+          "label": "key / value",
+          "evidence": "source"
+        },
+        {
+          "id": "bytes",
+          "source": "serialize",
+          "target": "log",
+          "kind": "data",
+          "label": "Lotes de registros",
+          "evidence": "source"
+        },
+        {
+          "id": "fetch",
+          "source": "log",
+          "target": "deserialize",
+          "kind": "data",
+          "label": "Registros obtenidos",
+          "evidence": "source"
+        },
+        {
+          "id": "result",
+          "source": "deserialize",
+          "target": "consumer",
+          "kind": "data",
+          "label": "ConsumerRecord",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "values",
+          "bytes",
+          "fetch",
+          "result"
+        ]
+      }
+    }
+  ]
+}

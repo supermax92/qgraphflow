@@ -25,7 +25,7 @@ function NodeHandles({ sequence = false }) {
 
 function DiagramNode({ data, selected }) {
   const { compact } = nodeMetrics(data, data.diagramType);
-  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette);
+  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale);
   return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${compact ? 'is-compact' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''} ${data.playbackCurrent ? 'is-current' : ''} ${data.playbackComplete ? 'is-complete' : ''}`} title={data.label}>
     <NodeHandles sequence={getDiagram(data.diagramType).sequence} />
     <svg className="node-visual" viewBox={`0 0 ${data.size.width} ${data.size.height}`} aria-label={data.label} dangerouslySetInnerHTML={{ __html: markup }} />
@@ -81,7 +81,7 @@ export function initialNodes(graph, diagramType) {
     id: node.id,
     type: 'diagram',
     position: node.position,
-    data: { ...node, diagramType },
+    data: { ...node, diagramType, locale: graph.meta.locale },
     style: { width: node.size.width, height: node.size.height },
     zIndex: 2
   }))];

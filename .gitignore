@@ -6,3 +6,6 @@
 /dist/
 /*.tgz
 /*.zip
+
+# README recordings are published as Release assets, never in Git history.
+/docs/images/showcase/

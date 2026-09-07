@@ -74,6 +74,7 @@ The abbreviated graphs above show only the wrapper; every graph still follows th
 
 - Required: `meta.title`, `meta.sourceRef`, non-empty `nodes`, and `edges`.
 - `meta.diagramType`: `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, or `dataflow`.
+- `meta.locale`: optional Viewer language: `en`, `zh-CN` (default), `ja`, `ko`, `de`, `fr`, or `es`. This controls built-in interface and export labels; author titles, node labels, facts and relationship text in the desired language separately. Code identifiers and standard notation remain unchanged. In a collection, each diagram uses its own locale.
 - IDs are unique non-empty strings. Every edge endpoint names a node.
 - Every node and group has finite non-negative `position` and `size` values.
 - Edge `evidence`: `source`, `code`, `config`, `schema`, `test`, `document`, `framework`, or `inference`.

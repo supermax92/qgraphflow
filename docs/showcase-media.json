@@ -1,0 +1,321 @@
+{
+  "release": "showcase-v1",
+  "baseUrl": "https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/",
+  "assets": [
+    {
+      "name": "kafka.de.architecture.gif",
+      "bytes": 2927213,
+      "sha256": "06329be07dc176f262ef7a9bea24c4ba1d2a6ac6c66cecc5e66c41ca12e338dc"
+    },
+    {
+      "name": "kafka.de.class.gif",
+      "bytes": 2328389,
+      "sha256": "0a4e1271f89fe3d73ac955b767a07ca4a66d4d9710c81b16498a32691c3a8d1e"
+    },
+    {
+      "name": "kafka.de.dataflow.gif",
+      "bytes": 1740938,
+      "sha256": "db804001fbb3bd39d67e151874c4610091e4053599bc8b0de2c2ff2f33f2b2dc"
+    },
+    {
+      "name": "kafka.de.deployment.gif",
+      "bytes": 2229571,
+      "sha256": "4213670bad4df88fd9c24bf6ae580180407535b74ada24dfadbf4d4755762677"
+    },
+    {
+      "name": "kafka.de.er.gif",
+      "bytes": 1736085,
+      "sha256": "aeec19ee59e08fb2e548ade4ca14f35ad979c4bf54720bab1cd54a6cbcff47bc"
+    },
+    {
+      "name": "kafka.de.flowchart.gif",
+      "bytes": 2117199,
+      "sha256": "881c40389292fedbd01c788b14cfe926647f36e3b916b02fe0241d85776ad677"
+    },
+    {
+      "name": "kafka.de.sequence.gif",
+      "bytes": 2117716,
+      "sha256": "82da74b7e6f22d597136928dc9eba59f51aad85523da495cdd38d32b77b5b893"
+    },
+    {
+      "name": "kafka.de.state.gif",
+      "bytes": 2212621,
+      "sha256": "7fde6bfb5a3851c82ed76d54cd1ed544911f835388d30ea986e4aa5815e00368"
+    },
+    {
+      "name": "kafka.de.usecase.gif",
+      "bytes": 1600292,
+      "sha256": "79ae7ba133d04ec54dfe6c260df8ca2c1b87a45594867ce4bfaf38948dbc3b2d"
+    },
+    {
+      "name": "kafka.en.architecture.gif",
+      "bytes": 2767105,
+      "sha256": "b9b99e2e418728409728c9fa06934614ceaf0a884c66a0448f778d571eab976f"
+    },
+    {
+      "name": "kafka.en.class.gif",
+      "bytes": 2193268,
+      "sha256": "bd6c2caced6cd26e52fc165f14859cbc3cbcf9dde9e674161f28c75c74560e69"
+    },
+    {
+      "name": "kafka.en.dataflow.gif",
+      "bytes": 1684195,
+      "sha256": "6618d43a2cf4476e0bb1a5a74057c9e6770eb12a6f7f15e8cbd125e6c9994d3a"
+    },
+    {
+      "name": "kafka.en.deployment.gif",
+      "bytes": 2060653,
+      "sha256": "a4d7e5e314d9249adcea699c3723fb978c3100cbe2f215374695ac3e41b54a73"
+    },
+    {
+      "name": "kafka.en.er.gif",
+      "bytes": 1723362,
+      "sha256": "2cd1d3ffcbe7ef812e637575197ddd300830e35e2961b0c1f2e3ecbaed5af049"
+    },
+    {
+      "name": "kafka.en.flowchart.gif",
+      "bytes": 1944876,
+      "sha256": "c4de9ac92c21badb95af8fc96a647b908a5d0e22af2d44c9d8ad103295db0bb4"
+    },
+    {
+      "name": "kafka.en.sequence.gif",
+      "bytes": 2066293,
+      "sha256": "d36fe74c5da6eff947c3bc64103c637839828ff0eec677ee635337e5844af1e6"
+    },
+    {
+      "name": "kafka.en.state.gif",
+      "bytes": 2023733,
+      "sha256": "887d81f1ac58e133d3d110733dcaa34d733372992844dc6641db0e1328297c88"
+    },
+    {
+      "name": "kafka.en.usecase.gif",
+      "bytes": 1545998,
+      "sha256": "6ee947d084c08d757660460cc4174ebeaa8feaee9aaab360583a1f0185574a43"
+    },
+    {
+      "name": "kafka.es.architecture.gif",
+      "bytes": 2847957,
+      "sha256": "6f88492acc273f16d20cc6c9e5e7dbf597e082c70650a422af8330b0a02ee30b"
+    },
+    {
+      "name": "kafka.es.class.gif",
+      "bytes": 2305778,
+      "sha256": "394c5780e2320c1708ceb18f04808c9fa5f45cd8558c23cf75e0ca56fd90be94"
+    },
+    {
+      "name": "kafka.es.dataflow.gif",
+      "bytes": 1788903,
+      "sha256": "ee072666429316bba1204b43e92eff957a019a6c06406e84262c49adf2461ec4"
+    },
+    {
+      "name": "kafka.es.deployment.gif",
+      "bytes": 2226992,
+      "sha256": "f780a4ba35f5d8830aa5895d3d4d4f7f06a0c42243c5c33669a99c5ea416c89d"
+    },
+    {
+      "name": "kafka.es.er.gif",
+      "bytes": 1870228,
+      "sha256": "de19684f657e67d3fb73e2c7785eafd179c094c3d64bae5a75f076b3cab5f1d5"
+    },
+    {
+      "name": "kafka.es.flowchart.gif",
+      "bytes": 2063762,
+      "sha256": "42d2f6d1a631ac03391cc38c8e0c3dda5b149737de18817c8a756fa59ce453c9"
+    },
+    {
+      "name": "kafka.es.sequence.gif",
+      "bytes": 2123979,
+      "sha256": "c753c46b902f078eaf55acc7ed016173272eca21fc9fb54843ee698045d99f61"
+    },
+    {
+      "name": "kafka.es.state.gif",
+      "bytes": 2167328,
+      "sha256": "f757fdc3c6ead8b55e7b02cb31a7184cc9812484ad8e924ca5506a36b738ece6"
+    },
+    {
+      "name": "kafka.es.usecase.gif",
+      "bytes": 1591231,
+      "sha256": "7476b6f84982babdb5be5636e8b4a630260abde179c8bbb9d075945801227263"
+    },
+    {
+      "name": "kafka.fr.architecture.gif",
+      "bytes": 2999333,
+      "sha256": "0d9ae7d19210175832b21e8ba35ad7cfef3d7c6d9ccd05178d0036372b6df756"
+    },
+    {
+      "name": "kafka.fr.class.gif",
+      "bytes": 2283204,
+      "sha256": "ea469a143bc5284793d65cae67926235174eba698778ba37f019dcd3153f903c"
+    },
+    {
+      "name": "kafka.fr.dataflow.gif",
+      "bytes": 1816814,
+      "sha256": "c1a980969a557694bac00a36489374cfc1a78e2c66ff6c4b72324f06610b3827"
+    },
+    {
+      "name": "kafka.fr.deployment.gif",
+      "bytes": 2250324,
+      "sha256": "d3088d0b84f4e2ea9e3ce20222c4dbdd3166340ad70b5c95cb4d228ecde898f8"
+    },
+    {
+      "name": "kafka.fr.er.gif",
+      "bytes": 1781943,
+      "sha256": "16cf1fe08b6f5a92602091d9148e5939ea1cc231d42844884e411c2ac658a195"
+    },
+    {
+      "name": "kafka.fr.flowchart.gif",
+      "bytes": 2063735,
+      "sha256": "fdffa4ebacf04b7afb8c0f6fc0d38e1ce09808d67c134c199efb339936410caa"
+    },
+    {
+      "name": "kafka.fr.sequence.gif",
+      "bytes": 2132656,
+      "sha256": "ad52307dac07c65347ddbe29fd928b964fd67f7ba0b709fe15882a6ba805712b"
+    },
+    {
+      "name": "kafka.fr.state.gif",
+      "bytes": 2084885,
+      "sha256": "a2e1c7e844bc927ae004e7fbc362cc713ef69b03747037c92c5eb151866bcfdf"
+    },
+    {
+      "name": "kafka.fr.usecase.gif",
+      "bytes": 1675281,
+      "sha256": "0afb4086460151bb6fed796b543c45fd6113d2fe64b511f9bc0b41049a194cb6"
+    },
+    {
+      "name": "kafka.ja.architecture.gif",
+      "bytes": 2627540,
+      "sha256": "38a22ab18e73f9669a2c23a3a1842034e3ed3a7efeee768b6e6abd78d241bd63"
+    },
+    {
+      "name": "kafka.ja.class.gif",
+      "bytes": 2226606,
+      "sha256": "ffe02a37cff14fcd2dd601bbbf8bc0a92f130672d58a587abf3970ba963c64e5"
+    },
+    {
+      "name": "kafka.ja.dataflow.gif",
+      "bytes": 1702158,
+      "sha256": "c068ba398572fe499869fb95ef092ad8b4ec1f23dd73b150f78ddb5dd28f8e89"
+    },
+    {
+      "name": "kafka.ja.deployment.gif",
+      "bytes": 2012994,
+      "sha256": "2bc7b86db51107d8feb2dd0711197513be0e4608e2d18f6973da5851c8b2127f"
+    },
+    {
+      "name": "kafka.ja.er.gif",
+      "bytes": 1698417,
+      "sha256": "988104372cace87e281ab96b7b620de1bae3b6abffe39a1f54fd8749b5067141"
+    },
+    {
+      "name": "kafka.ja.flowchart.gif",
+      "bytes": 1986903,
+      "sha256": "2d0d461682992b6339f4d43648552184ff83f4dfee9642c3180c9b7b73f9b312"
+    },
+    {
+      "name": "kafka.ja.sequence.gif",
+      "bytes": 1950414,
+      "sha256": "e25aacb8b7d0e6abf9498a2bb56115a3669e4849926e29faf135029a9f075869"
+    },
+    {
+      "name": "kafka.ja.state.gif",
+      "bytes": 2096020,
+      "sha256": "c40a9f29420ea34fb389e6b749be47affa1b6feeefaae31276e81a0f4c842eab"
+    },
+    {
+      "name": "kafka.ja.usecase.gif",
+      "bytes": 1596591,
+      "sha256": "dc34045a55d16626d51d2dde89aa50924fd445fc0f8ca76935d8feeb7c17d1b8"
+    },
+    {
+      "name": "kafka.ko.architecture.gif",
+      "bytes": 2664397,
+      "sha256": "3939602330ddfd8b230775835e7012a75ddc63d13123bb6442aa63a214b63707"
+    },
+    {
+      "name": "kafka.ko.class.gif",
+      "bytes": 2259052,
+      "sha256": "5cdafbaa098ab0396f5bb92de2a3b84318e10114757c12f83d9a682c3e1c3325"
+    },
+    {
+      "name": "kafka.ko.dataflow.gif",
+      "bytes": 1661543,
+      "sha256": "f794e72277fbf1bb3133a2e628aecc321c50c29d79a0a57b314a05ff40a7c2b5"
+    },
+    {
+      "name": "kafka.ko.deployment.gif",
+      "bytes": 2099973,
+      "sha256": "6cd75427788adbf3101e10550253de0998b3a13bad2bbcab122fe73c17254cd5"
+    },
+    {
+      "name": "kafka.ko.er.gif",
+      "bytes": 1672661,
+      "sha256": "e43355a1fb6a9c109baba4a1ea078468825899485b6582f23eefca6cf466b027"
+    },
+    {
+      "name": "kafka.ko.flowchart.gif",
+      "bytes": 2027833,
+      "sha256": "2212506748d070448d435f100debca860f39a00e6de5488052b1bd44b56eb8a0"
+    },
+    {
+      "name": "kafka.ko.sequence.gif",
+      "bytes": 2087271,
+      "sha256": "fc68f55430a6a990fd010eb08de74e16bb3076a8bb7503bc98f25ddfe13ed6c5"
+    },
+    {
+      "name": "kafka.ko.state.gif",
+      "bytes": 2148099,
+      "sha256": "2112377a3295ba75d99a5d44b106200ceb53659c3adcd073045e0085a2284e61"
+    },
+    {
+      "name": "kafka.ko.usecase.gif",
+      "bytes": 1605395,
+      "sha256": "772cfd3892e4ffc2e259444d081e360a2773a7dd800c5b176f765561328a2a94"
+    },
+    {
+      "name": "kafka.zh-CN.architecture.gif",
+      "bytes": 2797859,
+      "sha256": "b24d35494f41fde071414962a61f26831a0ac52f00c8b9b868a691b006aea71b"
+    },
+    {
+      "name": "kafka.zh-CN.class.gif",
+      "bytes": 2118200,
+      "sha256": "ee2c355d142150d73ce8a693268ab11d5fdb1d206c70f3f0c7ed840fa45cca78"
+    },
+    {
+      "name": "kafka.zh-CN.dataflow.gif",
+      "bytes": 1575899,
+      "sha256": "14e145c34494f70a0fc970f1af3e4f3c9c419fb54239c19176a7820877a5837a"
+    },
+    {
+      "name": "kafka.zh-CN.deployment.gif",
+      "bytes": 2024604,
+      "sha256": "e5460e5c4a18d31949c9be18024007eef4c244ab8dea07d1552e7dde4d015611"
+    },
+    {
+      "name": "kafka.zh-CN.er.gif",
+      "bytes": 1678527,
+      "sha256": "63aff0ca620468b7741ac23cbe2735a85ca25de33f116c2a24efbf85e507a1aa"
+    },
+    {
+      "name": "kafka.zh-CN.flowchart.gif",
+      "bytes": 1982943,
+      "sha256": "eb10ed87dc2ab348296f6b9455925beb8477db7c1a7f94d1e703b0e1171c9b59"
+    },
+    {
+      "name": "kafka.zh-CN.sequence.gif",
+      "bytes": 2079863,
+      "sha256": "6a5f8760d275d15fc3460c351c7f1baa73bc40fc341cb290895796b668aba17d"
+    },
+    {
+      "name": "kafka.zh-CN.state.gif",
+      "bytes": 2108510,
+      "sha256": "b9b28b9ce9d428fde4322c6f1a91fa2188e7598b232681063557b1843a3a4868"
+    },
+    {
+      "name": "kafka.zh-CN.usecase.gif",
+      "bytes": 1500875,
+      "sha256": "ab5b5da34cd3a087dac5f78c4ee5e838fe769a30e45da91e076d488a482e0483"
+    }
+  ]
+}

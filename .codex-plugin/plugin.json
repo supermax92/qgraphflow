@@ -1,6 +1,6 @@
 {
   "name": "qgraphflow",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "author": {
     "name": "Max Zheng"
@@ -8,8 +8,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "QGraphFlow",
-    "shortDescription": "\u67b6\u6784\u4e0e\u6d41\u7a0b\u56fe\uff1a\u57fa\u4e8e\u6e90\u7801\u3001\u914d\u7f6e\u548c\u6587\u6863\u751f\u6210\u4e5d\u7c7b\u4ea4\u4e92\u5f0f\u8f6f\u4ef6\u56fe",
-    "longDescription": "\u4f7f\u7528 CodeGraph \u6216\u4ed3\u5e93\u539f\u59cb\u8bc1\u636e\u751f\u6210\u6d41\u7a0b\u3001\u67b6\u6784\u3001\u65f6\u5e8f\u3001ER\u3001\u90e8\u7f72\u3001\u7c7b\u3001\u72b6\u6001\u3001\u7528\u4f8b\u4e0e\u6570\u636e\u6d41\u56fe\uff0c\u4ea4\u4ed8\u79bb\u7ebf HTML \u548c\u53ef\u5ba1\u8ba1 graph.json\uff0c\u5e76\u5728\u9875\u9762\u5185\u4e0b\u8f7d SVG \u6216 PNG\u3002",
+    "shortDescription": "架构与流程图：基于源码、配置和文档生成九类交互式软件图",
+    "longDescription": "使用 CodeGraph 或仓库原始证据生成流程、架构、时序、ER、部署、类、状态、用例与数据流图，交付离线 HTML 和可审计 graph.json，并在页面内下载 SVG 或 PNG。",
     "developerName": "Max Zheng",
     "category": "Productivity",
     "capabilities": [
@@ -17,9 +17,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "\u4f7f\u7528 $q-flow \u5206\u6790\u5f53\u524d\u6a21\u5757\u5e76\u751f\u6210\u4ea4\u4e92\u5f0f\u67b6\u6784\u56fe\u3002",
-      "\u4f7f\u7528 $q-flow \u6839\u636e\u6e90\u7801\u8c03\u7528\u987a\u5e8f\u751f\u6210\u65f6\u5e8f\u56fe\u3002",
-      "\u4f7f\u7528 $q-flow \u6839\u636e\u6570\u636e\u5e93\u8fc1\u79fb\u548c\u5b9e\u4f53\u751f\u6210 ER \u56fe\u3002"
+      "使用 $q-flow 分析当前模块并生成交互式架构图。",
+      "使用 $q-flow 根据源码调用顺序生成时序图。",
+      "使用 $q-flow 根据数据库迁移和实体生成 ER 图。"
     ],
     "brandColor": "#203f35"
   }

@@ -1,0 +1,1534 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Kafka: send()에서 로그까지",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "scope": "소스 코드에 근거한 Leader 로그 추가 경로입니다. 네트워크 내부, 복제, 확인 응답은 이 그림에서 다루지 않습니다.",
+        "diagramType": "architecture",
+        "locale": "ko"
+      },
+      "groups": [
+        {
+          "id": "producer-jvm",
+          "label": "프로듀서 JVM",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 25
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        },
+        {
+          "id": "broker",
+          "label": "Broker · Leader 로그 추가 경로",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 345
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "KafkaProducer",
+          "kind": "service",
+          "subtitle": "직렬화 및 파티션 선택",
+          "position": {
+            "x": 30,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "key와 value를 직렬화하고 파티션을 선택한 뒤 accumulator.append()를 호출합니다.",
+            "배치가 가득 찼거나 새 배치가 만들어지면 Sender를 깨웁니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1174,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "accumulator",
+          "label": "RecordAccumulator",
+          "kind": "data",
+          "subtitle": "레코드를 배치로 버퍼링",
+          "position": {
+            "x": 505,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "기존 배치에 추가하거나 해당 파티션을 위한 새 배치를 할당합니다.",
+            "Sender가 accumulator.drain()으로 전송 가능한 배치를 가져갑니다. 화살표는 배치 전달을 뜻하며 버퍼가 Sender를 직접 호출한다는 의미가 아닙니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/RecordAccumulator.java",
+            "lineStart": 282,
+            "lineEnd": 360,
+            "symbol": "RecordAccumulator.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "component",
+          "subtitle": "ProduceRequest 구성",
+          "position": {
+            "x": 980,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "Sender.java:418에서 전송 가능한 배치를 가져오고 930–947행에서 ProduceRequest를 보냅니다.",
+            "네트워크 경계는 간략히 표시했습니다. Broker는 ApiKeys.PRODUCE를 KafkaApis.handleProduceRequest로 전달합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 896,
+            "lineEnd": 948,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "subtitle": "프로듀스 요청 처리",
+          "position": {
+            "x": 980,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "요청을 처리하고 548–558행에서 replicaManager.handleProduceAppend()를 호출합니다.",
+            "인가, 검증, 응답 처리의 세부 사항은 이 노드에 포함했습니다."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 401,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "service",
+          "subtitle": "파티션 로그 추가 조정",
+          "position": {
+            "x": 505,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "tags": [
+            "core"
+          ],
+          "facts": [
+            "handleProduceAppend()는 appendRecords()를 호출하고, appendToLocalLog()는 Partition.appendRecordsToLeader()에 위임합니다.",
+            "Partition.java:1219–1240에서 UnifiedLog.appendAsLeader()로 이어집니다. 이 연결선은 Partition 단계를 접어서 표현합니다."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1376,
+            "lineEnd": 1416,
+            "symbol": "ReplicaManager.appendToLocalLog",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "log",
+          "label": "UnifiedLog",
+          "kind": "data",
+          "subtitle": "로컬 로그에 추가",
+          "position": {
+            "x": 30,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "appendAsLeader()가 로그 추가 경로로 이어지며, 1262행의 localLog.append()가 레코드를 기록합니다.",
+            "이 지점에 도달한 것만으로 복제, 프로듀서 확인 응답, 컨슈머 처리 완료가 보장되지는 않습니다. 플러시는 별도 조건을 따릅니다."
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1049,
+            "lineEnd": 1058,
+            "symbol": "UnifiedLog.appendAsLeader",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "enqueue",
+          "source": "producer",
+          "target": "accumulator",
+          "kind": "call",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "drain",
+          "source": "accumulator",
+          "target": "sender",
+          "kind": "data",
+          "label": "배치 전달",
+          "evidence": "source"
+        },
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "request",
+          "label": "ProduceRequest",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 1380,
+                "y": 155
+              },
+              {
+                "x": 1380,
+                "y": 475
+              }
+            ],
+            "labelAt": {
+              "x": 1380,
+              "y": 312
+            }
+          }
+        },
+        {
+          "id": "handle",
+          "source": "apis",
+          "target": "replica",
+          "kind": "call",
+          "label": "레코드 추가",
+          "evidence": "source"
+        },
+        {
+          "id": "append",
+          "source": "replica",
+          "target": "log",
+          "kind": "call",
+          "label": "Partition 경유",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "enqueue",
+          "drain",
+          "produce",
+          "handle",
+          "append"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: send()는 언제 Sender를 깨울까?",
+        "scope": "RecordAccumulator.append() 이후의 분기입니다. 앞선 검증과 예외 경로는 생략했습니다. Future 반환은 Broker의 확인 응답을 의미하지 않습니다.",
+        "diagramType": "flowchart",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "append",
+          "label": "레코드 추가",
+          "kind": "process",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "레코드를 버퍼링하고 버퍼에서 batchIsFull, newBatchCreated, future를 받습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1227,
+            "lineEnd": 1231,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "decision",
+          "label": "가득 찬 배치 또는 새 배치?",
+          "kind": "decision",
+          "position": {
+            "x": 540,
+            "y": 45
+          },
+          "size": {
+            "width": 310,
+            "height": 210
+          },
+          "facts": [
+            "조건은 result.batchIsFull || result.newBatchCreated입니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "wake",
+          "label": "Sender 깨우기",
+          "kind": "process",
+          "position": {
+            "x": 1060,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "배치가 가득 찼거나 새로 생성된 경우에만 sender.wakeup()을 호출합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "future",
+          "label": "Future 반환",
+          "kind": "end",
+          "position": {
+            "x": 540,
+            "y": 360
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "두 분기 모두 result.future를 반환합니다. Broker의 완료 결과는 비동기입니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "append",
+          "source": "append",
+          "target": "decision",
+          "kind": "flow",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "yes",
+          "source": "decision",
+          "target": "wake",
+          "kind": "yes",
+          "label": "예",
+          "evidence": "source"
+        },
+        {
+          "id": "no",
+          "source": "decision",
+          "target": "future",
+          "kind": "no",
+          "label": "아니요",
+          "evidence": "source"
+        },
+        {
+          "id": "return",
+          "source": "wake",
+          "target": "future",
+          "kind": "flow",
+          "label": "future",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "append",
+          "yes",
+          "return"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: acks=1인 프로듀스 요청",
+        "scope": "성공하는 비트랜잭션 프로듀스 요청입니다. KafkaApis는 Broker 요청 경계를 나타내며 네트워크와 파티션 내부는 참여자에 포함했습니다. acks=1은 Follower의 확인 응답을 요구하지 않습니다.",
+        "diagramType": "sequence",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "participant",
+          "position": {
+            "x": 40,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "acks를 포함한 ProduceRequest를 구성하고 네트워크 클라이언트로 보냅니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 930,
+            "lineEnd": 947,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "position": {
+            "x": 600,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "sendResponseCallback을 ReplicaManager에 전달하고 acks가 0이 아니면 ProduceResponse를 보냅니다."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 457,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "participant",
+          "position": {
+            "x": 1160,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "Leader 로그에 추가하며 requiredAcks == -1인 경우에만 복제를 기다립니다."
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1356,
+            "lineEnd": 1370,
+            "symbol": "delayedProduceRequestRequired",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "async",
+          "label": "ProduceRequest · acks=1",
+          "evidence": "source",
+          "order": 1
+        },
+        {
+          "id": "append",
+          "source": "apis",
+          "target": "replica",
+          "kind": "sync",
+          "label": "handleProduceAppend()",
+          "evidence": "source",
+          "order": 2
+        },
+        {
+          "id": "callback",
+          "source": "replica",
+          "target": "apis",
+          "kind": "async",
+          "label": "추가 결과",
+          "evidence": "source",
+          "order": 3
+        },
+        {
+          "id": "response",
+          "source": "apis",
+          "target": "sender",
+          "kind": "return",
+          "label": "ProduceResponse",
+          "evidence": "source",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: ProduceRequest v13의 내부 구조",
+        "scope": "SQL 테이블이 아닌 프로토콜 포함 관계입니다. 배열은 0개 이상을 포함하는 구조 관계로 표시하며 데이터베이스 기본 키나 외래 키를 뜻하지 않습니다. 버전 13은 TopicId로 토픽을 식별합니다.",
+        "diagramType": "er",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "request",
+          "label": "ProduceRequest",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 65
+          },
+          "size": {
+            "width": 450,
+            "height": 265
+          },
+          "subtitle": "요청 본문",
+          "facts": [
+            "스키마는 TransactionalId, Acks, TimeoutMs와 TopicData 배열을 정의합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 50,
+            "lineEnd": 60,
+            "symbol": "ProduceRequest",
+            "kind": "schema"
+          },
+          "tags": [
+            "core"
+          ],
+          "fields": [
+            {
+              "name": "TransactionalId",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "Acks",
+              "type": "int16"
+            },
+            {
+              "name": "TimeoutMs",
+              "type": "int32"
+            },
+            {
+              "name": "TopicData",
+              "type": "TopicProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "topic",
+          "label": "TopicProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 900,
+            "y": 65
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "토픽 항목 · v13",
+          "facts": [
+            "버전 13에서는 TopicId가 토픽 Name을 대체합니다. PartitionData는 파티션 항목을 담습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 59,
+            "lineEnd": 65,
+            "symbol": "TopicProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "TopicId",
+              "type": "uuid"
+            },
+            {
+              "name": "PartitionData",
+              "type": "PartitionProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "partition",
+          "label": "PartitionProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 425
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "파티션 항목",
+          "facts": [
+            "각 파티션 항목은 Index와 null을 허용하는 Records 데이터를 담습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 64,
+            "lineEnd": 70,
+            "symbol": "PartitionProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "Index",
+              "type": "int32"
+            },
+            {
+              "name": "Records",
+              "type": "records",
+              "nullable": true
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "topics",
+          "source": "request",
+          "target": "topic",
+          "kind": "relationship",
+          "label": "TopicData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "partitions",
+          "source": "topic",
+          "target": "partition",
+          "kind": "relationship",
+          "label": "PartitionData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: 분리된 KRaft 역할",
+        "scope": "저장소의 Docker Compose 평문 통신 예제입니다. Broker 3개와 별도 Controller 컨테이너 3개가 있습니다. Controller 쿼럼은 하나의 시각적 노드로 묶었습니다. 개발용 설정이며 운영 배포 권장 구성이 아닙니다.",
+        "diagramType": "deployment",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [
+        {
+          "id": "compose",
+          "label": "Docker Compose · 역할 분리",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 10
+          },
+          "size": {
+            "width": 1490,
+            "height": 630
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "controllers",
+          "label": "Controller 쿼럼 · 컨테이너 3개",
+          "kind": "container",
+          "position": {
+            "x": 535,
+            "y": 70
+          },
+          "size": {
+            "width": 490,
+            "height": 180
+          },
+          "subtitle": "controller-1 · controller-2 · controller-3",
+          "facts": [
+            "세 개의 별도 서비스가 process.roles=controller를 사용하고 9093 포트에서 동일한 3개 투표 멤버를 구성합니다."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 18,
+            "lineEnd": 67,
+            "symbol": "controller-1 / controller-2 / controller-3",
+            "kind": "config"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "broker1",
+          "label": "kafka-1",
+          "kind": "container",
+          "position": {
+            "x": 40,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:29092 → :9092",
+          "facts": [
+            "Broker 전용 서비스는 클라이언트 주소를 알리고 세 Controller 투표 멤버를 모두 참조합니다."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 69,
+            "lineEnd": 95,
+            "symbol": "kafka-1",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker2",
+          "label": "kafka-2",
+          "kind": "container",
+          "position": {
+            "x": 560,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:39092 → :9092",
+          "facts": [
+            "Broker 전용 서비스는 클라이언트 주소를 알리고 세 Controller 투표 멤버를 모두 참조합니다."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 97,
+            "lineEnd": 123,
+            "symbol": "kafka-2",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker3",
+          "label": "kafka-3",
+          "kind": "container",
+          "position": {
+            "x": 1080,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:49092 → :9092",
+          "facts": [
+            "Broker 전용 서비스는 클라이언트 주소를 알리고 세 Controller 투표 멤버를 모두 참조합니다."
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 125,
+            "lineEnd": 151,
+            "symbol": "kafka-3",
+            "kind": "config"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "quorum1",
+          "source": "broker1",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum2",
+          "source": "broker2",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum3",
+          "source": "broker3",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: 프로듀서 API와 구현 클래스",
+        "scope": "일부 Java 타입과 멤버를 표시합니다. KafkaProducer와 MockProducer는 모두 Producer<K,V>를 구현하고 ProducerRecord가 입력을 담습니다. 시그니처는 축약했으며 소유 관계는 추론하지 않습니다.",
+        "diagramType": "class",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "api",
+          "label": "Producer<K,V>",
+          "kind": "interface",
+          "position": {
+            "x": 555,
+            "y": 40
+          },
+          "size": {
+            "width": 360,
+            "height": 195
+          },
+          "facts": [
+            "공개 인터페이스는 비동기 send 메서드와 flush()를 선언합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 110,
+            "symbol": "Producer",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ],
+          "methods": [
+            "+ send(record): Future",
+            "+ send(record, callback): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "real",
+          "label": "KafkaProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "운영용 구현 클래스는 Producer<K,V>를 구현합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 251,
+            "lineEnd": 258,
+            "symbol": "KafkaProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 555,
+            "y": 315
+          },
+          "size": {
+            "width": 360,
+            "height": 190
+          },
+          "facts": [
+            "레코드는 topic, key, value를 저장합니다. 여기서는 partition, timestamp, headers를 생략했습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          },
+          "attributes": [
+            "- topic: String",
+            "- key: K",
+            "- value: V"
+          ]
+        },
+        {
+          "id": "mock",
+          "label": "MockProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 1040,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "테스트용 구현 클래스도 Producer<K,V>를 구현합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java",
+            "lineStart": 57,
+            "lineEnd": 64,
+            "symbol": "MockProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "real-api",
+          "source": "real",
+          "target": "api",
+          "kind": "implementation",
+          "label": "구현",
+          "evidence": "source"
+        },
+        {
+          "id": "mock-api",
+          "source": "mock",
+          "target": "api",
+          "kind": "implementation",
+          "label": "구현",
+          "evidence": "source"
+        },
+        {
+          "id": "input",
+          "source": "api",
+          "target": "record",
+          "kind": "dependency",
+          "label": "send(record)",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: 컨슈머가 그룹에 참여하는 과정",
+        "scope": "MemberState의 정상 할당 과정입니다. 오류, 펜싱, 탈퇴 상태는 생략했습니다. Broker가 새 할당을 보내면 조정 과정이 반복될 수 있습니다.",
+        "diagramType": "state",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "unsubscribed",
+          "label": "구독 안 함",
+          "kind": "state",
+          "position": {
+            "x": 30,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "UNSUBSCRIBED: 활성 자동 구독이 없으며 그룹 하트비트를 보내지 않습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 29,
+            "lineEnd": 35,
+            "symbol": "UNSUBSCRIBED",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "joining",
+          "label": "참여 중",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "JOINING: 그룹 참여를 시도하며 epoch가 0인 하트비트를 보냅니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 37,
+            "lineEnd": 43,
+            "symbol": "JOINING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "reconciling",
+          "label": "할당 조정 중",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "RECONCILING: 필요한 콜백과 커밋을 포함하여 새로운 목표 할당을 적용합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 45,
+            "lineEnd": 54,
+            "symbol": "RECONCILING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "acknowledging",
+          "label": "할당 확인 중",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "ACKNOWLEDGING: 다음 하트비트로 적용된 할당을 확인합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 56,
+            "lineEnd": 65,
+            "symbol": "ACKNOWLEDGING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "stable",
+          "label": "안정 상태",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "STABLE: 수신한 모든 할당을 처리했으며 주기적인 하트비트를 계속 보냅니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 67,
+            "lineEnd": 71,
+            "symbol": "STABLE",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "subscribe",
+          "source": "unsubscribed",
+          "target": "joining",
+          "kind": "transition",
+          "label": "구독",
+          "evidence": "source"
+        },
+        {
+          "id": "assignment",
+          "source": "joining",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "할당 수신",
+          "evidence": "source"
+        },
+        {
+          "id": "applied",
+          "source": "reconciling",
+          "target": "acknowledging",
+          "kind": "transition",
+          "label": "할당 적용",
+          "evidence": "source"
+        },
+        {
+          "id": "ack",
+          "source": "acknowledging",
+          "target": "stable",
+          "kind": "transition",
+          "label": "하트비트 전송",
+          "evidence": "source"
+        },
+        {
+          "id": "again",
+          "source": "stable",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "새 할당",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 695,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 160
+              }
+            ],
+            "labelAt": {
+              "x": 1160,
+              "y": 540
+            }
+          }
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "subscribe",
+          "assignment",
+          "applied",
+          "ack",
+          "again"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka: 클라이언트별 기능",
+        "scope": "클라이언트 역할을 공개 Java API에 연결합니다. 행위자 관계는 기능을 나타내며 실행 순서가 아닙니다. 오프셋 커밋과 관리 작업은 애플리케이션이 명시적으로 선택합니다.",
+        "diagramType": "usecase",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [
+        {
+          "id": "api-boundary",
+          "label": "Kafka · 공개 Java API",
+          "kind": "system",
+          "position": {
+            "x": 600,
+            "y": 15
+          },
+          "size": {
+            "width": 610,
+            "height": 745
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "프로듀서 앱",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 75
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "공개 Producer API를 사용하는 애플리케이션입니다."
+          ]
+        },
+        {
+          "id": "consumer",
+          "label": "컨슈머 앱",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "공개 Consumer API를 사용하는 애플리케이션입니다."
+          ]
+        },
+        {
+          "id": "admin",
+          "label": "관리 클라이언트",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 545
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "공개 Admin API를 사용하는 클라이언트입니다."
+          ]
+        },
+        {
+          "id": "publish",
+          "label": "레코드 발행",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 75
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Producer.send()는 레코드를 보내고 Future를 반환합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 105,
+            "symbol": "Producer.send",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "read",
+          "label": "레코드 읽기",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 310
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "KafkaConsumer.poll()은 컨슈머 레코드를 반환합니다. 오프셋 커밋은 별도의 API 호출입니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java",
+            "lineStart": 919,
+            "lineEnd": 924,
+            "symbol": "KafkaConsumer.poll",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "manage",
+          "label": "토픽 관리",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 545
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Admin은 createTopics(), describeTopics(), deleteTopics()를 제공합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/admin/Admin.java",
+            "lineStart": 174,
+            "lineEnd": 215,
+            "symbol": "Admin.createTopics",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "publish",
+          "source": "producer",
+          "target": "publish",
+          "kind": "association",
+          "label": "send()",
+          "evidence": "source"
+        },
+        {
+          "id": "read",
+          "source": "consumer",
+          "target": "read",
+          "kind": "association",
+          "label": "poll()",
+          "evidence": "source"
+        },
+        {
+          "id": "manage",
+          "source": "admin",
+          "target": "manage",
+          "kind": "association",
+          "label": "createTopics()",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka: 애플리케이션 값에서 컨슈머 레코드까지",
+        "scope": "직렬화, 파티션 저장, 역직렬화를 거치는 데이터 경로입니다. 배치 처리, Produce/Fetch 네트워크와 복제는 간략히 표시했습니다. 오프셋 커밋이나 처리 보장은 다루지 않습니다.",
+        "diagramType": "dataflow",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "ko"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "애플리케이션 값",
+          "facts": [
+            "ProducerRecord는 애플리케이션이 제공한 topic, key, value를 담습니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "serialize",
+          "label": "직렬화",
+          "kind": "process",
+          "position": {
+            "x": 580,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "key / value → bytes",
+          "facts": [
+            "KafkaProducer는 설정된 직렬화기로 key와 value를 직렬화합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1197,
+            "lineEnd": 1211,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "log",
+          "label": "파티션 로그",
+          "kind": "dataStore",
+          "position": {
+            "x": 1130,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "레코드 배치",
+          "facts": [
+            "배치 처리와 ProduceRequest 이후 Broker는 UnifiedLog를 통해 Leader 로그에 레코드를 추가합니다."
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1255,
+            "lineEnd": 1287,
+            "symbol": "UnifiedLog.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "deserialize",
+          "label": "역직렬화",
+          "kind": "process",
+          "position": {
+            "x": 1130,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "bytes → key / value",
+          "facts": [
+            "CompletedFetch.parseRecord()는 가져온 key/value 바이트를 역직렬화하고 ConsumerRecord를 생성합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 312,
+            "lineEnd": 338,
+            "symbol": "CompletedFetch.parseRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "consumer",
+          "label": "ConsumerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 580,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "값과 메타데이터",
+          "facts": [
+            "반환된 레코드는 topic, partition, offset, timestamp, headers와 역직렬화된 값을 포함합니다."
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 334,
+            "lineEnd": 338,
+            "symbol": "ConsumerRecord",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "values",
+          "source": "record",
+          "target": "serialize",
+          "kind": "data",
+          "label": "key / value",
+          "evidence": "source"
+        },
+        {
+          "id": "bytes",
+          "source": "serialize",
+          "target": "log",
+          "kind": "data",
+          "label": "레코드 배치",
+          "evidence": "source"
+        },
+        {
+          "id": "fetch",
+          "source": "log",
+          "target": "deserialize",
+          "kind": "data",
+          "label": "가져온 레코드",
+          "evidence": "source"
+        },
+        {
+          "id": "result",
+          "source": "deserialize",
+          "target": "consumer",
+          "kind": "data",
+          "label": "ConsumerRecord",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "values",
+          "bytes",
+          "fetch",
+          "result"
+        ]
+      }
+    }
+  ]
+}

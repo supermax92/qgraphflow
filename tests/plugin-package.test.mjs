@@ -62,7 +62,12 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.equal(claudeMarket.plugins[0].source, './');
   assert.deepEqual(codexMarket.plugins[0].source, { source: 'local', path: './' });
 
-  const [packed] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp]));
+  const packed = JSON.parse(run(process.execPath, ['scripts/package.mjs', temp]));
+  const archiveBefore = fs.readFileSync(path.join(temp, packed.filename));
+  const repack = spawnSync(process.execPath, ['scripts/package.mjs', temp], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(repack.status, 0);
+  assert.match(repack.stderr, /Refusing to overwrite/);
+  assert.deepEqual(fs.readFileSync(path.join(temp, packed.filename)), archiveBefore);
   const files = new Set(packed.files.map(file => file.path));
   for (const required of [
     ...manifests.map(directory => `${directory}/plugin.json`),
@@ -74,10 +79,18 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
     'README.md', 'docs/clients.md', 'examples/order-flow.graph.json', 'docs/images/order-flow.svg'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
+  assert.ok(files.has('examples/showcase/kafka.en.graph.json'));
+  assert.ok(packed.unpackedSize < 2_000_000, `Unexpected install size: ${packed.unpackedSize}`);
+  for (const locale of ['zh-CN', 'ja', 'ko', 'de', 'fr', 'es']) {
+    assert.ok(!files.has(`examples/showcase/kafka.${locale}.graph.json`));
+    if (locale !== 'en') assert.ok(files.has(`docs/readme/README.${locale}.md`));
+  }
   for (const file of files) {
     assert.ok(!/(^|\/)(node_modules|\.git|\.idea|\.DS_Store)(\/|$)/.test(file), file);
     assert.ok(!/^(tests|openspec|docs\/(qa|qgraphflow|superpowers))\//.test(file), file);
     assert.ok(!/\.(tgz|zip)$/.test(file), file);
+    assert.ok(!/\.(gif|mp4|test\.mjs|jsx)$/.test(file), file);
+    assert.ok(!file.endsWith('browser-interactions.mjs'), file);
   }
 
   const installed = path.join(temp, '安装目录 with spaces');
@@ -98,14 +111,15 @@ test('the distributed plugin runs independently from its installed location', t 
   const args = [path.join(scripts, 'generate-viewer.mjs'), graphPath, output];
   run(process.execPath, args, temp);
   assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
+  run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(plugin, 'examples/showcase/kafka.en.graph.json'), path.join(temp, 'kafka')], temp);
+  assert.equal(readJson(path.join(temp, 'kafka/graph.json')).diagrams.length, 9);
   const before = fs.readdirSync(output).map(file => fs.readFileSync(path.join(output, file)));
   const again = spawnSync(process.execPath, args, { cwd: temp, encoding: 'utf8', timeout: 30_000 });
   assert.equal(again.status, 1, again.stderr);
   assert.match(again.stderr, /exist|overwrite|force/i);
   fs.readdirSync(output).forEach((file, index) => assert.deepEqual(fs.readFileSync(path.join(output, file)), before[index]));
 
-  const zip = path.join(temp, 'qgraphflow.zip');
-  run('zip', ['-q', '-r', zip, '.'], plugin);
+  const zip = path.join(temp, packed.zip);
   const zippedFiles = run('unzip', ['-Z1', zip]).split('\n');
   for (const directory of manifests) assert.ok(zippedFiles.includes(`${directory}/plugin.json`));
   assert.ok(!zippedFiles.some(file => file.startsWith('package/')), 'ZIP must start at the plugin root');

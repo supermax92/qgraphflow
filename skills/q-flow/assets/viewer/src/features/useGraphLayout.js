@@ -1,3 +1,4 @@
+import { translate } from '../i18n.js';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
@@ -6,6 +7,7 @@ import { nudgeGraphLayout } from '../layout-nudge.js';
 import { isCore } from '../visual-style.js';
 
 export function useGraphLayout(graph, reduceMotion, setStatus) {
+  const t = (message, values) => translate(graph.meta.locale, message, values);
   const diagramType = graph.meta.diagramType ?? 'architecture';
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes(graph, diagramType));
   const [edges, setEdges] = useEdgesState(initialEdges(graph, diagramType));
@@ -37,9 +39,9 @@ export function useGraphLayout(graph, reduceMotion, setStatus) {
     const positions = new Map(result.graph.nodes.map(node => [node.id, node.position]));
     setNodes(current => current.map(node => node.type === 'diagram' ? { ...node, position: positions.get(node.id) } : node));
     const audit = auditGraphLayout(result.graph), unresolved = audit.errors.length + audit.warnings.length;
-    const movement = result.movedNodeIds.length, scope = selectedId ? '局部' : '全图';
-    const message = movement ? `${scope}间距已整理：移动 ${movement} 个节点` : unresolved ? '当前约束下无法继续整理' : '当前间距无需调整';
-    setStatus(message + (unresolved ? `；仍有 ${unresolved} 个布局问题，请手动调整` : ''));
+    const movement = result.movedNodeIds.length, scope = t(selectedId ? '局部' : '全图');
+    const message = movement ? t('{scope}间距已整理：移动 {count} 个节点', { scope, count: movement }) : t(unresolved ? '当前约束下无法继续整理' : '当前间距无需调整');
+    setStatus(message + (unresolved ? t('；仍有 {count} 个布局问题，请手动调整', { count: unresolved }) : ''));
   };
   return { nodes, edges, onNodesChange, locked, setLocked, canvasRef, currentGraph, fitGraph, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => fitGraph(currentGraph) };
 }

@@ -2,11 +2,11 @@ import { getDiagram } from './diagrams/registry.js';
 import { escapeXml, coreNode, paint } from './diagrams/drawing.js';
 import { nodeAppearance } from './visual-style.js';
 
-export function renderNode(node, type, offsetX = 0, offsetY = 0, palette) {
+export function renderNode(node, type, offsetX = 0, offsetY = 0, palette, locale) {
   const definition = getDiagram(type);
   if (!definition) throw new Error(`Unsupported diagram type: ${type}`);
   const { fill, stroke } = nodeAppearance(node, palette);
-  const content = definition.render(node, node.position.x + offsetX, node.position.y + offsetY, fill, stroke, palette);
+  const content = definition.render(node, node.position.x + offsetX, node.position.y + offsetY, fill, stroke, palette, locale);
   const description = [node.label, node.subtitle,
     ...(node.fields ?? []).map(field => `${field.key ? field.key + ' ' : ''}${field.name}: ${field.type}${field.nullable === undefined ? '' : ` (nullable: ${field.nullable})`}`),
     ...(node.attributes ?? []), ...(node.methods ?? [])].filter(Boolean).join('\n');

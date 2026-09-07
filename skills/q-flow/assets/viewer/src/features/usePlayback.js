@@ -1,3 +1,4 @@
+import { translate } from '../i18n.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasArrow } from '../diagrams/registry.js';
 import { playbackPlan } from '../playback.js';
@@ -33,6 +34,6 @@ export function usePlayback(graph, reduceMotion) {
   const from = graph.nodes.find(node => node.id === playbackEdge?.source)?.label ?? playbackEdge?.source;
   const to = graph.nodes.find(node => node.id === playbackEdge?.target)?.label ?? playbackEdge?.target;
   const flowCopy = playbackEdge ? `${from} → ${to}${playbackEdge.label ? ` · ${playbackEdge.label}` : ''}` : graph.nodes.find(node => node.id === current?.nodeId)?.label ?? '';
-  const flowStatus = hasPlayback ? `${playing ? '演示中' : '演示已暂停'} ${playbackStep + 1}/${playbackCount}` : '暂无可演示节点';
+  const flowStatus = hasPlayback ? `${translate(graph.meta.locale, playing ? '演示中' : '演示已暂停')} ${playbackStep + 1}/${playbackCount}` : translate(graph.meta.locale, '暂无可演示节点');
   return { hasPlayback, hasFlow, playbackStep, playbackCount, playbackMode: plan.mode, playbackDescription: plan.description, playbackNodeId: current?.nodeId, playbackPulse: cursor.pulse, playing, setPlaying, pausePlayback, stepPlayback, resetPlayback, playbackEdge, completedEdgeIds, completedNodeIds, flowCopy, flowStatus, flowRunning, setFlowEnabled };
 }

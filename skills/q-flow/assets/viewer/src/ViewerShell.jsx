@@ -1,3 +1,4 @@
+import { translate } from './i18n.js';
 import React from 'react';
 import { Background, ControlButton, Controls, MiniMap, ReactFlow } from '@xyflow/react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -17,6 +18,7 @@ function ViewIcon({ type }) {
 }
 
 export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme, setTheme, panels }) {
+  const t = (message, values) => translate(graph.meta.locale, message, values);
   const {
     diagramType, palette, reduceMotion, panelTransition,
     hasFlow, hasPlayback, playing, pausePlayback, startPlayback, playbackStep, playbackCount, playbackMode, playbackDescription, flowCopy, flowStatus, stepPlayback, flowRunning, setFlowEnabled,
@@ -31,22 +33,22 @@ export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme
       <div className="brand" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 18A10 10 0 1 0 18 24"/><path className="brand-flow" d="M16 16l7.5 7.5C24.9 24.9 26 26 28 26"/></svg></div>
       <div className="heading">
         <p className="eyebrow">QGraphFlow</p><h1>{graph.meta.title}</h1>
-        <p>{diagramLabels[diagramType]} · {graph.meta.sourceRef}</p>
+        <p>{t(diagramLabels[diagramType])} · {graph.meta.sourceRef}</p>
       </div>
       <div className="top-actions">
-        {hasPlayback && <motion.button className={`soft-button ${playing ? 'is-on' : ''}`} title="播放或暂停逐步演示；连线流动由左栏开关独立控制" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => playing ? pausePlayback() : startPlayback()} aria-pressed={playing}>{playing ? 'Ⅱ 暂停' : '▶ 播放'}</motion.button>}
-        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={reset} title="恢复原始位置和阅读视角，清除搜索与选择，从第一步恢复默认播放">重置</motion.button>
-        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={focusDiagram}>适应窗口</motion.button>
-        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => setTheme(value => value === 'light' ? 'dark' : 'light')}>{theme === 'light' ? '深色' : '浅色'}</motion.button>
+        {hasPlayback && <motion.button className={`soft-button ${playing ? 'is-on' : ''}`} title={t('播放或暂停逐步演示；连线流动由左栏开关独立控制')} whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => playing ? pausePlayback() : startPlayback()} aria-pressed={playing}>{playing ? t('Ⅱ 暂停') : t('▶ 播放')}</motion.button>}
+        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={reset} title={t('恢复原始位置和阅读视角，清除搜索与选择，从第一步恢复默认播放')}>{t('重置')}</motion.button>
+        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={focusDiagram}>{t('适应窗口')}</motion.button>
+        <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => setTheme(value => value === 'light' ? 'dark' : 'light')}>{theme === 'light' ? t('深色') : t('浅色')}</motion.button>
         <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => exportDiagram('svg')}>SVG</motion.button>
         <motion.button className="soft-button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => exportDiagram('png')}>PNG</motion.button>
-        <motion.button className={`soft-button ${locked ? 'is-on' : ''}`} whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => setLocked(value => !value)} aria-pressed={locked}>{locked ? '布局锁定' : '可拖动'}</motion.button>
-        <motion.button className="soft-button icon-button" whileTap={reduceMotion || locked ? undefined : { scale: 0.96 }} onClick={nudgeLayout} aria-disabled={locked} title={locked ? '请先解除布局锁定' : selectedId ? '整理选中节点及直接邻居的间距' : '整理全部节点的间距'}><ViewIcon type="layout" />整理间距</motion.button>
-        <div className="panel-switcher" role="group" aria-label="面板显示">
-          <motion.button whileTap={reduceMotion ? undefined : { scale: 0.88 }} className={toolbarOpen ? 'is-on' : ''} ref={toolbarButtonRef} onClick={toggleToolbar} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-label={toolbarOpen ? '隐藏左侧工具栏' : '显示左侧工具栏'} aria-pressed={toolbarOpen} title={toolbarOpen ? '隐藏左侧工具栏' : '显示左侧工具栏'}>
+        <motion.button className={`soft-button ${locked ? 'is-on' : ''}`} whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => setLocked(value => !value)} aria-pressed={locked}>{locked ? t('布局锁定') : t('可拖动')}</motion.button>
+        <motion.button className="soft-button icon-button" whileTap={reduceMotion || locked ? undefined : { scale: 0.96 }} onClick={nudgeLayout} aria-disabled={locked} title={locked ? t('请先解除布局锁定') : selectedId ? t('整理选中节点及直接邻居的间距') : t('整理全部节点的间距')}><ViewIcon type="layout" />{t('整理间距')}</motion.button>
+        <div className="panel-switcher" role="group" aria-label={t('面板显示')}>
+          <motion.button whileTap={reduceMotion ? undefined : { scale: 0.88 }} className={toolbarOpen ? 'is-on' : ''} ref={toolbarButtonRef} onClick={toggleToolbar} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-label={toolbarOpen ? t('隐藏左侧工具栏') : t('显示左侧工具栏')} aria-pressed={toolbarOpen} title={toolbarOpen ? t('隐藏左侧工具栏') : t('显示左侧工具栏')}>
             <span className="panel-icon panel-icon-left" aria-hidden="true" />
           </motion.button>
-          <motion.button whileTap={reduceMotion ? undefined : { scale: 0.88 }} className={drawerOpen ? 'is-on' : ''} ref={drawerButtonRef} onClick={toggleDrawer} aria-controls="node-inspector" aria-expanded={drawerOpen} aria-label={drawerOpen ? '隐藏右侧详情栏' : '显示右侧详情栏'} aria-pressed={drawerOpen} title={drawerOpen ? '隐藏右侧详情栏' : '显示右侧详情栏'}>
+          <motion.button whileTap={reduceMotion ? undefined : { scale: 0.88 }} className={drawerOpen ? 'is-on' : ''} ref={drawerButtonRef} onClick={toggleDrawer} aria-controls="node-inspector" aria-expanded={drawerOpen} aria-label={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')} aria-pressed={drawerOpen} title={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')}>
             <span className="panel-icon panel-icon-right" aria-hidden="true" />
           </motion.button>
         </div>
@@ -55,17 +57,17 @@ export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme
 
     <section className={`workspace ${toolbarOpen ? '' : 'without-toolbar'} ${drawerOpen ? '' : 'without-drawer'}`}>
       <AnimatePresence initial={false} mode="popLayout">
-        {toolbarOpen && <motion.aside key="toolbar" id="graph-tools" className="panel toolbar navigator" aria-label="图谱工具" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={panelTransition}>
-          <div className="project-summary"><p className="panel-title">模型概览</p>{graph.meta.scope && <p>{graph.meta.scope}</p>}<div className="stat-grid"><span><strong>{graph.nodes.length}</strong>节点</span><span><strong>{graph.edges.length}</strong>关系</span><span><strong>{graph.groups?.length ?? 0}</strong>边界</span></div></div>
-          {allDiagrams.length > 1 && <nav className="tabs" aria-label="图类型">{allDiagrams.map((item, index) => {
+        {toolbarOpen && <motion.aside key="toolbar" id="graph-tools" className="panel toolbar navigator" aria-label={t('图谱工具')} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={panelTransition}>
+          <div className="project-summary"><p className="panel-title">{t('模型概览')}</p>{graph.meta.scope && <p>{graph.meta.scope}</p>}<div className="stat-grid"><span><strong>{graph.nodes.length}</strong>{t('节点')}</span><span><strong>{graph.edges.length}</strong>{t('关系')}</span><span><strong>{graph.groups?.length ?? 0}</strong>{t('边界')}</span></div></div>
+          {allDiagrams.length > 1 && <nav className="tabs" aria-label={t('图类型')}>{allDiagrams.map((item, index) => {
             const type = item.meta.diagramType ?? 'architecture';
-            return <button key={type} className={`tab ${type === diagramType ? 'is-active' : ''}`} onClick={() => { onDiagramChange(type); panels.closeMobile(); }} aria-current={type === diagramType ? 'page' : undefined}><i>{String(index + 1).padStart(2, '0')}</i>{diagramLabels[type]}</button>;
+            return <button key={type} className={`tab ${type === diagramType ? 'is-active' : ''}`} onClick={() => { onDiagramChange(type); panels.closeMobile(); }} aria-current={type === diagramType ? 'page' : undefined}><i>{String(index + 1).padStart(2, '0')}</i>{t(diagramLabels[type])}</button>;
           })}</nav>}
           <div className="demo-controls">
-            <label className="field" htmlFor="search">搜索节点<input ref={searchInputRef} id="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="名称、职责、字段…" /></label>
-            <div className="field playback-controls" data-playback-mode={playbackMode}>逐步演示<p className="step-description playback-notice">{playbackDescription}</p>{hasPlayback ? <><div className="step-actions"><button onClick={() => stepPlayback(-1)}>← 上一步</button><button onClick={() => stepPlayback(1)}>下一步 →</button></div><p className="step-description">{playbackStep + 1} / {playbackCount} · {flowCopy}</p></> : <p className="step-description">暂无可演示节点</p>}{hasFlow && <><button className="flow-toggle" role="switch" aria-checked={flowRunning} disabled={Boolean(reduceMotion)} onClick={() => setFlowEnabled(value => !value)}>连线流动<span>{flowRunning ? '开' : '关'}</span></button>{reduceMotion && <p className="step-description">已遵循系统减少动态效果设置</p>}</>}</div>
-            <p className="result-heading">{normalizedQuery ? `匹配结果 · ${results.length}` : `节点目录 · ${results.length}`}</p>
-            {results.length > 0 ? <div className="search-results">{results.map((node, index) => <button key={node.id} onClick={() => selectNode({ ...node, width: node.size.width, height: node.size.height })}><span><i>{String(index + 1).padStart(2, '0')}</i>{node.label}</span><small>{node.subtitle ?? kindLabels[node.kind]}</small></button>)}</div> : <p className="search-empty">未找到匹配节点，请试试名称或职责。</p>}
+            <label className="field" htmlFor="search">{t('搜索节点')}<input ref={searchInputRef} id="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('名称、职责、字段…')} /></label>
+            <div className="field playback-controls" data-playback-mode={playbackMode}>{t('逐步演示')}<p className="step-description playback-notice">{playbackDescription}</p>{hasPlayback ? <><div className="step-actions"><button onClick={() => stepPlayback(-1)}>{t('← 上一步')}</button><button onClick={() => stepPlayback(1)}>{t('下一步 →')}</button></div><p className="step-description">{playbackStep + 1} / {playbackCount} · {flowCopy}</p></> : <p className="step-description">{t('暂无可演示节点')}</p>}{hasFlow && <><button className="flow-toggle" role="switch" aria-checked={flowRunning} disabled={Boolean(reduceMotion)} onClick={() => setFlowEnabled(value => !value)}>{t('连线流动')}<span>{flowRunning ? t('开') : t('关')}</span></button>{reduceMotion && <p className="step-description">{t('已遵循系统减少动态效果设置')}</p>}</>}</div>
+            <p className="result-heading">{normalizedQuery ? t('匹配结果 · {count}', { count: results.length }) : t('节点目录 · {count}', { count: results.length })}</p>
+            {results.length > 0 ? <div className="search-results">{results.map((node, index) => <button key={node.id} onClick={() => selectNode({ ...node, width: node.size.width, height: node.size.height })}><span><i>{String(index + 1).padStart(2, '0')}</i>{node.label}</span><small>{node.subtitle ?? t(kindLabels[node.kind] ?? node.kind)}</small></button>)}</div> : <p className="search-empty">{t('未找到匹配节点，请试试名称或职责。')}</p>}
 
           </div>
         </motion.aside>}
@@ -74,11 +76,11 @@ export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, '.node-visual ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="var(--edge)"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--edge)"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="var(--edge)"/></marker></defs></svg>
         <header className="board-head">
-          <h2>{diagramLabels[diagramType]}</h2>
-          <div className="legend" role="group" aria-label="阅读图例">阅读图例：{graphLegend(graph, palette).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}><i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />{entry.label}</span>)}</div>
+          <h2>{t(diagramLabels[diagramType])}</h2>
+          <div className="legend" role="group" aria-label={t('阅读图例')}>{t('阅读图例：')}{graphLegend(graph, palette).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}><i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />{entry.label}</span>)}</div>
           <span className="status-pill" role="status">{flowStatus}</span>
         </header>
-        <div ref={canvasRef} className="canvas" onKeyDownCapture={handleCanvasKeyDown} aria-label={`可交互${diagramLabels[diagramType]}`}>
+        <div ref={canvasRef} className="canvas" onKeyDownCapture={handleCanvasKeyDown} aria-label={t('可交互{type}', { type: t(diagramLabels[diagramType]) })}>
           <ReactFlow
             nodes={visibleNodes}
             edges={visibleEdges}
@@ -97,12 +99,13 @@ export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme
             minZoom={0.08}
             maxZoom={2}
             colorMode={theme}
+            ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': t('放大'), 'controls.zoomOut.ariaLabel': t('缩小'), 'minimap.ariaLabel': t('小地图') }}
             proOptions={{ hideAttribution: true }}
           >
             <Background color={palette.ruleSoft} gap={24} size={0.65} />
             <Controls position="bottom-left" showInteractive={false} showFitView={false}>
-              <ControlButton className="react-flow__controls-fitview" onClick={focusDiagram} title="适应画布" aria-label="适应画布"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="12" r="2" /></svg></ControlButton>
-              <ControlButton className="react-flow__controls-fullscreen" ref={fullscreenButtonRef} onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-busy={fullscreenPending} aria-disabled={fullscreenPending || (!fullscreenSupported && !isFullscreen)} aria-label={isFullscreen ? '退出全屏' : '进入全屏'} title={!fullscreenSupported && !isFullscreen ? '当前浏览器或页面不支持全屏' : isFullscreen ? '退出全屏（Esc）' : '进入全屏'}>
+              <ControlButton className="react-flow__controls-fitview" onClick={focusDiagram} title={t('适应画布')} aria-label={t('适应画布')}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="12" r="2" /></svg></ControlButton>
+              <ControlButton className="react-flow__controls-fullscreen" ref={fullscreenButtonRef} onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-busy={fullscreenPending} aria-disabled={fullscreenPending || (!fullscreenSupported && !isFullscreen)} aria-label={isFullscreen ? t('退出全屏') : t('进入全屏')} title={!fullscreenSupported && !isFullscreen ? t('当前浏览器或页面不支持全屏') : isFullscreen ? t('退出全屏（Esc）') : t('进入全屏')}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d={isFullscreen ? 'M8 2v6H2v2h8V2zm6 0v8h8V8h-6V2zM2 14v2h6v6h2v-8zm12 0v8h2v-6h6v-2z' : 'M2 2v8h2V4h6V2zm12 0v2h6v6h2V2zM2 14v8h8v-2H4v-6zm18 0v6h-6v2h8v-8z'} /></svg>
               </ControlButton>
             </Controls>
@@ -110,26 +113,26 @@ export default function ViewerShell({ graph, allDiagrams, onDiagramChange, theme
           </ReactFlow>
           {hasPlayback && <div className={`flow-hud ${playing ? '' : 'is-paused'}`}><i /><strong>{flowCopy}</strong></div>}
         </div>
-        <figcaption className="board-foot"><span role="status">{exportStatus || `${graph.nodes.length} 个节点 · ${graph.edges.length} 条关系`}</span><span>{isFullscreen ? '滚轮缩放 · 拖动画布 · Esc 退出全屏' : '滚轮缩放 · 拖动画布 · 点击节点查看详情'}</span></figcaption>
+        <figcaption className="board-foot"><span role="status">{t(exportStatus) || t('{nodes} 个节点 · {edges} 条关系', { nodes: graph.nodes.length, edges: graph.edges.length })}</span><span>{isFullscreen ? t('滚轮缩放 · 拖动画布 · Esc 退出全屏') : t('滚轮缩放 · 拖动画布 · 点击节点查看详情')}</span></figcaption>
       </figure>
 
       <AnimatePresence initial={false} mode="popLayout">
-        {drawerOpen && <motion.aside key="drawer" id="node-inspector" ref={inspectorRef} tabIndex={-1} className={`panel drawer inspector ${inspectedNode ? 'is-open' : ''}`} aria-label="节点说明" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={panelTransition}>
-          <p className="panel-title">节点详情</p>
+        {drawerOpen && <motion.aside key="drawer" id="node-inspector" ref={inspectorRef} tabIndex={-1} className={`panel drawer inspector ${inspectedNode ? 'is-open' : ''}`} aria-label={t('节点说明')} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={panelTransition}>
+          <p className="panel-title">{t('节点详情')}</p>
           <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id}>{inspectedNode ? <>
-              <button className="drawer-close" onClick={() => clearSelectedNode(true)} aria-label="关闭详情">×</button>
-              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette).stroke }} />{kindLabels[inspectedNode.kind] ?? inspectedNode.kind}</div>
+              <button className="drawer-close" onClick={() => clearSelectedNode(true)} aria-label={t('关闭详情')}>×</button>
+              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}</div>
               <h2>{inspectedNode.label}</h2>
               <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
-              {inspectedNode.fields?.length > 0 && <><h3>字段</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
-              {inspectedNode.attributes?.length > 0 && <><h3>属性</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
-              {inspectedNode.methods?.length > 0 && <><h3>方法</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
-              {inspectedNode.source && <><h3>来源 · {evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
+              {inspectedNode.fields?.length > 0 && <><h3>{t('字段')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
+              {inspectedNode.attributes?.length > 0 && <><h3>{t('属性')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
+              {inspectedNode.methods?.length > 0 && <><h3>{t('方法')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
+              {inspectedNode.source && <><h3>{t('来源')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
               {inspectedNode.tags?.length > 0 && <div className="tags">{inspectedNode.tags.map(tag => <span key={tag}>{tag}</span>)}</div>}
-            </> : <div className="drawer-empty"><span className="empty-icon"><ViewIcon type="focus" /></span><span>从一个节点开始</span><p>点击图中组件或左侧目录，查看职责、字段、方法与来源。</p></div>}
+            </> : <div className="drawer-empty"><span className="empty-icon"><ViewIcon type="focus" /></span><span>{t('从一个节点开始')}</span><p>{t('点击图中组件或左侧目录，查看职责、字段、方法与来源。')}</p></div>}
           </section>
-          {hasPlayback && <section className="inspector-card"><strong>当前步骤</strong><p>{flowCopy}</p></section>}
-          {inspectedNode?.facts?.length > 0 && <section className="inspector-card inspector-facts" data-node-id={inspectedNode.id}><h3>{inspectedNode.source ? '证据事实' : '节点说明'}</h3><ul>{inspectedNode.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></section>}
+          {hasPlayback && <section className="inspector-card"><strong>{t('当前步骤')}</strong><p>{flowCopy}</p></section>}
+          {inspectedNode?.facts?.length > 0 && <section className="inspector-card inspector-facts" data-node-id={inspectedNode.id}><h3>{inspectedNode.source ? t('证据事实') : t('节点说明')}</h3><ul>{inspectedNode.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></section>}
         </motion.aside>}
       </AnimatePresence>
     </section>

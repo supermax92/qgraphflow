@@ -17,6 +17,7 @@ function Viewer() {
   const [theme, setTheme] = useState('light');
   const panels = usePanels();
   const graph = diagrams.find(item => (item.meta.diagramType ?? 'architecture') === activeType) ?? diagrams[0];
+  useEffect(() => { document.documentElement.lang = graph.meta.locale ?? 'zh-CN'; }, [graph.meta.locale]);
   useEffect(() => { document.title = `${graph.meta.title} · QGraphFlow`; }, [graph.meta.title]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

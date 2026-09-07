@@ -1,11 +1,15 @@
 {
   "name": "qgraphflow-local",
-  "owner": { "name": "Max Zheng" },
-  "metadata": { "description": "Local QGraphFlow plugin for evidence-grounded interactive diagrams." },
+  "owner": {
+    "name": "Max Zheng"
+  },
+  "metadata": {
+    "description": "Local QGraphFlow plugin for evidence-grounded interactive diagrams."
+  },
   "plugins": [
     {
       "name": "qgraphflow",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "source": "./",
       "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export."
     }

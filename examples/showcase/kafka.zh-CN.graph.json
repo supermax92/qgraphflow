@@ -1,0 +1,1534 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Kafka：从 send() 到分区日志",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "scope": "依据源码梳理 Leader 追加路径。本图未展开网络内部、复制和确认响应。",
+        "diagramType": "architecture",
+        "locale": "zh-CN"
+      },
+      "groups": [
+        {
+          "id": "producer-jvm",
+          "label": "生产者 JVM",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 25
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        },
+        {
+          "id": "broker",
+          "label": "Broker · Leader 追加路径",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 345
+          },
+          "size": {
+            "width": 1290,
+            "height": 255
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "KafkaProducer",
+          "kind": "service",
+          "subtitle": "序列化并选择分区",
+          "position": {
+            "x": 30,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "序列化 key 和 value、选择分区，然后调用 accumulator.append()。",
+            "批次已满或创建新批次时唤醒 Sender。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1174,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "accumulator",
+          "label": "RecordAccumulator",
+          "kind": "data",
+          "subtitle": "将记录缓冲为批次",
+          "position": {
+            "x": 505,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "追加到已有批次，或为分区分配新批次。",
+            "Sender 通过 accumulator.drain() 拉取可发送批次；箭头表示批次交接，不表示缓冲器主动调用 Sender。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/RecordAccumulator.java",
+            "lineStart": 282,
+            "lineEnd": 360,
+            "symbol": "RecordAccumulator.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "component",
+          "subtitle": "构造 ProduceRequest",
+          "position": {
+            "x": 980,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "在 Sender.java:418 拉取可发送批次，在 930–947 行构造并发送 ProduceRequest。",
+            "图中折叠了网络细节；Broker 将 ApiKeys.PRODUCE 分派给 KafkaApis.handleProduceRequest。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 896,
+            "lineEnd": 948,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "subtitle": "处理生产请求",
+          "position": {
+            "x": 980,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "处理生产请求，并在 548–558 行调用 replicaManager.handleProduceAppend()。",
+            "鉴权、校验和响应处理细节折叠在本节点中。"
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 401,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "service",
+          "subtitle": "协调分区日志追加",
+          "position": {
+            "x": 505,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "tags": [
+            "core"
+          ],
+          "facts": [
+            "handleProduceAppend() 调用 appendRecords()；appendToLocalLog() 委派给 Partition.appendRecordsToLeader()。",
+            "Partition.java:1219–1240 继续调用 UnifiedLog.appendAsLeader()；连线折叠了 Partition 这一跳。"
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1376,
+            "lineEnd": 1416,
+            "symbol": "ReplicaManager.appendToLocalLog",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "log",
+          "label": "UnifiedLog",
+          "kind": "data",
+          "subtitle": "追加到本地日志",
+          "position": {
+            "x": 30,
+            "y": 395
+          },
+          "size": {
+            "width": 300,
+            "height": 160
+          },
+          "facts": [
+            "appendAsLeader() 进入日志追加路径；1262 行调用 localLog.append() 写入记录。",
+            "到达此处不代表复制完成、生产者已收到确认或消费者已处理；刷盘受另外的条件控制。"
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1049,
+            "lineEnd": 1058,
+            "symbol": "UnifiedLog.appendAsLeader",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "enqueue",
+          "source": "producer",
+          "target": "accumulator",
+          "kind": "call",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "drain",
+          "source": "accumulator",
+          "target": "sender",
+          "kind": "data",
+          "label": "批次交接",
+          "evidence": "source"
+        },
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "request",
+          "label": "ProduceRequest",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 1380,
+                "y": 155
+              },
+              {
+                "x": 1380,
+                "y": 475
+              }
+            ],
+            "labelAt": {
+              "x": 1380,
+              "y": 312
+            }
+          }
+        },
+        {
+          "id": "handle",
+          "source": "apis",
+          "target": "replica",
+          "kind": "call",
+          "label": "追加记录",
+          "evidence": "source"
+        },
+        {
+          "id": "append",
+          "source": "replica",
+          "target": "log",
+          "kind": "call",
+          "label": "经由 Partition",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "enqueue",
+          "drain",
+          "produce",
+          "handle",
+          "append"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka：send() 何时唤醒 Sender？",
+        "scope": "RecordAccumulator.append() 之后的分支。本图省略此前的校验与异常路径；返回 Future 不代表 Broker 已确认记录。",
+        "diagramType": "flowchart",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "append",
+          "label": "追加记录",
+          "kind": "process",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "将记录放入缓冲区，并从缓冲器取得 batchIsFull、newBatchCreated 和 future。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1227,
+            "lineEnd": 1231,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "decision",
+          "label": "批次已满或新建？",
+          "kind": "decision",
+          "position": {
+            "x": 540,
+            "y": 45
+          },
+          "size": {
+            "width": 310,
+            "height": 210
+          },
+          "facts": [
+            "判断条件为 result.batchIsFull || result.newBatchCreated。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "wake",
+          "label": "唤醒 Sender",
+          "kind": "process",
+          "position": {
+            "x": 1060,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "仅在批次已满或新建时调用 sender.wakeup()。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1243,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "future",
+          "label": "返回 Future",
+          "kind": "end",
+          "position": {
+            "x": 540,
+            "y": 360
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "两个分支都会返回 result.future；Broker 的处理结果异步完成。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1241,
+            "lineEnd": 1245,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "append",
+          "source": "append",
+          "target": "decision",
+          "kind": "flow",
+          "label": "append()",
+          "evidence": "source"
+        },
+        {
+          "id": "yes",
+          "source": "decision",
+          "target": "wake",
+          "kind": "yes",
+          "label": "是",
+          "evidence": "source"
+        },
+        {
+          "id": "no",
+          "source": "decision",
+          "target": "future",
+          "kind": "no",
+          "label": "否",
+          "evidence": "source"
+        },
+        {
+          "id": "return",
+          "source": "wake",
+          "target": "future",
+          "kind": "flow",
+          "label": "future",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "append",
+          "yes",
+          "return"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka：acks=1 的生产请求",
+        "scope": "成功的非事务生产请求。KafkaApis 表示 Broker 请求边界，网络与分区内部细节折叠在参与者中。acks=1 不要求 Follower 确认。",
+        "diagramType": "sequence",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "sender",
+          "label": "Sender",
+          "kind": "participant",
+          "position": {
+            "x": 40,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "构造带有 acks 的 ProduceRequest，并通过网络客户端发送。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/internals/Sender.java",
+            "lineStart": 930,
+            "lineEnd": 947,
+            "symbol": "Sender.sendProduceRequest",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "apis",
+          "label": "KafkaApis",
+          "kind": "service",
+          "position": {
+            "x": 600,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "将 sendResponseCallback 交给 ReplicaManager，并在 acks 非零时发送 ProduceResponse。"
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/KafkaApis.scala",
+            "lineStart": 457,
+            "lineEnd": 558,
+            "symbol": "KafkaApis.handleProduceRequest",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "replica",
+          "label": "ReplicaManager",
+          "kind": "participant",
+          "position": {
+            "x": 1160,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 520
+          },
+          "facts": [
+            "追加到 Leader 日志；仅 requiredAcks == -1 时选择等待复制。"
+          ],
+          "source": {
+            "file": "core/src/main/scala/kafka/server/ReplicaManager.scala",
+            "lineStart": 1356,
+            "lineEnd": 1370,
+            "symbol": "delayedProduceRequestRequired",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "produce",
+          "source": "sender",
+          "target": "apis",
+          "kind": "async",
+          "label": "ProduceRequest · acks=1",
+          "evidence": "source",
+          "order": 1
+        },
+        {
+          "id": "append",
+          "source": "apis",
+          "target": "replica",
+          "kind": "sync",
+          "label": "handleProduceAppend()",
+          "evidence": "source",
+          "order": 2
+        },
+        {
+          "id": "callback",
+          "source": "replica",
+          "target": "apis",
+          "kind": "async",
+          "label": "追加结果",
+          "evidence": "source",
+          "order": 3
+        },
+        {
+          "id": "response",
+          "source": "apis",
+          "target": "sender",
+          "kind": "return",
+          "label": "ProduceResponse",
+          "evidence": "source",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka：ProduceRequest v13 的内部结构",
+        "scope": "这里展示协议包含关系，并非 SQL 表。数组用零到多的结构关系表示，不隐含数据库主键或外键。版本 13 通过 TopicId 标识主题。",
+        "diagramType": "er",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "request",
+          "label": "ProduceRequest",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 65
+          },
+          "size": {
+            "width": 450,
+            "height": 265
+          },
+          "subtitle": "请求主体",
+          "facts": [
+            "结构定义了 TransactionalId、Acks、TimeoutMs 和 TopicData 数组。"
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 50,
+            "lineEnd": 60,
+            "symbol": "ProduceRequest",
+            "kind": "schema"
+          },
+          "tags": [
+            "core"
+          ],
+          "fields": [
+            {
+              "name": "TransactionalId",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "Acks",
+              "type": "int16"
+            },
+            {
+              "name": "TimeoutMs",
+              "type": "int32"
+            },
+            {
+              "name": "TopicData",
+              "type": "TopicProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "topic",
+          "label": "TopicProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 900,
+            "y": 65
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "主题条目 · v13",
+          "facts": [
+            "版本 13 用 TopicId 替换主题 Name；PartitionData 包含分区条目。"
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 59,
+            "lineEnd": 65,
+            "symbol": "TopicProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "TopicId",
+              "type": "uuid"
+            },
+            {
+              "name": "PartitionData",
+              "type": "PartitionProduceData[]"
+            }
+          ]
+        },
+        {
+          "id": "partition",
+          "label": "PartitionProduceData",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 425
+          },
+          "size": {
+            "width": 420,
+            "height": 215
+          },
+          "subtitle": "分区条目",
+          "facts": [
+            "每个分区条目携带 Index 和可为空的 Records 数据。"
+          ],
+          "source": {
+            "file": "clients/src/main/resources/common/message/ProduceRequest.json",
+            "lineStart": 64,
+            "lineEnd": 70,
+            "symbol": "PartitionProduceData",
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "Index",
+              "type": "int32"
+            },
+            {
+              "name": "Records",
+              "type": "records",
+              "nullable": true
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "topics",
+          "source": "request",
+          "target": "topic",
+          "kind": "relationship",
+          "label": "TopicData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "partitions",
+          "source": "topic",
+          "target": "partition",
+          "kind": "relationship",
+          "label": "PartitionData",
+          "evidence": "schema",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka：分离部署的 KRaft 角色",
+        "scope": "仓库中的 Docker Compose 明文示例：三个 Broker 和三个独立 Controller 容器。Controller 仲裁组折叠为一个可视节点。这是开发配置，不是生产部署建议。",
+        "diagramType": "deployment",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [
+        {
+          "id": "compose",
+          "label": "Docker Compose · 角色分离",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 10
+          },
+          "size": {
+            "width": 1490,
+            "height": 630
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "controllers",
+          "label": "Controller 仲裁组 · 3 个容器",
+          "kind": "container",
+          "position": {
+            "x": 535,
+            "y": 70
+          },
+          "size": {
+            "width": 490,
+            "height": 180
+          },
+          "subtitle": "controller-1 · controller-2 · controller-3",
+          "facts": [
+            "三个独立服务使用 process.roles=controller，并在 9093 端口配置同一组三个投票成员。"
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 18,
+            "lineEnd": 67,
+            "symbol": "controller-1 / controller-2 / controller-3",
+            "kind": "config"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "broker1",
+          "label": "kafka-1",
+          "kind": "container",
+          "position": {
+            "x": 40,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:29092 → :9092",
+          "facts": [
+            "仅承担 Broker 角色的服务公布客户端地址，并引用全部三个 Controller 投票成员。"
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 69,
+            "lineEnd": 95,
+            "symbol": "kafka-1",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker2",
+          "label": "kafka-2",
+          "kind": "container",
+          "position": {
+            "x": 560,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:39092 → :9092",
+          "facts": [
+            "仅承担 Broker 角色的服务公布客户端地址，并引用全部三个 Controller 投票成员。"
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 97,
+            "lineEnd": 123,
+            "symbol": "kafka-2",
+            "kind": "config"
+          }
+        },
+        {
+          "id": "broker3",
+          "label": "kafka-3",
+          "kind": "container",
+          "position": {
+            "x": 1080,
+            "y": 350
+          },
+          "size": {
+            "width": 400,
+            "height": 170
+          },
+          "subtitle": "localhost:49092 → :9092",
+          "facts": [
+            "仅承担 Broker 角色的服务公布客户端地址，并引用全部三个 Controller 投票成员。"
+          ],
+          "source": {
+            "file": "docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml",
+            "lineStart": 125,
+            "lineEnd": 151,
+            "symbol": "kafka-3",
+            "kind": "config"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "quorum1",
+          "source": "broker1",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum2",
+          "source": "broker2",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        },
+        {
+          "id": "quorum3",
+          "source": "broker3",
+          "target": "controllers",
+          "kind": "depends",
+          "label": ":9093",
+          "evidence": "config"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka：生产者 API 与实现类",
+        "scope": "展示部分 Java 类型和成员。KafkaProducer 与 MockProducer 都实现 Producer<K,V>，ProducerRecord 承载输入。签名已简写，不推断对象所有权关系。",
+        "diagramType": "class",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "api",
+          "label": "Producer<K,V>",
+          "kind": "interface",
+          "position": {
+            "x": 555,
+            "y": 40
+          },
+          "size": {
+            "width": 360,
+            "height": 195
+          },
+          "facts": [
+            "公开接口声明了异步 send 方法与 flush()。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 110,
+            "symbol": "Producer",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ],
+          "methods": [
+            "+ send(record): Future",
+            "+ send(record, callback): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "real",
+          "label": "KafkaProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "生产实现类实现 Producer<K,V>。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 251,
+            "lineEnd": 258,
+            "symbol": "KafkaProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        },
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 555,
+            "y": 315
+          },
+          "size": {
+            "width": 360,
+            "height": 190
+          },
+          "facts": [
+            "记录保存 topic、key 和 value；此处省略 partition、timestamp 与 headers。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          },
+          "attributes": [
+            "- topic: String",
+            "- key: K",
+            "- value: V"
+          ]
+        },
+        {
+          "id": "mock",
+          "label": "MockProducer<K,V>",
+          "kind": "class",
+          "position": {
+            "x": 1040,
+            "y": 315
+          },
+          "size": {
+            "width": 400,
+            "height": 180
+          },
+          "facts": [
+            "测试实现类同样实现 Producer<K,V>。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/MockProducer.java",
+            "lineStart": 57,
+            "lineEnd": 64,
+            "symbol": "MockProducer",
+            "kind": "source"
+          },
+          "methods": [
+            "+ send(record): Future",
+            "+ flush(): void"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "real-api",
+          "source": "real",
+          "target": "api",
+          "kind": "implementation",
+          "label": "实现",
+          "evidence": "source"
+        },
+        {
+          "id": "mock-api",
+          "source": "mock",
+          "target": "api",
+          "kind": "implementation",
+          "label": "实现",
+          "evidence": "source"
+        },
+        {
+          "id": "input",
+          "source": "api",
+          "target": "record",
+          "kind": "dependency",
+          "label": "send(record)",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka：消费者如何加入消费组",
+        "scope": "MemberState 的正常分配流程。本图省略错误、隔离与离组状态；Broker 发来新分配时，协调过程可能再次发生。",
+        "diagramType": "state",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "unsubscribed",
+          "label": "未订阅",
+          "kind": "state",
+          "position": {
+            "x": 30,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "UNSUBSCRIBED：没有有效的自动订阅，不发送消费组心跳。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 29,
+            "lineEnd": 35,
+            "symbol": "UNSUBSCRIBED",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "joining",
+          "label": "加入中",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "JOINING：尝试加入消费组时，发送 epoch 为 0 的心跳。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 37,
+            "lineEnd": 43,
+            "symbol": "JOINING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "reconciling",
+          "label": "协调分配",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 90
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "RECONCILING：应用新的目标分配，包括必要的回调与提交。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 45,
+            "lineEnd": 54,
+            "symbol": "RECONCILING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "acknowledging",
+          "label": "确认分配",
+          "kind": "state",
+          "position": {
+            "x": 1050,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "ACKNOWLEDGING：下一次心跳确认已应用的分配。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 56,
+            "lineEnd": 65,
+            "symbol": "ACKNOWLEDGING",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "stable",
+          "label": "稳定",
+          "kind": "state",
+          "position": {
+            "x": 540,
+            "y": 350
+          },
+          "size": {
+            "width": 310,
+            "height": 140
+          },
+          "facts": [
+            "STABLE：已处理收到的全部分配，继续定期发送心跳。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java",
+            "lineStart": 67,
+            "lineEnd": 71,
+            "symbol": "STABLE",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "subscribe",
+          "source": "unsubscribed",
+          "target": "joining",
+          "kind": "transition",
+          "label": "订阅",
+          "evidence": "source"
+        },
+        {
+          "id": "assignment",
+          "source": "joining",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "收到分配",
+          "evidence": "source"
+        },
+        {
+          "id": "applied",
+          "source": "reconciling",
+          "target": "acknowledging",
+          "kind": "transition",
+          "label": "分配已应用",
+          "evidence": "source"
+        },
+        {
+          "id": "ack",
+          "source": "acknowledging",
+          "target": "stable",
+          "kind": "transition",
+          "label": "心跳已发送",
+          "evidence": "source"
+        },
+        {
+          "id": "again",
+          "source": "stable",
+          "target": "reconciling",
+          "kind": "transition",
+          "label": "新的分配",
+          "evidence": "source",
+          "route": {
+            "via": [
+              {
+                "x": 695,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 540
+              },
+              {
+                "x": 1460,
+                "y": 160
+              }
+            ],
+            "labelAt": {
+              "x": 1160,
+              "y": 540
+            }
+          }
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "subscribe",
+          "assignment",
+          "applied",
+          "ack",
+          "again"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "Kafka：不同客户端能做什么",
+        "scope": "将客户端角色映射到公开 Java API。角色关联描述能力，不代表执行顺序。位点提交与管理操作仍由应用显式选择。",
+        "diagramType": "usecase",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [
+        {
+          "id": "api-boundary",
+          "label": "Kafka · 公开 Java API",
+          "kind": "system",
+          "position": {
+            "x": 600,
+            "y": 15
+          },
+          "size": {
+            "width": 610,
+            "height": 745
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer",
+          "label": "生产者应用",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 75
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "使用公开 Producer API 的应用。"
+          ]
+        },
+        {
+          "id": "consumer",
+          "label": "消费者应用",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "使用公开 Consumer API 的应用。"
+          ]
+        },
+        {
+          "id": "admin",
+          "label": "管理客户端",
+          "kind": "actor",
+          "position": {
+            "x": 35,
+            "y": 545
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          },
+          "facts": [
+            "使用公开 Admin API 的客户端。"
+          ]
+        },
+        {
+          "id": "publish",
+          "label": "发布记录",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 75
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Producer.send() 发送记录并返回 Future。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/Producer.java",
+            "lineStart": 97,
+            "lineEnd": 105,
+            "symbol": "Producer.send",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "read",
+          "label": "读取记录",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 310
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "KafkaConsumer.poll() 返回消费记录；提交位点是独立的 API 调用。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java",
+            "lineStart": 919,
+            "lineEnd": 924,
+            "symbol": "KafkaConsumer.poll",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "manage",
+          "label": "管理主题",
+          "kind": "usecase",
+          "position": {
+            "x": 690,
+            "y": 545
+          },
+          "size": {
+            "width": 430,
+            "height": 150
+          },
+          "facts": [
+            "Admin 提供 createTopics()、describeTopics() 和 deleteTopics()。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/admin/Admin.java",
+            "lineStart": 174,
+            "lineEnd": 215,
+            "symbol": "Admin.createTopics",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "publish",
+          "source": "producer",
+          "target": "publish",
+          "kind": "association",
+          "label": "send()",
+          "evidence": "source"
+        },
+        {
+          "id": "read",
+          "source": "consumer",
+          "target": "read",
+          "kind": "association",
+          "label": "poll()",
+          "evidence": "source"
+        },
+        {
+          "id": "manage",
+          "source": "admin",
+          "target": "manage",
+          "kind": "association",
+          "label": "createTopics()",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka：从应用数据到消费记录",
+        "scope": "数据经过序列化、分区存储与反序列化的过程。批处理、Produce/Fetch 网络传输及复制被折叠；本图不描述位点提交或处理保证。",
+        "diagramType": "dataflow",
+        "sourceRef": "Apache Kafka · 634a935e7291",
+        "locale": "zh-CN"
+      },
+      "groups": [],
+      "nodes": [
+        {
+          "id": "record",
+          "label": "ProducerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "应用数据",
+          "facts": [
+            "ProducerRecord 保存应用提供的 topic、key 和 value。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/ProducerRecord.java",
+            "lineStart": 51,
+            "lineEnd": 65,
+            "symbol": "ProducerRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "serialize",
+          "label": "序列化",
+          "kind": "process",
+          "position": {
+            "x": 580,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "key / value → bytes",
+          "facts": [
+            "KafkaProducer 使用配置的序列化器处理 key 和 value。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+            "lineStart": 1197,
+            "lineEnd": 1211,
+            "symbol": "KafkaProducer.doSend",
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "log",
+          "label": "分区日志",
+          "kind": "dataStore",
+          "position": {
+            "x": 1130,
+            "y": 70
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "记录批次",
+          "facts": [
+            "经过批处理和 ProduceRequest，Broker 通过 UnifiedLog 将记录追加到 Leader 日志。"
+          ],
+          "source": {
+            "file": "storage/src/main/java/org/apache/kafka/storage/internals/log/UnifiedLog.java",
+            "lineStart": 1255,
+            "lineEnd": 1287,
+            "symbol": "UnifiedLog.append",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "deserialize",
+          "label": "反序列化",
+          "kind": "process",
+          "position": {
+            "x": 1130,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "bytes → key / value",
+          "facts": [
+            "CompletedFetch.parseRecord() 将拉取到的 key/value 字节反序列化，生成 ConsumerRecord。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 312,
+            "lineEnd": 338,
+            "symbol": "CompletedFetch.parseRecord",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "consumer",
+          "label": "ConsumerRecord<K,V>",
+          "kind": "external",
+          "position": {
+            "x": 580,
+            "y": 340
+          },
+          "size": {
+            "width": 340,
+            "height": 160
+          },
+          "subtitle": "数据与元数据",
+          "facts": [
+            "返回的记录包含 topic、partition、offset、timestamp、headers 及反序列化后的数据。"
+          ],
+          "source": {
+            "file": "clients/src/main/java/org/apache/kafka/clients/consumer/internals/CompletedFetch.java",
+            "lineStart": 334,
+            "lineEnd": 338,
+            "symbol": "ConsumerRecord",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "values",
+          "source": "record",
+          "target": "serialize",
+          "kind": "data",
+          "label": "key / value",
+          "evidence": "source"
+        },
+        {
+          "id": "bytes",
+          "source": "serialize",
+          "target": "log",
+          "kind": "data",
+          "label": "记录批次",
+          "evidence": "source"
+        },
+        {
+          "id": "fetch",
+          "source": "log",
+          "target": "deserialize",
+          "kind": "data",
+          "label": "拉取的记录",
+          "evidence": "source"
+        },
+        {
+          "id": "result",
+          "source": "deserialize",
+          "target": "consumer",
+          "kind": "data",
+          "label": "ConsumerRecord",
+          "evidence": "source"
+        }
+      ],
+      "playback": {
+        "edgeIds": [
+          "values",
+          "bytes",
+          "fetch",
+          "result"
+        ]
+      }
+    }
+  ]
+}

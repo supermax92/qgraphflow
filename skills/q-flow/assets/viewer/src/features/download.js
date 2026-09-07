@@ -1,3 +1,4 @@
+import { translate } from '../i18n.js';
 import { createDiagramSvg } from '../export-svg.js';
 
 function fileStem(title) {
@@ -40,12 +41,13 @@ function downloadPng(svg, name) {
 }
 
 export async function downloadDiagram(graph, theme, format, setStatus) {
+    const t = (message, values) => translate(graph.meta.locale, message, values);
     try {
-      setStatus(`正在生成 ${format.toUpperCase()}…`);
+      setStatus(t('正在生成 {format}…', { format: format.toUpperCase() }));
       const svg = createDiagramSvg(graph, theme);
       const name = `${fileStem(graph.meta.title)}.${format}`;
       if (format === 'svg') downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), name);
       else await downloadPng(svg, name);
-      setStatus(`${format.toUpperCase()} 已下载`);
+      setStatus(t('{format} 已下载', { format: format.toUpperCase() }));
     } catch (error) { setStatus(error.message); }
 }

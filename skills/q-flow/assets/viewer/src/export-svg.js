@@ -68,7 +68,7 @@ export function createDiagramSvg(graph, theme = 'light') {
   const offsetY = margin + header - bounds.y;
   const groups = (graph.groups ?? []).map(group => renderGroup(group, offsetX, offsetY, palette)).join('');
   const edges = graph.edges.map(edge => renderEdge(edge, routes.get(edge.id), type, offsetX, offsetY, palette, nodeById.get(edge.target))).join('');
-  const nodes = graph.nodes.map(node => renderNode(node, type, offsetX, offsetY, palette)).join('');
+  const nodes = graph.nodes.map(node => renderNode(node, type, offsetX, offsetY, palette, graph.meta.locale)).join('');
   const boardX = 24;
   const boardY = header;
   const boardWidth = width - 48;

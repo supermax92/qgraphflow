@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import { SUPPORTED_LOCALES } from '../assets/viewer/src/i18n.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditGraphLayout } from '../assets/viewer/src/edge-routing.js';
@@ -60,6 +61,7 @@ export function validateGraph(graph) {
 
   requireString(graph.meta?.title, 'meta.title', errors);
   requireString(graph.meta?.sourceRef, 'meta.sourceRef', errors);
+  if (graph.meta?.locale !== undefined && !SUPPORTED_LOCALES.includes(graph.meta.locale)) errors.push('meta.locale is unsupported');
   const diagramType = diagramTypeOf(graph);
   if (!DIAGRAM_TYPES.includes(diagramType)) errors.push('meta.diagramType is unsupported');
   const rules = getDiagram(diagramType) ?? getDiagram('architecture');

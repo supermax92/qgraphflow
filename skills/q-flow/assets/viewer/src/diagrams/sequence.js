@@ -1,15 +1,16 @@
+import { translate } from '../i18n.js';
 import { text, fit, TYPOGRAPHY, kindLabels, rectangle, actor, paint } from './drawing.js';
 
 const outline = (node, x, y) => node.kind === 'actor' ? actor(node, x, y) : rectangle(node, x, y, 7, TYPOGRAPHY.sequenceHeader);
 
-function sequenceNode(node, x, y, fill, stroke, palette) {
+function sequenceNode(node, x, y, fill, stroke, palette, locale) {
   const cx = x + node.size.width / 2;
   const actorNode = node.kind === 'actor';
   const header = actorNode ? TYPOGRAPHY.sequenceActorHeader : TYPOGRAPHY.sequenceHeader;
   const head = paint(outline(node, x, y), { fill, stroke, 'stroke-width': 1.5 });
   const label = actorNode
     ? text(cx, y + 98, fit(node.label, node.size.width - 12), 'participant-title', ` text-anchor="middle" style="fill:${palette.ink}"`)
-    : text(cx, y + 25, kindLabels[node.kind] ?? node.kind, 'stereotype', ' text-anchor="middle"') + text(cx, y + 53, fit(node.label, node.size.width - 28), 'participant-title', ' text-anchor="middle"');
+    : text(cx, y + 25, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype', ' text-anchor="middle"') + text(cx, y + 53, fit(node.label, node.size.width - 28), 'participant-title', ' text-anchor="middle"');
   return `<g><g class="${actorNode ? 'actor-figure' : 'participant-head'}">${head}</g>${label}<path class="lifeline" d="M ${cx} ${y + header}V ${y + node.size.height}" stroke="${palette.edge}" stroke-width="1" stroke-dasharray="4 6"/></g>`;
 }
 
