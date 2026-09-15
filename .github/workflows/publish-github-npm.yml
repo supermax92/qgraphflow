@@ -61,7 +61,7 @@ jobs:
       - name: Publish only to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
-        run: npm publish "publish/supermax92-qgraphflow-$VERSION.tgz" --registry=https://npm.pkg.github.com --access public --ignore-scripts
+        run: npm publish "./publish/supermax92-qgraphflow-$VERSION.tgz" --registry=https://npm.pkg.github.com --access public --ignore-scripts
       - name: Verify registry download and installed payload
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}

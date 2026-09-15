@@ -186,6 +186,14 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.deepEqual(readJson(path.join(plugin, 'package.json')), expectedNpm);
   const [scoped] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], plugin));
   assert.deepEqual(scoped.files.map(file => file.path).sort(), [...files].sort(), 'npm must retain every runtime file, including hidden client metadata');
+  const publishCommand = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8').match(/^\s+run: (npm publish .+)$/m)?.[1];
+  assert.ok(publishCommand, 'The workflow must expose its explicit npm publish command');
+  fs.mkdirSync(path.join(temp, 'publish'));
+  fs.copyFileSync(path.join(temp, scoped.filename), path.join(temp, 'publish', scoped.filename));
+  const published = JSON.parse(run('env', [`VERSION=${pkg.version}`, 'bash', '-e', '-c', `${publishCommand} --dry-run --json`], temp));
+  assert.equal(published.name, '@supermax92/qgraphflow');
+  assert.equal(published.version, pkg.version);
+  assert.deepEqual(published.files.map(file => file.path).sort(), [...files].sort());
   const npmInstall = path.join(temp, 'npm-installed');
   run('npm', ['install', '--prefix', npmInstall, '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', path.join(temp, scoped.filename)], temp);
   const npmPlugin = path.join(npmInstall, 'node_modules/@supermax92/qgraphflow');
