@@ -167,4 +167,32 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.deepEqual(dirty.files.map(file => file.path), packed.files.map(file => file.path));
   assert.deepEqual(JSON.parse(run('tar', ['-xOf', path.join(dirtyOutput, dirty.filename), 'package/.agents/plugins/marketplace.json'])), codexMarket);
   assert.deepEqual(JSON.parse(run('unzip', ['-p', path.join(dirtyOutput, dirty.zip), '.agents/plugins/marketplace.json'])), codexMarket);
+
+  const prepare = path.join(root, 'scripts/prepare-github-npm.mjs');
+  const originalRuntime = new Map([...files].map(file => [file, fs.readFileSync(path.join(plugin, file))]));
+  const manifestBefore = fs.readFileSync(path.join(plugin, 'package.json'));
+  for (const version of ['wrong-version', '999.999.999']) {
+    const invalid = spawnSync(process.execPath, [prepare, plugin, version], { encoding: 'utf8' });
+    assert.notEqual(invalid.status, 0);
+    assert.deepEqual(fs.readFileSync(path.join(plugin, 'package.json')), manifestBefore);
+  }
+  const sourceBefore = fs.readFileSync(path.join(root, 'package.json'));
+  const wrongDirectory = spawnSync(process.execPath, [prepare, root, pkg.version], { encoding: 'utf8' });
+  assert.notEqual(wrongDirectory.status, 0);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'package.json')), sourceBefore);
+  run(process.execPath, [prepare, plugin, pkg.version]);
+  const expectedNpm = { ...pkg, name: '@supermax92/qgraphflow', publishConfig: { registry: 'https://npm.pkg.github.com' } };
+  delete expectedNpm.scripts;
+  assert.deepEqual(readJson(path.join(plugin, 'package.json')), expectedNpm);
+  const [scoped] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], plugin));
+  assert.deepEqual(scoped.files.map(file => file.path).sort(), [...files].sort(), 'npm must retain every runtime file, including hidden client metadata');
+  const npmInstall = path.join(temp, 'npm-installed');
+  run('npm', ['install', '--prefix', npmInstall, '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', path.join(temp, scoped.filename)], temp);
+  const npmPlugin = path.join(npmInstall, 'node_modules/@supermax92/qgraphflow');
+  for (const file of files) {
+    assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), fs.readFileSync(path.join(plugin, file)), file);
+    if (file !== 'package.json') assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), originalRuntime.get(file), file);
+  }
+  run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(npmPlugin, 'examples/order-flow.graph.json'), path.join(temp, 'npm-graph')], temp);
+  assert.deepEqual(fs.readdirSync(path.join(temp, 'npm-graph')).sort(), ['graph.json', 'index.html']);
 });

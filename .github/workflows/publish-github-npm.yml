@@ -1,0 +1,74 @@
+name: Publish GitHub npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing software Release version (without v)
+        required: true
+        default: '0.0.2'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-npm-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'supermax92/qgraphflow' && github.actor == 'supermax92' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify Release and prepare scoped runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease --jq '(.isDraft or .isPrerelease) | not' | grep -qx true
+          mkdir release runtime publish
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --dir release \
+            --pattern "qgraphflow-$VERSION.zip" --pattern "qgraphflow-$VERSION.tgz" --pattern SHA256SUMS
+          (cd release && sha256sum --check --strict SHA256SUMS)
+          unzip -q "release/qgraphflow-$VERSION.zip" -d runtime
+          node scripts/prepare-github-npm.mjs runtime "$VERSION"
+          (cd runtime && npm pack --ignore-scripts --pack-destination ../publish)
+      - name: Install and verify the candidate
+        run: |
+          npm install --prefix verified --ignore-scripts --no-audit --no-fund --package-lock=false "./publish/supermax92-qgraphflow-$VERSION.tgz"
+          diff -r runtime verified/node_modules/@supermax92/qgraphflow
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json output/order
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/showcase/kafka.en.graph.json output/nine
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+          scope: '@supermax92'
+      - name: Publish only to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: npm publish "publish/supermax92-qgraphflow-$VERSION.tgz" --registry=https://npm.pkg.github.com --access public --ignore-scripts
+      - name: Verify registry download and installed payload
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir downloaded
+          npm pack "@supermax92/qgraphflow@$VERSION" --registry=https://npm.pkg.github.com --ignore-scripts --pack-destination downloaded
+          cmp "publish/supermax92-qgraphflow-$VERSION.tgz" "downloaded/supermax92-qgraphflow-$VERSION.tgz"
+          npm install --prefix registry-check --registry=https://npm.pkg.github.com --ignore-scripts --no-audit --no-fund --package-lock=false "@supermax92/qgraphflow@$VERSION"
+          diff -r runtime registry-check/node_modules/@supermax92/qgraphflow
+          node registry-check/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs registry-check/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json output/registry
