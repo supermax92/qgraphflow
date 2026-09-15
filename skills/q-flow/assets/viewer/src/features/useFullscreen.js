@@ -19,6 +19,7 @@ export function useFullscreen(setStatus, fitCanvas) {
     try {
       if (exiting) await document.exitFullscreen();
       else await board.requestFullscreen();
+      return true;
     } catch {
       if (board.isConnected) setStatus(exiting ? '无法退出全屏，请按 Esc 重试' : '无法进入全屏，请检查浏览器或页面权限后重试');
     } finally {

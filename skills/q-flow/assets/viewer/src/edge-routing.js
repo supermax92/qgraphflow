@@ -7,15 +7,6 @@ export const ENDPOINT_STUB = 12;
 export const ER_ENDPOINT_STUB = 28;
 export const LANE_GAP = 24;
 export { FLOW_SLANT } from './diagrams/flowchart.js';
-import { FLOW_SLANT } from './diagrams/flowchart.js';
-
-const isSlanted = node => node.kind === 'input' || node.kind === 'output';
-
-function slantedSides(node, y) {
-  const inset = node.size.width * FLOW_SLANT;
-  const left = node.position.x + inset * (1 - (y - node.position.y) / node.size.height);
-  return { left, right: left + node.size.width - inset };
-}
 
 const center = node => ({
   x: node.position.x + node.size.width / 2,
@@ -63,12 +54,10 @@ export function graphBounds(graph, routes = createEdgeRoutes(graph)) {
   return { x, y, width: right - x, height: bottom - y };
 }
 
-function anchor(node, side, offset = 0) {
+function anchor(node, side, offset = 0, type = 'architecture') {
+  const custom = getDiagram(type)?.anchor;
+  if (custom) return custom(node, side, offset);
   const middle = center(node);
-  if (isSlanted(node) && (side === 'left' || side === 'right')) {
-    const y = middle.y + offset;
-    return { x: slantedSides(node, y)[side], y };
-  }
   if (side === 'left') return { x: node.position.x, y: middle.y + offset };
   if (side === 'right') return { x: node.position.x + node.size.width, y: middle.y + offset };
   if (side === 'top') return { x: middle.x + offset, y: node.position.y };
@@ -146,7 +135,7 @@ function sidesFor(source, target) {
   };
 }
 
-function waypointEndpoint(node, point, fallbackSide) {
+function waypointEndpoint(node, point, fallbackSide, type) {
   const { x, y } = node.position;
   const { width, height } = node.size;
   const dx = Math.max(x - point.x, 0, point.x - x - width);
@@ -157,8 +146,7 @@ function waypointEndpoint(node, point, fallbackSide) {
   const middle = center(node);
   const limit = Math.max(0, (horizontal ? height : width) / 2 - ENDPOINT_STUB);
   const offset = Math.max(-limit, Math.min(limit, horizontal ? point.y - middle.y : point.x - middle.x));
-  // ponytail: hinted diamonds use vertices; automatic fanout still uses rectangular side lanes.
-  return { side, point: anchor(node, side, ['decision', 'choice'].includes(node.kind) ? 0 : offset) };
+  return { side, point: anchor(node, side, ['decision', 'choice'].includes(node.kind) ? 0 : offset, type) };
 }
 
 function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints, stub = ENDPOINT_STUB) {
@@ -169,9 +157,9 @@ function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints,
   return compact(points);
 }
 
-function routeBetween(source, target, sides, sourceOffset, targetOffset, stub = ENDPOINT_STUB) {
-  const start = anchor(source, sides.sourceSide, sourceOffset);
-  const end = anchor(target, sides.targetSide, targetOffset);
+function routeBetween(source, target, sides, sourceOffset, targetOffset, stub = ENDPOINT_STUB, type = 'architecture') {
+  const start = anchor(source, sides.sourceSide, sourceOffset, type);
+  const end = anchor(target, sides.targetSide, targetOffset, type);
   const sourceStub = outward(start, sides.sourceSide, stub);
   const targetStub = outward(end, sides.targetSide, stub);
   const channelOffset = sourceOffset || targetOffset;
@@ -260,8 +248,8 @@ export function createEdgeRoutes(graph) {
       const extent = 48 + selfIndex * LANE_GAP;
       const label = visibleEdgeLabel(item.edge, type);
       const labelSize = estimateLabelSize(label);
-      const start = anchor(item.source, 'right', -16 - selfIndex * 12);
-      const end = anchor(item.source, 'right', 16 + selfIndex * 12);
+      const start = anchor(item.source, 'right', -16 - selfIndex * 12, type);
+      const end = anchor(item.source, 'right', 16 + selfIndex * 12, type);
       route = {
         points: item.edge.route?.via?.length
           ? routePointsWithWaypoints(start, end, 'right', 'right', item.edge.route.via, stub)
@@ -272,8 +260,8 @@ export function createEdgeRoutes(graph) {
       };
     } else {
       const waypoints = item.edge.route?.via;
-      const sourceEndpoint = waypoints?.length && waypointEndpoint(item.source, waypoints[0], item.sourceSide);
-      const targetEndpoint = waypoints?.length && waypointEndpoint(item.target, waypoints.at(-1), item.targetSide);
+      const sourceEndpoint = waypoints?.length && waypointEndpoint(item.source, waypoints[0], item.sourceSide, type);
+      const targetEndpoint = waypoints?.length && waypointEndpoint(item.target, waypoints.at(-1), item.targetSide, type);
       const sourceSide = sourceEndpoint ? sourceEndpoint.side : item.sourceSide;
       const targetSide = targetEndpoint ? targetEndpoint.side : item.targetSide;
       const routedWaypoints = waypoints ? [...waypoints] : [];
@@ -285,7 +273,7 @@ export function createEdgeRoutes(graph) {
       }
       const points = item.edge.route?.via?.length
         ? routePointsWithWaypoints(sourceEndpoint.point, targetEndpoint.point, sourceSide, targetSide, routedWaypoints, stub)
-        : routeBetween(item.source, item.target, item, offsets.get(`${item.edge.id}:source`) ?? 0, offsets.get(`${item.edge.id}:target`) ?? 0, stub);
+        : routeBetween(item.source, item.target, item, offsets.get(`${item.edge.id}:source`) ?? 0, offsets.get(`${item.edge.id}:target`) ?? 0, stub, type);
       const label = visibleEdgeLabel(item.edge, type);
       route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target), sourceSide, targetSide };
     }
@@ -313,12 +301,14 @@ function boxDistance(first, second) {
   return Math.hypot(horizontal, vertical);
 }
 
-function pointOnNodeSide(point, node, side) {
-  const { left, right } = isSlanted(node) ? slantedSides(node, point.y) : { left: node.position.x, right: node.position.x + node.size.width };
-  const top = node.position.y;
-  const bottom = top + node.size.height;
-  if (side === 'left' || side === 'right') return Math.abs(point.x - (side === 'left' ? left : right)) < 1e-7 && point.y >= top && point.y <= bottom;
-  return point.y === (side === 'top' ? top : bottom) && point.x >= left && point.x <= right;
+function pointOnNodeSide(point, node, side, type) {
+  const bounds = routingBounds(node, type);
+  if ((side === 'left' || side === 'right') && (point.y < bounds.y || point.y > bounds.y + bounds.height)) return false;
+  if ((side === 'top' || side === 'bottom') && (point.x < bounds.x || point.x > bounds.x + bounds.width)) return false;
+  const middle = center(node);
+  const offset = side === 'left' || side === 'right' ? point.y - middle.y : point.x - middle.x;
+  const expected = anchor(node, side, offset, type);
+  return Math.hypot(point.x - expected.x, point.y - expected.y) < 1e-7;
 }
 
 function segmentCrossesBox(start, end, box) {
@@ -333,19 +323,34 @@ function segmentCrossesBox(start, end, box) {
   return false;
 }
 
+function routingBounds(node, type) {
+  if (type === 'state' && ['initial', 'final'].includes(node.kind)) {
+    const radius = node.kind === 'initial' ? 12 : 13, middle = center(node);
+    return { x: middle.x - radius, y: middle.y - radius, width: radius * 2, height: radius * 2 };
+  }
+  if (type === 'usecase' && node.kind === 'actor') {
+    const top = Math.max(0, (node.size.height - 104) / 2), middle = center(node);
+    return { x: middle.x - 20, y: node.position.y + top + 2, width: 40, height: 74 };
+  }
+  if (type === 'deployment' && node.kind === 'device') return { x: node.position.x + 16, y: node.position.y, width: node.size.width - 32, height: node.size.height };
+  if (['architecture', 'deployment'].includes(type) && node.kind === 'database') return { x: node.position.x + 12, y: node.position.y + 2, width: node.size.width - 24, height: node.size.height - 4 };
+  return occupiedBox(node, type);
+}
+
 function segmentCrossesNode(start, end, node, type) {
-  if (type !== 'flowchart' || !isSlanted(node)) return segmentCrossesBox(start, end, occupiedBox(node, type));
-  const { x, y } = node.position;
-  const { width, height } = node.size;
+  const bounds = routingBounds(node, type);
+  if (type === 'usecase' && node.kind === 'actor') return segmentCrossesBox(start, end, bounds);
+  const middle = center(node);
   if (start.y === end.y) {
-    const { left, right } = slantedSides(node, start.y);
-    return start.y > y && start.y < y + height
-      && Math.max(Math.min(start.x, end.x), left) < Math.min(Math.max(start.x, end.x), right) - 1e-7;
+    if (start.y <= bounds.y || start.y >= bounds.y + bounds.height) return false;
+    const offset = start.y - middle.y;
+    const left = anchor(node, 'left', offset, type).x, right = anchor(node, 'right', offset, type).x;
+    return Math.max(Math.min(start.x, end.x), left) < Math.min(Math.max(start.x, end.x), right) - 1e-7;
   }
   if (start.x === end.x) {
-    const inset = width * FLOW_SLANT;
-    const top = Math.max(y, y + height * (x + inset - start.x) / inset);
-    const bottom = Math.min(y + height, y + height * (x + width - start.x) / inset);
+    if (start.x <= bounds.x || start.x >= bounds.x + bounds.width) return false;
+    const offset = start.x - middle.x;
+    const top = anchor(node, 'top', offset, type).y, bottom = anchor(node, 'bottom', offset, type).y;
     return Math.max(Math.min(start.y, end.y), top) < Math.min(Math.max(start.y, end.y), bottom) - 1e-7;
   }
   return false;
@@ -362,6 +367,14 @@ function groupBorders(group) {
     [{ x: left, y: bottom }, { x: right, y: bottom }],
     [{ x: left, y: top }, { x: left, y: bottom }]
   ];
+}
+
+function groupHeadingBoxes(group) {
+  const height = Math.min(36, group.size.height);
+  const labelWidth = Math.min(group.size.width, estimateLabelSize(group.label).width + 20);
+  const boxes = [{ x: group.position.x, y: group.position.y, width: labelWidth, height }];
+  if (['alt', 'opt', 'loop'].includes(group.kind)) boxes.push({ x: group.position.x + group.size.width - 52, y: group.position.y, width: 52, height });
+  return boxes;
 }
 
 function sharedSegmentLength(firstStart, firstEnd, secondStart, secondEnd) {
@@ -443,7 +456,7 @@ export function auditGraphLayout(graph) {
     const route = routes.get(edge.id);
     const source = graph.nodes.find(node => node.id === edge.source);
     const target = graph.nodes.find(node => node.id === edge.target);
-    if (!getDiagram(type).sequence && (!pointOnNodeSide(route.points[0], source, route.sourceSide) || !pointOnNodeSide(route.points.at(-1), target, route.targetSide))) {
+    if (!getDiagram(type).sequence && (!pointOnNodeSide(route.points[0], source, route.sourceSide, type) || !pointOnNodeSide(route.points.at(-1), target, route.targetSide, type))) {
       errors.push(`layout: edge ${edge.id} exceeds an endpoint side; enlarge the node or add route hints`);
     }
     if (getDiagram(type).cardinalities) {
@@ -476,6 +489,7 @@ export function auditGraphLayout(graph) {
     }
     for (const node of graph.nodes) {
       for (let index = 1; index < route.points.length; index += 1) {
+        if (node.id === edge.source && index === 1 || node.id === edge.target && index === route.points.length - 1) continue;
         if (segmentCrossesNode(route.points[index - 1], route.points[index], node, type)) {
           const kind = edge.source === edge.target && node.id === edge.source ? 'self-loop' : 'edge';
           errors.push(`layout: ${kind} ${edge.id} crosses node ${node.id}`);
@@ -485,13 +499,12 @@ export function auditGraphLayout(graph) {
     }
     if (!route.label) continue;
     for (const group of graph.groups ?? []) {
-      const heading = { ...group.position, width: group.size.width, height: Math.min(36, group.size.height) };
-      if (boxesIntersect(route.labelBox, heading)) errors.push(`layout: edge ${edge.id} label overlaps group ${group.id} heading`);
+      if (groupHeadingBoxes(group).some(heading => boxesIntersect(route.labelBox, heading))) errors.push(`layout: edge ${edge.id} label overlaps group ${group.id} heading`);
       const borders = groupBorders(group);
       if (borders.some(([start, end]) => segmentCrossesBox(start, end, route.labelBox))) errors.push(`layout: edge ${edge.id} label overlaps group ${group.id} boundary`);
     }
     for (const node of graph.nodes) {
-      const nodeBox = occupiedBox(node, type);
+      const nodeBox = routingBounds(node, type);
       if (boxesIntersect(route.labelBox, nodeBox)) {
         errors.push(`layout: edge ${edge.id} label overlaps node ${node.id}`);
       } else if (boxDistance(route.labelBox, nodeBox) < 12) {
@@ -502,12 +515,11 @@ export function auditGraphLayout(graph) {
   for (const edge of graph.edges) {
     const route = routes.get(edge.id);
     for (const group of graph.groups ?? []) {
-      const heading = { ...group.position, width: group.size.width, height: Math.min(36, group.size.height) };
       const borders = groupBorders(group);
       for (let index = 1; index < route.points.length; index += 1) {
         const start = route.points[index - 1];
         const end = route.points[index];
-        if (segmentCrossesBox(start, end, heading)) errors.push(`layout: edge ${edge.id} crosses group ${group.id} heading`);
+        if (groupHeadingBoxes(group).some(heading => segmentCrossesBox(start, end, heading))) errors.push(`layout: edge ${edge.id} crosses group ${group.id} heading`);
         if (borders.some(([borderStart, borderEnd]) => sharedSegmentLength(start, end, borderStart, borderEnd) > ENDPOINT_STUB)) errors.push(`layout: edge ${edge.id} overlaps group ${group.id} boundary`);
       }
     }

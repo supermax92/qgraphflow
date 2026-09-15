@@ -1,0 +1,3299 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Торговля · От покупки до доставки",
+        "diagramType": "architecture",
+        "locale": "ru",
+        "subtitle": "Как покупка проходит через цены, риски, запасы, оплату и доставку",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Концептуальная модель, не код рабочей системы; связи иллюстрируют девять типов диаграмм."
+      },
+      "groups": [
+        {
+          "id": "transaction-runtime",
+          "label": "Синхронная транзакция",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1810,
+            "height": 600
+          }
+        },
+        {
+          "id": "fulfillment-runtime",
+          "label": "Асинхронная доставка",
+          "kind": "ownership",
+          "position": {
+            "x": 0,
+            "y": 785
+          },
+          "size": {
+            "width": 1820,
+            "height": 310
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "channels",
+          "label": "Веб / Приложение / Мини-приложение",
+          "subtitle": "Корзина и адрес доставки",
+          "module": "Каналы",
+          "kind": "external",
+          "position": {
+            "x": 40,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 225
+          },
+          "facts": [
+            "Единая точка оформления покупки",
+            "Без прямых вызовов доменных сервисов"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "API-шлюз торговли",
+          "subtitle": "Аутентификация, идемпотентность, вход",
+          "module": "Каналы",
+          "kind": "security",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 197
+          },
+          "facts": [
+            "Проверить пользователя",
+            "Передать checkoutToken"
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Координатор покупки",
+          "subtitle": "Координация одной покупки",
+          "module": "Оформление",
+          "kind": "business",
+          "position": {
+            "x": 1000,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          },
+          "facts": [
+            "Объединить решения по цене, риску и запасам",
+            "Минимальная компенсация при сбое"
+          ],
+          "tags": [
+            "core",
+            "Координация транзакции"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Цены и скидки",
+          "subtitle": "Пересчитать цены, купоны и доставку",
+          "module": "Цены",
+          "kind": "service",
+          "position": {
+            "x": 1480,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 171
+          },
+          "facts": [
+            "Цена сервера является окончательной",
+            "Вернуть снимок цены"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Риски сделки",
+          "subtitle": "Оценка риска аккаунта, устройства и заказа",
+          "module": "Риски",
+          "kind": "failure",
+          "position": {
+            "x": 1480,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 195
+          },
+          "facts": [
+            "Результат: допуск, отказ или ручная проверка"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Резерв запасов",
+          "subtitle": "Резерв по складу и SKU",
+          "module": "Запасы",
+          "kind": "data",
+          "position": {
+            "x": 1000,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          },
+          "facts": [
+            "У резерва есть срок действия",
+            "Освободить при сбое оплаты"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Платёжный сервис",
+          "subtitle": "Создать платёж и подтвердить результат",
+          "module": "Оплата",
+          "kind": "service",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 197
+          },
+          "facts": [
+            "Платёжные колбэки должны быть идемпотентны",
+            "Авторизация не означает завершение доставки"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Сервис заказов",
+          "subtitle": "Сохранить заказ, позиции и снимок сделки",
+          "module": "Заказы",
+          "kind": "business",
+          "position": {
+            "x": 40,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 197
+          },
+          "facts": [
+            "Состояние заказа меняют доменные правила",
+            "Заказ и Outbox в одной транзакции"
+          ]
+        },
+        {
+          "id": "event-bus",
+          "label": "Шина торговых событий",
+          "subtitle": "Публиковать события домена, например OrderPaid",
+          "module": "Заказы",
+          "kind": "framework",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 197
+          },
+          "facts": [
+            "Потребители удаляют дубли по ID события"
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Комплектация и доставка",
+          "subtitle": "Распределить, собрать, упаковать, отправить",
+          "module": "Доставка",
+          "kind": "service",
+          "position": {
+            "x": 760,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 221
+          },
+          "facts": [
+            "Асинхронно обработать оплаченные заказы",
+            "Записать статусы посылки и доставки"
+          ]
+        },
+        {
+          "id": "after-sales",
+          "label": "Послепродажный сервис",
+          "subtitle": "Отмена, возврат денег и товаров",
+          "module": "Доставка",
+          "kind": "service",
+          "position": {
+            "x": 1520,
+            "y": 850
+          },
+          "size": {
+            "width": 290,
+            "height": 173
+          },
+          "facts": [
+            "Возврат денег или товара зависит от этапа доставки"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "submit",
+          "source": "channels",
+          "target": "gateway",
+          "label": "Оформить\nпокупку",
+          "kind": "request",
+          "evidence": "inference"
+        },
+        {
+          "id": "dispatch",
+          "source": "gateway",
+          "target": "checkout",
+          "label": "Идемпотентная\nкоманда\nпокупки",
+          "kind": "call",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 945,
+              "y": 323.5
+            }
+          }
+        },
+        {
+          "id": "quote",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Пересчитать\nсумму",
+          "kind": "call",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1345,
+              "y": 311.5
+            }
+          }
+        },
+        {
+          "id": "screen",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Снимок\nцены",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "reserve",
+          "source": "risk",
+          "target": "inventory",
+          "label": "Резерв\nпосле\nдопуска",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "authorize",
+          "source": "inventory",
+          "target": "payment",
+          "label": "Токен\nзапаса +\nсумма",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "create-order",
+          "source": "payment",
+          "target": "order",
+          "label": "Подтвердить\nоплату",
+          "kind": "success",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 450,
+              "y": 333.5
+            }
+          }
+        },
+        {
+          "id": "publish",
+          "source": "order",
+          "target": "event-bus",
+          "label": "OrderPaid",
+          "kind": "framework",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 190,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 880
+              }
+            ],
+            "labelAt": {
+              "x": 450,
+              "y": 660
+            }
+          }
+        },
+        {
+          "id": "fulfill",
+          "source": "event-bus",
+          "target": "fulfillment",
+          "label": "Создать\nзадание\nдоставки",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "service",
+          "source": "fulfillment",
+          "target": "after-sales",
+          "label": "Посылка и\nстатус\nполучения",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Решения при заказе",
+        "diagramType": "flowchart",
+        "locale": "ru",
+        "subtitle": "Сбой запасов, риска или оплаты не должен оставлять неполный заказ",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Успешный путь и три выхода при сбое; повторы и детали проверки опущены."
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Оформить\nпокупку",
+          "subtitle": "Передать\ncheckoutToken",
+          "module": "Оформление",
+          "kind": "start",
+          "position": {
+            "x": 72.5,
+            "y": 70
+          },
+          "size": {
+            "width": 350,
+            "height": 170
+          },
+          "facts": [
+            "Покупатель подтверждает корзину, адрес и купоны.",
+            "Токен покупки обеспечивает сквозную идемпотентность."
+          ]
+        },
+        {
+          "id": "validate",
+          "label": "Проверить\nкорзину",
+          "subtitle": "Товары, адрес,\nключ\nидемпотентности",
+          "module": "Оформление",
+          "kind": "process",
+          "position": {
+            "x": 675,
+            "y": 70
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Отклонить неверные SKU и адреса.",
+            "Проверить, создан ли уже заказ по checkoutToken."
+          ]
+        },
+        {
+          "id": "stock",
+          "label": "Хватает\nзапасов?",
+          "subtitle": "Сводка по\nскладу и\nSKU",
+          "module": "Запасы",
+          "kind": "decision",
+          "position": {
+            "x": 1255,
+            "y": 40
+          },
+          "size": {
+            "width": 340,
+            "height": 290
+          },
+          "facts": [
+            "Проверить доступное количество и лимит резерва.",
+            "При нехватке сразу вернуть список дефицита."
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Зафиксировать\nцену",
+          "subtitle": "Цены, скидки,\nдоставка",
+          "module": "Цены",
+          "kind": "process",
+          "position": {
+            "x": 1877.5,
+            "y": 70
+          },
+          "size": {
+            "width": 310,
+            "height": 130
+          },
+          "facts": [
+            "Пересчитать, не доверять сумме клиента.",
+            "Сохранить снимок с заказом для аудита."
+          ]
+        },
+        {
+          "id": "no-stock",
+          "label": "Вернуть\nдефицит",
+          "subtitle": "Без\nсоздания\nзаказа",
+          "module": "Запасы",
+          "kind": "end",
+          "position": {
+            "x": 1275,
+            "y": 430
+          },
+          "size": {
+            "width": 300,
+            "height": 190
+          },
+          "facts": [
+            "Вернуть недоступные SKU клиенту.",
+            "Не переходить к цене, оплате и заказу."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Риск\nдопустим?",
+          "subtitle": "Аккаунт,\nустройство,\nсумма",
+          "module": "Риски",
+          "kind": "decision",
+          "position": {
+            "x": 1837.5,
+            "y": 400
+          },
+          "size": {
+            "width": 390,
+            "height": 290
+          },
+          "facts": [
+            "Низкий риск: переход к резерву.",
+            "Подозрительные сделки проверяют вручную."
+          ]
+        },
+        {
+          "id": "review",
+          "label": "Ручная\nпроверка",
+          "subtitle": "Проверка риска в\nограниченный\nсрок",
+          "module": "Риски",
+          "kind": "process",
+          "position": {
+            "x": 2547.5,
+            "y": 430
+          },
+          "size": {
+            "width": 290,
+            "height": 150
+          },
+          "facts": [
+            "После одобрения вернуться в основной поток.",
+            "Сохранить код причины отказа."
+          ]
+        },
+        {
+          "id": "risk-reject",
+          "label": "Отклонить\nсделку",
+          "subtitle": "Сохранить\nпричину",
+          "module": "Риски",
+          "kind": "end",
+          "position": {
+            "x": 2512.5,
+            "y": 820
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          },
+          "facts": [
+            "Не начинать оплату.",
+            "Записать причину отказа для аудита."
+          ]
+        },
+        {
+          "id": "reserve",
+          "label": "Зарезервировать\nзапас",
+          "subtitle": "Создать reservationToken",
+          "module": "Запасы",
+          "kind": "subprocess",
+          "position": {
+            "x": 1887.5,
+            "y": 800
+          },
+          "size": {
+            "width": 350,
+            "height": 140
+          },
+          "facts": [
+            "TTL предотвращает бессрочную блокировку запасов.",
+            "При сбое оплаты резерв нужно освободить."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Запросить\nавторизацию",
+          "subtitle": "Использовать\nсумму снимка",
+          "module": "Оплата",
+          "kind": "process",
+          "position": {
+            "x": 1167.5,
+            "y": 805
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Только серверный снимок цены.",
+            "В авторизации передаётся ключ идемпотентности."
+          ]
+        },
+        {
+          "id": "pay-result",
+          "label": "Авторизовано?",
+          "subtitle": "Дедупликация\nколбэков и опроса",
+          "module": "Оплата",
+          "kind": "decision",
+          "position": {
+            "x": 330,
+            "y": 775
+          },
+          "size": {
+            "width": 540,
+            "height": 290
+          },
+          "facts": [
+            "Записать заказ только после успеха.",
+            "При сбое компенсировать резерв."
+          ]
+        },
+        {
+          "id": "release",
+          "label": "Освободить\nрезерв",
+          "subtitle": "Закрыть\nreservationToken",
+          "module": "Запасы",
+          "kind": "subprocess",
+          "position": {
+            "x": 1287.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Компенсация должна быть идемпотентной.",
+            "После освобождения вернуть сбой оплаты."
+          ]
+        },
+        {
+          "id": "pay-fail",
+          "label": "Вернуть\nсбой\nоплаты",
+          "subtitle": "Заказ ещё\nне создан",
+          "module": "Оплата",
+          "kind": "end",
+          "position": {
+            "x": 1877.5,
+            "y": 1225
+          },
+          "size": {
+            "width": 310,
+            "height": 190
+          },
+          "facts": [
+            "Сохранить код причины платёжного канала.",
+            "Разрешить покупателю повторить оформление."
+          ]
+        },
+        {
+          "id": "persist",
+          "label": "Записать\nзаказ + Outbox",
+          "subtitle": "Одна транзакция\nБД",
+          "module": "Заказы",
+          "kind": "subprocess",
+          "position": {
+            "x": 447.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Атомарно сохранить заказ и событие.",
+            "Асинхронная доставка продолжается из Outbox."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "done",
+          "label": "Вернуть\nID заказа",
+          "subtitle": "Асинхронно\nначать\nдоставку",
+          "module": "Заказы",
+          "kind": "end",
+          "position": {
+            "x": 417.5,
+            "y": 1490
+          },
+          "size": {
+            "width": 350,
+            "height": 210
+          },
+          "facts": [
+            "Здесь заканчивается синхронный путь.",
+            "Сбой доставки не откатывает оплаченный заказ."
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "source": "start",
+          "target": "validate",
+          "label": "Вход",
+          "kind": "flow",
+          "module": "Оформление",
+          "facts": [
+            "Оформить покупку → Проверить корзину.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "check",
+          "source": "validate",
+          "target": "stock",
+          "label": "Проверено",
+          "kind": "flow",
+          "module": "Оформление",
+          "facts": [
+            "Проверить корзину → Хватает запасов?.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1102.5,
+              "y": 335
+            }
+          }
+        },
+        {
+          "id": "stock-yes",
+          "source": "stock",
+          "target": "pricing",
+          "label": "Да",
+          "kind": "yes",
+          "module": "Запасы",
+          "facts": [
+            "Хватает запасов? → Зафиксировать цену.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-no",
+          "source": "stock",
+          "target": "no-stock",
+          "label": "Нет",
+          "kind": "failure",
+          "module": "Запасы",
+          "facts": [
+            "Хватает запасов? → Вернуть дефицит.",
+            "Путь сбоя или компенсации."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "price-ready",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Снимок\nцены",
+          "kind": "flow",
+          "module": "Цены",
+          "facts": [
+            "Зафиксировать цену → Риск допустим?.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-yes",
+          "source": "risk",
+          "target": "reserve",
+          "label": "Допуск",
+          "kind": "yes",
+          "module": "Риски",
+          "facts": [
+            "Риск допустим? → Зарезервировать запас.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-review",
+          "source": "risk",
+          "target": "review",
+          "label": "Обзор",
+          "kind": "flow",
+          "module": "Риски",
+          "facts": [
+            "Риск допустим? → Ручная проверка.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 2385,
+              "y": 365
+            }
+          }
+        },
+        {
+          "id": "review-approved",
+          "source": "review",
+          "target": "reserve",
+          "label": "Одобрить",
+          "kind": "yes",
+          "module": "Риски",
+          "facts": [
+            "Ручная проверка → Зарезервировать запас.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2550,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 870
+              }
+            ],
+            "labelAt": {
+              "x": 2475,
+              "y": 715
+            }
+          }
+        },
+        {
+          "id": "review-rejected",
+          "source": "review",
+          "target": "risk-reject",
+          "label": "Отказ",
+          "kind": "failure",
+          "module": "Риски",
+          "facts": [
+            "Ручная проверка → Отклонить сделку.",
+            "Путь сбоя или компенсации."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "request-pay",
+          "source": "reserve",
+          "target": "payment",
+          "label": "reservationToken",
+          "kind": "flow",
+          "module": "Запасы",
+          "facts": [
+            "Зарезервировать запас → Запросить авторизацию.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "payment-result",
+          "source": "payment",
+          "target": "pay-result",
+          "label": "Результат\nавторизации",
+          "kind": "flow",
+          "module": "Оплата",
+          "facts": [
+            "Запросить авторизацию → Авторизовано?.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 975,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "pay-yes",
+          "source": "pay-result",
+          "target": "persist",
+          "label": "Успех",
+          "kind": "success",
+          "module": "Оплата",
+          "facts": [
+            "Авторизовано? → Записать заказ + Outbox.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "pay-no",
+          "source": "pay-result",
+          "target": "release",
+          "label": "Сбой",
+          "kind": "failure",
+          "module": "Оплата",
+          "facts": [
+            "Авторизовано? → Освободить резерв.",
+            "Путь сбоя или компенсации."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "release-complete",
+          "source": "release",
+          "target": "pay-fail",
+          "label": "Компенсировано",
+          "kind": "failure",
+          "module": "Запасы",
+          "facts": [
+            "Освободить резерв → Вернуть сбой оплаты.",
+            "Путь сбоя или компенсации."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1717.5,
+              "y": 1175
+            }
+          }
+        },
+        {
+          "id": "complete",
+          "source": "persist",
+          "target": "done",
+          "label": "Зафиксировано",
+          "kind": "flow",
+          "module": "Заказы",
+          "facts": [
+            "Записать заказ + Outbox → Вернуть ID заказа.",
+            "Связь основного потока."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Успешная покупка",
+        "diagramType": "sequence",
+        "locale": "ru",
+        "subtitle": "Синхронное подтверждение, асинхронная доставка",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Успешный путь; компенсация оплаты, тайм-ауты и перестановка колбэков относятся к блок-схеме и состояниям."
+      },
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Покупатель",
+          "module": "Каналы",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 220,
+            "height": 960
+          },
+          "facts": [
+            "Отправить корзину и получить ID заказа."
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Оформление",
+          "subtitle": "Координация транзакции",
+          "module": "Оформление",
+          "kind": "service",
+          "position": {
+            "x": 390,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Координировать цены, запасы, риски, оплату и заказы."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Цены",
+          "subtitle": "Цены и скидки",
+          "module": "Цены",
+          "kind": "participant",
+          "position": {
+            "x": 780,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Создать неизменяемый снимок цены."
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Запасы",
+          "subtitle": "Резерв запасов",
+          "module": "Запасы",
+          "kind": "participant",
+          "position": {
+            "x": 1170,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Зарезервировать SKU и вернуть токен."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Риски",
+          "subtitle": "Риски сделки",
+          "module": "Риски",
+          "kind": "participant",
+          "position": {
+            "x": 1560,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Вернуть PASS, REVIEW или REJECT."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Оплата",
+          "subtitle": "Авторизация оплаты",
+          "module": "Оплата",
+          "kind": "external",
+          "position": {
+            "x": 1950,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Авторизовать сумму снимка."
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Заказы",
+          "subtitle": "Заказ и Outbox",
+          "module": "Заказы",
+          "kind": "database",
+          "position": {
+            "x": 2340,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Атомарно сохранить заказ и Outbox."
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Доставка",
+          "subtitle": "Комплектация и доставка",
+          "module": "Доставка",
+          "kind": "participant",
+          "position": {
+            "x": 2730,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Асинхронно обработать OrderPaid."
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "inventory-result",
+          "label": "Результат запасов",
+          "kind": "alt",
+          "position": {
+            "x": 350,
+            "y": 375
+          },
+          "size": {
+            "width": 1100,
+            "height": 117
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "s1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Оформить покупку",
+          "kind": "sync",
+          "module": "Каналы",
+          "order": 1,
+          "facts": [
+            "Отправка: Отправить команду покупки",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s2",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Пересчитать цены и скидки",
+          "kind": "sync",
+          "module": "Оформление",
+          "order": 2,
+          "facts": [
+            "Отправка: Пересчитать цены и скидки",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s3",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "PriceSnapshot",
+          "kind": "return",
+          "module": "Цены",
+          "order": 3,
+          "facts": [
+            "Возврат: PriceSnapshot",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s4",
+          "source": "checkout",
+          "target": "inventory",
+          "label": "Резерв количества SKU",
+          "kind": "sync",
+          "module": "Оформление",
+          "order": 4,
+          "facts": [
+            "Отправка: Резерв количества SKU",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s5",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "reservationToken",
+          "kind": "return",
+          "module": "Запасы",
+          "order": 5,
+          "facts": [
+            "Возврат: reservationToken",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s6",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "OUT_OF_STOCK",
+          "kind": "return",
+          "module": "Запасы",
+          "order": 6,
+          "facts": [
+            "Возврат: OUT_OF_STOCK",
+            "Сообщение обозначает ветку нехватки запасов."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s7",
+          "source": "checkout",
+          "target": "risk",
+          "label": "Проверить аккаунт, устройство, сумму",
+          "kind": "sync",
+          "module": "Оформление",
+          "order": 7,
+          "facts": [
+            "Отправка: Проверить аккаунт, устройство, сумму",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s8",
+          "source": "risk",
+          "target": "checkout",
+          "label": "PASS",
+          "kind": "return",
+          "module": "Риски",
+          "order": 8,
+          "facts": [
+            "Возврат: PASS",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s9",
+          "source": "checkout",
+          "target": "payment",
+          "label": "Авторизовать сумму",
+          "kind": "sync",
+          "module": "Оформление",
+          "order": 9,
+          "facts": [
+            "Отправка: Авторизовать сумму",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s10",
+          "source": "payment",
+          "target": "checkout",
+          "label": "paymentConfirmed",
+          "kind": "return",
+          "module": "Оплата",
+          "order": 10,
+          "facts": [
+            "Возврат: paymentConfirmed",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s11",
+          "source": "checkout",
+          "target": "order",
+          "label": "Сохранить заказ + OrderPaid",
+          "kind": "sync",
+          "module": "Оформление",
+          "order": 11,
+          "facts": [
+            "Отправка: Сохранить заказ + OrderPaid",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s12",
+          "source": "order",
+          "target": "checkout",
+          "label": "orderId",
+          "kind": "return",
+          "module": "Заказы",
+          "order": 12,
+          "facts": [
+            "Возврат: orderId",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s13",
+          "source": "order",
+          "target": "fulfillment",
+          "label": "Асинхронно передать OrderPaid",
+          "kind": "async",
+          "module": "Заказы",
+          "order": 13,
+          "facts": [
+            "Отправка: Асинхронно передать OrderPaid",
+            "Асинхронное сообщение не блокирует покупку."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s14",
+          "source": "checkout",
+          "target": "buyer",
+          "label": "Вернуть ID заказа",
+          "kind": "return",
+          "module": "Оформление",
+          "order": 14,
+          "facts": [
+            "Возврат: Вернуть ID заказа",
+            "Читать по номерам."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Модель данных сделки",
+        "diagramType": "er",
+        "locale": "ru",
+        "subtitle": "Связи корзин, заказов, платежей, резервов и посылок",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Реляционная концептуальная модель ER; поля упрощены, это не исполняемый DDL."
+      },
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "customer",
+          "module": "Каналы",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 360,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "member_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(16)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart",
+          "label": "shopping_cart",
+          "module": "Оформление",
+          "kind": "entity",
+          "position": {
+            "x": 560,
+            "y": 70
+          },
+          "size": {
+            "width": 390,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "version",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart-item",
+          "label": "cart_item",
+          "module": "Оформление",
+          "kind": "entity",
+          "position": {
+            "x": 1120,
+            "y": 70
+          },
+          "size": {
+            "width": 420,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "cart_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "order",
+          "label": "sales_order",
+          "module": "Заказы",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "payable_amount",
+              "type": "decimal(18,2)",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order-item",
+          "label": "sales_order_item",
+          "module": "Заказы",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 500
+          },
+          "size": {
+            "width": 450,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal(18,2)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "payment_order",
+          "module": "Оплата",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "payment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "channel_txn_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "reservation",
+          "label": "inventory_reservation",
+          "module": "Запасы",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 980
+          },
+          "size": {
+            "width": 480,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "reservation_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "warehouse_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "expires_at",
+              "type": "timestamp",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "shipment",
+          "label": "shipment",
+          "module": "Доставка",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 980
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "shipment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "tracking_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "customer-cart",
+          "source": "customer",
+          "target": "cart",
+          "label": "Владеет",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..1",
+          "evidence": "inference"
+        },
+        {
+          "id": "cart-items",
+          "source": "cart",
+          "target": "cart-item",
+          "label": "Содержит",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "customer-orders",
+          "source": "customer",
+          "target": "order",
+          "label": "Оформляет\nзаказ",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-items",
+          "source": "order",
+          "target": "order-item",
+          "label": "Содержит",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "1..*",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 540,
+              "y": 465
+            }
+          }
+        },
+        {
+          "id": "order-payments",
+          "source": "order",
+          "target": "payment",
+          "label": "Попытка\nоплаты",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 400
+              },
+              {
+                "x": 1445,
+                "y": 400
+              }
+            ],
+            "labelAt": {
+              "x": 800,
+              "y": 375
+            }
+          }
+        },
+        {
+          "id": "item-reservations",
+          "source": "order-item",
+          "target": "reservation",
+          "label": "Резервирует",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-shipments",
+          "source": "payment",
+          "target": "shipment",
+          "label": "Создаётся\nпосле\nоплаты",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Развёртывание по регионам",
+        "diagramType": "deployment",
+        "locale": "ru",
+        "subtitle": "Где работают транзакции и асинхронная доставка",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Концептуальное размещение; число реплик, облако и промежуточное ПО не заданы."
+      },
+      "groups": [
+        {
+          "id": "edge",
+          "label": "Публичный периметр",
+          "kind": "network",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1510,
+            "height": 250
+          }
+        },
+        {
+          "id": "region",
+          "label": "Основной торговый регион · Kubernetes",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 340
+          },
+          "size": {
+            "width": 1510,
+            "height": 300
+          }
+        },
+        {
+          "id": "managed",
+          "label": "Данные и внешние сервисы",
+          "kind": "host",
+          "position": {
+            "x": 10,
+            "y": 780
+          },
+          "size": {
+            "width": 1830,
+            "height": 370
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "device",
+          "label": "Устройство покупателя",
+          "subtitle": "Веб / Приложение / Мини-приложение",
+          "module": "Каналы",
+          "kind": "device",
+          "position": {
+            "x": 40,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          }
+        },
+        {
+          "id": "cdn",
+          "label": "CDN + WAF",
+          "subtitle": "Статика и защита периметра",
+          "module": "Каналы",
+          "kind": "node",
+          "position": {
+            "x": 610,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "subtitle": "Публичный торговый вход",
+          "module": "Каналы",
+          "kind": "container",
+          "position": {
+            "x": 1180,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "commerce",
+          "label": "Торговые Pods",
+          "subtitle": "Checkout / Order / Pricing",
+          "module": "Оформление",
+          "kind": "service",
+          "position": {
+            "x": 40,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "control",
+          "label": "Pods запасов и рисков",
+          "subtitle": "Inventory / Risk",
+          "module": "Запасы",
+          "kind": "service",
+          "position": {
+            "x": 580,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Pods доставки и сервиса",
+          "subtitle": "Fulfillment / AfterSales",
+          "module": "Доставка",
+          "kind": "service",
+          "position": {
+            "x": 1120,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "database",
+          "label": "Торговая БД",
+          "subtitle": "Заказы, платежи, Outbox",
+          "module": "Заказы",
+          "kind": "database",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "event-bus",
+          "label": "Шина событий",
+          "subtitle": "Доменные события и темы повторов",
+          "module": "Заказы",
+          "kind": "container",
+          "position": {
+            "x": 500,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Внешний платёжный сервис",
+          "subtitle": "Авторизация, колбэки, возвраты",
+          "module": "Оплата",
+          "kind": "external",
+          "position": {
+            "x": 960,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 199
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Складская / логистическая сеть",
+          "subtitle": "WMS и интерфейсы перевозчиков",
+          "module": "Доставка",
+          "kind": "external",
+          "position": {
+            "x": 1420,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 199
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "device",
+          "target": "cdn",
+          "label": "HTTPS",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-2",
+          "source": "cdn",
+          "target": "gateway",
+          "label": "Отфильтрованный\nзапрос",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1045,
+              "y": 310
+            }
+          }
+        },
+        {
+          "id": "edge-3",
+          "source": "gateway",
+          "target": "commerce",
+          "label": "Внутренняя\nмаршрутизация",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1900,
+                "y": 150
+              },
+              {
+                "x": 1900,
+                "y": 680
+              },
+              {
+                "x": 350,
+                "y": 680
+              }
+            ],
+            "labelAt": {
+              "x": 1030,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "edge-4",
+          "source": "commerce",
+          "target": "control",
+          "label": "Синхронный\nвызов\nдомена",
+          "kind": "depends",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 690,
+              "y": 695
+            }
+          }
+        },
+        {
+          "id": "edge-5",
+          "source": "control",
+          "target": "fulfillment",
+          "label": "Условия\nдоставки",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-6",
+          "source": "commerce",
+          "target": "database",
+          "label": "Транзакционная\nзапись",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 220,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 820
+              },
+              {
+                "x": 205,
+                "y": 820
+              }
+            ],
+            "labelAt": {
+              "x": 300,
+              "y": 714
+            }
+          }
+        },
+        {
+          "id": "edge-7",
+          "source": "database",
+          "target": "event-bus",
+          "label": "Outbox",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-9",
+          "source": "commerce",
+          "target": "payment",
+          "label": "API оплаты",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 0,
+                "y": 495
+              },
+              {
+                "x": 0,
+                "y": 700
+              },
+              {
+                "x": 1125,
+                "y": 700
+              }
+            ],
+            "labelAt": {
+              "x": 520,
+              "y": 675
+            }
+          }
+        },
+        {
+          "id": "edge-10",
+          "source": "event-bus",
+          "target": "wms",
+          "label": "Складские\nзадания",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 665,
+                "y": 1100
+              },
+              {
+                "x": 1585,
+                "y": 1100
+              }
+            ],
+            "labelAt": {
+              "x": 1120,
+              "y": 1100
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Контракты покупки",
+        "diagramType": "class",
+        "locale": "ru",
+        "subtitle": "Сервис приложения зависит от объектов домена и портов, а не инфраструктуры",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Концептуальная модель классов; сигнатуры сокращены до существенного для покупки."
+      },
+      "nodes": [
+        {
+          "id": "command",
+          "label": "CheckoutCommand",
+          "module": "Оформление",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 390,
+            "height": 260
+          },
+          "attributes": [
+            "customerId: CustomerId",
+            "items: List<CheckoutItem>",
+            "checkoutToken: String"
+          ],
+          "methods": [
+            "validate(): void"
+          ]
+        },
+        {
+          "id": "service",
+          "label": "CheckoutApplicationService",
+          "module": "Оформление",
+          "kind": "class",
+          "position": {
+            "x": 590,
+            "y": 40
+          },
+          "size": {
+            "width": 440,
+            "height": 230
+          },
+          "attributes": [],
+          "methods": [
+            "checkout(command): OrderId",
+            "compensate(context): void"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Order",
+          "module": "Заказы",
+          "kind": "class",
+          "position": {
+            "x": 1200,
+            "y": 40
+          },
+          "size": {
+            "width": 400,
+            "height": 290
+          },
+          "attributes": [
+            "id: OrderId",
+            "lines: List<OrderLine>",
+            "total: Money",
+            "status: OrderStatus"
+          ],
+          "methods": [
+            "confirmPayment(snapshot): void",
+            "cancel(reason): void"
+          ]
+        },
+        {
+          "id": "pricing-port",
+          "label": "PricingPort",
+          "module": "Цены",
+          "kind": "interface",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 390,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "quote(command): PriceSnapshot"
+          ]
+        },
+        {
+          "id": "inventory-port",
+          "label": "InventoryPort",
+          "module": "Запасы",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 500
+          },
+          "size": {
+            "width": 440,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "reserve(items): Reservation",
+            "release(token): void"
+          ]
+        },
+        {
+          "id": "payment-port",
+          "label": "PaymentPort",
+          "module": "Оплата",
+          "kind": "interface",
+          "position": {
+            "x": 1200,
+            "y": 500
+          },
+          "size": {
+            "width": 400,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "authorize(amount): Payment",
+            "refund(paymentId): void"
+          ]
+        },
+        {
+          "id": "repository",
+          "label": "OrderRepository",
+          "module": "Заказы",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 950
+          },
+          "size": {
+            "width": 440,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "save(order): void",
+            "find(orderId): Order"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "source": "command",
+          "target": "service",
+          "label": "Вход",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "creates",
+          "source": "service",
+          "target": "order",
+          "label": "Создать",
+          "kind": "association",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1115,
+              "y": 345
+            }
+          }
+        },
+        {
+          "id": "pricing",
+          "source": "service",
+          "target": "pricing-port",
+          "label": "Зависит\nот",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "inventory",
+          "source": "service",
+          "target": "inventory-port",
+          "label": "Зависит\nот",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "payment",
+          "source": "service",
+          "target": "payment-port",
+          "label": "Зависит\nот",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "aggregate",
+          "source": "order",
+          "target": "repository",
+          "label": "Сохранить",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1700,
+                "y": 185
+              },
+              {
+                "x": 1700,
+                "y": 1060
+              },
+              {
+                "x": 1100,
+                "y": 1060
+              }
+            ],
+            "labelAt": {
+              "x": 1500,
+              "y": 1035
+            }
+          }
+        },
+        {
+          "id": "save",
+          "source": "service",
+          "target": "repository",
+          "label": "Отправить",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 500,
+                "y": 155
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 810,
+                "y": 850
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 825
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Жизненный цикл заказа",
+        "diagramType": "state",
+        "locale": "ru",
+        "subtitle": "Как оплата, доставка, отмена и возврат ограничивают состояния",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Концептуальный автомат; частичные отправки, разделение заказов и обратная логистика опущены."
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "Начало",
+          "module": "Заказы",
+          "kind": "initial",
+          "position": {
+            "x": 30,
+            "y": 100
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        },
+        {
+          "id": "pending",
+          "label": "Ожидает оплаты",
+          "subtitle": "Запас зарезервирован",
+          "module": "Оплата",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "paid",
+          "label": "Оплачен",
+          "subtitle": "Ожидает принятия складом",
+          "module": "Заказы",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "allocated",
+          "label": "Распределён",
+          "subtitle": "Склад доставки определён",
+          "module": "Доставка",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "packed",
+          "label": "Упакован",
+          "subtitle": "Ожидает перевозчика",
+          "module": "Доставка",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "shipped",
+          "label": "В пути",
+          "subtitle": "Накладная создана",
+          "module": "Доставка",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "completed",
+          "label": "Завершён",
+          "subtitle": "Получен или автоподтверждён",
+          "module": "Доставка",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "cancelled",
+          "label": "Отменён",
+          "subtitle": "Закрыт до оплаты",
+          "module": "Заказы",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "refunding",
+          "label": "Возврат денег",
+          "subtitle": "Обратная обработка после оплаты",
+          "module": "Оплата",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "closed",
+          "label": "Закрыт",
+          "module": "Заказы",
+          "kind": "final",
+          "position": {
+            "x": 1270,
+            "y": 740
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "source": "initial",
+          "target": "pending",
+          "label": "Создать\nзаказ",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pay",
+          "source": "pending",
+          "target": "paid",
+          "label": "Подтвердить\nоплату",
+          "guard": "Проверено",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 645,
+              "y": 280
+            }
+          }
+        },
+        {
+          "id": "allocate",
+          "source": "paid",
+          "target": "allocated",
+          "label": "Склад\nпринял",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pack",
+          "source": "allocated",
+          "target": "packed",
+          "label": "Сборка\nзавершена",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "ship",
+          "source": "packed",
+          "target": "shipped",
+          "label": "Забор\nперевозчиком",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "receive",
+          "source": "shipped",
+          "target": "completed",
+          "label": "Подтвердить\nполучение",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 653,
+              "y": 459
+            }
+          }
+        },
+        {
+          "id": "cancel",
+          "source": "pending",
+          "target": "cancelled",
+          "label": "Отмена до\nоплаты",
+          "action": "Освободить запас",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 650
+              },
+              {
+                "x": 390,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 130,
+              "y": 615
+            }
+          }
+        },
+        {
+          "id": "refund-paid",
+          "source": "paid",
+          "target": "refunding",
+          "label": "Запрос\nотмены",
+          "guard": "Не отправлен",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 900,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 650
+              },
+              {
+                "x": 900,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 1720,
+              "y": 595
+            }
+          }
+        },
+        {
+          "id": "refund-complete",
+          "source": "completed",
+          "target": "refunding",
+          "label": "Возврат\nпосле\nпродажи",
+          "guard": "Проверка пройдена",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel-close",
+          "source": "cancelled",
+          "target": "closed",
+          "label": "Ресурсы\nосвобождены",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 390,
+                "y": 930
+              },
+              {
+                "x": 1315,
+                "y": 930
+              }
+            ],
+            "labelAt": {
+              "x": 600,
+              "y": 940
+            }
+          }
+        },
+        {
+          "id": "refund-close",
+          "source": "refunding",
+          "target": "closed",
+          "label": "Возврат\nполучен",
+          "kind": "transition",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Возможности участников",
+        "diagramType": "usecase",
+        "locale": "ru",
+        "subtitle": "Роли покупателей, продавцов, склада, поддержки и платёжных сервисов",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Вид возможностей, не порядок вызовов; управление платформой и сверка опущены."
+      },
+      "groups": [
+        {
+          "id": "platform",
+          "label": "Платформа торговли и доставки",
+          "kind": "system",
+          "position": {
+            "x": 500,
+            "y": 20
+          },
+          "size": {
+            "width": 1050,
+            "height": 970
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Покупатель",
+          "module": "Каналы",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 80
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "merchant",
+          "label": "Оператор продавца",
+          "module": "Цены",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 310
+          },
+          "size": {
+            "width": 356,
+            "height": 150
+          }
+        },
+        {
+          "id": "warehouse",
+          "label": "Работник склада",
+          "module": "Доставка",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 540
+          },
+          "size": {
+            "width": 316,
+            "height": 150
+          }
+        },
+        {
+          "id": "support",
+          "label": "Поддержка",
+          "module": "Доставка",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 770
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Оформить корзину",
+          "subtitle": "Цены, скидки, запасы",
+          "module": "Оформление",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "Оплатить заказ",
+          "subtitle": "Выбрать канал и подтвердить",
+          "module": "Оплата",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "catalog",
+          "label": "Управлять товарами и акциями",
+          "subtitle": "Публикация, цены, скидки",
+          "module": "Цены",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "orders",
+          "label": "Обработать проблемные заказы",
+          "subtitle": "Проверить, закрыть, компенсировать",
+          "module": "Заказы",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "pick",
+          "label": "Собрать и упаковать",
+          "subtitle": "Сканировать SKU и коды коробок",
+          "module": "Доставка",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "ship",
+          "label": "Отправить посылки",
+          "subtitle": "Создать накладную и передать",
+          "module": "Доставка",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "refund",
+          "label": "Обработать возврат денег",
+          "subtitle": "Проверить оплату и этап доставки",
+          "module": "Оплата",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "return",
+          "label": "Обработать возврат товара",
+          "subtitle": "Обратная логистика и приём на склад",
+          "module": "Доставка",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "buyer-checkout",
+          "source": "buyer",
+          "target": "checkout",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "merchant-catalog",
+          "source": "merchant",
+          "target": "catalog",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "warehouse-pick",
+          "source": "warehouse",
+          "target": "pick",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "support-refund",
+          "source": "support",
+          "target": "refund",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "checkout-pay",
+          "source": "checkout",
+          "target": "pay",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "catalog-orders",
+          "source": "catalog",
+          "target": "orders",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "pick-ship",
+          "source": "pick",
+          "target": "ship",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "return-refund",
+          "source": "return",
+          "target": "refund",
+          "label": "extend",
+          "kind": "extend",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Торговля · Поток данных сделки",
+        "diagramType": "dataflow",
+        "locale": "ru",
+        "subtitle": "Как данные корзины становятся заказом для доставки и отслеживания",
+        "sourceRef": "Концептуальный пример README · 2026-09-14",
+        "scope": "Данные и преобразования, не порядок синхронных вызовов и не реализация очередей."
+      },
+      "groups": [
+        {
+          "id": "transaction",
+          "label": "Граница данных сделки",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 20
+          },
+          "size": {
+            "width": 1330,
+            "height": 570
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Граница данных доставки",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 660
+          },
+          "size": {
+            "width": 1330,
+            "height": 260
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Покупатель и корзина",
+          "subtitle": "SKU, количество, адрес, купоны",
+          "module": "Каналы",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Расчёт покупки",
+          "subtitle": "Нормализовать вход и пересчитать сумму",
+          "module": "Оформление",
+          "kind": "process",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Хранилище ценовых правил",
+          "subtitle": "Цены, акции, купоны, доставка",
+          "module": "Цены",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "risk",
+          "label": "Профиль риска",
+          "subtitle": "Аккаунт, устройство, история сделок",
+          "module": "Риски",
+          "kind": "dataStore",
+          "position": {
+            "x": 1500,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "decision",
+          "label": "Решение по сделке",
+          "subtitle": "Снимок цены + решение по риску",
+          "module": "Риски",
+          "kind": "process",
+          "position": {
+            "x": 1500,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "inventory",
+          "label": "Реестр запасов",
+          "subtitle": "Доступное количество и резервы",
+          "module": "Запасы",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "order",
+          "label": "Реестр заказов",
+          "subtitle": "Заказы, платежи и Outbox",
+          "module": "Заказы",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Платёжный сервис",
+          "subtitle": "Результаты оплаты и возврата",
+          "module": "Оплата",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "event",
+          "label": "Поток событий заказов",
+          "subtitle": "OrderPaid / OrderCancelled",
+          "module": "Заказы",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Складская обработка",
+          "subtitle": "Распределение, волны, посылки, накладные",
+          "module": "Доставка",
+          "kind": "process",
+          "position": {
+            "x": 1010,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "carrier",
+          "label": "Перевозчик",
+          "subtitle": "Отслеживание и квитанции доставки",
+          "module": "Доставка",
+          "kind": "external",
+          "position": {
+            "x": 1500,
+            "y": 715
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Снимок\nкорзины",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 410,
+              "y": 280
+            }
+          }
+        },
+        {
+          "id": "d2",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "Правила\nцен и\nскидок",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d3",
+          "source": "risk",
+          "target": "decision",
+          "label": "Признаки\nриска",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d4",
+          "source": "checkout",
+          "target": "decision",
+          "label": "Снимок\nцены",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 620
+              },
+              {
+                "x": 1640,
+                "y": 620
+              }
+            ],
+            "labelAt": {
+              "x": 1250,
+              "y": 275
+            }
+          }
+        },
+        {
+          "id": "d5",
+          "source": "decision",
+          "target": "inventory",
+          "label": "Запрос\nрезерва",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d6",
+          "source": "inventory",
+          "target": "order",
+          "label": "Токен\nрезерва",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d7",
+          "source": "payment",
+          "target": "order",
+          "label": "Подтвердить\nоплату",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 380,
+              "y": 585
+            }
+          }
+        },
+        {
+          "id": "d8",
+          "source": "order",
+          "target": "event",
+          "label": "События\nдомена",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 790
+              }
+            ],
+            "labelAt": {
+              "x": 670,
+              "y": 620
+            }
+          }
+        },
+        {
+          "id": "d9",
+          "source": "event",
+          "target": "wms",
+          "label": "Оплаченные\nзаказы",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 915,
+              "y": 630
+            }
+          }
+        },
+        {
+          "id": "d10",
+          "source": "wms",
+          "target": "carrier",
+          "label": "Посылки и\nнакладные",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    }
+  ]
+}

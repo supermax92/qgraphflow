@@ -28,9 +28,21 @@ export function text(x, y, value, className, extra = '') {
 }
 
 
-export function centeredTitle(cx, cy, value, width) {
-  const layout = layoutText(value, width, TYPOGRAPHY.title, TYPOGRAPHY.title * 1.45);
-  return layout.lines.map((line, index) => text(cx, cy - (layout.lines.length - 1) * layout.lineHeight / 2 + TYPOGRAPHY.title * .35 + index * layout.lineHeight, line, 'shape-title', ' text-anchor="middle"')).join('');
+export function centeredTitle(cx, cy, value, width, height = Infinity, subtitle = '') {
+  if (width <= 0 || height <= 0) return '';
+  const title = layoutText(value, width, TYPOGRAPHY.title, 29);
+  const body = layoutText(subtitle, width, TYPOGRAPHY.body, 23.2);
+  const titleCount = Math.min(title.lines.length, Math.max(1, Math.floor(height / title.lineHeight)));
+  const bodyCount = Math.min(body.lines.length, Math.max(0, Math.floor((height - titleCount * title.lineHeight - 5) / body.lineHeight)));
+  const usedHeight = titleCount * title.lineHeight + (bodyCount ? 5 + bodyCount * body.lineHeight : 0);
+  const top = cy - usedHeight / 2;
+  const lines = (layout, count, y, className) => layout.lines.slice(0, count).map((line, index) =>
+    text(cx, y + index * layout.lineHeight, fit(line + (index === count - 1 && count < layout.lines.length ? '…' : ''), width), className, ' text-anchor="middle"')).join('');
+  const markup = lines(title, titleCount, top + 22, 'shape-title')
+    + lines(body, bodyCount, top + titleCount * title.lineHeight + 5 + 18, 'body');
+  // Legacy tiny symbols may be shorter than one title line; only their text is scaled to the available height.
+  const scale = Math.min(1, height / usedHeight);
+  return scale < 1 ? `<g transform="translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})">${markup}</g>` : markup;
 }
 
 
@@ -51,6 +63,77 @@ export const actor = (node, x, y) => {
   const cx = x + node.size.width / 2;
   return [['circle', { cx, cy: y + 13, r: 11 }], ['path', { d: `M${cx} ${y + 24}v29M${cx - 20} ${y + 35}h40M${cx} ${y + 53}l-17 23M${cx} ${y + 53}l17 23`, fill: 'none' }]];
 };
+
+const nodeCenter = node => ({ x: node.position.x + node.size.width / 2, y: node.position.y + node.size.height / 2 });
+export function rectAnchor(node, side, offset = 0, inset = 0) {
+  const middle = nodeCenter(node);
+  const values = typeof inset === 'number' ? { left: inset, right: inset, top: inset, bottom: inset } : { left: 0, right: 0, top: 0, bottom: 0, ...inset };
+  if (side === 'left' || side === 'right') return {
+    x: node.position.x + (side === 'left' ? values.left : node.size.width - values.right),
+    y: middle.y + offset
+  };
+  return {
+    x: middle.x + offset,
+    y: node.position.y + (side === 'top' ? values.top : node.size.height - values.bottom)
+  };
+}
+
+export function roundedRectAnchor(node, side, offset = 0, radius = 10) {
+  const { x, y } = node.position, { width, height } = node.size;
+  const middle = nodeCenter(node), r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  if (side === 'left' || side === 'right') {
+    const py = middle.y + offset;
+    if (py < y || py > y + height) return rectAnchor(node, side, offset);
+    const circleY = py < y + r ? y + r : py > y + height - r ? y + height - r : py;
+    const curve = Math.sqrt(Math.max(0, r * r - (py - circleY) ** 2));
+    return { x: side === 'left' ? x + r - curve : x + width - r + curve, y: py };
+  }
+  const px = middle.x + offset;
+  if (px < x || px > x + width) return rectAnchor(node, side, offset);
+  const circleX = px < x + r ? x + r : px > x + width - r ? x + width - r : px;
+  const curve = Math.sqrt(Math.max(0, r * r - (px - circleX) ** 2));
+  return { x: px, y: side === 'top' ? y + r - curve : y + height - r + curve };
+}
+
+export function ellipseAnchor(node, side, offset = 0, insetX = 0, insetY = 0) {
+  const middle = nodeCenter(node), rx = Math.max(1, node.size.width / 2 - insetX), ry = Math.max(1, node.size.height / 2 - insetY);
+  if (side === 'left' || side === 'right') {
+    const py = middle.y + offset;
+    if (Math.abs(offset) > ry) return rectAnchor(node, side, offset);
+    const dx = rx * Math.sqrt(Math.max(0, 1 - ((py - middle.y) / ry) ** 2));
+    return { x: middle.x + (side === 'left' ? -dx : dx), y: py };
+  }
+  const px = middle.x + offset;
+  if (Math.abs(offset) > rx) return rectAnchor(node, side, offset);
+  const dy = ry * Math.sqrt(Math.max(0, 1 - ((px - middle.x) / rx) ** 2));
+  return { x: px, y: middle.y + (side === 'top' ? -dy : dy) };
+}
+
+export function polygonAnchor(node, side, offset = 0, normalizedPoints) {
+  const points = normalizedPoints.map(([px, py]) => ({ x: node.position.x + px * node.size.width, y: node.position.y + py * node.size.height }));
+  const middle = nodeCenter(node);
+  const horizontal = side === 'left' || side === 'right';
+  const fixed = horizontal ? middle.y + offset : middle.x + offset;
+  const hits = [];
+  for (let index = 0; index < points.length; index += 1) {
+    const a = points[index], b = points[(index + 1) % points.length];
+    const first = horizontal ? a.y : a.x, second = horizontal ? b.y : b.x;
+    if (fixed < Math.min(first, second) || fixed > Math.max(first, second) || first === second) continue;
+    const ratio = (fixed - first) / (second - first);
+    hits.push((horizontal ? a.x : a.y) + ratio * ((horizontal ? b.x : b.y) - (horizontal ? a.x : a.y)));
+  }
+  if (!hits.length) return rectAnchor(node, side, offset);
+  const value = side === 'left' || side === 'top' ? Math.min(...hits) : Math.max(...hits);
+  return horizontal ? { x: value, y: fixed } : { x: fixed, y: value };
+}
+
+export function actorAnchor(node, side, offset = 0, top = 0) {
+  const cx = node.position.x + node.size.width / 2, y = node.position.y + top;
+  if (side === 'left') return { x: cx - 20, y: y + 35 };
+  if (side === 'right') return { x: cx + 20, y: y + 35 };
+  if (side === 'top') return { x: cx, y: y + 2 };
+  return { x: cx + Math.sign(offset || 1) * Math.min(17, Math.abs(offset)), y: y + 76 };
+}
 
 export function svgStyles(palette, scope = '') {
   return `${scope}.heading{font:650 24px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink};letter-spacing:-.5px}

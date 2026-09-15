@@ -9,3 +9,7 @@
 
 # README recordings are published as Release assets, never in Git history.
 /docs/images/showcase/
+.agents/
+.claude/
+docs/superpowers/
+openspec/

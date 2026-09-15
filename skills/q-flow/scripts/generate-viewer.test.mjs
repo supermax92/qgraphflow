@@ -7,11 +7,14 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
-import { edgeColor, isCore, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
-import { playbackPlan } from '../assets/viewer/src/playback.js';
+import { edgeColor, isCore, moduleColorMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
+import { RADIX } from '../assets/viewer/src/radix-colors.js';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { nudgeGraphLayout } from '../assets/viewer/src/layout-nudge.js';
-import { DIAGRAM_TYPES, validateGraph, validateGraphInput } from './validate-graph.mjs';
+import { constrainNodeChanges, currentGraphFromFlow, graphInputWithEdits } from '../assets/viewer/src/session-graph.js';
+import { saveGraphJson } from '../assets/viewer/src/features/download.js';
+import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence } from './validate-graph.mjs';
+import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const box = (id, label, kind, x, y, width = 180, height = 100, extra = {}) => ({
@@ -22,6 +25,100 @@ const graph = (diagramType, nodes, edges, groups = []) => ({
   meta: { title: `${diagramType} self test`, diagramType, sourceRef: 'test@local' }, groups, nodes, edges
 });
 const entityForTest = (id, x) => box(id, id, 'entity', x, 0, 240, 150, { fields: [{ name: 'id', type: 'bigint', key: 'PK' }] });
+
+test('saved JSON retains edits across diagrams, preserves source data and resets only the current graph', () => {
+  const input = { title: 'Collection metadata', diagrams: [fixtures.er, fixtures.architecture] };
+  const before = JSON.stringify(input);
+  const edited = structuredClone(fixtures.er);
+  edited.nodes[0].label = 'Edited entity'; edited.nodes[0].position.x += 10;
+  const current = structuredClone(fixtures.architecture);
+  current.nodes[0].label = 'Edited service'; current.edges[0].label = 'Edited relation';
+  const drafts = new Map([['er', edited], ['architecture', fixtures.architecture]]);
+  const saved = graphInputWithEdits(input, drafts, current);
+  assert.deepEqual(saved, { ...input, diagrams: [edited, current] });
+  const reset = graphInputWithEdits(input, drafts, fixtures.architecture);
+  assert.deepEqual(reset.diagrams, [edited, fixtures.architecture]);
+  assert.deepEqual(graphInputWithEdits(fixtures.architecture, drafts, current), current);
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(saved.diagrams[0].nodes[0].fields, fixtures.er.nodes[0].fields);
+});
+
+test('native JSON saving commits all graph data and preserves edits on cancellation or write failure', async () => {
+  const originalWindow = globalThis.window, input = { diagrams: [fixtures.architecture, fixtures.er] };
+  try {
+    for (const failure of [null, 'cancel', 'write', 'close']) {
+      let written, closed = false, aborted = false;
+      const statuses = [];
+      globalThis.window = { showSaveFilePicker: async options => {
+        assert.equal(options.suggestedName, 'graph.json');
+        if (failure === 'cancel') throw new DOMException('Cancelled', 'AbortError');
+        return { createWritable: async () => ({
+          write: async value => { if (failure === 'write') throw new Error('Disk full'); written = value; },
+          close: async () => { if (failure === 'close') throw new Error('Commit failed'); closed = true; },
+          abort: async () => { aborted = true; }
+        }) };
+      } };
+      await saveGraphJson(input, 'zh-CN', value => statuses.push(value));
+      assert.equal(closed, failure === null);
+      assert.equal(aborted, failure === 'write' || failure === 'close');
+      if (!failure) { assert.deepEqual(JSON.parse(written), input); assert.equal(statuses.at(-1), 'Graph JSON 已保存'); }
+      else assert.match(statuses.at(-1), /修改仍保留/);
+    }
+  } finally { if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow; }
+});
+
+test('both CLI paths verify real source anchors and reject invalid evidence before replacing outputs', t => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-evidence-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const repo = path.join(temp, 'repo with spaces'), inputPath = path.join(temp, 'graph.json'), output = path.join(temp, 'out');
+  fs.mkdirSync(repo); fs.mkdirSync(path.join(repo, '目录'));
+  fs.writeFileSync(path.join(repo, '目录/source.java'), '\ufeff第一行\r\n第二行\r\n');
+  fs.writeFileSync(path.join(repo, 'empty.txt'), '');
+  fs.writeFileSync(path.join(repo, 'binary.bin'), Buffer.from([0, 1, 2]));
+  fs.writeFileSync(path.join(temp, 'outside.txt'), 'outside');
+  fs.symlinkSync(path.join(temp, 'outside.txt'), path.join(repo, 'escape.txt'));
+  fs.symlinkSync(path.join(repo, '目录/source.java'), path.join(repo, 'inside.txt'));
+  const input = { diagrams: structuredClone([fixtures.architecture, fixtures.er]) };
+  for (const item of input.diagrams) for (const node of item.nodes) node.source = { kind: 'source', file: '目录/source.java', lineStart: 1, lineEnd: 2 };
+  const run = (script, args = []) => spawnSync(process.execPath, [path.join(scriptDir, script), inputPath, ...args], { cwd: temp, encoding: 'utf8' });
+  fs.writeFileSync(inputPath, JSON.stringify(input));
+  assert.equal(JSON.parse(run('validate-graph.mjs').stdout).sourceEvidence.status, 'skipped');
+  const checked = run('validate-graph.mjs', ['--repo-root', repo]);
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.deepEqual(JSON.parse(checked.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), checked: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), files: 1 });
+  const generated = run('generate-viewer.mjs', [output, '--repo-root', repo]);
+  assert.equal(generated.status, 0, generated.stderr);
+  assert.equal(JSON.parse(generated.stdout).sourceEvidence.status, 'passed');
+  const html = fs.readFileSync(path.join(output, 'index.html'));
+  const model = fs.readFileSync(path.join(output, 'graph.json'));
+  for (const [file, end, expected] of [
+    ['missing.java', 2, /file does not exist/], ['目录/source.java', 3, /exceeds file length \(2 lines\)/],
+    ['empty.txt', 1, /0 lines/], ['目录', 1, /regular file/], ['binary.bin', 1, /text file/],
+    ['../outside.txt', 1, /repository-relative/], [path.join(temp, 'outside.txt'), 1, /repository-relative/],
+    ['escape.txt', 1, /outside --repo-root/], ['C:\\outside.txt', 1, /repository-relative/]
+  ]) {
+    input.diagrams[1].nodes[0].source = { file, lineStart: 1, lineEnd: end };
+    fs.writeFileSync(inputPath, JSON.stringify(input));
+    for (const [script, args] of [['validate-graph.mjs', []], ['generate-viewer.mjs', [output, '--force']]]) {
+      const result = run(script, [...args, '--repo-root', repo]);
+      assert.equal(result.status, 1, `${script}: ${file}`); assert.match(result.stderr, expected);
+      assert.match(result.stderr, /diagrams\[1\]\.nodes\[0\]\.source/);
+    }
+    assert.deepEqual(fs.readFileSync(path.join(output, 'index.html')), html);
+    assert.deepEqual(fs.readFileSync(path.join(output, 'graph.json')), model);
+  }
+  input.diagrams[1].nodes[0].source = { file: 'inside.txt', lineStart: 2 };
+  assert.equal(verifySourceEvidence(input, repo).files, 1);
+  for (const content of ['one', 'one\n', 'one\rtwo', 'one\ntwo\n']) {
+    fs.writeFileSync(path.join(repo, '目录/source.java'), content);
+    const lastLine = content.includes('two') ? 2 : 1;
+    for (const item of input.diagrams) for (const node of item.nodes) node.source = { file: '目录/source.java', lineStart: lastLine };
+    assert.equal(verifySourceEvidence(input, repo).status, 'passed');
+    input.diagrams[1].nodes[0].source.lineStart++;
+    assert.throws(() => verifySourceEvidence(input, repo), /exceeds file length/);
+  }
+  assert.throws(() => verifySourceEvidence(input, ''), /must name a directory/);
+});
 
 test('ranks node names before details, keeps ties stable, then limits results', async () => {
   const { searchNodes } = await import('../assets/viewer/src/search.js');
@@ -190,6 +287,38 @@ export const fixtures = {
   ], [edge('request', 'client', 'verify', 'data', { label: 'payment request' }), edge('entry', 'verify', 'ledger', 'data', { label: 'ledger entry' })])
 };
 
+test('derives session text and positions without mutating the authored graph, then resets exactly', () => {
+  const authored = structuredClone(fixtures.flowchart), before = structuredClone(authored);
+  const initialNodes = authored.nodes.map(node => ({ id: node.id, type: 'diagram', position: node.position, data: { ...node } }));
+  const initialEdges = authored.edges.map(edge => ({ id: edge.id, data: { ...edge } }));
+  const nodes = initialNodes.map(node => node.id === 'decision' ? {
+    ...node, position: { x: 310, y: 44 }, data: { ...node.data, label: 'Risk approved?', subtitle: 'session only' }
+  } : node);
+  const edges = initialEdges.map(item => item.id === 'to-end' ? { ...item, data: { ...item.data, label: 'approved' } } : item);
+  const current = currentGraphFromFlow(authored, nodes, edges);
+  assert.equal(current.nodes.find(node => node.id === 'decision').label, 'Risk approved?');
+  assert.equal(current.nodes.find(node => node.id === 'decision').position.x, 310);
+  assert.equal(current.edges.find(item => item.id === 'to-end').label, 'approved');
+  assert.deepEqual(authored, before, 'author input stays immutable');
+  assert.deepEqual(currentGraphFromFlow(authored, initialNodes, initialEdges), authored);
+});
+
+test('keeps sequence dragging horizontal and recomputes the shared route after movement', () => {
+  const sequenceNodes = fixtures.sequence.nodes.map(node => ({ id: node.id, type: 'diagram', position: node.position, data: { ...node } }));
+  const constrained = constrainNodeChanges([{ id: 'browser', type: 'position', position: { x: 120, y: 240 }, dragging: true }], sequenceNodes, 'sequence');
+  assert.deepEqual(constrained[0].position, { x: 120, y: 0 });
+  assert.deepEqual(constrainNodeChanges([{ id: 'decision', type: 'position', position: { x: 300, y: 80 } }], [], 'flowchart')[0].position, { x: 300, y: 80 });
+
+  const moved = structuredClone(fixtures.flowchart);
+  moved.edges.find(item => item.id === 'to-decision').label = 'moved route';
+  const before = createEdgeRoutes(moved).get('to-decision');
+  const beforeExport = exportedEdgePath(createDiagramSvg(moved), 'moved route');
+  moved.nodes.find(node => node.id === 'decision').position.x += 80;
+  const after = createEdgeRoutes(moved).get('to-decision');
+  assert.notDeepEqual(after.points, before.points);
+  assert.notEqual(exportedEdgePath(createDiagramSvg(moved), 'moved route'), beforeExport, 'export uses the moved route too');
+});
+
 test('validates and renders every supported diagram type', () => {
   assert.deepEqual(Object.keys(fixtures), DIAGRAM_TYPES);
   for (const [type, fixture] of Object.entries(fixtures)) {
@@ -224,12 +353,57 @@ test('limits focused D3 nudging to the selected node and its one-hop neighbors',
   const local = graph('architecture', [
     box('selected', 'Selected', 'service', 200, 100),
     box('neighbor', 'Neighbor', 'service', 340, 100),
-    box('unrelated', 'Unrelated', 'service', 700, 100)
+    box('unrelated', 'Unrelated', 'service', 700.25, 100.75)
   ], [edge('selected-neighbor', 'selected', 'neighbor', 'call')]);
 
   const result = nudgeGraphLayout(local, 'selected');
   assert.ok(result.movedNodeIds.some(id => id === 'selected' || id === 'neighbor'));
-  assert.deepEqual(result.graph.nodes.find(node => node.id === 'unrelated').position, { x: 700, y: 100 });
+  assert.equal(result.graph.nodes.find(node => node.id === 'unrelated'), local.nodes[2]);
+  assert.ok(!result.movedNodeIds.includes('unrelated'));
+});
+
+test('nudging preserves tight and nested group containment, including fractional bounds', () => {
+  for (const width of [110, 126.2, 250]) {
+    const selected = box('selected', 'Selected', 'service', 150.25, 200.75, 100, 80);
+    const inner = box('inner', 'Inner', 'runtime', 145.2, 145.4, width, width + 40);
+    const outer = box('outer', 'Outer', 'runtime', 50, 50, 500, 500);
+    const local = graph('architecture', [selected, box('outside', 'Outside', 'service', 260, 200, 100, 80)], [], [outer, inner]);
+    const result = nudgeGraphLayout(local, selected.id);
+    const moved = result.graph.nodes[0];
+    assert.ok(moved.position.x >= inner.position.x && moved.position.y >= inner.position.y);
+    assert.ok(moved.position.x + moved.size.width <= inner.position.x + inner.size.width);
+    assert.ok(moved.position.y + moved.size.height <= inner.position.y + inner.size.height);
+    assert.ok(Math.abs(moved.position.x - selected.position.x) <= 156 && Math.abs(moved.position.y - selected.position.y) <= 156);
+    if (width === 110) assert.equal(moved, selected, 'An infeasible inset keeps the original node');
+    assert.equal(result.graph.nodes[1], local.nodes[1]);
+  }
+});
+
+test('rejects malformed containers and shared render fields before layout or generation', t => {
+  for (const [field, value] of [
+    ['meta', null], ['meta.scope', {}], ['meta.subtitle', []],
+    ['nodes', {}], ['edges', {}], ['groups', {}],
+    ['nodes', [null, null]], ['edges', [null, null]], ['groups', [null, null]],
+    ['nodes.0.subtitle', {}], ['nodes.0.source', []],
+    ['nodes.0.source', { file: 'a.js', lineStart: 1, symbol: {} }],
+    ['nodes.0.source', { file: 'a.js', lineStart: { toString: null }, lineEnd: 2 }],
+    ['nodes.0.fields', {}], ['nodes.0.fields', [null]], ['nodes.0.fields', [{ name: 'id', type: {} }]],
+    ['nodes.0.attributes', 'id'], ['nodes.0.methods', [{}]], ['edges.0.label', {}],
+    ['edges.0.source', { toString: null }], ['edges.0.target', { toString: null }]
+  ]) {
+    const invalid = structuredClone(fixtures.architecture), parts = field.split('.');
+    const owner = parts.slice(0, -1).reduce((object, key) => object[key], invalid);
+    owner[parts.at(-1)] = value;
+    assert.ok(validateGraph(invalid).length > 0, field);
+  }
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-invalid-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const input = path.join(root, 'input.json'), output = path.join(root, 'out');
+  fs.writeFileSync(input, JSON.stringify({ ...fixtures.architecture, nodes: {} }));
+  const result = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, output], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Invalid graph:[\s\S]*nodes must be a non-empty array/);
+  assert.equal(fs.existsSync(output), false);
 });
 
 test('keeps legacy architecture graphs valid', () => {
@@ -238,7 +412,20 @@ test('keeps legacy architecture graphs valid', () => {
   assert.deepEqual(validateGraph(legacy), []);
 });
 
-test('validates graph collections and explicit playback edge ids', () => {
+test('accepts semantic module ids, rejects blank modules, and keeps them optional', () => {
+  const graph = structuredClone(fixtures.architecture);
+  graph.nodes[0].module = 'Checkout';
+  graph.edges[0].module = 'Checkout';
+  assert.deepEqual(validateGraph(graph), []);
+  for (const [item, label] of [[graph.nodes[0], 'nodes[0].module'], [graph.edges[0], 'edges[0].module']]) {
+    item.module = '   ';
+    assert.ok(validateGraph(graph).includes(`${label} must be a non-empty string`));
+    delete item.module;
+  }
+  assert.deepEqual(validateGraph(graph), []);
+});
+
+test('validates graph collections and tolerates unused legacy playback metadata', () => {
   const architecture = structuredClone(fixtures.architecture);
   architecture.playback = { edgeIds: ['a-b'] };
   const collection = { diagrams: [architecture, structuredClone(fixtures.flowchart)] };
@@ -248,7 +435,7 @@ test('validates graph collections and explicit playback edge ids', () => {
   assert.match(validateGraphInput(duplicateType).join('\n'), /diagramType duplicates architecture/);
 
   architecture.playback.edgeIds = ['missing'];
-  assert.match(validateGraphInput({ diagrams: [architecture] }).join('\n'), /playback\.edgeIds\[0\] does not name an edge: missing/);
+  assert.deepEqual(validateGraphInput({ diagrams: [architecture] }), []);
   assert.match(validateGraphInput({ diagrams: [] }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
   assert.match(validateGraphInput({ diagrams: Array(10).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
 });
@@ -297,7 +484,8 @@ test('exports the React Flow UI board in light and dark themes', () => {
   const light = createDiagramSvg(fixtures.architecture);
   assert.doesNotMatch(light, /product-grid/);
   assert.ok(light.includes(`fill="${PALETTES.light.paper}"`));
-  assert.match(light, /fill="#ffffff"/);
+  assert.ok(light.includes(`fill="${PALETTES.light.surface}"`));
+  assert.match(light, /fill="#fcfcfd"/); assert.doesNotMatch(light, /fill="#ffffff"/);
   assert.ok(light.includes(`stroke="${PALETTES.light.rule}"`));
   assert.match(light, /rx="16"/);
   assert.doesNotMatch(light, /linearGradient/);
@@ -313,26 +501,6 @@ test('exports the React Flow UI board in light and dark themes', () => {
   assert.match(createDiagramSvg(semantic), new RegExp(`stroke="${PALETTES.light.accent}"[^>]+marker-end="url\\(#arrow-ok\\)"`));
 });
 
-test('keeps authored and sequence playback distinct from fallback reading without rewriting input', () => {
-  const model = graph('dataflow', [box('a', 'A', 'process', 0, 0), box('b', 'B', 'process', 400, 0), box('isolated', 'Isolated', 'process', 800, 0)], [edge('ab', 'a', 'b', 'data'), edge('loop', 'b', 'b', 'data')]);
-  const original = structuredClone(model);
-  assert.deepEqual(playbackPlan(model).steps, model.nodes.map(node => ({ nodeId: node.id })));
-  assert.equal(playbackPlan(model).mode, 'reading');
-  assert.match(playbackPlan(model).description, /未提供流程演示顺序.*不代表执行时序/);
-  assert.deepEqual(model, original);
-  model.playback = { edgeIds: ['loop', 'ab', 'loop'] };
-  assert.deepEqual(playbackPlan(model).steps, [{ edgeId: 'loop', nodeId: 'b' }, { edgeId: 'ab', nodeId: 'b' }, { edgeId: 'loop', nodeId: 'b' }]);
-  assert.equal(playbackPlan(model).mode, 'authored');
-  delete model.playback;
-  model.meta.diagramType = 'sequence'; model.edges[0].order = 2; model.edges[1].order = 1;
-  assert.deepEqual(playbackPlan(model).steps.map(step => step.edgeId), ['loop', 'ab']);
-  assert.deepEqual(model.edges.map(edge => edge.id), ['ab', 'loop']);
-  for (const type of DIAGRAM_TYPES) {
-    const isolated = graph(type, [box('only', 'Only', 'component', 0, 0)], []);
-    assert.deepEqual(playbackPlan(isolated).steps, [{ nodeId: 'only' }]);
-  }
-});
-
 test('legend uses only actual semantic appearances and core colors stay light with readable text', () => {
   const model = graph('dataflow', [box('core', 'Core', 'dataStore', 0, 0, 180, 100, { tags: [' CORE '] }), box('store', 'Store', 'dataStore', 400, 0), box('plain', 'Plain', 'process', 800, 0)], [edge('data', 'core', 'store', 'data')]);
   for (const palette of Object.values(PALETTES)) {
@@ -346,11 +514,57 @@ test('legend uses only actual semantic appearances and core colors stay light wi
     assert.ok(svg.includes(`fill="${palette.hero}"`)); assert.ok(svg.includes(`stroke="${palette.heroBorder}"`));
     assert.match(svg, /MIT License/); assert.match(svg, /WorkOS/);
   }
-  assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], ['#e0f8f3', '#53b9ab', '#0d3d38']);
+  assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], [RADIX.light.accent[3], RADIX.light.accent[8], RADIX.light.accent[12]]);
+  assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], ['#f0f1fe', '#9b9ef0', '#272962']);
   const luminance = hex => hex.slice(1).match(/../g).map(v => parseInt(v, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
   for (const palette of Object.values(PALETTES)) {
     const values = [luminance(palette.hero), luminance(palette.heroInk)].sort((a, b) => a - b);
     assert.ok((values[1] + .05) / (values[0] + .05) >= 4.5, 'Core text has readable contrast in both themes.');
+  }
+});
+
+test('maps the first eight modules to stable distinct light and dark accent slots', () => {
+  const modules = ['渠道', '结算', '价格', '库存', '风控', '支付', '订单', '履约'];
+  const collection = modules.map((module, index) => graph('architecture', [box(`n${index}`, module, 'service', index * 240, 0, 180, 100, { module })], []));
+  const reversed = [...collection].reverse();
+  for (const theme of ['light', 'dark']) {
+    const map = moduleColorMap(collection, PALETTES[theme]);
+    assert.equal(new Set(map.values()).size, 8);
+    assert.deepEqual([...map], [...moduleColorMap(reversed, PALETTES[theme])], 'view order must not change module slots');
+    assert.deepEqual([...map.keys()], [...map.keys()].sort());
+  }
+  const light = moduleColorMap(collection, PALETTES.light), dark = moduleColorMap(collection, PALETTES.dark);
+  assert.deepEqual([...light.keys()], [...dark.keys()], 'theme changes tones, not module slots');
+  assert.deepEqual(Object.fromEntries(light), {
+    '价格': '#8b5cf6', '履约': '#b14b7d', '库存': '#0f8f83', '支付': '#2474d2',
+    '渠道': '#6b7280', '结算': '#5753d7', '订单': '#348052', '风控': '#c26a17'
+  }, 'The ecommerce modules keep the reviewed demo palette.');
+  assert.equal(createDiagramSvg(fixtures.architecture), createDiagramSvg(fixtures.architecture, 'light', new Map()), 'legacy graphs remain visually unchanged');
+});
+
+test('shares module accents across nodes, edges, legend, minimap data and light/dark SVG export', () => {
+  const model = graph('architecture', [
+    box('checkout', 'Checkout', 'business', 0, 0, 220, 120, { module: '结算', tags: ['core'] }),
+    box('order', 'Order', 'data', 420, 0, 220, 120, { module: '订单' })
+  ], [
+    edge('create', 'checkout', 'order', 'call', { label: 'create' }),
+    edge('fail', 'order', 'checkout', 'failure', { label: 'fail', module: '订单', route: { via: [{ x: 530, y: 180 }, { x: 110, y: 180 }] } })
+  ]);
+  for (const theme of ['light', 'dark']) {
+    const palette = PALETTES[theme], colors = moduleColorMap([model], palette);
+    const checkoutColor = colors.get('结算');
+    const checkoutAppearance = nodeAppearance(model.nodes[0], palette, colors);
+    assert.equal(checkoutAppearance.moduleColor, checkoutColor);
+    assert.equal(checkoutAppearance.stroke, checkoutColor, 'Module color owns the full node outline.');
+    assert.notEqual(checkoutAppearance.fill, palette.hero, 'Module color owns the full node tint instead of a restrained dot.');
+    assert.equal(edgeColor(model.edges[0], model.nodes[1], palette, colors, model.nodes[0]), checkoutColor);
+    assert.equal(edgeColor(model.edges[1], model.nodes[0], palette, colors, model.nodes[1]), palette.warn, 'failure semantics win over modules');
+    assert.equal(graphLegend(model, palette, colors).filter(item => item.role === 'module').length, 2);
+    const svg = createDiagramSvg(model, theme, colors);
+    assert.ok(svg.includes(`class="module-accent"`));
+    assert.ok(svg.includes(`fill="${checkoutAppearance.fill}"`));
+    assert.match(svg, new RegExp(`class="module-accent"[^>]+stroke="${checkoutColor}"`));
+    assert.match(svg, new RegExp(`stroke="${checkoutColor}"[^>]+marker-end="url\\(#arrow-module\\)"`));
   }
 });
 
@@ -363,7 +577,6 @@ test('generates only index.html and graph.json', () => {
   const result = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, output], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
-  assert.match(result.stderr, /Playback notice:.*不代表执行时序/);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8')), fixture);
   const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
   assert.match(html, /<title>QGraphFlow<\/title>/);
@@ -372,13 +585,27 @@ test('generates only index.html and graph.json', () => {
   assert.match(html, /SVG/);
   assert.match(html, /PNG/);
   assert.match(html, /布局/);
-  assert.match(html, /适应窗口/);
   assert.match(html, /深色/);
   assert.match(html, /浅色/);
   assert.match(html, /content="light dark"/);
   assert.doesNotMatch(html, /__CODEGRAPH_FLOW_DATA__/);
   const notices = fs.readFileSync(new URL('../../../THIRD_PARTY_NOTICES.md', import.meta.url), 'utf8').trim();
   assert.ok(html.includes(notices), 'Generated HTML must retain the complete third-party notices');
+});
+
+test('preserves replacement metacharacters and script delimiters in embedded JSON', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-embedded-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const fixture = structuredClone(fixtures.architecture);
+  fixture.nodes[0].facts = ['$$', "$'", '$`', '$&', '</script><script>alert(1)</script>', '\u2028\u2029 中文'];
+  const input = path.join(root, 'input.json'), output = path.join(root, 'out');
+  fs.writeFileSync(input, JSON.stringify(fixture));
+  const result = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, output], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
+  const embedded = html.match(/<script\b[^>]*id="graph-data"[^>]*>([\s\S]*?)<\/script>/)[1];
+  assert.deepEqual(JSON.parse(embedded), fixture);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8')), fixture);
 });
 
 test('preserves authored old names and explicit legacy output paths', t => {
@@ -712,6 +939,47 @@ test('connects hinted diamonds at vertices and turns after the existing 12px stu
   }
 });
 
+test('routes representative non-rectangular nodes from their visible contour', () => {
+  const cases = [
+    ['flowchart', 'decision', 220, 140], ['flowchart', 'input', 240, 140],
+    ['state', 'choice', 120, 120], ['state', 'initial', 50, 50],
+    ['usecase', 'usecase', 220, 110], ['usecase', 'actor', 100, 140],
+    ['architecture', 'external', 220, 140], ['architecture', 'security', 220, 140],
+    ['deployment', 'device', 220, 140], ['deployment', 'database', 220, 140]
+  ];
+  for (const [type, kind, width, height] of cases) {
+    const target = box('target', 'Target', kind, 500, 100, width, height);
+    const sourceKind = getDiagram(type).nodeKinds.find(value => !['initial', 'final'].includes(value)) ?? kind;
+    const source = box('source', 'Source', sourceKind, 40, 110, 180, 100);
+    if (type === 'usecase' && sourceKind === 'actor') source.size = { width: 100, height: 140 };
+    const item = graph(type, [source, target], [edge('route', 'source', 'target', getDiagram(type).edgeKinds[0])]);
+    if (type === 'er') continue;
+    const route = createEdgeRoutes(item).get('route');
+    const end = route.points.at(-1);
+    assert.deepEqual(end, getDiagram(type).anchor(target, route.targetSide, 0), `${type}/${kind}`);
+    if (['decision', 'choice', 'usecase', 'actor', 'external', 'security', 'device', 'database', 'input'].includes(kind)) {
+      const onEmptyBoxCorner = [target.position.x, target.position.x + width].includes(end.x)
+        && [target.position.y, target.position.y + height].includes(end.y);
+      assert.equal(onEmptyBoxCorner, false, `${type}/${kind} must not terminate in bounding-box whitespace`);
+    }
+  }
+});
+
+test('preserves diagram-specific relationship notation and direction', () => {
+  const usecase = getDiagram('usecase');
+  assert.equal(usecase.edgeLabel({ kind: 'include', label: 'include' }), '«include»');
+  assert.equal(usecase.edgeLabel({ kind: 'extend', label: 'conditional' }), '«extend» · conditional');
+  assert.equal(isDashed({ kind: 'extend' }, 'usecase'), true);
+  assert.deepEqual(edgeMarkers({ kind: 'composition' }, 'class'), { start: 'diamond-filled', end: null });
+  assert.equal(getDiagram('state').edgeLabel({ kind: 'transition', label: 'pay', guard: 'stock', action: 'reserve()' }), 'pay [stock] / reserve()');
+  const sequence = graph('sequence', [
+    box('left', 'Left', 'service', 0, 0, 160, 320), box('right', 'Right', 'service', 360, 0, 160, 320)
+  ], [edge('return', 'right', 'left', 'return', { label: 'result', order: 1 })]);
+  const route = createEdgeRoutes(sequence).get('return');
+  assert.ok(route.points[0].x > route.points.at(-1).x, 'return arrow follows source to target');
+  assert.equal(isDashed(sequence.edges[0], 'sequence'), true);
+});
+
 test('checks all five ER cardinalities in four directions and includes nearby nodes in marker bounds', () => {
   const point = { x: 100, y: 100 };
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -847,6 +1115,8 @@ test('rejects edge labels placed over a group heading', () => {
   ]);
 
   assert.match(validateGraph(grouped).join('\n'), /layout: edge request label overlaps group runtime heading/);
+  grouped.edges[0].route.labelAt.x = 600;
+  assert.doesNotMatch(validateGraph(grouped).join('\n'), /group runtime heading/);
 });
 
 

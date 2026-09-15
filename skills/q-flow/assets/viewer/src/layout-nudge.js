@@ -27,15 +27,15 @@ function containingGroup(node, groups) {
   return matches.sort((left, right) => left.size.width * left.size.height - right.size.width * right.size.height)[0];
 }
 
-function groupBounds(node, group) {
+function groupBounds(node, group, sequence) {
   if (!group) return null;
   const halfWidth = node.size.width / 2;
   const halfHeight = node.size.height / 2;
-  const minimumX = group.position.x + GROUP_PADDING + halfWidth;
-  const maximumX = group.position.x + group.size.width - GROUP_PADDING - halfWidth;
-  const minimumY = group.position.y + Math.min(GROUP_HEADER, group.size.height) + GROUP_PADDING + halfHeight;
-  const maximumY = group.position.y + group.size.height - GROUP_PADDING - halfHeight;
-  if (minimumX > maximumX || minimumY > maximumY) return null;
+  const anchorX = node.position.x + halfWidth, anchorY = node.position.y + halfHeight;
+  const minimumX = Math.max(group.position.x + GROUP_PADDING + halfWidth, anchorX - MAX_SHIFT);
+  const maximumX = Math.min(group.position.x + group.size.width - GROUP_PADDING - halfWidth, anchorX + MAX_SHIFT);
+  const minimumY = Math.max(group.position.y + Math.min(GROUP_HEADER, group.size.height) + GROUP_PADDING + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
+  const maximumY = Math.min(group.position.y + group.size.height - GROUP_PADDING - halfHeight, anchorY + (sequence ? 0 : MAX_SHIFT));
   return { minimumX, maximumX, minimumY, maximumY };
 }
 
@@ -79,7 +79,9 @@ export function nudgeGraphLayout(graph, focusId = null) {
   const simulationNodes = graph.nodes.map(node => {
     const anchorX = node.position.x + node.size.width / 2;
     const anchorY = node.position.y + node.size.height / 2;
-    const canMove = movable.has(node.id);
+    const bounds = groupBounds(node, containingGroup(node, graph.groups ?? []), sequence);
+    // An infeasible inset freezes the node; it never removes its containing boundary.
+    const canMove = movable.has(node.id) && (!bounds || (bounds.minimumX <= bounds.maximumX && bounds.minimumY <= bounds.maximumY));
     return {
       id: node.id,
       width: node.size.width,
@@ -91,7 +93,7 @@ export function nudgeGraphLayout(graph, focusId = null) {
       vx: 0,
       vy: 0,
       movable: canMove,
-      bounds: groupBounds(node, containingGroup(node, graph.groups ?? [])),
+      bounds,
       fx: canMove ? undefined : anchorX,
       fy: canMove ? undefined : anchorY
     };
@@ -124,10 +126,15 @@ export function nudgeGraphLayout(graph, focusId = null) {
   const movedNodeIds = [];
   const nodes = graph.nodes.map(node => {
     const simulated = byId.get(node.id);
+    if (!simulated.movable) return node;
     const position = {
-      x: Math.round(simulated.x - node.size.width / 2),
-      y: Math.round(simulated.y - node.size.height / 2)
+      x: clamp(Math.round(simulated.x - node.size.width / 2), Math.max(0, node.position.x - MAX_SHIFT), node.position.x + MAX_SHIFT),
+      y: sequence ? node.position.y : clamp(Math.round(simulated.y - node.size.height / 2), Math.max(0, node.position.y - MAX_SHIFT), node.position.y + MAX_SHIFT)
     };
+    if (simulated.bounds) {
+      position.x = clamp(position.x, simulated.bounds.minimumX - node.size.width / 2, simulated.bounds.maximumX - node.size.width / 2);
+      if (!sequence) position.y = clamp(position.y, simulated.bounds.minimumY - node.size.height / 2, simulated.bounds.maximumY - node.size.height / 2);
+    }
     if (position.x !== node.position.x || position.y !== node.position.y) movedNodeIds.push(node.id);
     return { ...node, position };
   });

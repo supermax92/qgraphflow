@@ -14,7 +14,7 @@
     ".claude-plugin/",
     ".qoder-plugin/",
     ".cursor-plugin/",
-    ".agents/plugins/",
+    ".agents/plugins/marketplace.json",
     "skills/q-flow/SKILL.md",
     "skills/q-flow/agents/",
     "skills/q-flow/references/",
@@ -26,20 +26,21 @@
     "skills/q-flow/assets/viewer/src/edge-routing.js",
     "skills/q-flow/assets/viewer/src/i18n.js",
     "skills/q-flow/assets/viewer/src/i18n-messages.json",
-    "skills/q-flow/assets/viewer/src/playback.js",
     "skills/q-flow/assets/viewer/src/radix-colors.js",
     "skills/q-flow/assets/viewer/src/text-layout.js",
     "skills/q-flow/assets/viewer/src/visual-style.js",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "README.md",
-    "docs/clients.md",
+    "docs/clients*.md",
     "docs/readme/",
+    "docs/references/",
     "examples/order-flow.graph.json",
     "examples/showcase/kafka.en.graph.json",
     "docs/images/order-flow.svg"
   ],
   "scripts": {
-    "package": "node scripts/package.mjs"
+    "package": "node scripts/package.mjs",
+    "package:media": "node scripts/package-media.mjs"
   }
 }

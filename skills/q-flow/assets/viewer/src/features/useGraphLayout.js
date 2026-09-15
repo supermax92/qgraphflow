@@ -1,38 +1,46 @@
 import { translate } from '../i18n.js';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
+import { cubicBezier } from 'motion';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { auditGraphLayout, graphBounds } from '../edge-routing.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
-import { isCore } from '../visual-style.js';
+import { constrainNodeChanges, currentGraphFromFlow } from '../session-graph.js';
 
-export function useGraphLayout(graph, reduceMotion, setStatus) {
+// cubic-bezier(.32,.72,0,1) as an easing function, so viewport moves share the chrome's curve (--ease in styles.css).
+export const appleEase = cubicBezier(.32, .72, 0, 1);
+
+export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = graph) {
   const t = (message, values) => translate(graph.meta.locale, message, values);
   const diagramType = graph.meta.diagramType ?? 'architecture';
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes(graph, diagramType));
+  const [nodes, setNodes, applyNodeChanges] = useNodesState(initialNodes(graph, diagramType));
   const [edges, setEdges] = useEdgesState(initialEdges(graph, diagramType));
   const [locked, setLocked] = useState(true);
   const canvasRef = useRef(null);
-  const { fitBounds, setCenter, setViewport } = useReactFlow();
-  const currentGraph = useMemo(() => {
-    const positions = new Map(nodes.filter(node => node.type === 'diagram').map(node => [node.id, node.position]));
-    return { ...graph, nodes: graph.nodes.map(node => ({ ...node, position: positions.get(node.id) ?? node.position })) };
-  }, [graph, nodes]);
-  const fitGraph = (targetGraph, duration = reduceMotion ? 0 : 320) => fitBounds(graphBounds(targetGraph), { padding: .06, duration });
+  const { setCenter, setViewport } = useReactFlow();
+  const currentGraph = useMemo(() => currentGraphFromFlow(originalGraph, nodes, edges), [originalGraph, nodes, edges]);
+  const onNodesChange = useCallback(changes => applyNodeChanges(constrainNodeChanges(changes, nodes, diagramType)), [applyNodeChanges, diagramType, nodes]);
+  const updateNodeText = useCallback((id, label, subtitle) => setNodes(current => current.map(node => node.id === id ? { ...node, data: { ...node.data, label, subtitle } } : node)), [setNodes]);
+  const updateEdgeText = useCallback((id, label) => setEdges(current => current.map(edge => edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge)), [setEdges]);
+  // The canvas runs under the floating toolbar and beside any open panel, so fitting subtracts those layers instead of
+  // centring on the whole window. Values mirror --tb-h, --side-w and --gutter in styles.css; px strings are required
+  // because a bare number in this padding object is read by React Flow as a ratio of the canvas size.
+  const readingPadding = () => {
+    const insets = canvasRef.current?.dataset ?? {};
+    const px = value => `${value}px`;
+    return { top: px(52 + 12 + 12), bottom: px(12 + 40), left: px((insets.navOpen === 'true' ? 304 + 24 : 12) + 12), right: px((insets.drawerOpen === 'true' ? 304 + 24 : 12) + 12) };
+  };
+  // Whole-diagram reading view: every node, boundary and label fits whenever the Viewer opens, resets or switches diagram.
   const readGraph = (targetGraph, duration = reduceMotion ? 0 : 320) => {
     const canvas = canvasRef.current; if (!canvas) return;
-    const viewport = getViewportForBounds(graphBounds(targetGraph), canvas.clientWidth, canvas.clientHeight, .08, 2, .06);
-    const anchor = targetGraph.nodes.find(isCore) ?? targetGraph.nodes[0];
-    if (viewport.zoom >= .9 || !anchor) return setViewport(viewport, { duration });
-    const x = anchor.position.x + Math.min(anchor.size.width / 2, (canvas.clientWidth / 2 - 24) / .9);
-    const y = anchor.position.y + Math.min(anchor.size.height / 2, (canvas.clientHeight / 2 - 24) / .9);
-    return setCenter(x, y, { zoom: .9, duration });
+    const viewport = getViewportForBounds(graphBounds(targetGraph), canvas.clientWidth, canvas.clientHeight, .08, 2, readingPadding());
+    return setViewport(viewport, { duration, ease: appleEase });
   };
   const focusNode = useCallback(id => {
     const node = currentGraph.nodes.find(item => item.id === id);
-    if (node) setCenter(node.position.x + node.size.width / 2, node.position.y + node.size.height / 2, { zoom: 1.1, duration: reduceMotion ? 0 : 420 });
+    if (node) setCenter(node.position.x + node.size.width / 2, node.position.y + node.size.height / 2, { zoom: 1.1, duration: reduceMotion ? 0 : 420, ease: appleEase });
   }, [currentGraph, reduceMotion, setCenter]);
-  const resetLayout = () => { setNodes(initialNodes(graph, diagramType)); setEdges(initialEdges(graph, diagramType)); requestAnimationFrame(() => readGraph(graph)); };
+  const resetLayout = () => { setNodes(initialNodes(originalGraph, diagramType)); setEdges(initialEdges(originalGraph, diagramType)); requestAnimationFrame(() => readGraph(originalGraph)); };
   const nudgeLayout = selectedId => {
     if (locked) { setStatus('请先解除布局锁定，再整理间距'); return; }
     const result = nudgeGraphLayout(currentGraph, selectedId);
@@ -43,5 +51,5 @@ export function useGraphLayout(graph, reduceMotion, setStatus) {
     const message = movement ? t('{scope}间距已整理：移动 {count} 个节点', { scope, count: movement }) : t(unresolved ? '当前约束下无法继续整理' : '当前间距无需调整');
     setStatus(message + (unresolved ? t('；仍有 {count} 个布局问题，请手动调整', { count: unresolved }) : ''));
   };
-  return { nodes, edges, onNodesChange, locked, setLocked, canvasRef, currentGraph, fitGraph, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => fitGraph(currentGraph) };
+  return { nodes, edges, onNodesChange, updateNodeText, updateEdgeText, locked, setLocked, canvasRef, currentGraph, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => readGraph(currentGraph) };
 }

@@ -1,18 +1,21 @@
 #!/usr/bin/env node
-// Replays the production Viewer contract. Uses an existing Playwright installation.
+// Replays the production Viewer contract over the canvas-first shell: one floating toolbar, collapsed floating panels,
+// quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
-// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_ONLY_EXTRAS=1, QA_EXTRAS=none|selection-entrypoints|playback-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors, QA_FIXTURE_DIR.
+// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_ONLY_EXTRAS=1, QA_EXTRAS=none|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance, QA_FIXTURE_DIR.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { playbackPlan } from '../assets/viewer/src/playback.js';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { renderNode } from '../assets/viewer/src/node-svg.js';
-import { PALETTES, TYPOGRAPHY, isCore } from '../assets/viewer/src/visual-style.js';
+import { moduleColorMap, PALETTES, TYPOGRAPHY, isCore } from '../assets/viewer/src/visual-style.js';
 import { diagramLabels as labels, getDiagram, hasArrow } from '../assets/viewer/src/diagrams/registry.js';
+import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 
 const [inputDirectory, reportDirectory] = process.argv.slice(2);
 if (!inputDirectory || !reportDirectory) throw new Error('Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY');
@@ -40,51 +43,96 @@ function playwright() {
 const { chromium } = playwright();
 const button = (page, name) => page.getByRole('button', { name, exact: true });
 const count = (page, selector) => page.locator(selector).count();
-const core = graph => graph.nodes.find(node => node.kind === 'business' || node.tags?.some(tag => ['core', 'business'].includes(tag.trim().toLowerCase())));
+const core = graph => graph.nodes.find(isCore);
 const target = graph => core(graph) ?? graph.nodes[0];
 const nodeElement = (page, id) => page.locator('.react-flow__node-diagram').and(page.locator(`[data-id=${JSON.stringify(id)}]`));
-const status = page => page.locator('.board-foot [role="status"]').innerText();
-const currentStep = page => page.locator('.status-pill').innerText().then(text => text.match(/\d+\/\d+/)?.[0] ?? null);
-async function toolbar(page, open) {
-  const toggle = button(page, open ? '显示左侧工具栏' : '隐藏左侧工具栏');
+const menuItem = (page, name) => page.getByRole('menuitem', { name, exact: true });
+// The toast is the operation status channel.
+const status = page => page.locator('.toast').innerText();
+const panelState = page => page.locator('[aria-controls="graph-tools"],[aria-controls="node-inspector"]').evaluateAll(elements => elements.map(element => element.getAttribute('aria-expanded')));
+async function dismiss(page) {
+  // Escape closes an open popover (menu, search results, legend) before anything else reacts to it.
+  if (await count(page, '.popover')) { await page.keyboard.press('Escape'); await page.locator('.popover').waitFor({ state: 'detached' }); }
+}
+async function openMore(page) {
+  if (!await count(page, '.menu.is-right[role="menu"]')) { await dismiss(page); await page.locator('#more-menu-button').click(); }
+  await page.locator('.menu.is-right[role="menu"]').waitFor();
+}
+async function openLegend(page) {
+  if (!await count(page, '.legend-pop')) { await dismiss(page); await page.locator('.legend-anchor .float-btn').click(); }
+  await page.locator('.legend-pop').waitFor();
+}
+// Narrow screens keep one panel at a time: opening one starts the other's exit animation, so wait until it is gone.
+const mobile = page => page.viewportSize().width <= 700;
+async function nav(page, open) {
+  const toggle = button(page, open ? '显示图谱导航' : '隐藏图谱导航');
   if (await toggle.count()) await toggle.click();
-  await page.locator('.toolbar').waitFor({ state: open ? 'visible' : 'detached' });
+  await page.locator('.nav').waitFor({ state: open ? 'visible' : 'detached' });
+  if (open && mobile(page)) await page.locator('.inspector').waitFor({ state: 'detached' });
 }
 async function hidePanels(page) {
-  if (await count(page, '.toolbar')) await toolbar(page, false);
+  if (await count(page, '.nav')) await nav(page, false);
   if (await count(page, '.inspector')) {
     const close = button(page, '隐藏右侧详情栏');
     if (await close.count()) await close.click();
     await page.locator('.inspector').waitFor({ state: 'detached' });
   }
 }
+async function ensureInspector(page) {
+  if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
+  await page.locator('.inspector').waitFor();
+  if (mobile(page)) await page.locator('.nav').waitFor({ state: 'detached' });
+}
+async function assertLayoutSwitch(page) {
+  const row = page.locator('.menu-row').filter({ has: page.getByRole('switch', { name: /^(布局锁定|可拖动)$/ }) });
+  const result = await row.evaluate(element => {
+    const label = element.querySelector('.menu-lead'), toggle = element.querySelector('.switch');
+    const outer = element.getBoundingClientRect(), text = label.getBoundingClientRect(), control = toggle.getBoundingClientRect(), style = getComputedStyle(toggle);
+    return {
+      control: { width: parseFloat(style.width), height: parseFloat(style.height) },
+      singleLine: label.scrollHeight <= label.clientHeight + 1,
+      contained: text.left >= outer.left && text.right <= control.left && control.right <= outer.right && control.top >= outer.top && control.bottom <= outer.bottom
+    };
+  });
+  assert.deepEqual(result, { control: { width: 32, height: 20 }, singleLine: true, contained: true }, 'Layout lock stays aligned inside the menu row.');
+}
+async function setLocked(page, locked) {
+  await openMore(page);
+  await assertLayoutSwitch(page);
+  const toggle = page.getByRole('switch', { name: locked ? '可拖动' : '布局锁定', exact: true });
+  if (await toggle.count()) await toggle.click();
+  assert.equal(await page.getByRole('switch', { name: locked ? '布局锁定' : '可拖动', exact: true }).count(), 1, 'The layout lock is one switch in the more menu.');
+  await dismiss(page);
+}
 async function chooseGraph(page, graph, mobile) {
+  assert.equal(await count(page, '.nav,.inspector'), 0, 'Both floating panels start collapsed at every width.');
   if (graphs.length > 1) {
-    await toolbar(page, true);
-    assert.equal(await count(page, '.tabs .tab'), graphs.length);
-    await page.locator('.tabs .tab').filter({ hasText: labels[graph.meta.diagramType] }).click();
-  }
-  await page.locator('.board-head h2').filter({ hasText: labels[graph.meta.diagramType] }).waitFor();
+    await dismiss(page); await page.locator('#view-menu-button').click(); await page.locator('.menu[role="menu"]').waitFor();
+    const items = page.locator('.menu [role="menuitemradio"]');
+    assert.equal(await items.count(), graphs.length, 'The view menu lists every diagram of the collection.');
+    assert.equal(await items.evaluateAll(elements => elements.filter(element => element.getAttribute('aria-checked') === 'true').length), 1, 'Exactly one view is checked.');
+    assert.ok(await items.evaluateAll(elements => elements.every(element => /\d+/.test(element.querySelector('small')?.textContent ?? ''))), 'Every view shows its relationship count.');
+    await items.filter({ hasText: labels[graph.meta.diagramType] }).click();
+    await page.locator('.menu[role="menu"]').waitFor({ state: 'detached' });
+    await page.waitForFunction(label => document.querySelector('#view-menu-button span')?.textContent === label, labels[graph.meta.diagramType]);
+  } else assert.equal(await count(page, '#view-menu-button'), 0, 'A standalone graph has no view menu.');
   await page.waitForFunction(ids => ids.every(id => document.getElementById(id)?.classList.contains('react-flow__edge-path')), graph.edges.map(edge => edge.id));
   assert.equal(await count(page, '.diagram-node'), graph.nodes.length);
-  if (mobile && graphs.length > 1) await page.locator('.toolbar').waitFor({ state: 'detached' });
-  return assertBrand(page, graph);
+  if (mobile) assert.equal(await count(page, '.nav,.inspector'), 0, 'Switching views leaves mobile panels closed.');
+  return assertIdentity(page, graph);
 }
-async function assertBrand(page, graph) {
+async function assertIdentity(page, graph) {
   const documentTitle = `${graph.meta.title} · QGraphFlow`;
   await page.waitForFunction(title => document.title === title, documentTitle);
-  const brand = page.locator('.heading .eyebrow');
-  assert.equal(await brand.innerText(), 'QGraphFlow');
-  const textTransform = await brand.evaluate(element => getComputedStyle(element).textTransform);
-  assert.equal(textTransform, 'none', 'Product capitalization is preserved.');
+  const toolbar = page.locator('.toolbar');
+  assert.equal(await toolbar.count(), 1, 'One toolbar floats over the canvas.');
+  assert.ok(!(await toolbar.innerText()).includes('QGraphFlow'), 'The product name lives only in the document title.');
+  assert.equal(await count(page, '.brand,.heading,.topbar,.board-head,.board-foot'), 0, 'No brand block, second header bar, board header or footer remains.');
+  const toolbarHeight = await toolbar.evaluate(element => element.getBoundingClientRect().height);
+  assert.equal(toolbarHeight, 52, 'The toolbar is 52px tall.');
+  assert.equal(await page.locator('.canvas').evaluate(element => element.getBoundingClientRect().top), 0, 'The canvas starts at the window top and runs under the toolbar.');
+  assert.equal(await toolbar.locator('.btn-primary').count(), 0, 'The toolbar has no playback button.');
   assert.equal(await count(page, '.react-flow__attribution'), 0, 'The public hideAttribution option removes the canvas attribution.');
-  const mark = page.locator('.brand svg');
-  assert.ok(await mark.isVisible(), 'The brand mark is visible.');
-  assert.ok(await mark.evaluate(svg => {
-    const bounds = svg.getBBox(), view = svg.viewBox.baseVal;
-    const padding = Number.parseFloat(getComputedStyle(svg).strokeWidth) / 2;
-    return bounds.x - padding >= view.x && bounds.y - padding >= view.y && bounds.x + bounds.width + padding <= view.x + view.width && bounds.y + bounds.height + padding <= view.y + view.height;
-  }), 'The brand mark and its stroke fit inside the SVG viewport.');
   const favicon = await page.locator('link[rel="icon"]').getAttribute('href');
   assert.match(favicon, /^data:image\/svg\+xml,/, 'Favicon is an offline SVG.');
   const dimensions = await page.evaluate(async source => {
@@ -92,18 +140,23 @@ async function assertBrand(page, graph) {
     return { width: icon.naturalWidth, height: icon.naturalHeight };
   }, favicon);
   assert.ok(dimensions.width > 0 && dimensions.height > 0, 'Favicon decodes successfully.');
-  return { product: 'QGraphFlow', documentTitle, textTransform, favicon: { inline: true, decoded: true, ...dimensions } };
+  return { product: 'QGraphFlow', documentTitle, toolbarHeight, favicon: { inline: true, decoded: true, ...dimensions } };
 }
 async function theme(page, value) {
-  if (await page.locator('html').getAttribute('data-theme') !== value) await button(page, value === 'dark' ? '深色' : '浅色').click();
+  if (await page.locator('html').getAttribute('data-theme') !== value) {
+    await openMore(page); await page.getByRole('radio', { name: value === 'dark' ? '深色' : '浅色', exact: true }).click(); await dismiss(page);
+  }
   await page.waitForFunction(value => document.documentElement.dataset.theme === value, value);
 }
-async function fit(page) { await button(page, '适应窗口').click(); await page.waitForTimeout(360); }
-async function playing(page, value) {
-  const action = button(page, value ? '▶ 播放' : 'Ⅱ 暂停');
-  if (await action.count()) await action.click();
-  assert.equal(await button(page, value ? 'Ⅱ 暂停' : '▶ 播放').count(), 1, 'Step play/pause is independently available.');
-  await assertFlow(page);
+async function fit(page) { await button(page, '适应画布').click(); await page.waitForTimeout(360); }
+async function blankPoint(page) {
+  const point = await page.locator('.react-flow__pane').evaluate(pane => {
+    const box = pane.getBoundingClientRect();
+    return [.12, .5, .95].flatMap(y => [.05, .5, .95].map(x => ({ x: box.x + box.width * x, y: box.y + box.height * y })))
+      .find(({ x, y }) => document.elementFromPoint(x, y) === pane);
+  });
+  assert.ok(point, 'An uncovered blank canvas point is available outside the toolbar and floats.');
+  return point;
 }
 async function pulse(page) {
   const value = await page.locator('.selection-outline').first().getAttribute('data-selection-pulse');
@@ -149,15 +202,10 @@ async function geometry(page) {
 }
 async function assertFlow(page, enabled = true) {
   const running = enabled && !await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
-  assert.ok(await page.locator('.edge-flow').evaluateAll((elements, running) => elements.every(element => getComputedStyle(element).animationPlayState === (running ? 'running' : 'paused')), running), 'Step pause must not change ambient edge flow.');
-}
-async function assertPaused(page, step = undefined) {
-  assert.equal(await button(page, 'Ⅱ 暂停').count(), 0, 'User selection pauses presentation.');
-  await assertFlow(page);
-  if (step !== undefined) assert.equal(await currentStep(page), step, 'Selection preserves the current step.');
+  assert.ok(await page.locator('.edge-flow').evaluateAll((elements, running) => elements.every(element => getComputedStyle(element).animationPlayState === (running ? 'running' : 'paused')), running), 'The independent switch and reduced motion control ambient edge flow.');
 }
 async function assertInspector(page, node) {
-  assert.ok(node, 'The demonstration step resolves to a real graph node.');
+  assert.ok(node, 'The inspector resolves to a real graph node.');
   const card = page.locator('.drawer-body');
   assert.equal(await card.locator('h2').innerText(), node.label);
   const actual = await page.locator('.inspector').evaluate(element => {
@@ -196,67 +244,80 @@ async function assertInspector(page, node) {
 }
 
 async function assertLegendLayout(page) {
+  await openLegend(page);
   assert.equal(await count(page, '.legend'), 1, 'There is one reading legend.');
-  assert.equal(await count(page, '.board-head > .legend'), 1, 'The reading legend is directly below the diagram title.');
-  assert.equal(await count(page, '.inspector .legend,.canvas .legend,.board-head p'), 0, 'No old subtitle or duplicate legend remains.');
+  assert.equal(await count(page, '.legend-pop .legend'), 1, 'The reading legend lives in the legend popover.');
+  assert.equal(await count(page, '.board-head,.toolbar .legend,.nav .legend,.inspector .legend'), 0, 'No board header or duplicate legend remains.');
   const bounds = await page.getByRole('group', { name: '阅读图例', exact: true }).evaluate(element => {
-    const box = element.getBoundingClientRect(), head = element.closest('.board-head'), title = head.querySelector('h2').getBoundingClientRect();
-    const canvas = head.nextElementSibling.getBoundingClientRect(), style = getComputedStyle(element);
-    const overlaps = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap,.flow-hud')].filter(control => {
+    const pop = element.closest('.legend-pop').getBoundingClientRect(), anchor = element.closest('.legend-anchor').querySelector('.float-btn').getBoundingClientRect();
+    const canvas = document.querySelector('.canvas').getBoundingClientRect(), style = getComputedStyle(element);
+    const overlaps = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].filter(control => {
       const b = control.getBoundingClientRect();
-      return b.width && b.height && box.left < b.right && box.right > b.left && box.top < b.bottom && box.bottom > b.top;
+      return b.width && b.height && pop.left < b.right && pop.right > b.left && pop.top < b.bottom && pop.bottom > b.top;
     }).map(control => control.className);
-    return { x: box.left - title.left, y: box.top - title.bottom, right: head.getBoundingClientRect().right - box.right, gapToCanvas: canvas.top - box.bottom,
-      fontSize: getComputedStyle(element.querySelector('span')).fontSize, overlaps, canvasHeight: canvas.height,
+    return { button: { x: Math.round(anchor.left - canvas.left), y: Math.round(anchor.top - canvas.top) }, fontSize: getComputedStyle(element.querySelector('span')).fontSize, overlaps,
+      inCanvas: pop.left >= canvas.left - 1 && pop.right <= canvas.right + 1 && pop.top >= canvas.top - 1 && pop.bottom <= canvas.bottom + 1, belowButton: pop.top >= anchor.bottom,
       plain: style.position === 'static' && style.boxShadow === 'none' && style.backgroundColor === 'rgba(0, 0, 0, 0)' && style.borderTopWidth === '0px',
-      clipped: [...element.querySelectorAll('span')].some(item => { const b = item.getBoundingClientRect(); return b.left < box.left - 1 || b.right > box.right + 1 || b.bottom > box.bottom + 1; }),
+      clipped: [...element.querySelectorAll('span')].some(item => { const b = item.getBoundingClientRect(); return b.left < pop.left - 1 || b.right > pop.right + 1 || b.bottom > pop.bottom + 1; }),
       overflow: element.scrollWidth > element.clientWidth + 1, pageOverflow: document.documentElement.scrollWidth > innerWidth + 1 };
   });
-  assert.ok(Math.abs(bounds.x) <= 1 && bounds.y >= 4 && bounds.y <= 12, `Legend follows and aligns with the diagram title: ${JSON.stringify(bounds)}`);
-  assert.ok(bounds.right >= 0 && bounds.gapToCanvas >= 0 && bounds.canvasHeight > 0, 'Legend stays above a visible canvas.');
+  assert.ok(bounds.inCanvas && bounds.belowButton, `The legend popover opens below its button inside the canvas: ${JSON.stringify(bounds)}`);
   assert.ok(bounds.plain && !bounds.clipped, 'All legend entries are readable as plain inline content, without a card or clipping.');
-  assert.deepEqual(bounds.overlaps, [], 'Legend does not cover canvas controls or step status.');
+  assert.deepEqual(bounds.overlaps, [], 'The legend popover does not cover canvas controls.');
   assert.equal(bounds.overflow || bounds.pageOverflow, false, 'Legend text wraps without horizontal overflow.');
-  return { x: bounds.x, y: bounds.y, fontSize: bounds.fontSize };
+  await dismiss(page);
+  assert.equal(await count(page, '.legend'), 0, 'Escape closes the legend popover.');
+  return { button: bounds.button, fontSize: bounds.fontSize };
+}
+async function assertLegendEntries(page, graph, colorTheme) {
+  await openLegend(page);
+  const palette = PALETTES[colorTheme], legend = graphLegend(graph, palette, moduleColorMap(graphs, palette));
+  const actualLegend = await page.locator('.legend-pop .legend span').evaluateAll(elements => elements.map(element => ({ text: element.textContent, fill: element.querySelector('i').style.backgroundColor, border: element.querySelector('i').style.borderColor, symbol: element.firstElementChild.className, lineStyle: getComputedStyle(element.firstElementChild).borderTopStyle })));
+  const rgb = color => color ? `rgb(${color.slice(1).match(/../g).map(value => parseInt(value, 16)).join(', ')})` : 'transparent';
+  assert.deepEqual(actualLegend, legend.map(entry => ({ text: entry.label, fill: rgb(entry.fill), border: rgb(entry.stroke), symbol: `legend-${entry.shape}`, lineStyle: entry.shape === 'dashed' ? 'dashed' : 'solid' })), 'Each legend label retains its original leading symbol, line style and theme colors.');
+  const flowSwitch = page.getByRole('switch', { name: '连线流动', exact: true });
+  assert.equal(await flowSwitch.count(), graph.edges.some(edge => hasArrow(edge, graph.meta.diagramType)) ? 1 : 0, 'The flow switch sits in the legend popover exactly when directed relationships exist.');
+  await dismiss(page);
 }
 async function searchSelect(page, graph, selected, keyboard = false) {
-  await toolbar(page, true);
+  await dismiss(page);
+
   await page.locator('#search').fill(`  ${selected.label.toUpperCase()}  `);
-  const result = page.locator('.search-results button').first();
-  await page.waitForFunction(label => document.querySelector('.search-results button')?.textContent.includes(label), selected.label);
+  const result = page.locator('.results button').first();
+  await page.waitForFunction(label => document.querySelector('.results button')?.textContent.includes(label), selected.label);
   assert.ok((await result.innerText()).includes(selected.label));
+  assert.ok(await count(page, '.results button') <= 8, 'Search shows at most eight results.');
   await result.evaluate(element => {
-    window.__qaStepAtActivation = undefined;
-    element.addEventListener('click', () => { window.__qaStepAtActivation = document.querySelector('.status-pill')?.textContent.match(/\d+\/\d+/)?.[0] ?? null; }, { once: true, capture: true });
+    window.__qaActivated = false;
+    element.addEventListener('click', () => { window.__qaActivated = true; }, { once: true, capture: true });
   });
   if (keyboard) { await result.focus(); await page.keyboard.press('Enter'); } else await result.click();
-  const step = await page.evaluate(() => window.__qaStepAtActivation);
-  assert.notEqual(step, undefined, 'Search selection reaches the native button activation.');
+  assert.equal(await page.evaluate(() => window.__qaActivated), true, 'Search selection reaches the native button activation.');
+  await page.locator('.results').waitFor({ state: 'detached' });
   await selection(page, graph, selected.id);
-  if (page.viewportSize().width <= 700) await page.locator('.toolbar').waitFor({ state: 'detached' });
-  await assertPaused(page, step);
+  if (page.viewportSize().width <= 700) await page.locator('.nav').waitFor({ state: 'detached' });
+  await assertFlow(page);
+  await page.locator('.inspector').waitFor();
   await assertInspector(page, selected);
   assert.ok(await page.locator('.inspector').evaluate(element => element.scrollWidth <= element.clientWidth + 1));
 }
 async function assertSelectedDetails(page, graph) {
   const id = await page.locator('.diagram-node.is-selected').evaluate(e => e.closest('[data-id]').dataset.id);
-  if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
+  await ensureInspector(page);
   await assertInspector(page, graph.nodes.find(node => node.id === id));
 }
 async function clear(page, method = 'Escape') {
-  if (method === 'Escape') await page.keyboard.press('Escape');
-  else if (method === 'close') await button(page, '关闭详情').click();
-  else {
-    const point = await page.locator('.react-flow__pane').evaluate(pane => {
-      const box = pane.getBoundingClientRect();
-      return [.05, .5, .95].flatMap(y => [.05, .5, .95].map(x => ({ x: box.x + box.width * x, y: box.y + box.height * y })))
-        .find(({ x, y }) => document.elementFromPoint(x, y) === pane);
-    });
-    assert.ok(point, 'An uncovered blank canvas point is available for clearing selection.');
-    await page.mouse.click(point.x, point.y);
+  if (method === 'Escape') {
+    // Escape only gives up one layer: close any popover first and leave the panels, so the key reaches the selection.
+    await dismiss(page);
+    await page.evaluate(() => { const active = document.activeElement; if (active?.closest('.nav,.inspector')) active.blur(); });
+    await page.keyboard.press('Escape');
   }
+  else if (method === 'close') await button(page, '关闭详情').click();
+  else { const point = await blankPoint(page); await page.mouse.click(point.x, point.y); }
   await page.waitForFunction(() => !document.querySelector('.selection-outline,.selection-edge-shine,.diagram-node.is-selected'));
-  await assertPaused(page);
+  await page.locator('.inspector').waitFor({ state: 'detached' });
+  await assertFlow(page);
 }
 async function assertShape(page, graph, selected) {
   const node = nodeElement(page, selected.id), outline = node.locator('.selection-outline');
@@ -269,9 +330,9 @@ async function assertShape(page, graph, selected) {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No page overflow.');
 }
 async function assertNodeDrawing(page, graph, colorTheme) {
-  const palette = PALETTES[colorTheme];
+  const palette = PALETTES[colorTheme], moduleColors = moduleColorMap(graphs, palette);
   for (const node of graph.nodes) {
-    const expected = renderNode(node, graph.meta.diagramType, -node.position.x, -node.position.y, palette);
+    const expected = renderNode(node, graph.meta.diagramType, -node.position.x, -node.position.y, palette, undefined, moduleColors);
     const same = await nodeElement(page, node.id).locator('.node-drawing').evaluate((element, xml) => {
       const expected = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${xml}</svg>`, 'image/svg+xml').querySelector('.node-drawing');
       // Compare parsed DOMs: serialization differences must not hide drawing differences.
@@ -279,6 +340,8 @@ async function assertNodeDrawing(page, graph, colorTheme) {
       return JSON.stringify(tree(element)) === JSON.stringify(tree(expected));
     }, expected);
     assert.ok(same, `Page node ${node.id} uses the exact shared export drawing.`);
+    const minimapTags = await page.locator(`.react-flow__minimap-node[data-node-id=${JSON.stringify(node.id)}] .node-surface`).evaluateAll(elements => elements.map(element => element.localName));
+    assert.deepEqual(minimapTags, getDiagram(graph.meta.diagramType).outline(node, 0, 0).map(([tag]) => tag), `MiniMap node ${node.id} uses the diagram outline.`);
     const texts = await nodeElement(page, node.id).locator('.node-visual text').evaluateAll(elements => elements.map(element => {
       const b = element.getBBox(), style = getComputedStyle(element);
       return { text: element.textContent, cls: element.getAttribute('class'), font: parseFloat(style.fontSize), fill: style.fill, x: b.x, y: b.y, width: b.width, height: b.height };
@@ -298,7 +361,9 @@ async function assertNodeDrawing(page, graph, colorTheme) {
 }
 
 async function download(page, format, name) {
-  const pending = page.waitForEvent('download'); await button(page, format).click(); const result = await pending;
+  await openMore(page);
+  const pending = page.waitForEvent('download'); await menuItem(page, `导出 ${format}`).click(); const result = await pending;
+  await page.locator('.menu.is-right[role="menu"]').waitFor({ state: 'detached' });
   const filename = path.join(outputRoot, 'exports', `${name}.${format.toLowerCase()}`); await result.saveAs(filename);
   assert.equal(await result.failure(), null); assert.ok(fs.statSync(filename).size > 300); return filename;
 }
@@ -338,6 +403,7 @@ async function exportsMatch(page, graph, name) {
   assert.equal(pngSize.width, png.readUInt32BE(16)); assert.equal(pngSize.height, png.readUInt32BE(20));
   assert.ok(Math.abs(pngSize.width - parsed.width) <= 1 && Math.abs(pngSize.height - parsed.height) <= 1);
   report.exports.push({ name, svg: svgFile, png: pngFile, ...pngSize, pathParity: true, decoded: true });
+  return { svgFile, pngFile };
 }
 async function runCase(browser, name, viewport, options, run, extra = false) {
   if (extra && process.env.QA_EXTRAS && !process.env.QA_EXTRAS.split(',').some(value => name === value || name.endsWith('-' + value))) return;
@@ -358,19 +424,13 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
   const name = `${graph.meta.diagramType}-${viewport.width}-${colorTheme}`, mobile = viewport.width <= 700;
   await runCase(browser, name, viewport, {}, async page => {
     await page.goto(url); await page.locator('.diagram-node').first().waitFor();
-    if (mobile) { assert.equal(await count(page, '.toolbar'), 0); assert.equal(await count(page, '.inspector'), 0); }
     await theme(page, colorTheme); const branding = await chooseGraph(page, graph, mobile);
     await assertLegendLayout(page);
+    await assertLegendEntries(page, graph, colorTheme);
     await assertNodeDrawing(page, graph, colorTheme);
-    await playing(page, false);
-    await toolbar(page, true);
-    assert.equal(await page.locator('.playback-controls').getAttribute('data-playback-mode'), playbackPlan(graph).mode);
-    assert.equal(await page.locator('.playback-notice').innerText(), playbackPlan(graph).description);
-    if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
-    const legend = graphLegend(graph, PALETTES[colorTheme]);
-    const actualLegend = await page.locator('.legend span').evaluateAll(elements => elements.map(element => ({ text: element.textContent, fill: element.querySelector('i').style.backgroundColor, border: element.querySelector('i').style.borderColor, symbol: element.firstElementChild.className, lineStyle: getComputedStyle(element.firstElementChild).borderTopStyle })));
-    const rgb = color => color ? `rgb(${color.slice(1).match(/../g).map(value => parseInt(value, 16)).join(', ')})` : 'transparent';
-    assert.deepEqual(actualLegend, legend.map(entry => ({ text: entry.label, fill: rgb(entry.fill), border: rgb(entry.stroke), symbol: `legend-${entry.shape}`, lineStyle: entry.shape === 'dashed' ? 'dashed' : 'solid' })), 'Each legend label retains its original leading symbol, line style and theme colors.');
+
+    await nav(page, true);
+    await ensureInspector(page);
     const initial = core(graph);
     assert.equal(await count(page, '.diagram-node.is-selected'), initial ? 1 : 0);
     if (initial) {
@@ -378,25 +438,15 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
       assert.ok(await page.locator('.selection-outline .selection-node-shine,.selection-edge-shine').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none')), 'Initial core emphasis is static.');
     }
     assert.ok(await page.locator('.edge-flow').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationPlayState === 'running')), 'Initial core selection does not pause flow.');
-    const plan = playbackPlan(graph);
-    for (let index = 0; index < plan.steps.length; index++) {
-      await toolbar(page, true);
-      if (mobile) await page.locator('.inspector').waitFor({ state: 'detached' });
-      await button(page, '下一步 →').click();
-      assert.ok(await page.evaluate(() => document.activeElement?.textContent === '下一步 →'), 'Stepping retains button focus.');
-      if (mobile) assert.equal(await count(page, '.inspector'), 0, 'A step does not open the mobile Inspector.');
-      if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
-      const stepIndex = Number((await currentStep(page)).split('/')[0]) - 1;
-      await assertInspector(page, graph.nodes.find(n => n.id === plan.steps[stepIndex].nodeId));
-    }
-    await toolbar(page, true);
     const lockedPositions = await geometry(page);
-    const spacing = button(page, '整理间距'); assert.equal(await spacing.getAttribute('aria-disabled'), 'true'); assert.equal(await spacing.evaluate(element => element.disabled), false);
+    await openMore(page);
+    await assertLayoutSwitch(page);
+    const spacing = menuItem(page, '整理间距'); assert.equal(await spacing.getAttribute('aria-disabled'), 'true'); assert.equal(await spacing.evaluate(element => element.disabled), false);
     await spacing.click({ force: true }); assert.match(await status(page), /请先解除布局锁定/);
     assert.deepEqual(await geometry(page), lockedPositions, 'Locked spacing does not change geometry.');
-    await spacing.focus(); await page.keyboard.press('Enter'); assert.match(await status(page), /请先解除布局锁定/);
+    await openMore(page); await menuItem(page, '整理间距').focus(); await page.keyboard.press('Enter'); assert.match(await status(page), /请先解除布局锁定/);
     await searchSelect(page, graph, target(graph));
-    if (mobile) assert.equal(await count(page, '.toolbar'), 0, 'Mobile panels remain mutually exclusive.');
+    if (mobile) assert.equal(await count(page, '.nav'), 0, 'Mobile panels remain mutually exclusive.');
     const token = await pulse(page); assert.equal(token, 1, 'One search action produces one feedback pulse.');
     await assertShape(page, graph, target(graph));
     const selectedGeometry = await geometry(page);
@@ -418,17 +468,19 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
       await page.screenshot({ path: path.join(outputRoot, 'screens', name + '-facts.png'), animations: 'disabled' });
     }
     await clear(page, 'close');
-    if (mobile) await page.locator('.inspector').waitFor({ state: 'detached' });
-    await toolbar(page, true); await page.locator('#search').fill('no-such-node-qa'); assert.equal(await count(page, '.search-results button'), 0);
-    const panelsBeforeReset = await page.locator('.panel-switcher button').evaluateAll(elements => elements.map(element => element.getAttribute('aria-expanded')));
-    await button(page, '重置').click();
-    assert.deepEqual(await page.locator('.panel-switcher button').evaluateAll(elements => elements.map(element => element.getAttribute('aria-expanded'))), panelsBeforeReset, 'Reset preserves panel preferences.');
+    await page.locator('#search').fill('no-such-node-qa'); assert.equal(await count(page, '.results button'), 0); assert.equal(await count(page, '.results .pop-empty'), 1, 'An empty search says so in the popover.');
+    await dismiss(page); assert.equal(await page.locator('#search').inputValue(), 'no-such-node-qa', 'Closing the results keeps the query.');
+    const panelsBeforeReset = await panelState(page);
+    await openMore(page); await menuItem(page, '重置').click();
+    assert.deepEqual(await panelState(page), panelsBeforeReset, 'Reset preserves panel preferences.');
     await page.waitForFunction(() => !document.querySelector('.diagram-node.is-selected'));
-    assert.equal(await page.locator('#search').inputValue(), ''); assert.equal(await spacing.getAttribute('aria-disabled'), 'true');
+    assert.equal(await page.locator('#search').inputValue(), '');
+    await openMore(page); assert.equal(await menuItem(page, '整理间距').getAttribute('aria-disabled'), 'true'); await dismiss(page);
     assert.equal(await page.locator('html').getAttribute('data-theme'), colorTheme);
+    assert.match(await status(page), /已重置/, 'Reset reports through the toast.');
     assert.ok(!/请先|布局已调整|整理.*移动/.test(await status(page)), 'Reset clears stale spacing status.');
-    assert.equal(await currentStep(page), `1/${playbackPlan(graph).steps.length}`);
-    await playing(page, false); await fit(page);
+
+    await fit(page);
     if (viewport.width === 1440) { await searchSelect(page, graph, target(graph)); await exportsMatch(page, graph, name); }
     await hidePanels(page); await fit(page);
     const beforeFullscreen = await geometry(page);
@@ -443,12 +495,30 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
 async function pointerNode(page, node, drag = false) {
   const element = nodeElement(page, node.id);
   const shape = element.locator('.participant-head,.actor-figure,.state-dot,.shape-label,header').first();
-  const point = await (await shape.count() ? shape : element).evaluate(element => {
+  const locate = async () => (await shape.count() ? shape : element).evaluate(element => {
     const box = element.getBoundingClientRect();
     return [[.5, .5], [.9, .5], [.1, .5], [.5, .9], [.5, .1]]
       .map(([x, y]) => ({ x: box.x + box.width * x, y: box.y + box.height * y }))
       .find(({ x, y }) => element.contains(document.elementFromPoint(x, y)));
   });
+  let point = await locate();
+  if (!point) {
+    // An open floating panel can cover a node of the fitted diagram; pan the canvas so the node clears the panel, then retry.
+    const shift = await element.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const panel = [...document.querySelectorAll('.sidebar')].map(item => item.getBoundingClientRect()).find(item => box.left < item.right && box.right > item.left);
+      return panel ? (panel.left < innerWidth / 2 ? panel.right - box.left + 24 : panel.left - box.right - 24) : 0;
+    });
+    if (shift) {
+      const blank = await page.locator('.react-flow__pane').evaluate(pane => {
+        const box = pane.getBoundingClientRect();
+        return [.5, .35, .65].flatMap(y => [.5, .4, .6].map(x => ({ x: box.x + box.width * x, y: box.y + box.height * y }))).find(({ x, y }) => document.elementFromPoint(x, y) === pane);
+      });
+      assert.ok(blank, 'A blank canvas point is available to uncover a covered node.');
+      await page.mouse.move(blank.x, blank.y); await page.mouse.down(); await page.mouse.move(blank.x + shift, blank.y, { steps: 8 }); await page.mouse.up();
+      await page.waitForTimeout(160); point = await locate();
+    }
+  }
   assert.ok(point, `Node ${node.id} exposes a pointer target outside canvas overlays.`);
   const { x, y } = point;
   await page.mouse.move(x, y); await page.mouse.down();
@@ -457,74 +527,249 @@ async function pointerNode(page, node, drag = false) {
 }
 async function entrypoints(browser, url, graph) {
   await runCase(browser, `${graph.meta.diagramType}-selection-entrypoints`, viewports[0], {}, async page => {
-    await page.goto(url); await chooseGraph(page, graph, false); await playing(page, false); await hidePanels(page); await fit(page);
+    await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
     const legendAnchor = await assertLegendLayout(page);
     const selected = target(graph);
-    await playing(page, true); const beforeStep = await currentStep(page); await pointerNode(page, selected);
-    await selection(page, graph, selected.id); await assertPaused(page, beforeStep); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), 1);
-    await page.waitForTimeout(480); const oldPulse = await pulse(page); await fit(page); await playing(page, true); await pointerNode(page, selected);
-    await selection(page, graph, selected.id); await assertPaused(page); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 1, 'Clicking an already selected node replays once.');
-    await page.waitForTimeout(480); await clear(page); await hidePanels(page); await fit(page);
+    const viewBeforeClick = await page.locator('.react-flow__viewport').getAttribute('style'); await pointerNode(page, selected);
+    await selection(page, graph, selected.id); await assertFlow(page);
+    const card = page.locator('.node-card'); await card.waitFor();
+    assert.equal(await card.getAttribute('data-node-id'), selected.id, 'A click shows the quick look for that node.'); assert.equal(await card.getAttribute('role'), 'dialog');
+    assert.equal(await card.locator('h4').innerText(), selected.label); assert.ok(await card.locator('.card-tags span').count() <= 4, 'The quick look shows at most four tags.');
+    assert.equal(await card.getByRole('button', { name: '编辑文字', exact: true }).isDisabled(), true, 'Text editing is disabled while layout is locked.');
+    assert.equal(await count(page, '.inspector'), 0, 'A click does not open the inspector.');
+    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), viewBeforeClick, 'A click does not move the canvas.');
+    const cardBefore = await card.boundingBox(); await page.locator('.react-flow__controls-zoomin').click(); await page.waitForTimeout(260); const cardAfter = await card.boundingBox();
+    assert.ok(Math.abs(cardAfter.x - cardBefore.x) > 1 || Math.abs(cardAfter.y - cardBefore.y) > 1, 'The quick look follows its node through zoom.');
+    await card.getByRole('button', { name: '查看详情', exact: true }).click(); await page.locator('.inspector').waitFor(); await card.waitFor({ state: 'detached' });
+    await assertInspector(page, selected); assert.equal(await pulse(page), 1);
+    await page.waitForTimeout(480); const oldPulse = await pulse(page); await fit(page); await pointerNode(page, selected);
+    await selection(page, graph, selected.id); await assertFlow(page); assert.equal(await count(page, '.node-card'), 0, 'With the inspector open a click updates it without a quick look.'); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 1, 'Clicking an already selected node replays once.');
+    await page.waitForTimeout(480);
+    await page.locator('.inspector').focus(); await page.keyboard.press('Escape'); await page.locator('.inspector').waitFor({ state: 'detached' });
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-controls') === 'node-inspector');
+    assert.equal(await count(page, '.diagram-node.is-selected'), 1, 'Escape closes the focused panel and returns focus to its toggle before touching the selection.');
+    await clear(page); await hidePanels(page); await fit(page);
     const keyboardNode = graph.nodes.find(node => node.id !== selected.id) ?? selected;
-    await playing(page, true); const step = await currentStep(page); await nodeElement(page, keyboardNode.id).focus(); await page.keyboard.press('Enter');
-    await selection(page, graph, keyboardNode.id); await assertPaused(page, step); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 2);
-    await clear(page); await playing(page, true); const spaceStep = await currentStep(page);
+    await nodeElement(page, keyboardNode.id).focus(); await page.keyboard.press('Enter');
+    await selection(page, graph, keyboardNode.id); await assertFlow(page); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 2);
+    await clear(page);
     await nodeElement(page, keyboardNode.id).focus(); await page.keyboard.press('Space');
-    await selection(page, graph, keyboardNode.id); await assertPaused(page, spaceStep); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 3, 'Space produces one selection pulse.');
-    await clear(page); await playing(page, true); await searchSelect(page, graph, selected, true);
-    const searchPulse = await pulse(page); await clear(page); if (playbackPlan(graph).steps.length) assert.ok(await button(page, '▶ 播放').count());
-    await hidePanels(page); await fit(page); await button(page, '布局锁定').click();
-    const geometryBeforeDrag = await geometry(page); await playing(page, true); const dragStep = await currentStep(page); await pointerNode(page, selected, true);
-    await selection(page, graph, selected.id); await assertPaused(page, dragStep); assert.equal(await count(page, '.inspector'), 0); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), searchPulse + 1, 'Dragging selects once.');
-    assert.notDeepEqual((await geometry(page)).nodes, geometryBeforeDrag.nodes, 'Unlocked drag moves a node.');
+    await selection(page, graph, keyboardNode.id); await assertFlow(page); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), oldPulse + 3, 'Space produces one selection pulse.');
+    await clear(page); await searchSelect(page, graph, selected, true);
+    const searchPulse = await pulse(page); await clear(page);
+    await hidePanels(page); await fit(page); await setLocked(page, false);
+    const geometryBeforeDrag = await geometry(page); await pointerNode(page, selected, true);
+    await selection(page, graph, selected.id); await assertFlow(page); assert.equal(await count(page, '.inspector'), 0); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), searchPulse + 1, 'Dragging selects once.');
+    const geometryAfterDrag = await geometry(page);
+    assert.notDeepEqual(geometryAfterDrag.nodes, geometryBeforeDrag.nodes, 'Unlocked drag moves a node.');
+    if (graph.meta.diagramType === 'sequence') assert.equal(geometryAfterDrag.nodes.find(node => node.id === selected.id).position.y, geometryBeforeDrag.nodes.find(node => node.id === selected.id).position.y, 'Sequence participants only move horizontally.');
     await selection(page, graph, selected.id); await exportsMatch(page, graph, `${graph.meta.diagramType}-dragged`);
-    await button(page, '整理间距').click(); const spacingStatus = await status(page);
+    await openMore(page); await menuItem(page, '整理间距').click(); const spacingStatus = await status(page);
     assert.match(spacingStatus, /移动 \d+ 个节点|当前间距无需调整|仍有.*(?:问题|手动)/);
-    await button(page, '重置').click(); await playing(page, false); await hidePanels(page); await fit(page);
+    await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page);
     const authored = await geometry(page);
     for (const node of graph.nodes) assert.deepEqual(authored.nodes.find(value => value.id === node.id).position, node.position, 'Reset restores authored positions.');
-    assert.equal(await button(page, '可拖动').count(), 1, 'Reset preserves lock preference.');
+    await openMore(page); assert.equal(await page.getByRole('switch', { name: '可拖动', exact: true }).count(), 1, 'Reset preserves lock preference.'); await dismiss(page);
+    await pointerNode(page, selected);
+    const editCard = page.locator('.node-card'); await editCard.waitFor();
+    const editButton = editCard.getByRole('button', { name: '编辑文字', exact: true });
+    assert.equal(await editButton.isEnabled(), true); await editButton.click();
+    const nodeName = editCard.getByRole('textbox', { name: '名称', exact: true });
+    await nodeName.fill('   '); await editCard.getByRole('button', { name: '保存', exact: true }).click();
+    assert.equal(await editCard.getByRole('alert').innerText(), '名称不能为空'); assert.equal(await nodeName.evaluate(element => element === document.activeElement), true);
+    await nodeName.fill(selected.label + ' QA'); await page.keyboard.press('Escape');
+    assert.equal(await editButton.evaluate(element => element === document.activeElement), true, 'Escape cancels editing and returns focus to its quick look action.');
+    await editButton.click();
+    const editedNodeLabel = selected.label + ' QA';
+    await editCard.getByRole('textbox', { name: '名称', exact: true }).fill(editedNodeLabel);
+    await editCard.getByRole('textbox', { name: '说明', exact: true }).fill('会话说明');
+    await editCard.getByRole('button', { name: '保存', exact: true }).click();
+    await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: editedNodeLabel });
+    assert.equal(await editCard.locator('h4').innerText(), editedNodeLabel);
+    await nav(page, true); assert.ok((await page.locator('.nav .search-results').innerText()).includes(editedNodeLabel), 'Directory uses current node text.'); await nav(page, false);
+    await editCard.getByRole('button', { name: '查看详情', exact: true }).click();
+    assert.equal(await page.locator('.drawer-body h2').innerText(), editedNodeLabel); assert.equal(await page.locator('.drawer-subtitle').innerText(), '会话说明');
+    await clear(page, 'close'); await hidePanels(page);
     if (graph.edges.length) {
-      await playing(page, true); const edgeStep = await currentStep(page);
       const edge = page.locator('.react-flow__edge').first();
       // SVG interaction paths are deliberate transparent hit targets; dispatch exercises React's edge handler.
       await edge.locator('.react-flow__edge-interaction').dispatchEvent('click');
-      await assertPaused(page, edgeStep);
-      const detailCount = await count(page, '.drawer-body h2'); await playing(page, true);
-      await edge.focus(); await page.keyboard.press('Enter'); await assertPaused(page, edgeStep);
-      assert.equal(await count(page, '.drawer-body h2'), detailCount, 'Edge keyboard selection does not invent node details.');
+      await assertFlow(page); const relationCard = page.locator('.relation-card'); await relationCard.waitFor();
+      assert.equal(await count(page, '.inspector'), 0, 'Relationship click opens quick look before details.');
+      await relationCard.getByRole('button', { name: '编辑文字', exact: true }).click();
+      const editedEdgeLabel = '会话关系';
+      await relationCard.getByRole('textbox', { name: '名称', exact: true }).fill(editedEdgeLabel);
+      await relationCard.getByRole('button', { name: '保存', exact: true }).click();
+      assert.ok((await relationCard.locator('h4').innerText()).includes(editedEdgeLabel));
+      assert.ok((await edge.getAttribute('aria-label')).includes(editedEdgeLabel), 'Edited relationship text updates its accessible name.');
+      await relationCard.getByRole('button', { name: '查看详情', exact: true }).click();
+      assert.ok((await page.locator('.drawer-body h2').innerText()).includes(editedEdgeLabel));
+      await clear(page, 'close'); await edge.focus(); await page.keyboard.press('Enter'); await relationCard.waitFor(); await assertFlow(page);
+      const downloads = await exportsMatch(page, graph, `${graph.meta.diagramType}-edited`);
+      const editedSvg = fs.readFileSync(downloads.svgFile, 'utf8');
+      assert.ok(editedSvg.includes(editedNodeLabel) && editedSvg.includes(editedEdgeLabel), 'SVG export uses current session text.');
+      await openMore(page); await menuItem(page, '重置').click();
+      await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: selected.label });
+      assert.ok(!(await page.locator('.canvas').innerText()).includes(editedEdgeLabel), 'Reset restores authored relationship text.');
     }
     const viewport = page.locator('.react-flow__viewport');
     const beforeZoom = await viewport.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
     const zoomIn = page.locator('.react-flow__controls-zoomin'), zoomOut = page.locator('.react-flow__controls-zoomout');
     const zoomingIn = await zoomIn.isEnabled(), zoomControl = zoomingIn ? zoomIn : zoomOut;
     assert.ok(await zoomControl.isEnabled(), 'At least one zoom direction remains available.');
-    const zoomStep = await currentStep(page), zoomDetails = await count(page, '.drawer-body h2');
+    const zoomDetails = await count(page, '.drawer-body h2');
     await zoomControl.click(); await page.waitForTimeout(220);
     const afterZoom = await viewport.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
     assert.ok(zoomingIn ? afterZoom > beforeZoom : afterZoom < beforeZoom, 'An enabled zoom control changes scale in its direction.');
     assert.deepEqual(await assertLegendLayout(page), legendAnchor, 'Zoom does not move or resize the legend.');
-    assert.equal(await currentStep(page), zoomStep); assert.equal(await count(page, '.drawer-body h2'), zoomDetails); await assertPaused(page);
+    assert.equal(await count(page, '.drawer-body h2'), zoomDetails); await assertFlow(page);
     await fit(page);
-    const beforePan = await viewport.getAttribute('style'); const canvas = await page.locator('.canvas').boundingBox();
-    await page.mouse.move(canvas.x + 5, canvas.y + 8); await page.mouse.down(); await page.mouse.move(canvas.x + 45, canvas.y + 33, { steps: 8 }); await page.mouse.up();
+    const beforePan = await viewport.getAttribute('style'); const blank = await blankPoint(page);
+    await page.mouse.move(blank.x, blank.y); await page.mouse.down(); await page.mouse.move(blank.x + 40, blank.y + 25, { steps: 8 }); await page.mouse.up();
     assert.notEqual(await viewport.getAttribute('style'), beforePan, 'Dragging empty canvas pans the viewport.');
     assert.deepEqual(await assertLegendLayout(page), legendAnchor, 'Pan does not move or resize the legend.');
     await fit(page); const beforeMap = await viewport.getAttribute('style'); const minimap = await page.locator('.react-flow__minimap').boundingBox();
     await page.mouse.move(minimap.x + minimap.width * .55, minimap.y + minimap.height * .45); await page.mouse.down(); await page.mouse.move(minimap.x + minimap.width * .7, minimap.y + minimap.height * .6, { steps: 8 }); await page.mouse.up();
     assert.notEqual(await viewport.getAttribute('style'), beforeMap, 'Dragging the minimap navigates the canvas.');
     await button(page, '适应画布').click(); await page.waitForTimeout(360);
-    if (playbackPlan(graph).steps.length > 1) {
-      await toolbar(page, true); await button(page, '下一步 →').click();
-      const step = await currentStep(page); const completed = await page.locator('.diagram-node.is-complete').evaluateAll(elements => elements.map(element => element.closest('[data-id]').dataset.id));
-      await searchSelect(page, graph, selected); await page.waitForTimeout(1950); await assertPaused(page, step);
-      assert.deepEqual(await page.locator('.diagram-node.is-complete').evaluateAll(elements => elements.map(element => element.closest('[data-id]').dataset.id)), completed);
-      await playing(page, true); await page.waitForTimeout(1200); assert.equal(await currentStep(page), step, 'Resume restarts the 1.8-second interval.');
-      await page.waitForFunction(step => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== step, step, { timeout: 1100 }); await playing(page, false);
-    }
     await searchSelect(page, graph, selected); await clear(page, 'pane');
     await page.keyboard.press('Backspace'); await page.keyboard.press('Delete'); assert.equal(await count(page, '.diagram-node'), graph.nodes.length);
-    return { type: graph.meta.diagramType, pointer: true, repeated: true, keyboard: ['Enter', 'Space'], search: true, drag: true, edge: true, edgeKeyboard: true, panZoomMinimap: true, spacingStatus, resume: playbackPlan(graph).steps.length > 1 };
+    return { type: graph.meta.diagramType, pointer: true, repeated: true, keyboard: ['Enter', 'Space'], search: true, drag: true, edge: true, edgeKeyboard: true, panZoomMinimap: true, spacingStatus };
+  }, true);
+}
+
+async function mobileEditingCheck(browser, url, graph) {
+  await runCase(browser, `${graph.meta.diagramType}-390-mobile-editing`, viewports[2], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, true); await hidePanels(page); await fit(page); await setLocked(page, false);
+    const selected = target(graph), edited = selected.label + ' 移动端';
+    await pointerNode(page, selected);
+    const card = page.locator('.node-card'); await card.waitFor();
+    await card.getByRole('button', { name: '编辑文字', exact: true }).click();
+    await card.getByRole('textbox', { name: '名称', exact: true }).fill(edited);
+    await card.getByRole('button', { name: '保存', exact: true }).click();
+    assert.equal(await card.locator('h4').innerText(), edited);
+    assert.ok(await card.evaluate(element => { const box = element.getBoundingClientRect(), canvas = element.closest('.canvas').getBoundingClientRect(); return box.left >= canvas.left && box.right <= canvas.right && box.top >= canvas.top && box.bottom <= canvas.bottom; }), 'The mobile editing card stays inside the canvas.');
+    await page.reload(); await page.locator('.diagram-node').first().waitFor(); await chooseGraph(page, graph, true);
+    await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: selected.label });
+    await hidePanels(page); await fit(page); await setLocked(page, false); await pointerNode(page, selected);
+    const resetCard = page.locator('.node-card'); await resetCard.getByRole('button', { name: '编辑文字', exact: true }).click();
+    await resetCard.getByRole('textbox', { name: '名称', exact: true }).fill(edited);
+    await resetCard.getByRole('button', { name: '保存', exact: true }).click();
+    await openMore(page); await menuItem(page, '重置').click();
+    await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: selected.label });
+    return { nodeEditing: true, boundedCard: true, reload: true, reset: true };
+  }, true);
+}
+
+async function relationshipCardAvoidanceCheck(browser, url) {
+  const graph = {
+    meta: { title: '关系速览避让', diagramType: 'flowchart', sourceRef: 'browser test fixture', locale: 'zh-CN' },
+    groups: [],
+    nodes: [
+      { id: 'left', label: '左侧处理', kind: 'process', position: { x: 300, y: 100 }, size: { width: 180, height: 100 } },
+      { id: 'right', label: '右侧处理', kind: 'process', position: { x: 720, y: 100 }, size: { width: 180, height: 100 } }
+    ],
+    edges: [{ id: 'crowded', source: 'left', target: 'right', label: '校验通过', kind: 'flow', evidence: 'test', route: { labelAt: { x: 600, y: 195 } } }]
+  };
+  assert.deepEqual(validateGraph(graph), []);
+  const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(
+    /(<script id="graph-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(graph).replaceAll('<', '\\u003c') + close
+  );
+  await runCase(browser, 'relationship-card-avoidance', viewports[0], {}, async page => {
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor(); await hidePanels(page); await fit(page);
+    await page.locator('.react-flow__edge-interaction').dispatchEvent('click');
+    const card = page.locator('.relation-card'); await card.waitFor();
+    const placement = await card.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const overlaps = [...document.querySelectorAll('.react-flow__node-diagram')].filter(node => {
+        const target = node.getBoundingClientRect();
+        return box.left < target.right && box.right > target.left && box.top < target.bottom && box.bottom > target.top;
+      }).map(node => node.dataset.id);
+      return { below: element.classList.contains('is-below'), overlaps };
+    });
+    assert.equal(placement.below, true, 'A relationship card uses the free space below a crowded midpoint.');
+    assert.deepEqual(placement.overlaps, [], 'The relationship card does not cover either adjacent node.');
+    return { below: true, nodeOverlap: false };
+  }, true);
+}
+
+async function editPersistenceChecks(browser, url) {
+  const collection = { note: 'Preserve collection metadata and original ordering', diagrams: ['flowchart', 'architecture'].map(type => ({
+    meta: { title: type, diagramType: type, locale: 'zh-CN', sourceRef: 'Browser regression fixture' },
+    nodes: ['left', 'right'].map((id, index) => ({ id, label: id, kind: type === 'flowchart' ? 'process' : 'service',
+      position: { x: 300 + index * 500, y: 100 }, size: { width: 240, height: 160 },
+      source: { kind: 'test', file: 'browser-interactions.mjs', lineStart: 1, lineEnd: 2 }, facts: ['Synthetic fixture'] })),
+    edges: [{ id: 'relation', source: 'left', target: 'right', label: '原关系', kind: type === 'flowchart' ? 'flow' : 'call', evidence: 'test' }]
+  })) };
+  assert.deepEqual(validateGraphInput(collection), []);
+  const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(
+    /(<script id="graph-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(collection) + close
+  );
+  for (const viewport of [viewports[0], viewports[2]]) await runCase(browser, `${viewport.width}-edit-persistence`, viewport, {}, async page => {
+    await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor();
+    const expected = structuredClone(collection);
+    const switchTo = async type => {
+      await dismiss(page); await page.locator('#view-menu-button').click();
+      await page.getByRole('menuitemradio').filter({ hasText: labels[type] }).click();
+      await page.waitForFunction(label => document.querySelector('#view-menu-button span')?.textContent === label, labels[type]);
+      await hidePanels(page); await fit(page);
+    };
+    const downloadJson = async suffix => {
+      await openMore(page);
+      assert.ok(await page.locator('.menu.is-right').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight; }), 'The save action remains inside the viewport.');
+      if (suffix === 'edited') await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-save-menu.png`), animations: 'disabled' });
+      const pending = page.waitForEvent('download'); await menuItem(page, '保存 Graph JSON').click();
+      const downloaded = await pending;
+      assert.equal(downloaded.suggestedFilename(), 'graph.json');
+      const file = path.join(outputRoot, 'exports', `${viewport.width}-${suffix}.json`);
+      await downloaded.saveAs(file); assert.equal(await downloaded.failure(), null);
+      return file;
+    };
+    for (const graph of expected.diagrams) {
+      await switchTo(graph.meta.diagramType); await setLocked(page, false);
+      await pointerNode(page, graph.nodes[0], true);
+      graph.nodes[0].position = (await geometry(page)).nodes.find(node => node.id === 'left').position;
+      assert.notDeepEqual(graph.nodes[0].position, collection.diagrams.find(g => g.meta.diagramType === graph.meta.diagramType).nodes[0].position);
+      const card = page.locator('.node-card'); await card.getByRole('button', { name: '编辑文字', exact: true }).click();
+      graph.nodes[0].label = graph.meta.diagramType === 'flowchart' ? '流程改名' : '服务改名'; graph.nodes[0].subtitle = '修改说明';
+      await card.getByRole('textbox', { name: '名称', exact: true }).fill(graph.nodes[0].label);
+      await card.getByRole('textbox', { name: '说明', exact: true }).fill(graph.nodes[0].subtitle);
+      await card.getByRole('button', { name: '保存', exact: true }).click();
+      await page.locator('.react-flow__edge-interaction').dispatchEvent('click');
+      const relation = page.locator('.relation-card'); await relation.getByRole('button', { name: '编辑文字', exact: true }).click();
+      graph.edges[0].label = graph.meta.diagramType === 'flowchart' ? '流程关系' : '服务关系';
+      await relation.getByRole('textbox', { name: '名称', exact: true }).fill(graph.edges[0].label);
+      await relation.getByRole('button', { name: '保存', exact: true }).click();
+    }
+    await switchTo('flowchart');
+    assert.ok((await nodeElement(page, 'left').innerText()).includes('流程改名'), 'Switching back retains text for this type even with shared node IDs.');
+    assert.deepEqual((await geometry(page)).nodes.find(node => node.id === 'left').position, expected.diagrams[0].nodes[0].position);
+    const savedFile = await downloadJson('edited');
+    const saved = JSON.parse(fs.readFileSync(savedFile, 'utf8'));
+    for (let index = 0; index < expected.diagrams.length; index++) {
+      const position = saved.diagrams[index].nodes[0].position, painted = expected.diagrams[index].nodes[0].position;
+      for (const axis of ['x', 'y']) assert.ok(Math.abs(position[axis] - painted[axis]) < .001, 'Saved positions agree with the painted CSS matrix, allowing its subpixel rounding.');
+      expected.diagrams[index].nodes[0].position = position;
+    }
+    assert.deepEqual(saved, expected, 'The download includes every edited view, source field and collection metadata.');
+    const regenerated = path.join(outputRoot, `${viewport.width}-regenerated`);
+    const result = spawnSync(process.execPath, [path.join(import.meta.dirname, 'generate-viewer.mjs'), savedFile, regenerated, '--repo-root', import.meta.dirname], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).sourceEvidence.status, 'passed');
+    await openMore(page); await menuItem(page, '重置').click();
+    expected.diagrams[0] = collection.diagrams[0];
+    await switchTo('architecture'); await switchTo('flowchart');
+    assert.deepEqual(JSON.parse(fs.readFileSync(await downloadJson('reset'), 'utf8')), expected, 'Reset restores only the active graph, including absent optional subtitles.');
+    await page.goto(pathToFileURL(path.join(regenerated, 'index.html')).href); await page.locator('.diagram-node').first().waitFor();
+    assert.ok((await nodeElement(page, 'left').innerText()).includes('服务改名'));
+    await switchTo('flowchart'); assert.ok((await nodeElement(page, 'left').innerText()).includes('流程改名'));
+    await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-saved-model.png`), animations: 'disabled' });
+    return { retainedAcrossViews: true, resetIsolated: true, jsonRoundTrip: true, sourceReverified: true, fileUrlReopened: true };
   }, true);
 }
 
@@ -575,7 +820,7 @@ async function flowContrastChecks(browser, url, graph) {
   for (const colorTheme of ['light', 'dark']) {
     await runCase(browser, `${graph.meta.diagramType}-${colorTheme}-flow-contrast`, viewports[0], {}, async page => {
       await page.goto(url); await chooseGraph(page, graph, false);
-      await playing(page, false); await theme(page, colorTheme);
+      await theme(page, colorTheme);
       const selected = target(graph); await searchSelect(page, graph, selected);
       await page.waitForTimeout(800);
       const stable = await geometry(page);
@@ -596,26 +841,6 @@ async function flowContrastChecks(browser, url, graph) {
       }
       assert.equal(checked.length, directedLinked.length, 'Every expected directed incident edge has a checked flow path.');
       assert.deepEqual(await geometry(page), stable);
-      await toolbar(page, true);
-      const plan = playbackPlan(graph);
-      const directedPlayback = plan.steps
-        .filter(step => step.edgeId)
-        .filter(step => hasArrow(graph.edges.find(edge => edge.id === step.edgeId), graph.meta.diagramType));
-      const currentChecked = [];
-      for (let index = 0; index < plan.steps.length; index++) {
-        const stepIndex = Number((await currentStep(page)).split('/')[0]) - 1;
-        const edgeId = plan.steps[stepIndex].edgeId;
-        const edge = edgeId && graph.edges.find(value => value.id === edgeId);
-        if (edge && hasArrow(edge, graph.meta.diagramType)) {
-          const flow = page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(edgeId)}]`)).locator('.edge-flow');
-          assert.equal(await flow.count(), 1, `${edgeId}: expected one current playback flow path`);
-          const ratio = await edgeContrast(page, edgeId);
-          assert.ok(ratio >= 0.6, `Current step flow: ${edgeId}`);
-          currentChecked.push({ id: edgeId, ratio });
-        }
-        await button(page, '下一步 →').click();
-      }
-      assert.equal(currentChecked.length, directedPlayback.length, 'Every expected directed playback edge has a checked current flow path.');
       await searchSelect(page, graph, selected);
       const phaseSamples = [];
       for (const time of [0, 182, 334, 479, 608, 760]) {
@@ -653,129 +878,124 @@ async function flowContrastChecks(browser, url, graph) {
         }, /expected one rendered flow path/);
         negativeGuard = true;
       }
-      return { theme: colorTheme, checked, phaseSamples, expectedDirected: directedLinked.length, currentChecked, expectedCurrent: directedPlayback.length, negativeGuard, staticRelations: linked.length - checked.length };
+      return { theme: colorTheme, checked, phaseSamples, expectedDirected: directedLinked.length, negativeGuard, staticRelations: linked.length - checked.length };
     }, true);
   }
 }
 
 async function inspectorChecks(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-inspector-sync`, viewports[0], {}, async page => {
-    await page.goto(url); await chooseGraph(page, graph, false); await playing(page, false);
-    await toolbar(page, true);
-    if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
-    const plan = playbackPlan(graph);
-    const current = async () => {
-      const index = Number((await currentStep(page)).split('/')[0]) - 1;
-      return graph.nodes.find(n => n.id === plan.steps[index].nodeId);
-    };
-    // Includes initial content and all steps; no assumption that the first node is the core.
-    if (plan.steps.length > 1) await assertInspector(page, await current());
-    else if (core(graph)) await assertInspector(page, core(graph));
-    else assert.equal(await count(page, '.drawer-body h2'), 0);
-    for (let i = 0; i < plan.steps.length; i++) {
-      await button(page, '下一步 →').click();
-      await assertPaused(page); await assertInspector(page, await current());
-      assert.equal(await page.locator('.diagram-node.is-current').evaluate(e => e.closest('[data-id]').dataset.id), (await current()).id);
+  for (const viewport of [viewports[0], viewports[2]]) {
+    await runCase(browser, `${graph.meta.diagramType}-${viewport.width}-inspector-sync`, viewport, {}, async page => {
+      await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700);
+      await ensureInspector(page);
+      if (core(graph)) await assertInspector(page, core(graph));
+      else assert.equal(await count(page, '.drawer-body h2'), 0);
+      for (const node of graph.nodes) await searchSelect(page, graph, node);
+      const selected = graph.nodes.at(-1);
+      await page.locator('.inspector').focus();
+      await page.waitForTimeout(420);
+      const view = await page.locator('.react-flow__viewport').getAttribute('style');
+      await page.waitForTimeout(1950); await assertInspector(page, selected);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'node-inspector');
+      assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), view);
+      await hidePanels(page); await ensureInspector(page); await assertInspector(page, selected);
+      await openMore(page); await menuItem(page, '重置').click();
+      assert.equal(await count(page, '.drawer-body h2'), 0);
+      await nav(page, true); await ensureInspector(page);
+      if (viewport.width <= 700) assert.equal(await count(page, '.nav'), 0);
+      await button(page, '关闭详情').click();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-controls') === 'node-inspector');
+      return { nodes: graph.nodes.length, stableSelection: true, fullContents: true, reset: true, focusReturned: true };
+    }, true);
+  }
+}
+
+async function flowChecks(browser, url, graph) {
+  await runCase(browser, `${graph.meta.diagramType}-ambient-flow`, viewports[0], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false);
+    const directed = graph.edges.filter(edge => hasArrow(edge, graph.meta.diagramType));
+    assert.equal(await count(page, '.edge-flow'), directed.length);
+    assert.equal(await count(page, '.capsule,.playback-controls,.playback-outline,.diagram-node.is-current,.diagram-node.is-complete'), 0);
+    assert.equal(await page.getByRole('button', { name: /^(播放|暂停|← 上一步|下一步 →)$/ }).count(), 0);
+    await searchSelect(page, graph, target(graph));
+    if (directed.length) {
+      const flow = page.locator('.edge-flow').first();
+      const before = await flow.evaluate(element => getComputedStyle(element).strokeDashoffset);
+      await page.waitForTimeout(350);
+      assert.notEqual(await flow.evaluate(element => getComputedStyle(element).strokeDashoffset), before);
+      await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click();
+      await assertFlow(page, false); await dismiss(page);
+      await openMore(page); await menuItem(page, '重置').click(); await assertFlow(page);
     }
-    await button(page, '← 上一步').click(); await assertInspector(page, await current());
-    const manual = graph.nodes.find(n => n.id !== plan.steps[0].nodeId) ?? graph.nodes[0];
-    await searchSelect(page, graph, manual); await assertInspector(page, manual);
-    const held = await currentStep(page);
-    await page.waitForTimeout(1950); await assertPaused(page, held); await assertInspector(page, manual);
-    await playing(page, true); await assertInspector(page, await current());
-    if (plan.steps.length > 1) {
-      await page.waitForTimeout(1100); assert.equal(await currentStep(page), held);
-      await page.waitForFunction(held => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== held, held, { timeout: 1400 });
-    }
-    await playing(page, false); await assertInspector(page, await current());
-    await searchSelect(page, graph, manual);
-    await toolbar(page, true); await button(page, '下一步 →').click();
-    await assertPaused(page); await assertInspector(page, await current());
-    await clear(page); assert.equal(await count(page, '.drawer-body h2'), 0);
-    await playing(page, true); await assertInspector(page, await current()); await playing(page, false);
-    await button(page, '重置').click(); await playing(page, false);
-    assert.equal(await currentStep(page), `1/${plan.steps.length}`);
-    if (plan.steps.length > 1) await assertInspector(page, graph.nodes.find(n => n.id === plan.steps[0].nodeId));
-    await button(page, '隐藏右侧详情栏').click();
-    await page.locator('.inspector').waitFor({ state: 'detached' });
-    await playing(page, true);
-    const hiddenStep = await currentStep(page);
-    if (plan.steps.length > 1) await page.waitForFunction(step => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== step, hiddenStep, { timeout: 2400 });
-    assert.equal(await count(page, '.inspector'), 0);
-    await playing(page, false);
-    await button(page, '显示右侧详情栏').click(); await assertInspector(page, await current());
-    await page.locator('.inspector').focus(); await fit(page);
-    const viewportStyle = await page.locator('.react-flow__viewport').getAttribute('style');
-    await playing(page, true); await page.locator('.inspector').focus();
-    const focusStep = await currentStep(page);
-    if (plan.steps.length > 1) await page.waitForFunction(step => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== step, focusStep, { timeout: 2400 });
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'node-inspector');
-    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), viewportStyle);
-    await playing(page, false); await assertInspector(page, await current());
-    return { steps: plan.steps.length, fullContents: true, manualOverride: true, resume: true, previous: true, reset: true };
+    return { playbackRemoved: true, directedEdges: directed.length, flowSwitch: true };
   }, true);
-  await runCase(browser, `${graph.meta.diagramType}-mobile-inspector-sync`, viewports[2], {}, async page => {
-    await page.goto(url); await chooseGraph(page, graph, true); await page.waitForTimeout(400);
-    const held = await currentStep(page);
-    const view = await page.locator('.react-flow__viewport').getAttribute('style');
-    const active = await page.evaluateHandle(() => document.activeElement);
-    if (playbackPlan(graph).steps.length > 1) await page.waitForFunction(step => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== step, held, { timeout: 2400 });
-    await page.locator('.toolbar').waitFor({ state: 'detached' });
-    await page.locator('.inspector').waitFor({ state: 'detached' });
-    assert.equal(await count(page, '.toolbar'), 0); assert.equal(await count(page, '.inspector'), 0);
-    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), view);
-    assert.equal(await active.evaluate(element => document.activeElement === element), true);
-    await active.dispose();
-    await playing(page, false); await toolbar(page, true); await button(page, '下一步 →').click();
-    await page.locator('.inspector').waitFor({ state: 'detached' });
-    assert.equal(await count(page, '.inspector'), 0);
-    await button(page, '显示右侧详情栏').click();
-    await page.locator('.toolbar').waitFor({ state: 'detached' });
-    assert.equal(await count(page, '.toolbar'), 0);
-    const index = Number((await currentStep(page)).split('/')[0]) - 1;
-    await assertInspector(page, graph.nodes.find(n => n.id === playbackPlan(graph).steps[index].nodeId));
-    await button(page, '关闭详情').click();
-    await page.locator('.inspector').waitFor({ state: 'detached' });
-    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-controls') === 'node-inspector');
-    return { collapsedDuringPlayback: true, exclusivePanels: true, focusReturned: true };
+}
+async function openFixture(page, fixture, viewport, url) {
+  const model = input.diagrams ? { ...input, diagrams: graphs.map(g => g.meta.diagramType === fixture.meta.diagramType ? fixture : g) } : fixture;
+  const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/,
+    (_, start, end) => start + JSON.stringify(model).replaceAll('<', '\\u003c') + end);
+  await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+  await page.goto(url); await chooseGraph(page, fixture, viewport.width <= 700);
+}
+
+async function assertTextBounds(page) {
+  const result = await page.locator('.node-visual text').evaluateAll(texts => ({
+    hidden: texts.filter(text => text.textContent.trim() && getComputedStyle(text).opacity === '0').map(text => text.textContent),
+    failures: texts.flatMap(text => {
+    const node = text.closest('.diagram-node'), box = text.getBoundingClientRect(), bounds = node.getBoundingClientRect();
+    const id = node.closest('[data-id]').dataset.id;
+    if (box.left < bounds.left - .5 || box.right > bounds.right + .5 || box.top < bounds.top - .5 || box.bottom > bounds.bottom + .5) return [{ id, text: text.textContent, reason: 'outside node' }];
+    const shape = node.classList.contains('kind-actor') ? null : node.querySelector('.node-visual .node-surface');
+    if (!shape?.isPointInFill) return [];
+    const inverse = shape.getScreenCTM().inverse();
+    const corners = [[box.left, box.top], [box.right, box.top], [box.left, box.bottom], [box.right, box.bottom]];
+    return corners.every(([x, y]) => shape.isPointInFill(new DOMPoint(x, y).matrixTransform(inverse))) ? [] : [{ id, text: text.textContent, reason: 'outside shape' }];
+    })
+  }));
+  assert.deepEqual(result.hidden, [], 'Zoom scales the complete node without hiding authored text.');
+  assert.deepEqual(result.failures, [], 'Visible text stays inside its node and actual shape.');
+  assert.ok(await page.locator('.boundary > span').evaluateAll(labels => labels.every(label => {
+    const box = label.getBoundingClientRect(), boundary = label.parentElement.getBoundingClientRect();
+    return box.left >= boundary.left && box.right <= boundary.right && box.bottom <= boundary.bottom
+      && getComputedStyle(label).textOverflow === 'ellipsis' && getComputedStyle(label).overflow === 'hidden';
+  })), 'Long boundary titles stay inside their group.');
+}
+
+async function textBoundsChecks(browser, url, graph) {
+  await runCase(browser, `${graph.meta.diagramType}-text-bounds`, viewports[0], {}, async page => {
+    const stress = structuredClone(graph);
+    stress.edges = []; stress.groups = [];
+    for (const kind of getDiagram(graph.meta.diagramType).nodeKinds) {
+      if (!stress.nodes.some(node => node.kind === kind)) stress.nodes.push({ ...structuredClone(stress.nodes[0]), id: `text-${kind}`, kind });
+    }
+    stress.nodes.forEach((node, index) => {
+      node.label = `${index} 节点 ${'WMWM_LongIdentifier_'.repeat(3)}`;
+      node.subtitle = '完整职责 LongMixedIdentifier_'.repeat(3);
+      node.fields?.forEach(field => { field.name = 'long_field_'.repeat(12); field.type = 'generic_type_'.repeat(12); });
+      for (const field of ['attributes', 'methods']) if (node[field]) node[field] = node[field].map(() => 'long_member_identifier_'.repeat(12));
+      node.position = { x: 80 + index % 3 * 480, y: 100 + Math.floor(index / 3) * 420 };
+      node.size = { width: 360, height: 260 };
+      if (['start', 'end'].includes(node.kind)) node.size = { width: 220, height: 64 };
+      if (getDiagram(graph.meta.diagramType).cardLayout && index === 0) node.size.height = 80;
+    });
+    assert.deepEqual(validateGraph(stress), [], 'The overflow stress graph passes the production validator.');
+    const uppercase = structuredClone(graph);
+    uppercase.edges.forEach(edge => { edge.label = 'FOUND_VALUE FOUND_NULL KEY_NOT_EXIST（不回填）'; });
+    uppercase.groups?.forEach(group => { group.label = '完整边界 LongMixedIdentifier_'.repeat(20); });
+    for (const fixture of [graph, stress, uppercase]) {
+      await openFixture(page, fixture, viewports[0], url);
+      await searchSelect(page, fixture, target(fixture)); await hidePanels(page); await clear(page);
+      for (const clicks of [0, 4, 2]) {
+        for (let i = 0; i < clicks; i++) await page.locator('.react-flow__controls-zoomout').click();
+        await page.waitForTimeout(300); await assertTextBounds(page);
+      }
+      await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${fixture === graph ? 'authored' : fixture === stress ? 'long' : 'uppercase-edge'}-text.png`), animations: 'disabled' });
+      await page.unroute(url);
+    }
+    return { authoredAndLongText: true, uppercaseEdges: true, zoomLevels: 3, shapeContainment: true };
   }, true);
 }
 
-async function playbackChecks(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-playback-flow`, viewports[0], {}, async page => {
-    await page.goto(url); await chooseGraph(page, graph, false);
-    const plan = playbackPlan(graph);
-    assert.equal(await button(page, plan.steps.length > 1 ? 'Ⅱ 暂停' : '▶ 播放').count(), 1, 'A generated graph exposes its default demonstration.');
-    await playing(page, false); await clear(page); await toolbar(page, true);
-    assert.equal(await page.locator('.playback-controls').getAttribute('data-playback-mode'), plan.mode);
-    const beforeStep = await currentStep(page);
-    await button(page, '下一步 →').click();
-    const step = await currentStep(page), index = Number(step.split('/')[0]) - 1;
-    assert.equal(await page.locator('.diagram-node.is-current').evaluate(element => element.closest('[data-id]').dataset.id), plan.steps[index].nodeId);
-    if (plan.steps.length > 1) assert.notEqual(step, beforeStep);
-    const stable = await geometry(page), widths = [];
-    for (const time of [0, 182, 479, 760]) {
-      await page.locator('.playback-outline').evaluate((element, time) => { for (const animation of element.getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = time; } }, time);
-      widths.push(await page.locator('.playback-outline .selection-node-shine').evaluate(element => getComputedStyle(element).strokeWidth));
-      assert.deepEqual(await geometry(page), stable, 'Step recoil changes neither node geometry nor routes.');
-    }
-    assert.ok(new Set(widths).size > 1, 'Advancing a step visibly pulses its current node.');
-    await searchSelect(page, graph, target(graph));
-    const offset = await page.locator('.edge-flow').first().evaluate(element => getComputedStyle(element).strokeDashoffset).catch(() => null);
-    const expectedFlowEdges = graph.edges.filter(edge => hasArrow(edge, graph.meta.diagramType));
-    assert.equal(await count(page, '.edge-flow'), expectedFlowEdges.length, 'Rendered flow paths match directed graph edges.');
-    await page.waitForTimeout(1950); await assertPaused(page, step);
-    if (offset !== null) {
-      assert.notEqual(await page.locator('.edge-flow').first().evaluate(element => getComputedStyle(element).strokeDashoffset), offset, 'Edges really keep moving while selected, beyond a whole step interval.');
-      await toolbar(page, true); await page.locator('.flow-toggle').click(); await assertFlow(page, false);
-      await button(page, '▶ 播放').click();
-      if (plan.steps.length > 1) await page.waitForFunction(step => document.querySelector('.status-pill').textContent.match(/\d+\/\d+/)?.[0] !== step, step, { timeout: 2400 });
-      await assertFlow(page, false);
-      await page.locator('.flow-toggle').click(); await assertFlow(page);
-    }
-    return { mode: plan.mode, steps: plan.steps.length, expectedFlowEdges: expectedFlowEdges.length, stepRecoil: true, stableGeometry: true, selectionKeepsFlow: true, independentFlowSwitch: offset !== null };
-  }, true);
-}
 async function informationLayoutChecks(browser, url, graph) {
   const longLegend = structuredClone(graph);
   const stressLegend = graph.meta.diagramType === 'state' && graph.nodes.length >= 5 && graph.edges.length >= 2;
@@ -783,45 +1003,74 @@ async function informationLayoutChecks(browser, url, graph) {
     ['initial', 'final', 'choice', 'state', 'state'].forEach((kind, i) => { longLegend.nodes[i].kind = kind; longLegend.nodes[i].tags = i === 3 ? ['core'] : []; });
     longLegend.edges[0].evidence = 'inference'; longLegend.edges[1].evidence = 'source';
   }
-  async function openFixture(page, fixture, viewport) {
-    const model = input.diagrams ? { ...input, diagrams: graphs.map(g => g.meta.diagramType === fixture.meta.diagramType ? fixture : g) } : fixture;
-    const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/,
-      (_, start, end) => start + JSON.stringify(model).replaceAll('<', '\\u003c') + end);
-    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
-    await page.goto(url); await chooseGraph(page, fixture, viewport.width <= 700); await playing(page, false);
-  }
   for (const viewport of [viewports[0], viewports[2]]) {
+    await runCase(browser, `${viewport.width}-long-preview`, viewport, {}, async page => {
+      const fixture = structuredClone(graph), node = fixture.nodes[0];
+      node.subtitle = 'LongPreviewToken'.repeat(120);
+      node.tags = ['LongTagToken'.repeat(30)];
+      await openFixture(page, fixture, viewport, url); await hidePanels(page); await fit(page);
+      await pointerNode(page, node);
+      const card = page.locator('.node-card'); await card.waitFor();
+      assert.equal(await card.locator('.card-subtitle').textContent(), node.subtitle);
+      assert.equal(await card.locator('.card-tags').textContent(), node.tags[0]);
+      assert.ok(await card.evaluate(card => {
+        const box = card.getBoundingClientRect(), canvas = card.closest('.canvas').getBoundingClientRect();
+        return box.top >= canvas.top && box.bottom <= canvas.bottom && card.scrollHeight > card.clientHeight && card.scrollWidth <= card.clientWidth + 1;
+      }), 'Long preview content scrolls inside the canvas without horizontal overflow.');
+      await card.locator('.card-action').focus();
+      assert.ok(await card.locator('.card-action').evaluate(button => {
+        const box = button.getBoundingClientRect(), card = button.closest('.node-card').getBoundingClientRect();
+        return box.top >= card.top && box.bottom <= card.bottom;
+      }), 'Keyboard focus scrolls the detail action into view.');
+      await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-long-preview.png`), animations: 'disabled' });
+      await page.keyboard.press('Enter'); await assertInspector(page, node);
+      await clear(page, 'close'); await fit(page); await pointerNode(page, node);
+      await card.locator('.card-close').focus(); await page.keyboard.press('Enter');
+      await card.waitFor({ state: 'detached' });
+      return { bounded: true, fullContent: true, keyboardDetailsAndClose: true };
+    }, true);
     await runCase(browser, `${viewport.width}-information-layout`, viewport, {}, async page => {
-      await openFixture(page, longLegend, viewport); await hidePanels(page);
+      await openFixture(page, longLegend, viewport, url); await hidePanels(page);
       const anchor = await assertLegendLayout(page);
-      await button(page, '显示右侧详情栏').click(); await page.locator('.inspector').waitFor();
+      await ensureInspector(page);
+      assert.deepEqual(await assertLegendLayout(page), anchor, 'The inspector does not move the legend button.');
       await hidePanels(page); assert.deepEqual(await assertLegendLayout(page), anchor);
+      if (viewport.width > 700) {
+        // The legend button slides over 300ms when the navigation panel opens or closes; let it settle before measuring.
+        await nav(page, true); await page.waitForTimeout(360); const shifted = await assertLegendLayout(page);
+        assert.ok(shifted.button.x > anchor.button.x, 'The legend button yields to the right of the open navigation panel.');
+        await hidePanels(page); await page.waitForTimeout(360); assert.deepEqual(await assertLegendLayout(page), anchor);
+      }
       await fit(page); const view = page.locator('.react-flow__viewport'), before = await view.getAttribute('style');
       await page.locator('.react-flow__controls-zoomin').click(); await page.waitForTimeout(250);
       assert.notEqual(await view.getAttribute('style'), before);
       assert.deepEqual(await assertLegendLayout(page), anchor);
-      const canvas = await page.locator('.canvas').boundingBox(), beforePan = await view.getAttribute('style');
-      await page.mouse.move(canvas.x + 3, canvas.y + 3); await page.mouse.down();
-      await page.mouse.move(canvas.x + 40, canvas.y + 30, { steps: 8 }); await page.mouse.up();
+      const blank = await blankPoint(page), beforePan = await view.getAttribute('style');
+      await page.mouse.move(blank.x, blank.y); await page.mouse.down();
+      await page.mouse.move(blank.x + 40, blank.y + 30, { steps: 8 }); await page.mouse.up();
       assert.notEqual(await view.getAttribute('style'), beforePan);
       assert.deepEqual(await assertLegendLayout(page), anchor);
       await searchSelect(page, longLegend, target(longLegend)); await hidePanels(page);
-      const selected = await count(page, '.diagram-node.is-selected'), step = await currentStep(page);
+      const selected = await count(page, '.diagram-node.is-selected');
+      await openLegend(page);
       const legend = page.getByRole('group', { name: '阅读图例', exact: true });
       await legend.click({ position: { x: 8, y: 8 } });
-      assert.equal(await count(page, '.diagram-node.is-selected'), selected); assert.equal(await currentStep(page), step);
+      assert.equal(await count(page, '.legend-pop'), 1, 'Clicking inside the legend keeps its popover open.');
+      assert.equal(await count(page, '.diagram-node.is-selected'), selected);
       const rows = await legend.locator('span').evaluateAll(elements => new Set(elements.map(element => Math.round(element.getBoundingClientRect().top))).size);
       if (stressLegend && viewport.width <= 700) assert.ok(rows > 1, 'A semantic-rich mobile legend wraps into multiple visible rows.');
-      await assertLegendLayout(page);
+      const legendEntries = await count(page, '.legend span');
       await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-information-layout.png`), animations: 'disabled' });
-      return { legendAnchor: anchor, legendEntries: await count(page, '.legend span'), rows, pointerPreservesSelection: true, allEntriesVisible: true };
+      await dismiss(page);
+      await assertLegendLayout(page);
+      return { legendAnchor: anchor, legendEntries, rows, pointerPreservesSelection: true, allEntriesVisible: true };
     }, true);
     await runCase(browser, `${viewport.width}-facts-layout`, viewport, {}, async page => {
       const fixture = structuredClone(graph);
       fixture.nodes[0].facts = Array.from({ length: 24 }, (_, i) => `${i + 1}. 完整事实说明 ${'LongEvidenceToken'.repeat(12)}`);
       fixture.nodes[1].facts = ['无来源的节点说明']; delete fixture.nodes[1].source;
       delete fixture.nodes[2].facts; fixture.nodes[3].facts = [];
-      await openFixture(page, fixture, viewport);
+      await openFixture(page, fixture, viewport, url);
       for (const node of fixture.nodes.slice(0, 4)) {
         await searchSelect(page, fixture, node);
         if (node === fixture.nodes[0]) {
@@ -832,8 +1081,7 @@ async function informationLayoutChecks(browser, url, graph) {
         }
       }
       await clear(page, 'close');
-      if (viewport.width <= 700) await page.locator('.inspector').waitFor({ state: 'detached' });
-      if (!await count(page, '.inspector')) await button(page, '显示右侧详情栏').click();
+      await ensureInspector(page);
       await page.locator('.drawer-empty').waitFor();
       assert.equal(await count(page, '.drawer-body h2,.inspector-facts'), 0, 'Cleared details have no stale facts card.');
       return { sourceAndNoSource: true, missingAndEmptyFacts: true, longFacts: true, clearedDetails: true };
@@ -851,22 +1099,68 @@ async function fullscreenState(page, active) {
   if (!active) assert.ok(await control.evaluate(element => element === document.activeElement), 'Exiting fullscreen returns focus to its button.');
 }
 async function fullscreenChecks(browser, url, graph) {
-  for (const viewport of viewports) for (const theme of ['light', 'dark']) {
-    await runCase(browser, `${viewport.width}-${theme}-fullscreen`, viewport, {}, async page => {
-      await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700); await playing(page, false);
-      if (theme === 'dark') await button(page, '深色').click();
+  for (const viewport of [viewports[0], viewports[2]]) {
+    await runCase(browser, `${viewport.width}-quick-details`, viewport, {}, async page => {
+      await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700); await hidePanels(page);
+      const node = target(graph);
+      for (const rejectExit of [false, true]) {
+        await button(page, '进入全屏').click(); await fullscreenState(page, true);
+        await pointerNode(page, node);
+        if (rejectExit) await page.evaluate(() => {
+          window.nativeExitFullscreen = document.exitFullscreen;
+          document.exitFullscreen = () => Promise.reject(new Error('Exit denied'));
+        });
+        await button(page, '查看详情').click();
+        if (rejectExit) {
+          await page.waitForFunction(() => /无法退出全屏/.test(document.querySelector('.toast').textContent));
+          assert.ok(await page.evaluate(() => Boolean(document.fullscreenElement)));
+          assert.equal(await count(page, '.inspector'), 0);
+          assert.equal(await count(page, '.node-card'), 1, 'Rejected exit keeps the quick look accessible.');
+          await page.evaluate(() => { document.exitFullscreen = window.nativeExitFullscreen; });
+          await button(page, '查看详情').click();
+        }
+        await page.waitForFunction(() => !document.fullscreenElement && document.activeElement?.id === 'node-inspector');
+        await assertInspector(page, node);
+        await page.waitForFunction(() => {
+          const box = document.querySelector('.inspector')?.getBoundingClientRect();
+          return box && box.left >= 0 && box.right <= innerWidth + 1;
+        });
+        await hidePanels(page);
+      }
+      return { nativeExit: true, visibleDetails: true, focus: true, rejectedExitRecovery: true };
+    }, true);
+  }
+  await runCase(browser, 'repeat-notice', viewports[0], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false);
+    const notify = async () => { await openMore(page); await menuItem(page, '整理间距').click({ force: true }); };
+    await notify();
+    await page.waitForFunction(() => document.querySelector('.toast').classList.contains('is-on'));
+    const message = await status(page);
+    await page.waitForTimeout(3000); await notify(); await page.waitForTimeout(1800);
+    assert.ok(await page.locator('.toast').evaluate(element => element.classList.contains('is-on')), 'Repeating a visible result restarts its display timer.');
+    await page.waitForFunction(() => !document.querySelector('.toast').classList.contains('is-on'), null, { timeout: 6000 });
+    await notify();
+    await page.waitForFunction(() => document.querySelector('.toast').classList.contains('is-on'));
+    assert.equal(await page.getByRole('status').innerText(), message, 'An identical later result returns to the live status region.');
+    await button(page, '进入全屏').click(); await fullscreenState(page, true);
+    assert.equal(await status(page), '', 'Starting a new operation clears the old notification.');
+    return { visibleRepeatResetsTimer: true, identicalResultRedisplayed: true, clearedOnNewOperation: true };
+  }, true);
+  for (const viewport of viewports) for (const colorTheme of ['light', 'dark']) {
+    await runCase(browser, `${viewport.width}-${colorTheme}-fullscreen`, viewport, {}, async page => {
+      await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700);
+      await theme(page, colorTheme);
       await hidePanels(page); await fit(page);
-      await button(page, '布局锁定').click();
+      await setLocked(page, false);
       assert.equal(await button(page, '进入全屏').count(), 1, 'The canvas exposes one fullscreen control.');
       await page.evaluate(() => { window.fullscreenTestFlow = document.querySelector('.react-flow'); });
       const snapshot = () => page.evaluate(() => ({
         viewport: document.querySelector('.react-flow__viewport').getAttribute('style'),
         positions: [...document.querySelectorAll('.react-flow__node')].map(node => [node.dataset.id, node.style.transform]),
         selected: [...document.querySelectorAll('.diagram-node.is-selected')].map(node => node.closest('[data-id]').dataset.id),
-        panels: [...document.querySelectorAll('.panel-switcher button')].map(button => button.getAttribute('aria-expanded')),
+        panels: [...document.querySelectorAll('[aria-controls="graph-tools"],[aria-controls="node-inspector"]')].map(button => button.getAttribute('aria-expanded')),
         query: document.querySelector('#search')?.value,
-        playing: [...document.querySelectorAll('.top-actions button')].some(button => button.textContent.includes('暂停')),
-        locked: [...document.querySelectorAll('.top-actions button')].find(button => /布局锁定|可拖动/.test(button.textContent))?.getAttribute('aria-pressed')
+        locked: !document.querySelector('.react-flow__node-diagram')?.classList.contains('draggable')
       }));
       await page.locator('.react-flow__controls-zoomin').click(); await page.waitForTimeout(240);
       const before = await snapshot();
@@ -890,7 +1184,7 @@ async function fullscreenChecks(browser, url, graph) {
       }), 'The whole diagram fits inside the fullscreen canvas.');
       const bounds = await page.locator('.diagram-board').evaluate(board => {
         const box = board.getBoundingClientRect(), canvas = board.querySelector('.canvas').getBoundingClientRect();
-        const controls = [...board.querySelectorAll('.react-flow__controls,.react-flow__minimap,.flow-hud')].map(element => element.getBoundingClientRect());
+        const controls = [...board.querySelectorAll('.react-flow__controls,.react-flow__minimap,.legend-anchor')].map(element => element.getBoundingClientRect());
         const overlaps = controls.some((a, i) => controls.slice(i + 1).some(b => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top));
         return { width: box.width, height: box.height, x: box.x, y: box.y, windowWidth: innerWidth, windowHeight: innerHeight,
           canvasHeight: canvas.height, radius: getComputedStyle(board).borderRadius, overlaps,
@@ -900,8 +1194,8 @@ async function fullscreenChecks(browser, url, graph) {
       assert.ok(Math.abs(bounds.width - bounds.windowWidth) <= 1 && Math.abs(bounds.height - bounds.windowHeight) <= 1 && bounds.x === 0 && bounds.y === 0, 'The board fills the fullscreen viewport.');
       assert.ok(bounds.canvasHeight > 0 && bounds.definitions); assert.equal(bounds.radius, '0px');
       assert.equal(bounds.overlaps, false, 'Canvas controls do not overlap.'); assert.equal(bounds.outside, false);
-      await assertLegendLayout(page); await assertNodeDrawing(page, graph, theme);
-      await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-${theme}-fullscreen.png`), animations: 'disabled' });
+      await assertLegendLayout(page); await assertNodeDrawing(page, graph, colorTheme);
+      await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-${colorTheme}-fullscreen.png`), animations: 'disabled' });
       const zoom = page.locator('.react-flow__controls-zoomin');
       await zoom.click(); await page.waitForTimeout(240);
       assert.notEqual((await snapshot()).viewport, entered.viewport, 'Zoom remains usable after automatic fitting.');
@@ -917,12 +1211,15 @@ async function fullscreenChecks(browser, url, graph) {
       await button(page, '进入全屏').click(); await fullscreenState(page, true);
       await button(page, '适应画布').click(); await page.waitForTimeout(360);
       const fitted = (await snapshot()).viewport;
-      const canvas = await page.locator('.canvas').boundingBox();
-      await page.mouse.move(canvas.x + 5, canvas.y + 8); await page.mouse.down(); await page.mouse.move(canvas.x + 45, canvas.y + 33, { steps: 8 }); await page.mouse.up();
+      const blank = await blankPoint(page);
+      await page.mouse.move(blank.x, blank.y); await page.mouse.down(); await page.mouse.move(blank.x + 40, blank.y + 25, { steps: 8 }); await page.mouse.up();
       assert.notEqual((await snapshot()).viewport, fitted);
       const map = await page.locator('.react-flow__minimap').boundingBox(), panned = (await snapshot()).viewport;
-      await page.mouse.move(map.x + map.width * .55, map.y + map.height * .45); await page.mouse.down(); await page.mouse.move(map.x + map.width * .7, map.y + map.height * .6, { steps: 8 }); await page.mouse.up();
-      assert.notEqual((await snapshot()).viewport, panned);
+      if (viewport.width <= 700) assert.equal(map, null, 'The minimap is hidden on narrow screens.');
+      else {
+        await page.mouse.move(map.x + map.width * .55, map.y + map.height * .45); await page.mouse.down(); await page.mouse.move(map.x + map.width * .7, map.y + map.height * .6, { steps: 8 }); await page.mouse.up();
+        assert.notEqual((await snapshot()).viewport, panned);
+      }
       await button(page, '适应画布').click(); await page.waitForTimeout(360);
       const beforeDrag = (await snapshot()).positions;
       await pointerNode(page, target(graph), true);
@@ -931,7 +1228,7 @@ async function fullscreenChecks(browser, url, graph) {
       const selected = graph.nodes.find(node => node.id !== target(graph).id) ?? target(graph);
       await nodeElement(page, selected.id).focus(); await page.keyboard.press('Enter');
       await page.waitForTimeout(460);
-      assert.equal(await count(page, '.toolbar,.inspector'), 0, 'Fullscreen selection does not open outside panels.');
+      assert.equal(await count(page, '.nav,.inspector'), 0, 'Fullscreen selection does not open outside panels.');
       assert.deepEqual((await snapshot()).selected, [selected.id]);
       assert.ok(await page.evaluate(() => document.fullscreenElement.contains(document.activeElement)), 'Focus stays in fullscreen.');
       const changed = await snapshot();
@@ -945,20 +1242,18 @@ async function fullscreenChecks(browser, url, graph) {
       await button(page, '退出全屏').click(); await fullscreenState(page, false);
       await assertInspector(page, target(graph));
       await clear(page); await hidePanels(page);
-      await toolbar(page, true); await page.locator('#search').fill(target(graph).label);
-      if (viewport.width <= 700) await toolbar(page, false);
-      await playing(page, true);
+      await page.locator('#search').fill(target(graph).label); await dismiss(page);
+
       const running = await snapshot();
       await button(page, '进入全屏').click(); await fullscreenState(page, true);
       await button(page, '退出全屏').click(); await fullscreenState(page, false);
       const afterRunning = await snapshot();
-      assert.equal(afterRunning.playing, running.playing); assert.equal(afterRunning.query, running.query); assert.deepEqual(afterRunning.panels, running.panels);
+      assert.equal(afterRunning.query, running.query); assert.deepEqual(afterRunning.panels, running.panels);
       await button(page, '进入全屏').click(); await fullscreenState(page, true);
       await nodeElement(page, selected.id).focus(); await page.keyboard.press('Enter');
-      assert.equal((await snapshot()).playing, false, 'Selecting a node in fullscreen pauses a running presentation.');
       await page.keyboard.press('Escape'); await fullscreenState(page, false);
       assert.ok(await page.evaluate(() => window.fullscreenTestFlow === document.querySelector('.react-flow')), 'React Flow is never remounted.');
-      return { theme, nativeFullscreen: true, autoFit: true, statePreserved: true, keyboard: true, externalExit: true, controls: true };
+      return { theme: colorTheme, nativeFullscreen: true, autoFit: true, statePreserved: true, keyboard: true, externalExit: true, controls: true };
     }, true);
   }
   for (const failure of ['unsupported', 'rejected', 'pending', 'exit-rejected']) {
@@ -974,7 +1269,7 @@ async function fullscreenChecks(browser, url, graph) {
           return failure === 'rejected' ? Promise.reject(new Error('Denied by host')) : new Promise((resolve, reject) => { window.rejectFullscreen = reject; });
         };
       }, failure);
-      await page.goto(url); await chooseGraph(page, graph, false); await playing(page, false); await hidePanels(page);
+      await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page);
       const control = page.locator('.react-flow__controls-fullscreen');
       assert.equal(await control.count(), 1);
       if (failure === 'unsupported') {
@@ -982,7 +1277,7 @@ async function fullscreenChecks(browser, url, graph) {
         assert.match(await control.getAttribute('title'), /不支持|不允许/);
       } else if (failure === 'exit-rejected') {
         await control.click(); await fullscreenState(page, true); await control.click();
-        await page.waitForFunction(() => /无法退出全屏/.test(document.querySelector('.board-foot').textContent));
+        await page.waitForFunction(() => /无法退出全屏/.test(document.querySelector('.toast').textContent));
         assert.equal(await control.getAttribute('aria-pressed'), 'true', 'A failed exit does not report fullscreen as closed.');
         await page.evaluate(() => { document.exitFullscreen = window.nativeExitFullscreen; return document.exitFullscreen(); });
         await fullscreenState(page, false);
@@ -994,7 +1289,7 @@ async function fullscreenChecks(browser, url, graph) {
           assert.equal(await page.evaluate(() => window.fullscreenRequests), 1, 'Repeated clicks cannot start concurrent requests.');
           await page.evaluate(() => window.rejectFullscreen(new Error('Denied by host')));
         }
-        await page.waitForFunction(() => /无法.*全屏/.test(document.querySelector('.board-foot').textContent));
+        await page.waitForFunction(() => /无法.*全屏/.test(document.querySelector('.toast').textContent));
         assert.equal(await control.getAttribute('aria-busy'), 'false');
       }
       assert.equal(await page.evaluate(() => document.fullscreenElement), null);
@@ -1026,27 +1321,31 @@ try {
   const macChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? (fs.existsSync(macChrome) ? macChrome : undefined), headless: process.env.QA_HEADED !== '1' });
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await fullscreenChecks(browser, url, filtered[0]);
+  if (filtered.length && process.env.QA_EXTRAS !== 'none') await mobileEditingCheck(browser, url, filtered[0]);
+  if (filtered.length && process.env.QA_EXTRAS !== 'none') await editPersistenceChecks(browser, url);
+  if (filtered.length && process.env.QA_EXTRAS !== 'none') await relationshipCardAvoidanceCheck(browser, url);
   const layoutGraph = filtered.find(graph => graph.meta.diagramType === 'state' && graph.nodes.length >= 4) ?? filtered.find(graph => graph.nodes.length >= 4);
   if (layoutGraph && process.env.QA_EXTRAS !== 'none') await informationLayoutChecks(browser, url, layoutGraph);
   if (!process.env.QA_ONLY_EXTRAS) await Promise.all(viewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await matrix(browser, url, graph, viewport, colorTheme); }));
   if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) {
+    await textBoundsChecks(browser, url, graph);
     await entrypoints(browser, url, graph);
-    await playbackChecks(browser, url, graph);
+    await flowChecks(browser, url, graph);
     await flowContrastChecks(browser, url, graph);
     await inspectorChecks(browser, url, graph);
     await runCase(browser, `${graph.meta.diagramType}-reduced-motion`, viewports[0], { reducedMotion: 'reduce' }, async page => {
-      await page.goto(url); await chooseGraph(page, graph, false); await assertPaused(page);
-      await toolbar(page, true);
-      if (await count(page, '.flow-toggle')) assert.equal(await page.locator('.flow-toggle').isDisabled(), true);
+      await page.goto(url); await chooseGraph(page, graph, false); await assertFlow(page);
+      await openLegend(page);
+      const flowSwitch = page.getByRole('switch', { name: '连线流动', exact: true });
+      if (await flowSwitch.count()) assert.equal(await flowSwitch.isDisabled(), true);
+      await dismiss(page);
       await searchSelect(page, graph, target(graph));
-      assert.ok(await page.locator('.selection-outline,.selection-outline *,.selection-feedback,.selection-feedback *,.playback-outline,.playback-outline *').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none')), 'Reduced motion suppresses selection recoil.');
-      await button(page, '重置').click(); await assertPaused(page);
+      assert.ok(await page.locator('.selection-outline,.selection-outline *,.selection-feedback,.selection-feedback *').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none')), 'Reduced motion suppresses selection recoil.');
+      await openMore(page); await menuItem(page, '重置').click(); await assertFlow(page);
       assert.equal(await count(page, '.drawer-body h2'), 0, 'Reduced-motion reset keeps an empty Inspector.');
-      await toolbar(page, true); await button(page, '下一步 →').click();
-      const index = Number((await currentStep(page)).split('/')[0]) - 1;
-      await assertInspector(page, graph.nodes.find(n => n.id === playbackPlan(graph).steps[index].nodeId));
+      await searchSelect(page, graph, target(graph));
       await assertFlow(page, false);
-      return { staticSelection: true, pausedReset: true };
+      return { staticSelection: true, emptyReset: true };
     }, true);
     await runCase(browser, `${graph.meta.diagramType}-offline`, viewports[0], {}, async (page, context) => {
       const offlineUrl = url + 'offline.html'; await page.route(offlineUrl, route => route.fulfill({ contentType: 'text/html', body: fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8') })); await context.setOffline(true);
@@ -1054,7 +1353,7 @@ try {
     }, true);
   }
   for (const { name, graph } of fixtures) await runCase(browser, `fixture-${name}`, viewports[0], {}, async page => {
-    await page.goto(url + '__fixtures/' + encodeURIComponent(name) + '/'); await page.locator('.diagram-node').first().waitFor(); await playing(page, false);
+    await page.goto(url + '__fixtures/' + encodeURIComponent(name) + '/'); await page.locator('.diagram-node').first().waitFor();
     for (const selected of graph.nodes) {
       const before = await geometry(page);
       const symbols = await page.locator('.cardinality-mark').evaluateAll(elements => elements.map(element => element.outerHTML));

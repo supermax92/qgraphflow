@@ -13,7 +13,8 @@ reproduced below.
 - `react` 19.2.8, `react-dom` 19.2.8, `scheduler` 0.27.0, and
   `use-sync-external-store` 1.6.0
 - `zustand` 4.5.7
-- Selected color scales derived from Radix Colors
+- Selected color scales derived from Radix Colors (Slate, Iris, Cyan, and
+  Orange, light and dark)
 
 MIT License
 
@@ -100,7 +101,7 @@ THIS SOFTWARE.
 
 ### Lucide icon geometry
 
-The `RotateCcw` and `Focus` icon geometry is from Lucide.
+The interface icon geometry in `icons.jsx` (panels, views, search, play / pause, more, download, lock, reset, sun / moon, close, check, chevron, legend, source, arrow, fit and fullscreen glyphs) is from Lucide.
 
 ISC License
 

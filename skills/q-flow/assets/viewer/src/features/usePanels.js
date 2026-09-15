@@ -3,10 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export const mobileQuery = '(max-width: 700px)';
 const isMobile = () => window.matchMedia(mobileQuery).matches;
 
+// Both panels are floating surfaces over a full-height canvas, so they start collapsed at every width.
 export function usePanels() {
-  const [toolbarOpen, setToolbarOpen] = useState(() => !isMobile());
-  const [drawerOpen, setDrawerOpen] = useState(() => !isMobile());
-  const toolbarButtonRef = useRef(null), drawerButtonRef = useRef(null), searchInputRef = useRef(null), inspectorRef = useRef(null), originRef = useRef(null);
+  const [toolbarOpen, setToolbarOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const toolbarButtonRef = useRef(null), drawerButtonRef = useRef(null), searchInputRef = useRef(null), inspectorRef = useRef(null), panelRef = useRef(null);
   const focusFrame = useRef(null);
   const cancelFocus = useCallback(() => cancelAnimationFrame(focusFrame.current), []);
   const focus = useCallback(ref => {
@@ -18,22 +19,18 @@ export function usePanels() {
     });
   }, [cancelFocus]);
   useEffect(() => cancelFocus, [cancelFocus]);
-  const rememberOrigin = useCallback(() => { const origin = document.activeElement; originRef.current = origin?.closest('.toolbar') ? toolbarButtonRef.current : origin; }, []);
   const openDetails = useCallback(() => { setDrawerOpen(true); if (isMobile()) setToolbarOpen(false); focus(inspectorRef); }, [focus]);
-  const closeDetails = useCallback((restoreFocus = false) => {
-    cancelFocus();
-    if (isMobile()) setDrawerOpen(false);
-    if (restoreFocus) { const origin = originRef.current; focus({ current: origin?.isConnected && origin !== document.body ? origin : drawerButtonRef.current }); }
-  }, [cancelFocus, focus]);
+  // Closing a floating panel hands focus back to the toolbar toggle that owns it.
+  const closeDetails = useCallback((restoreFocus = false) => { cancelFocus(); setDrawerOpen(false); if (restoreFocus) focus(drawerButtonRef); }, [cancelFocus, focus]);
   const closeMobile = useCallback(() => { if (isMobile()) { setDrawerOpen(false); setToolbarOpen(false); } }, []);
-  const focusToolbar = useCallback(() => focus(toolbarButtonRef), [focus]);
-  const toggleToolbar = () => { cancelFocus(); setToolbarOpen(!toolbarOpen); if (isMobile()) setDrawerOpen(false); if (!toolbarOpen) focus(searchInputRef); };
-  const toggleDrawer = () => { cancelFocus(); setDrawerOpen(!drawerOpen); if (isMobile()) setToolbarOpen(false); if (!drawerOpen) { originRef.current = drawerButtonRef.current; focus(inspectorRef); } };
+  const closeNav = useCallback((restoreFocus = false) => { cancelFocus(); setToolbarOpen(false); if (restoreFocus) focus(toolbarButtonRef); }, [cancelFocus, focus]);
+  const toggleToolbar = () => { cancelFocus(); setToolbarOpen(!toolbarOpen); if (isMobile()) setDrawerOpen(false); if (!toolbarOpen) focus(panelRef); };
+  const toggleDrawer = () => { cancelFocus(); setDrawerOpen(!drawerOpen); if (isMobile()) setToolbarOpen(false); if (!drawerOpen) focus(inspectorRef); };
   useEffect(() => {
     const media = window.matchMedia(mobileQuery);
     const collapse = event => { if (event.matches) { setToolbarOpen(false); setDrawerOpen(false); } };
     collapse(media); media.addEventListener('change', collapse);
     return () => media.removeEventListener('change', collapse);
   }, []);
-  return { toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, rememberOrigin, openDetails, closeDetails, closeMobile, focusToolbar, toggleToolbar, toggleDrawer };
+  return { toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, openDetails, closeDetails, closeMobile, closeNav, toggleToolbar, toggleDrawer };
 }

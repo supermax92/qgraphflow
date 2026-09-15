@@ -6,147 +6,112 @@
 
 Follow the path. Inspect the evidence. Share one offline file.
 
-[English](README.md) · [中文](docs/readme/README.zh-CN.md) · [日本語](docs/readme/README.ja.md) · [한국어](docs/readme/README.ko.md) · [Deutsch](docs/readme/README.de.md) · [Français](docs/readme/README.fr.md) · [Español](docs/readme/README.es.md)
+[English](README.md) · [中文](docs/readme/README.zh-CN.md) · [Русский](docs/readme/README.ru.md) · [Português](docs/readme/README.pt.md) · [日本語](docs/readme/README.ja.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
 [Client installation](docs/clients.md) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
 
 </div>
 
-![Real QGraphFlow interaction, built from Apache Kafka source. Architecture](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.architecture.gif)
+![E-commerce architecture, flowchart and sequence: 0.8 seconds per view, 2.4 seconds per loop, with animated edges](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.core-three.gif)
 
-*Real QGraphFlow interaction, built from Apache Kafka source.*
+*Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
-- **Explore:** play an authored path, search nodes and inspect their responsibilities.
-- **Verify:** retain source files, line numbers, symbols and explicit uncertainty.
+- **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
+- **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
+- **Edit:** unlock the layout, change text and move elements; reset when needed.
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
 
-README animations are downloaded only when viewing the documentation. Git clones and plugin packages contain no GIFs. The slim package includes the order-flow example and the English Kafka collection; all seven collections remain available in the Git repository.
+*Explore: open navigation, search for the checkout orchestrator and locate it; select a node to open its quick-look card and highlight incoming/outgoing edges, then zoom and pan.*
 
-## Try all nine Kafka views
+![Navigation, search, node quick look, relationship highlighting, zoom and pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.explore.gif)
 
-With Node.js 22, clone this repository and run:
+*Verify: open the details panel from the quick-look card to inspect paths, line numbers and symbols; then select an edge to inspect its explanation and inference marker.*
+
+The paths, line numbers and symbols in this interaction demo are fictional. They demonstrate the evidence panel and do not represent repository source; the page and details say so too. Use real sources for actual analysis and mark unconfirmed relationships as inference.
+
+![Details with explicitly fictional source paths, lines, symbols and relationship inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.verify.gif)
+
+*Edit: unlock the layout in **More**, edit a node's name and description, drag it with its connected edges, then reset to restore the original text and position.*
+
+![Unlock, edit text, drag a node with its edges, and reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.edit.gif)
+
+*Share: open the HTML offline, export SVG and PNG through **More**, and open the PNG to inspect the complete drawing.*
+
+![Offline HTML, SVG and PNG export, and the exported PNG](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.share.gif)
+
+The top animation shows each of three views for 0.8 seconds (2.4 seconds per loop). The four interaction animations allow time to read. All media use the source-built Viewer and English graph and interface text. The five GIFs and nine PNGs are hosted as independent [showcase-v1 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), with public downloads and SHA-256 checksums verified. They are excluded from Git history and plugin packages; viewing them requires network access. The generated diagram HTML itself works offline.
+
+## Quick start
+
+Install from the repository or a local plugin directory following the [installation guide](docs/clients.md). `qgraphflow-local` is the project's distribution source name. The source version `0.0.2` does not itself mean a matching Release package has been published.
+
+After installation, start a new session and confirm that `q-flow` appears in your client's skill list. These examples use the Codex App entry `$qgraphflow:q-flow`; select `$q-flow` if that is the entry your client provides. See the installation guide for other clients.
+
+**Not sure where to begin?** Invoke the skill and choose the subject and question when prompted.
+
+```text
+$qgraphflow:q-flow
+```
+
+**Already have a goal?** Say which part to draw and what you want to understand. You do not need to choose a diagram type first.
+
+### Example 1: Understand the architecture
+
+```text
+$qgraphflow:q-flow Analyze this project and create an architecture diagram in English showing module responsibilities, dependencies and system boundaries.
+```
+
+Useful when joining a project and learning its overall structure.
+
+### Example 2: Trace a business flow
+
+```text
+$qgraphflow:q-flow Analyze order creation and create a sequence diagram in English showing pricing, stock reservation, payment and order persistence, including failure branches.
+```
+
+Replace order creation and its steps with your project's actual flow. Continue in the same conversation:
+
+```text
+$qgraphflow:q-flow Expand stock reservation from the previous diagram into a separate flowchart in English, showing success and failure handling.
+```
+
+Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, edit and export; `graph.json` retains the graph data.
+
+<details>
+<summary>Run the nine-view e-commerce example manually</summary>
+
+These commands run the repository example. An installed plugin does not require cloning this repository. With Node.js 22:
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/kafka.en.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/kafka.en.graph.json output/kafka
+node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.en.graph.json
+node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.en.graph.json output/ecommerce-en
 ```
 
-Open `output/kafka/index.html` in a browser and select a diagram from the tools panel. The adjacent `graph.json` keeps the editable model. After editing the input JSON, generate into a new output directory to keep earlier results.
+Open `output/ecommerce-en/index.html` in a browser. Switch views with **Diagram types** in the top toolbar; saved text and positions survive switching. Use **More → Save Graph JSON** to save all views to a chosen JSON file, or download a copy in browsers without file saving. Refreshing the original HTML restores embedded data; regenerate from the saved JSON into a new directory to reopen edits.
 
-The bundled Viewer needs no dependency installation, API key or backend service. AI-assisted authoring uses your chosen client's model service.
-
-## One codebase. Nine ways to understand it.
-
-The architecture above follows the producer-to-leader-log path. Open the other views below; every GIF has matching interface text and graph explanations in this README's language.
-
-**01 · Architecture** — A source-based tour of the leader append path. Network internals, replication and acknowledgements are outside this view.
-
-<details>
-<summary><strong>02 · Flowchart</strong> · Kafka: when does send() wake Sender?</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. Flowchart](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.flowchart.gif)
-
-The branch after RecordAccumulator.append(). This view omits earlier validation and exception paths; returning a Future does not mean the broker has acknowledged the record.
+The prebuilt Viewer needs no dependency installation, API key or backend service. AI-assisted evidence gathering and graph authoring use your chosen client's model service.
 
 </details>
 
-<details>
-<summary><strong>03 · Sequence</strong> · Kafka: a produce request with acks=1</summary>
+## What each of the nine views answers
 
-![Real QGraphFlow interaction, built from Apache Kafka source. Sequence](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.sequence.gif)
+| View · PNG | Main question | Example scope |
+| --- | --- | --- |
+| [Architecture](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.architecture.png) | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
+| [Flowchart](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.flowchart.png) | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
+| [Sequence](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.sequence.png) | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
+| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.er.png) | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
+| [Deployment](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.deployment.png) | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
+| [Class](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.class.png) | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
+| [State](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.state.png) | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
+| [Use case](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.usecase.png) | What can each actor do? | Buyer, merchant, warehouse and support |
+| [Data flow](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.dataflow.png) | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
 
-Successful, non-transactional produce request. KafkaApis represents the broker request boundary; networking and partition internals are folded into the participants. No follower acknowledgement is required by acks=1.
-
-</details>
-
-<details>
-<summary><strong>04 · ER diagram</strong> · Kafka: inside ProduceRequest v13</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. ER diagram](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.er.gif)
-
-Protocol containment, not SQL tables. Arrays are shown as zero-to-many schema relationships; no database primary or foreign keys are implied. Version 13 identifies topics by TopicId.
-
-</details>
-
-<details>
-<summary><strong>05 · Deployment</strong> · Kafka: isolated KRaft roles</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. Deployment](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.deployment.gif)
-
-The repository Docker Compose plaintext example: three brokers and three separate controller containers. The controller quorum is collapsed into one visual node. This development configuration is not a production deployment recommendation.
-
-</details>
-
-<details>
-<summary><strong>06 · Class diagram</strong> · Kafka: the producer API and its implementations</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. Class diagram](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.class.gif)
-
-Selected Java types and members. KafkaProducer and MockProducer both implement Producer<K,V>; ProducerRecord carries the input. Signatures are abbreviated; no ownership relationship is inferred.
-
-</details>
-
-<details>
-<summary><strong>07 · State diagram</strong> · Kafka: a consumer joins its group</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. State diagram](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.state.gif)
-
-The normal assignment cycle from MemberState. Error, fencing and leaving states are omitted. Reconciliation can repeat when the broker sends another assignment.
-
-</details>
-
-<details>
-<summary><strong>08 · Use cases</strong> · Kafka: what each client can do</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. Use cases](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.usecase.gif)
-
-Client roles mapped to the public Java APIs. Actor associations describe capabilities, not an execution sequence. Offset commits and administrative operations remain explicit application choices.
-
-</details>
-
-<details>
-<summary><strong>09 · Data flow</strong> · Kafka: from application values to consumer records</summary>
-
-![Real QGraphFlow interaction, built from Apache Kafka source. Data flow](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/kafka.en.dataflow.gif)
-
-The payload journey through serialization, partition storage and deserialization. Batching, Produce/Fetch networking and replication are condensed; this view does not model offset commits or processing guarantees.
-
-</details>
-
-## Draw your own project
-
-Install the plugin using the client guide. In Codex, use `$q-flow`; in Claude Code, use `/qgraphflow:q-flow`. Select the skill through the available entry in Qoder or Cursor. The guide records installation steps and native-client verification status.
-
-> Analyze this module's entry points, core components and relationships. Create an interactive architecture diagram in English, retain source file and line evidence, and label relationships that cannot be confirmed.
-
-CodeGraph is optional; without it, the skill reads source directly. Default output: `docs/qgraphflow/<scope>-<diagram-type>/` in the target project. You can specify another directory.
-
-## Built from code you can check
-
-All nine examples use Apache Kafka commit `634a935e7291` (the checkout declares version `4.4.0`). Selected entry points:
-
-| View | Source evidence |
-| --- | --- |
-| Architecture | [`ReplicaManager.appendToLocalLog` · L1376](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/core/src/main/scala/kafka/server/ReplicaManager.scala#L1376) |
-| Flowchart | [`KafkaProducer.doSend` · L1241](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java#L1241) |
-| Sequence | [`KafkaApis.handleProduceRequest` · L457](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/core/src/main/scala/kafka/server/KafkaApis.scala#L457) |
-| ER diagram | [`ProduceRequest` · L50](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/resources/common/message/ProduceRequest.json#L50) |
-| Deployment | [`controller-1 / controller-2 / controller-3` · L18](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/docker/examples/docker-compose-files/cluster/isolated/plaintext/docker-compose.yml#L18) |
-| Class diagram | [`Producer` · L97](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/java/org/apache/kafka/clients/producer/Producer.java#L97) |
-| State diagram | [`STABLE` · L67](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/java/org/apache/kafka/clients/consumer/internals/MemberState.java#L67) |
-| Use cases | [`Producer.send` · L97](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/java/org/apache/kafka/clients/producer/Producer.java#L97) |
-| Data flow | [`KafkaProducer.doSend` · L1197](https://github.com/apache/kafka/blob/634a935e729197848ffd958c06458215f96f103e/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java#L1197) |
-
-## Reading the examples correctly
-
-- Playback follows an authored path or node reading order; it does not capture runtime execution. Leader append, producer acknowledgement and completed consumer processing are distinct events.
-- Evidence determines accuracy. Review key relationships; diagrams distinguish source, schema, configuration, conventions and inference.
-- Layout edits affect SVG / PNG export but are not automatically saved to `graph.json`.
-- Each language uses the same source evidence and topology. Code identifiers, API names, schema fields and standard notation remain in their original form.
+This is a concept model demonstrating QGraphFlow, not a particular e-commerce repository. The example `graph.json` invents no source paths and marks relationship evidence as `inference`. Real project diagrams need traceable source, DDL, configuration, tests and accepted requirements.
 
 ## Develop and contribute
 
@@ -156,12 +121,12 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-Development needs Node.js 22, npm, tar, zip and unzip. For issues, include a minimal redacted graph, client/browser versions and reproduction steps.
+Development needs Node.js 22, npm, tar, zip and unzip. Include a minimal redacted graph, client/browser versions and reproduction steps in issue reports.
 
-[Graph format](skills/q-flow/references/graph-schema.md) · [Browser verification guide](skills/q-flow/references/viewer-development.md)
+[Evidence sources](skills/q-flow/references/evidence-sources.md) · [Graph format](skills/q-flow/references/graph-schema.md) · [Guided intake](skills/q-flow/references/guided-intake.md) · [Viewer development](skills/q-flow/references/viewer-development.md) · [Diagram composition](skills/q-flow/references/visual-contract.md)
 
 ## License and attribution
 
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-QGraphFlow is an independent MIT-licensed project. Apache Kafka is the demonstration subject. Mentioned product names belong to their respective owners; no affiliation, sponsorship or endorsement is implied.
+QGraphFlow is an independent MIT-licensed project. The commerce scenario is conceptual and does not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.

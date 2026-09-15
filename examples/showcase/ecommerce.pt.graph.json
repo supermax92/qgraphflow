@@ -1,0 +1,3251 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Da compra à entrega",
+        "diagramType": "architecture",
+        "locale": "pt",
+        "subtitle": "Como a compra passa por preços, risco, estoque, pagamento e entrega",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Modelo conceitual, sem código de produção; as relações ilustram nove tipos de diagrama."
+      },
+      "groups": [
+        {
+          "id": "transaction-runtime",
+          "label": "Transação síncrona",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1810,
+            "height": 600
+          }
+        },
+        {
+          "id": "fulfillment-runtime",
+          "label": "Entrega assíncrona",
+          "kind": "ownership",
+          "position": {
+            "x": 0,
+            "y": 785
+          },
+          "size": {
+            "width": 1820,
+            "height": 310
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "channels",
+          "label": "Web / App / Miniapp",
+          "subtitle": "Enviar carrinho e dados de entrega",
+          "module": "Canais",
+          "kind": "external",
+          "position": {
+            "x": 40,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Usar uma entrada única de compra",
+            "Não chamar serviços de domínio diretamente"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "Gateway de API comercial",
+          "subtitle": "Autenticação, idempotência e entrada",
+          "module": "Canais",
+          "kind": "security",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          },
+          "facts": [
+            "Verificar identidade do usuário",
+            "Encaminhar checkoutToken"
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Orquestrador da compra",
+          "subtitle": "Orquestrar uma compra",
+          "module": "Compra",
+          "kind": "business",
+          "position": {
+            "x": 1000,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Combinar decisões de preço, risco e estoque",
+            "Executar compensação mínima em caso de falha"
+          ],
+          "tags": [
+            "core",
+            "Orquestração da transação"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preços e descontos",
+          "subtitle": "Recalcular preços, cupons e frete",
+          "module": "Preços",
+          "kind": "service",
+          "position": {
+            "x": 1480,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "O preço do servidor é definitivo",
+            "Retornar o retrato de preços"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Risco da transação",
+          "subtitle": "Avaliar risco da conta, dispositivo e pedido",
+          "module": "Risco",
+          "kind": "failure",
+          "position": {
+            "x": 1480,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "Retornar aprovação, recusa ou revisão manual"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Reserva de estoque",
+          "subtitle": "Reservar unidades por depósito e SKU",
+          "module": "Estoque",
+          "kind": "data",
+          "position": {
+            "x": 1000,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "As reservas expiram",
+            "Liberar após falha no pagamento"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Serviço de pagamento",
+          "subtitle": "Criar pagamento e confirmar resultado",
+          "module": "Pagamento",
+          "kind": "service",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Callbacks de pagamento devem ser idempotentes",
+            "Autorização não significa entrega concluída"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Serviço de pedidos",
+          "subtitle": "Persistir pedidos, itens e retratos da transação",
+          "module": "Pedidos",
+          "kind": "business",
+          "position": {
+            "x": 40,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Regras de domínio avançam o estado do pedido",
+            "Gravar pedido e Outbox na mesma transação"
+          ]
+        },
+        {
+          "id": "event-bus",
+          "label": "Barramento de eventos comerciais",
+          "subtitle": "Publicar eventos de domínio como OrderPaid",
+          "module": "Pedidos",
+          "kind": "framework",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          },
+          "facts": [
+            "Consumidores deduplicam pelo ID do evento"
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Preparação e entrega",
+          "subtitle": "Alocar, separar, embalar e enviar",
+          "module": "Entrega",
+          "kind": "service",
+          "position": {
+            "x": 760,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Consumir pedidos pagos de forma assíncrona",
+            "Atualizar status de pacotes e transporte"
+          ]
+        },
+        {
+          "id": "after-sales",
+          "label": "Pós-venda",
+          "subtitle": "Cancelamentos, reembolsos e devoluções",
+          "module": "Entrega",
+          "kind": "service",
+          "position": {
+            "x": 1520,
+            "y": 850
+          },
+          "size": {
+            "width": 290,
+            "height": 150
+          },
+          "facts": [
+            "Escolher reembolso ou devolução conforme o andamento da entrega"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "submit",
+          "source": "channels",
+          "target": "gateway",
+          "label": "Enviar compra",
+          "kind": "request",
+          "evidence": "inference"
+        },
+        {
+          "id": "dispatch",
+          "source": "gateway",
+          "target": "checkout",
+          "label": "Comando de\ncompra\nidempotente",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "quote",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Recalcular valor\ndevido",
+          "kind": "call",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1390,
+              "y": 280
+            }
+          }
+        },
+        {
+          "id": "screen",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Retrato de\npreços",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "reserve",
+          "source": "risk",
+          "target": "inventory",
+          "label": "Reservar após\naprovação",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "authorize",
+          "source": "inventory",
+          "target": "payment",
+          "label": "Token de estoque\n+ valor",
+          "kind": "call",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 910,
+              "y": 330
+            }
+          }
+        },
+        {
+          "id": "create-order",
+          "source": "payment",
+          "target": "order",
+          "label": "Confirmar\npagamento",
+          "kind": "success",
+          "evidence": "inference"
+        },
+        {
+          "id": "publish",
+          "source": "order",
+          "target": "event-bus",
+          "label": "OrderPaid",
+          "kind": "framework",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 190,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 880
+              }
+            ],
+            "labelAt": {
+              "x": 450,
+              "y": 660
+            }
+          }
+        },
+        {
+          "id": "fulfill",
+          "source": "event-bus",
+          "target": "fulfillment",
+          "label": "Criar ordem de\nentrega",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "service",
+          "source": "fulfillment",
+          "target": "after-sales",
+          "label": "Pacote e status\nde recebimento",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Decisões do pedido",
+        "diagramType": "flowchart",
+        "locale": "pt",
+        "subtitle": "Falhas de estoque, risco ou pagamento não podem deixar pedidos parciais",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Caminho de sucesso e três saídas de falha; novas tentativas e detalhes da revisão omitidos."
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Enviar\ncompra",
+          "subtitle": "Incluir\ncheckoutToken",
+          "module": "Compra",
+          "kind": "start",
+          "position": {
+            "x": 112.5,
+            "y": 70
+          },
+          "size": {
+            "width": 270,
+            "height": 130
+          },
+          "facts": [
+            "O comprador confirma carrinho, endereço e cupons.",
+            "O token de compra garante idempotência ponta a ponta."
+          ]
+        },
+        {
+          "id": "validate",
+          "label": "Validar carrinho",
+          "subtitle": "Itens, endereço, chave de\nidempotência",
+          "module": "Compra",
+          "kind": "process",
+          "position": {
+            "x": 685,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "Rejeitar SKUs e endereços inválidos.",
+            "Verificar se checkoutToken já gerou um pedido."
+          ]
+        },
+        {
+          "id": "stock",
+          "label": "Estoque\nsuficiente?",
+          "subtitle": "Agrupar por\ndepósito e SKU",
+          "module": "Estoque",
+          "kind": "decision",
+          "position": {
+            "x": 1245,
+            "y": 40
+          },
+          "size": {
+            "width": 360,
+            "height": 250
+          },
+          "facts": [
+            "Verificar quantidade vendável e limites de reserva.",
+            "Retornar faltas imediatamente se insuficiente."
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Fixar retrato de\npreços",
+          "subtitle": "Preços, descontos, frete",
+          "module": "Preços",
+          "kind": "process",
+          "position": {
+            "x": 1887.5,
+            "y": 70
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Recalcular; não confiar no valor do cliente.",
+            "Salvar o retrato com o pedido para auditoria."
+          ]
+        },
+        {
+          "id": "no-stock",
+          "label": "Retornar\nfaltas",
+          "subtitle": "Sem criar\npedido",
+          "module": "Estoque",
+          "kind": "end",
+          "position": {
+            "x": 1285,
+            "y": 430
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "Retornar SKUs indisponíveis ao cliente.",
+            "Pular etapas de preços, pagamento e pedido."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Risco\naprovado?",
+          "subtitle": "Conta,\ndispositivo, valor",
+          "module": "Risco",
+          "kind": "decision",
+          "position": {
+            "x": 1857.5,
+            "y": 400
+          },
+          "size": {
+            "width": 350,
+            "height": 250
+          },
+          "facts": [
+            "Baixo risco segue para reserva de estoque.",
+            "Transações suspeitas seguem para revisão manual."
+          ]
+        },
+        {
+          "id": "review",
+          "label": "Revisão manual",
+          "subtitle": "Revisar alto risco com\nprazo limitado",
+          "module": "Risco",
+          "kind": "process",
+          "position": {
+            "x": 2547.5,
+            "y": 430
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "A aprovação retorna ao fluxo principal.",
+            "A recusa preserva o código de motivo do risco."
+          ]
+        },
+        {
+          "id": "risk-reject",
+          "label": "Recusar\ntransação",
+          "subtitle": "Preservar\nmotivo do risco",
+          "module": "Risco",
+          "kind": "end",
+          "position": {
+            "x": 2552.5,
+            "y": 820
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "Não iniciar pagamento.",
+            "Registrar motivo de recusa auditável."
+          ]
+        },
+        {
+          "id": "reserve",
+          "label": "Reservar estoque",
+          "subtitle": "Gerar reservationToken",
+          "module": "Estoque",
+          "kind": "subprocess",
+          "position": {
+            "x": 1917.5,
+            "y": 800
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Definir TTL para evitar bloqueio permanente do estoque.",
+            "Liberar obrigatoriamente em caso de falha no pagamento."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Solicitar autorização",
+          "subtitle": "Usar o valor do retrato",
+          "module": "Pagamento",
+          "kind": "process",
+          "position": {
+            "x": 1167.5,
+            "y": 805
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Usar apenas o retrato de preços do servidor.",
+            "A autorização inclui uma chave de idempotência de negócio."
+          ]
+        },
+        {
+          "id": "pay-result",
+          "label": "Autorizado?",
+          "subtitle": "Deduplicar\ncallbacks e\nconsultas",
+          "module": "Pagamento",
+          "kind": "decision",
+          "position": {
+            "x": 430,
+            "y": 775
+          },
+          "size": {
+            "width": 340,
+            "height": 230
+          },
+          "facts": [
+            "Gravar pedido somente após sucesso.",
+            "A falha compensa a reserva."
+          ]
+        },
+        {
+          "id": "release",
+          "label": "Liberar reserva",
+          "subtitle": "Encerrar reservationToken",
+          "module": "Estoque",
+          "kind": "subprocess",
+          "position": {
+            "x": 1287.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "A compensação deve ser idempotente.",
+            "Informar falha de pagamento após liberar."
+          ]
+        },
+        {
+          "id": "pay-fail",
+          "label": "Retornar\nfalha de\npagamento",
+          "subtitle": "Pedido ainda\nnão criado",
+          "module": "Pagamento",
+          "kind": "end",
+          "position": {
+            "x": 1887.5,
+            "y": 1225
+          },
+          "size": {
+            "width": 290,
+            "height": 170
+          },
+          "facts": [
+            "Preservar código de motivo do provedor de pagamento.",
+            "Permitir que o comprador reinicie a compra."
+          ]
+        },
+        {
+          "id": "persist",
+          "label": "Gravar pedido +\nOutbox",
+          "subtitle": "Uma transação de banco",
+          "module": "Pedidos",
+          "kind": "subprocess",
+          "position": {
+            "x": 447.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Confirmar pedido e evento de domínio atomicamente.",
+            "A entrega assíncrona continua a partir do Outbox."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "done",
+          "label": "Retornar ID\ndo pedido",
+          "subtitle": "Iniciar entrega\nassíncrona",
+          "module": "Pedidos",
+          "kind": "end",
+          "position": {
+            "x": 457.5,
+            "y": 1490
+          },
+          "size": {
+            "width": 270,
+            "height": 130
+          },
+          "facts": [
+            "O caminho síncrono termina aqui.",
+            "Falha na entrega não reverte um pedido pago."
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "source": "start",
+          "target": "validate",
+          "label": "Entrar",
+          "kind": "flow",
+          "module": "Compra",
+          "facts": [
+            "Enviar compra → Validar carrinho.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "check",
+          "source": "validate",
+          "target": "stock",
+          "label": "Válido",
+          "kind": "flow",
+          "module": "Compra",
+          "facts": [
+            "Validar carrinho → Estoque suficiente?.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1102.5,
+              "y": 335
+            }
+          }
+        },
+        {
+          "id": "stock-yes",
+          "source": "stock",
+          "target": "pricing",
+          "label": "Sim",
+          "kind": "yes",
+          "module": "Estoque",
+          "facts": [
+            "Estoque suficiente? → Fixar retrato de preços.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-no",
+          "source": "stock",
+          "target": "no-stock",
+          "label": "Não",
+          "kind": "failure",
+          "module": "Estoque",
+          "facts": [
+            "Estoque suficiente? → Retornar faltas.",
+            "Caminho de falha ou compensação."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "price-ready",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Retrato de\npreços",
+          "kind": "flow",
+          "module": "Preços",
+          "facts": [
+            "Fixar retrato de preços → Risco aprovado?.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-yes",
+          "source": "risk",
+          "target": "reserve",
+          "label": "Aprovado",
+          "kind": "yes",
+          "module": "Risco",
+          "facts": [
+            "Risco aprovado? → Reservar estoque.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-review",
+          "source": "risk",
+          "target": "review",
+          "label": "Revisar",
+          "kind": "flow",
+          "module": "Risco",
+          "facts": [
+            "Risco aprovado? → Revisão manual.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 2385,
+              "y": 365
+            }
+          }
+        },
+        {
+          "id": "review-approved",
+          "source": "review",
+          "target": "reserve",
+          "label": "Aprovar",
+          "kind": "yes",
+          "module": "Risco",
+          "facts": [
+            "Revisão manual → Reservar estoque.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2550,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 870
+              }
+            ],
+            "labelAt": {
+              "x": 2475,
+              "y": 715
+            }
+          }
+        },
+        {
+          "id": "review-rejected",
+          "source": "review",
+          "target": "risk-reject",
+          "label": "Recusar",
+          "kind": "failure",
+          "module": "Risco",
+          "facts": [
+            "Revisão manual → Recusar transação.",
+            "Caminho de falha ou compensação."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "request-pay",
+          "source": "reserve",
+          "target": "payment",
+          "label": "reservationToken",
+          "kind": "flow",
+          "module": "Estoque",
+          "facts": [
+            "Reservar estoque → Solicitar autorização.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "payment-result",
+          "source": "payment",
+          "target": "pay-result",
+          "label": "Resultado da\nautorização",
+          "kind": "flow",
+          "module": "Pagamento",
+          "facts": [
+            "Solicitar autorização → Autorizado?.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 975,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "pay-yes",
+          "source": "pay-result",
+          "target": "persist",
+          "label": "Sucesso",
+          "kind": "success",
+          "module": "Pagamento",
+          "facts": [
+            "Autorizado? → Gravar pedido + Outbox.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "pay-no",
+          "source": "pay-result",
+          "target": "release",
+          "label": "Falha",
+          "kind": "failure",
+          "module": "Pagamento",
+          "facts": [
+            "Autorizado? → Liberar reserva.",
+            "Caminho de falha ou compensação."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "release-complete",
+          "source": "release",
+          "target": "pay-fail",
+          "label": "Compensado",
+          "kind": "failure",
+          "module": "Estoque",
+          "facts": [
+            "Liberar reserva → Retornar falha de pagamento.",
+            "Caminho de falha ou compensação."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1717.5,
+              "y": 1175
+            }
+          }
+        },
+        {
+          "id": "complete",
+          "source": "persist",
+          "target": "done",
+          "label": "Confirmado",
+          "kind": "flow",
+          "module": "Pedidos",
+          "facts": [
+            "Gravar pedido + Outbox → Retornar ID do pedido.",
+            "Relação do fluxo principal."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Uma compra bem-sucedida",
+        "diagramType": "sequence",
+        "locale": "pt",
+        "subtitle": "Confirmar de forma síncrona, entregar de forma assíncrona",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Caminho de sucesso; compensação, timeouts e callbacks fora de ordem pertencem às vistas de fluxo e estados."
+      },
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Comprador",
+          "module": "Canais",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 220,
+            "height": 960
+          },
+          "facts": [
+            "Enviar carrinho e receber ID do pedido."
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Compra",
+          "subtitle": "Orquestração da transação",
+          "module": "Compra",
+          "kind": "service",
+          "position": {
+            "x": 390,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Coordenar preços, estoque, risco, pagamento e pedidos."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preços",
+          "subtitle": "Preços e descontos",
+          "module": "Preços",
+          "kind": "participant",
+          "position": {
+            "x": 780,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Gerar retrato de preços imutável."
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Estoque",
+          "subtitle": "Reserva de estoque",
+          "module": "Estoque",
+          "kind": "participant",
+          "position": {
+            "x": 1170,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Reservar SKUs e retornar um token."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Risco",
+          "subtitle": "Risco da transação",
+          "module": "Risco",
+          "kind": "participant",
+          "position": {
+            "x": 1560,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Retornar PASS, REVIEW ou REJECT."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Pagamento",
+          "subtitle": "Autorização de pagamento",
+          "module": "Pagamento",
+          "kind": "external",
+          "position": {
+            "x": 1950,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Autorizar o valor do retrato."
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Pedidos",
+          "subtitle": "Pedido e Outbox",
+          "module": "Pedidos",
+          "kind": "database",
+          "position": {
+            "x": 2340,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Salvar pedido e Outbox atomicamente."
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Entrega",
+          "subtitle": "Preparação e entrega",
+          "module": "Entrega",
+          "kind": "participant",
+          "position": {
+            "x": 2730,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Consumir OrderPaid de forma assíncrona."
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "inventory-result",
+          "label": "Resultado do estoque",
+          "kind": "alt",
+          "position": {
+            "x": 350,
+            "y": 375
+          },
+          "size": {
+            "width": 1100,
+            "height": 117
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "s1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Enviar comando de compra",
+          "kind": "sync",
+          "module": "Canais",
+          "order": 1,
+          "facts": [
+            "Enviar: Enviar comando de compra",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s2",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Recalcular preços e descontos",
+          "kind": "sync",
+          "module": "Compra",
+          "order": 2,
+          "facts": [
+            "Enviar: Recalcular preços e descontos",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s3",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "PriceSnapshot",
+          "kind": "return",
+          "module": "Preços",
+          "order": 3,
+          "facts": [
+            "Retorno: PriceSnapshot",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s4",
+          "source": "checkout",
+          "target": "inventory",
+          "label": "Reservar quantidades de SKU",
+          "kind": "sync",
+          "module": "Compra",
+          "order": 4,
+          "facts": [
+            "Enviar: Reservar quantidades de SKU",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s5",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "reservationToken",
+          "kind": "return",
+          "module": "Estoque",
+          "order": 5,
+          "facts": [
+            "Retorno: reservationToken",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s6",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "OUT_OF_STOCK",
+          "kind": "return",
+          "module": "Estoque",
+          "order": 6,
+          "facts": [
+            "Retorno: OUT_OF_STOCK",
+            "Esta mensagem representa o ramo de falta de estoque."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s7",
+          "source": "checkout",
+          "target": "risk",
+          "label": "Verificar conta, dispositivo e valor",
+          "kind": "sync",
+          "module": "Compra",
+          "order": 7,
+          "facts": [
+            "Enviar: Verificar conta, dispositivo e valor",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s8",
+          "source": "risk",
+          "target": "checkout",
+          "label": "PASS",
+          "kind": "return",
+          "module": "Risco",
+          "order": 8,
+          "facts": [
+            "Retorno: PASS",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s9",
+          "source": "checkout",
+          "target": "payment",
+          "label": "Autorizar valor devido",
+          "kind": "sync",
+          "module": "Compra",
+          "order": 9,
+          "facts": [
+            "Enviar: Autorizar valor devido",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s10",
+          "source": "payment",
+          "target": "checkout",
+          "label": "paymentConfirmed",
+          "kind": "return",
+          "module": "Pagamento",
+          "order": 10,
+          "facts": [
+            "Retorno: paymentConfirmed",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s11",
+          "source": "checkout",
+          "target": "order",
+          "label": "Salvar pedido + OrderPaid",
+          "kind": "sync",
+          "module": "Compra",
+          "order": 11,
+          "facts": [
+            "Enviar: Salvar pedido + OrderPaid",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s12",
+          "source": "order",
+          "target": "checkout",
+          "label": "orderId",
+          "kind": "return",
+          "module": "Pedidos",
+          "order": 12,
+          "facts": [
+            "Retorno: orderId",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s13",
+          "source": "order",
+          "target": "fulfillment",
+          "label": "Publicar OrderPaid de forma assíncrona",
+          "kind": "async",
+          "module": "Pedidos",
+          "order": 13,
+          "facts": [
+            "Enviar: Publicar OrderPaid de forma assíncrona",
+            "Mensagem assíncrona; não bloqueia a compra."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s14",
+          "source": "checkout",
+          "target": "buyer",
+          "label": "Retornar ID do pedido",
+          "kind": "return",
+          "module": "Compra",
+          "order": 14,
+          "facts": [
+            "Retorno: Retornar ID do pedido",
+            "Ler na ordem numérica."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Modelo de dados da transação",
+        "diagramType": "er",
+        "locale": "pt",
+        "subtitle": "Como carrinhos, pedidos, pagamentos, reservas e pacotes se relacionam",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Modelo relacional conceitual para notação ER; campos simplificados, sem DDL executável."
+      },
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "customer",
+          "module": "Canais",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 360,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "member_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(16)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart",
+          "label": "shopping_cart",
+          "module": "Compra",
+          "kind": "entity",
+          "position": {
+            "x": 560,
+            "y": 70
+          },
+          "size": {
+            "width": 390,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "version",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart-item",
+          "label": "cart_item",
+          "module": "Compra",
+          "kind": "entity",
+          "position": {
+            "x": 1120,
+            "y": 70
+          },
+          "size": {
+            "width": 420,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "cart_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "order",
+          "label": "sales_order",
+          "module": "Pedidos",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "payable_amount",
+              "type": "decimal(18,2)",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order-item",
+          "label": "sales_order_item",
+          "module": "Pedidos",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 500
+          },
+          "size": {
+            "width": 450,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal(18,2)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "payment_order",
+          "module": "Pagamento",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "payment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "channel_txn_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "reservation",
+          "label": "inventory_reservation",
+          "module": "Estoque",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 980
+          },
+          "size": {
+            "width": 480,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "reservation_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "warehouse_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "expires_at",
+              "type": "timestamp",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "shipment",
+          "label": "shipment",
+          "module": "Entrega",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 980
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "shipment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "tracking_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "customer-cart",
+          "source": "customer",
+          "target": "cart",
+          "label": "Possui",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..1",
+          "evidence": "inference"
+        },
+        {
+          "id": "cart-items",
+          "source": "cart",
+          "target": "cart-item",
+          "label": "Contém",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "customer-orders",
+          "source": "customer",
+          "target": "order",
+          "label": "Faz pedido",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-items",
+          "source": "order",
+          "target": "order-item",
+          "label": "Contém",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "1..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-payments",
+          "source": "order",
+          "target": "payment",
+          "label": "Tentativa de\npagamento",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 400
+              },
+              {
+                "x": 1445,
+                "y": 400
+              }
+            ],
+            "labelAt": {
+              "x": 800,
+              "y": 375
+            }
+          }
+        },
+        {
+          "id": "item-reservations",
+          "source": "order-item",
+          "target": "reservation",
+          "label": "Reserva",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-shipments",
+          "source": "payment",
+          "target": "shipment",
+          "label": "Criado após\npagamento",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Implantação multirregional",
+        "diagramType": "deployment",
+        "locale": "pt",
+        "subtitle": "Onde executam transações e entrega assíncrona",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Implantação conceitual; réplicas, provedor de nuvem e middleware não especificados."
+      },
+      "groups": [
+        {
+          "id": "edge",
+          "label": "Borda pública",
+          "kind": "network",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1510,
+            "height": 250
+          }
+        },
+        {
+          "id": "region",
+          "label": "Região comercial principal · Kubernetes",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 340
+          },
+          "size": {
+            "width": 1510,
+            "height": 300
+          }
+        },
+        {
+          "id": "managed",
+          "label": "Dados e serviços externos",
+          "kind": "host",
+          "position": {
+            "x": 10,
+            "y": 780
+          },
+          "size": {
+            "width": 1830,
+            "height": 370
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "device",
+          "label": "Dispositivo do comprador",
+          "subtitle": "Web / App / Miniapp",
+          "module": "Canais",
+          "kind": "device",
+          "position": {
+            "x": 40,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "cdn",
+          "label": "CDN + WAF",
+          "subtitle": "Recursos estáticos e proteção de borda",
+          "module": "Canais",
+          "kind": "node",
+          "position": {
+            "x": 610,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "subtitle": "Entrada comercial pública",
+          "module": "Canais",
+          "kind": "container",
+          "position": {
+            "x": 1180,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "commerce",
+          "label": "Pods de comércio",
+          "subtitle": "Checkout / Order / Pricing",
+          "module": "Compra",
+          "kind": "service",
+          "position": {
+            "x": 40,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "control",
+          "label": "Pods de estoque e risco",
+          "subtitle": "Inventory / Risk",
+          "module": "Estoque",
+          "kind": "service",
+          "position": {
+            "x": 580,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Pods de entrega e pós-venda",
+          "subtitle": "Fulfillment / AfterSales",
+          "module": "Entrega",
+          "kind": "service",
+          "position": {
+            "x": 1120,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "database",
+          "label": "Banco de dados comercial",
+          "subtitle": "Pedidos, pagamentos, Outbox",
+          "module": "Pedidos",
+          "kind": "database",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "event-bus",
+          "label": "Barramento de eventos",
+          "subtitle": "Eventos de domínio e tópicos de repetição",
+          "module": "Pedidos",
+          "kind": "container",
+          "position": {
+            "x": 500,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Provedor de pagamento externo",
+          "subtitle": "Autorização, callbacks, reembolsos",
+          "module": "Pagamento",
+          "kind": "external",
+          "position": {
+            "x": 960,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 173
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Rede de depósitos / logística",
+          "subtitle": "WMS e interfaces de transportadoras",
+          "module": "Entrega",
+          "kind": "external",
+          "position": {
+            "x": 1420,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 173
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "device",
+          "target": "cdn",
+          "label": "HTTPS",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-2",
+          "source": "cdn",
+          "target": "gateway",
+          "label": "Requisição\nfiltrada",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-3",
+          "source": "gateway",
+          "target": "commerce",
+          "label": "Roteamento\ninterno",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1900,
+                "y": 150
+              },
+              {
+                "x": 1900,
+                "y": 680
+              },
+              {
+                "x": 350,
+                "y": 680
+              }
+            ],
+            "labelAt": {
+              "x": 1030,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "edge-4",
+          "source": "commerce",
+          "target": "control",
+          "label": "Chamada\nsíncrona de\ndomínio",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-5",
+          "source": "control",
+          "target": "fulfillment",
+          "label": "Restrições de\nentrega",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-6",
+          "source": "commerce",
+          "target": "database",
+          "label": "Gravação\ntransacional",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 220,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 820
+              },
+              {
+                "x": 205,
+                "y": 820
+              }
+            ],
+            "labelAt": {
+              "x": 300,
+              "y": 714
+            }
+          }
+        },
+        {
+          "id": "edge-7",
+          "source": "database",
+          "target": "event-bus",
+          "label": "Outbox",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-9",
+          "source": "commerce",
+          "target": "payment",
+          "label": "API de\npagamento",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 0,
+                "y": 495
+              },
+              {
+                "x": 0,
+                "y": 700
+              },
+              {
+                "x": 1125,
+                "y": 700
+              }
+            ],
+            "labelAt": {
+              "x": 520,
+              "y": 675
+            }
+          }
+        },
+        {
+          "id": "edge-10",
+          "source": "event-bus",
+          "target": "wms",
+          "label": "Tarefas de\ndepósito",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 665,
+                "y": 1100
+              },
+              {
+                "x": 1585,
+                "y": 1100
+              }
+            ],
+            "labelAt": {
+              "x": 1120,
+              "y": 1100
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Contratos de compra",
+        "diagramType": "class",
+        "locale": "pt",
+        "subtitle": "Serviços de aplicação dependem de objetos de domínio e portas, não da infraestrutura",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Modelo conceitual de classes; assinaturas limitadas ao necessário para explicar a colaboração."
+      },
+      "nodes": [
+        {
+          "id": "command",
+          "label": "CheckoutCommand",
+          "module": "Compra",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 390,
+            "height": 260
+          },
+          "attributes": [
+            "customerId: CustomerId",
+            "items: List<CheckoutItem>",
+            "checkoutToken: String"
+          ],
+          "methods": [
+            "validate(): void"
+          ]
+        },
+        {
+          "id": "service",
+          "label": "CheckoutApplicationService",
+          "module": "Compra",
+          "kind": "class",
+          "position": {
+            "x": 590,
+            "y": 40
+          },
+          "size": {
+            "width": 440,
+            "height": 230
+          },
+          "attributes": [],
+          "methods": [
+            "checkout(command): OrderId",
+            "compensate(context): void"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Order",
+          "module": "Pedidos",
+          "kind": "class",
+          "position": {
+            "x": 1200,
+            "y": 40
+          },
+          "size": {
+            "width": 400,
+            "height": 290
+          },
+          "attributes": [
+            "id: OrderId",
+            "lines: List<OrderLine>",
+            "total: Money",
+            "status: OrderStatus"
+          ],
+          "methods": [
+            "confirmPayment(snapshot): void",
+            "cancel(reason): void"
+          ]
+        },
+        {
+          "id": "pricing-port",
+          "label": "PricingPort",
+          "module": "Preços",
+          "kind": "interface",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 390,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "quote(command): PriceSnapshot"
+          ]
+        },
+        {
+          "id": "inventory-port",
+          "label": "InventoryPort",
+          "module": "Estoque",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 500
+          },
+          "size": {
+            "width": 440,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "reserve(items): Reservation",
+            "release(token): void"
+          ]
+        },
+        {
+          "id": "payment-port",
+          "label": "PaymentPort",
+          "module": "Pagamento",
+          "kind": "interface",
+          "position": {
+            "x": 1200,
+            "y": 500
+          },
+          "size": {
+            "width": 400,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "authorize(amount): Payment",
+            "refund(paymentId): void"
+          ]
+        },
+        {
+          "id": "repository",
+          "label": "OrderRepository",
+          "module": "Pedidos",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 950
+          },
+          "size": {
+            "width": 440,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "save(order): void",
+            "find(orderId): Order"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "source": "command",
+          "target": "service",
+          "label": "Entrada",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "creates",
+          "source": "service",
+          "target": "order",
+          "label": "Criar",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "pricing",
+          "source": "service",
+          "target": "pricing-port",
+          "label": "Depende de",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "inventory",
+          "source": "service",
+          "target": "inventory-port",
+          "label": "Depende de",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "payment",
+          "source": "service",
+          "target": "payment-port",
+          "label": "Depende de",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "aggregate",
+          "source": "order",
+          "target": "repository",
+          "label": "Persistir",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1700,
+                "y": 185
+              },
+              {
+                "x": 1700,
+                "y": 1060
+              },
+              {
+                "x": 1100,
+                "y": 1060
+              }
+            ],
+            "labelAt": {
+              "x": 1500,
+              "y": 1035
+            }
+          }
+        },
+        {
+          "id": "save",
+          "source": "service",
+          "target": "repository",
+          "label": "Enviar",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 500,
+                "y": 155
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 810,
+                "y": 850
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 825
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Ciclo de vida do pedido",
+        "diagramType": "state",
+        "locale": "pt",
+        "subtitle": "Como pagamento, entrega, cancelamento e reembolso limitam estados",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Máquina de estados conceitual; envios parciais, divisão de pedidos e logística reversa omitidos."
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "Início",
+          "module": "Pedidos",
+          "kind": "initial",
+          "position": {
+            "x": 30,
+            "y": 100
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        },
+        {
+          "id": "pending",
+          "label": "Aguardando pagamento",
+          "subtitle": "Estoque reservado",
+          "module": "Pagamento",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "paid",
+          "label": "Pago",
+          "subtitle": "Aguardando aceite do depósito",
+          "module": "Pedidos",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "allocated",
+          "label": "Alocado",
+          "subtitle": "Depósito de entrega definido",
+          "module": "Entrega",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "packed",
+          "label": "Embalado",
+          "subtitle": "Aguardando coleta",
+          "module": "Entrega",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "shipped",
+          "label": "Em trânsito",
+          "subtitle": "Conhecimento de transporte criado",
+          "module": "Entrega",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "completed",
+          "label": "Concluído",
+          "subtitle": "Recebido ou confirmado automaticamente",
+          "module": "Entrega",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "cancelled",
+          "label": "Cancelado",
+          "subtitle": "Encerrado antes do pagamento",
+          "module": "Pedidos",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "refunding",
+          "label": "Reembolsando",
+          "subtitle": "Processo reverso após pagamento",
+          "module": "Pagamento",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "closed",
+          "label": "Encerrado",
+          "module": "Pedidos",
+          "kind": "final",
+          "position": {
+            "x": 1270,
+            "y": 740
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "source": "initial",
+          "target": "pending",
+          "label": "Criar pedido",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pay",
+          "source": "pending",
+          "target": "paid",
+          "label": "Confirmar\npagamento",
+          "guard": "Válido",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "allocate",
+          "source": "paid",
+          "target": "allocated",
+          "label": "Depósito aceita",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pack",
+          "source": "allocated",
+          "target": "packed",
+          "label": "Separação\nconcluída",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "ship",
+          "source": "packed",
+          "target": "shipped",
+          "label": "Coleta da\ntransportadora",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "receive",
+          "source": "shipped",
+          "target": "completed",
+          "label": "Confirmar\nrecebimento",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel",
+          "source": "pending",
+          "target": "cancelled",
+          "label": "Cancelar antes\nde pagar",
+          "action": "Liberar estoque",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 650
+              },
+              {
+                "x": 390,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 130,
+              "y": 615
+            }
+          }
+        },
+        {
+          "id": "refund-paid",
+          "source": "paid",
+          "target": "refunding",
+          "label": "Pedido de\ncancelamento",
+          "guard": "Não enviado",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 900,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 650
+              },
+              {
+                "x": 900,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 1720,
+              "y": 595
+            }
+          }
+        },
+        {
+          "id": "refund-complete",
+          "source": "completed",
+          "target": "refunding",
+          "label": "Reembolso\npós-venda",
+          "guard": "Revisão aprovada",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel-close",
+          "source": "cancelled",
+          "target": "closed",
+          "label": "Recursos\nliberados",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 390,
+                "y": 930
+              },
+              {
+                "x": 1315,
+                "y": 930
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 905
+            }
+          }
+        },
+        {
+          "id": "refund-close",
+          "source": "refunding",
+          "target": "closed",
+          "label": "Reembolso\nrecebido",
+          "kind": "transition",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Capacidades dos atores",
+        "diagramType": "usecase",
+        "locale": "pt",
+        "subtitle": "O que fazem compradores, lojistas, depósitos, suporte e provedores de pagamento",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Visão de capacidades, sem ordem de chamadas; governança e conciliação omitidas."
+      },
+      "groups": [
+        {
+          "id": "platform",
+          "label": "Plataforma de comércio e entrega",
+          "kind": "system",
+          "position": {
+            "x": 500,
+            "y": 20
+          },
+          "size": {
+            "width": 1050,
+            "height": 970
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Comprador",
+          "module": "Canais",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 80
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "merchant",
+          "label": "Operador da loja",
+          "module": "Preços",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "warehouse",
+          "label": "Operador de depósito",
+          "module": "Entrega",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 540
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "support",
+          "label": "Atendimento",
+          "module": "Entrega",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 770
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Finalizar carrinho",
+          "subtitle": "Preços, descontos, estoque",
+          "module": "Compra",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "Pagar pedido",
+          "subtitle": "Escolher provedor e confirmar",
+          "module": "Pagamento",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "catalog",
+          "label": "Gerenciar produtos e promoções",
+          "subtitle": "Catálogo, preços, descontos",
+          "module": "Preços",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "orders",
+          "label": "Tratar exceções de pedidos",
+          "subtitle": "Revisar, encerrar, compensar",
+          "module": "Pedidos",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "pick",
+          "label": "Separar e embalar",
+          "subtitle": "Ler SKUs e códigos de caixas",
+          "module": "Entrega",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "ship",
+          "label": "Enviar pacotes",
+          "subtitle": "Criar documento e entregar",
+          "module": "Entrega",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "refund",
+          "label": "Processar reembolsos",
+          "subtitle": "Verificar pagamento e andamento da entrega",
+          "module": "Pagamento",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "return",
+          "label": "Processar devoluções",
+          "subtitle": "Logística reversa e reposição",
+          "module": "Entrega",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "buyer-checkout",
+          "source": "buyer",
+          "target": "checkout",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "merchant-catalog",
+          "source": "merchant",
+          "target": "catalog",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "warehouse-pick",
+          "source": "warehouse",
+          "target": "pick",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "support-refund",
+          "source": "support",
+          "target": "refund",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "checkout-pay",
+          "source": "checkout",
+          "target": "pay",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "catalog-orders",
+          "source": "catalog",
+          "target": "orders",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "pick-ship",
+          "source": "pick",
+          "target": "ship",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "return-refund",
+          "source": "return",
+          "target": "refund",
+          "label": "extend",
+          "kind": "extend",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Comércio eletrônico · Fluxo de dados da transação",
+        "diagramType": "dataflow",
+        "locale": "pt",
+        "subtitle": "Como os dados do carrinho se tornam um pedido entregável e rastreável",
+        "sourceRef": "Exemplo conceitual do README · 2026-09-14",
+        "scope": "Mostra dados e transformações, não a ordem de chamadas síncronas nem a implementação de mensageria."
+      },
+      "groups": [
+        {
+          "id": "transaction",
+          "label": "Limite de dados da transação",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 20
+          },
+          "size": {
+            "width": 1330,
+            "height": 570
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Limite de dados da entrega",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 660
+          },
+          "size": {
+            "width": 1330,
+            "height": 260
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Comprador e carrinho",
+          "subtitle": "SKU, quantidade, endereço, cupons",
+          "module": "Canais",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Cálculo da compra",
+          "subtitle": "Normalizar entrada e recalcular total",
+          "module": "Compra",
+          "kind": "process",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Base de regras de preço",
+          "subtitle": "Preços, promoções, cupons, frete",
+          "module": "Preços",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "risk",
+          "label": "Perfil de risco",
+          "subtitle": "Conta, dispositivo, histórico de transações",
+          "module": "Risco",
+          "kind": "dataStore",
+          "position": {
+            "x": 1500,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "decision",
+          "label": "Decisão da transação",
+          "subtitle": "Retrato de preços + decisão de risco",
+          "module": "Risco",
+          "kind": "process",
+          "position": {
+            "x": 1500,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "inventory",
+          "label": "Registro de estoque",
+          "subtitle": "Quantidades vendáveis e reservas",
+          "module": "Estoque",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "order",
+          "label": "Registro de pedidos",
+          "subtitle": "Pedidos, pagamentos e Outbox",
+          "module": "Pedidos",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Provedor de pagamento",
+          "subtitle": "Resultados de pagamento e reembolso",
+          "module": "Pagamento",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "event",
+          "label": "Fluxo de eventos de pedidos",
+          "subtitle": "OrderPaid / OrderCancelled",
+          "module": "Pedidos",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Preparação no depósito",
+          "subtitle": "Alocação, ondas, pacotes, documentos",
+          "module": "Entrega",
+          "kind": "process",
+          "position": {
+            "x": 1010,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "carrier",
+          "label": "Transportadora",
+          "subtitle": "Rastreamento e comprovantes de entrega",
+          "module": "Entrega",
+          "kind": "external",
+          "position": {
+            "x": 1500,
+            "y": 715
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Retrato do\ncarrinho",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 410,
+              "y": 280
+            }
+          }
+        },
+        {
+          "id": "d2",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "Regras de preços\ne descontos",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d3",
+          "source": "risk",
+          "target": "decision",
+          "label": "Características\nde risco",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d4",
+          "source": "checkout",
+          "target": "decision",
+          "label": "Retrato de\npreços",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 620
+              },
+              {
+                "x": 1640,
+                "y": 620
+              }
+            ],
+            "labelAt": {
+              "x": 1250,
+              "y": 275
+            }
+          }
+        },
+        {
+          "id": "d5",
+          "source": "decision",
+          "target": "inventory",
+          "label": "Pedido de\nreserva",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d6",
+          "source": "inventory",
+          "target": "order",
+          "label": "Token de reserva",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d7",
+          "source": "payment",
+          "target": "order",
+          "label": "Confirmar\npagamento",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 400,
+              "y": 585
+            }
+          }
+        },
+        {
+          "id": "d8",
+          "source": "order",
+          "target": "event",
+          "label": "Eventos de\ndomínio",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 790
+              }
+            ],
+            "labelAt": {
+              "x": 670,
+              "y": 620
+            }
+          }
+        },
+        {
+          "id": "d9",
+          "source": "event",
+          "target": "wms",
+          "label": "Pedidos pagos",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d10",
+          "source": "wms",
+          "target": "carrier",
+          "label": "Pacotes e\ndocumentos",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    }
+  ]
+}

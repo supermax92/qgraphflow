@@ -25,4 +25,4 @@ jobs:
       - run: node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
       - run: node skills/q-flow/scripts/validate-graph.mjs examples/order-flow.graph.json
       - run: node skills/q-flow/scripts/generate-viewer.mjs examples/order-flow.graph.json output/example
-      - run: npm pack --ignore-scripts --dry-run
+      - run: npm run package

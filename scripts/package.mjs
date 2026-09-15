@@ -18,9 +18,31 @@ try {
   for (const suffix of ['tgz', 'zip']) {
     if (fs.existsSync(path.join(destination, `${archive}.${suffix}`))) throw new Error(`Refusing to overwrite ${archive}.${suffix}; choose a new output directory`);
   }
-  const [packed] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temporary]));
-  run('tar', ['-xzf', path.join(temporary, packed.filename), '-C', temporary]);
-  run('zip', ['-q', '-r', path.join(temporary, `${archive}.zip`), '.'], path.join(temporary, 'package'));
+  const staging = path.join(temporary, 'package');
+  const [preview] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--dry-run', '--json']));
+  for (const { path: file } of preview.files) {
+    if (file.startsWith('.agents/')) continue;
+    const target = path.join(staging, file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(path.join(root, file), target);
+  }
+  // Generate distribution metadata; never ship the developer's local marketplace.
+  const manifest = JSON.parse(fs.readFileSync(path.join(staging, '.codex-plugin/plugin.json'), 'utf8'));
+  const market = JSON.parse(fs.readFileSync(path.join(staging, '.claude-plugin/marketplace.json'), 'utf8'));
+  const catalog = {
+    name: market.name,
+    interface: { displayName: `${manifest.interface.displayName} Local` },
+    plugins: [{
+      name: manifest.name,
+      source: { source: 'local', path: './' },
+      policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' },
+      category: manifest.interface.category
+    }]
+  };
+  fs.mkdirSync(path.join(staging, '.agents/plugins'), { recursive: true });
+  fs.writeFileSync(path.join(staging, '.agents/plugins/marketplace.json'), JSON.stringify(catalog, null, 2) + '\n');
+  const [packed] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temporary], staging));
+  run('zip', ['-q', '-r', path.join(temporary, `${archive}.zip`), '.'], staging);
   for (const suffix of ['tgz', 'zip']) fs.copyFileSync(path.join(temporary, `${archive}.${suffix}`), path.join(destination, `${archive}.${suffix}`), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ ...packed, zip: `${archive}.zip`, destination }));
 } finally {

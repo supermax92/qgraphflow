@@ -248,16 +248,7 @@
           "label": "via Partition",
           "evidence": "source"
         }
-      ],
-      "playback": {
-        "edgeIds": [
-          "enqueue",
-          "drain",
-          "produce",
-          "handle",
-          "append"
-        ]
-      }
+      ]
     },
     {
       "meta": {
@@ -398,14 +389,7 @@
           "label": "future",
           "evidence": "source"
         }
-      ],
-      "playback": {
-        "edgeIds": [
-          "append",
-          "yes",
-          "return"
-        ]
-      }
+      ]
     },
     {
       "meta": {
@@ -1170,16 +1154,7 @@
             }
           }
         }
-      ],
-      "playback": {
-        "edgeIds": [
-          "subscribe",
-          "assignment",
-          "applied",
-          "ack",
-          "again"
-        ]
-      }
+      ]
     },
     {
       "meta": {
@@ -1520,15 +1495,7 @@
           "label": "ConsumerRecord",
           "evidence": "source"
         }
-      ],
-      "playback": {
-        "edgeIds": [
-          "values",
-          "bytes",
-          "fetch",
-          "result"
-        ]
-      }
+      ]
     }
   ]
 }

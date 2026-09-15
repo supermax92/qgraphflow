@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { DIAGRAMS } from '../assets/viewer/src/diagrams/registry.js';
 import { paint, escapeXml } from '../assets/viewer/src/diagrams/drawing.js';
-import { renderNode, renderSelection } from '../assets/viewer/src/node-svg.js';
+import { renderMiniMapNode, renderNode, renderSelection } from '../assets/viewer/src/node-svg.js';
 import { PALETTES } from '../assets/viewer/src/visual-style.js';
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,6 +18,7 @@ test('every registered node kind shares its visible contour with selection in bo
     const item = node(kind), markup = renderNode(item, diagram.id, 0, 0, palette);
     const selection = renderSelection(item, diagram.id);
     assert.equal(selection.markup, paint(diagram.outline(item, 0, 0)));
+    assert.equal(renderMiniMapNode(item, diagram.id, 12, 18, 160, 120, '#fff', '#000', 2), paint(diagram.outline({ ...item, position: { x: 12, y: 18 }, size: { width: 160, height: 120 } }, 12, 18), { fill: '#fff', stroke: '#000', 'stroke-width': 2 }));
     const surfaces = [...markup.matchAll(/<(\w+)\s+([^>]*class="node-surface"[^>]*)\/>/g)];
     const outline = diagram.outline(item, 0, 0);
     assert.equal(surfaces.length, outline.length, `${diagram.id}/${kind}`);
@@ -26,6 +27,14 @@ test('every registered node kind shares its visible contour with selection in bo
       const attributes = Object.fromEntries([...surfaces[index][2].matchAll(/([\w-]+)="([^"]*)"/g)].map(match => [match[1], match[2]]));
       for (const [name, value] of Object.entries(geometry)) assert.equal(attributes[name], escapeXml(value), `${diagram.id}/${kind}/${name}`);
     });
+  }
+});
+
+test('architecture and deployment kinds keep dedicated visible contours', () => {
+  for (const id of ['architecture', 'deployment']) {
+    const diagram = DIAGRAMS.find(item => item.id === id);
+    const signatures = diagram.nodeKinds.map(kind => JSON.stringify(diagram.outline(node(kind), 0, 0)));
+    assert.equal(new Set(signatures).size, signatures.length, `${id} kinds must not fall back to one card outline`);
   }
 });
 
@@ -70,8 +79,7 @@ export default {
   const graph = {
     meta: { diagramType: 'review-flow', title: '图类型扩展验收', sourceRef: 'test fixture · not repository evidence' },
     nodes: ['提交', '审核', '归档'].map((label, index) => ({ ...node('stage'), id: 'stage-' + index, label, subtitle: '扩展检查', position: { x: 60 + index * 460, y: 100 }, size: { width: 300, height: 160 }, ...(index === 1 ? { tags: ['core'] } : {}) })),
-    edges: [0, 1].map(index => ({ id: 'edge-' + index, source: 'stage-' + index, target: 'stage-' + (index + 1), kind: 'handoff', evidence: 'test' })),
-    playback: { edgeIds: ['edge-0', 'edge-1'] }
+    edges: [0, 1].map(index => ({ id: 'edge-' + index, source: 'stage-' + index, target: 'stage-' + (index + 1), kind: 'handoff', evidence: 'test' }))
   };
   assert.equal(DIAGRAM_TYPES.length, 10);
   assert.deepEqual(validateGraph(graph), []);

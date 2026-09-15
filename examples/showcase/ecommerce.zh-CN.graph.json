@@ -1,0 +1,3131 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "复杂电商 · 交易到履约全景",
+        "diagramType": "architecture",
+        "locale": "zh-CN",
+        "subtitle": "一次结算如何穿过价格、风控、库存、支付与履约边界",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "概念参考模型，不对应特定生产系统源码；关系用于展示九类软件图的表达差异。"
+      },
+      "groups": [
+        {
+          "id": "transaction-runtime",
+          "label": "同步交易边界",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1810,
+            "height": 570
+          }
+        },
+        {
+          "id": "fulfillment-runtime",
+          "label": "异步履约边界",
+          "kind": "ownership",
+          "position": {
+            "x": 10,
+            "y": 660
+          },
+          "size": {
+            "width": 1810,
+            "height": 260
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "channels",
+          "label": "Web / App / 小程序",
+          "subtitle": "提交购物车与收货信息",
+          "module": "渠道",
+          "kind": "external",
+          "position": {
+            "x": 40,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "统一发起结算请求",
+            "不直接调用领域服务"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "交易 API 网关",
+          "subtitle": "认证、幂等键与流量入口",
+          "module": "渠道",
+          "kind": "security",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "校验用户身份",
+            "透传 checkoutToken"
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "结算编排器",
+          "subtitle": "编排一次结算事务",
+          "module": "结算",
+          "kind": "business",
+          "position": {
+            "x": 1000,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "聚合价格、风控和库存结论",
+            "失败时触发最小补偿"
+          ],
+          "tags": [
+            "core",
+            "交易编排"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "价格与优惠",
+          "subtitle": "重算商品价、券与运费",
+          "module": "价格",
+          "kind": "service",
+          "position": {
+            "x": 1480,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "服务端价格为最终依据",
+            "返回价格快照"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "交易风控",
+          "subtitle": "账户、设备与订单风险决策",
+          "module": "风控",
+          "kind": "failure",
+          "position": {
+            "x": 1480,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "输出通过、拒绝或人工复核"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "库存预占",
+          "subtitle": "按仓与 SKU 锁定可售量",
+          "module": "库存",
+          "kind": "data",
+          "position": {
+            "x": 1000,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "预占带过期时间",
+            "支付失败后释放"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "支付中心",
+          "subtitle": "创建支付单并确认结果",
+          "module": "支付",
+          "kind": "service",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "支付回调必须幂等",
+            "授权成功不等于履约完成"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "订单中心",
+          "subtitle": "固化订单、明细与交易快照",
+          "module": "订单",
+          "kind": "business",
+          "position": {
+            "x": 40,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "订单状态由领域规则推进",
+            "写订单与 Outbox 同事务"
+          ]
+        },
+        {
+          "id": "event-bus",
+          "label": "交易事件总线",
+          "subtitle": "发布 OrderPaid 等领域事件",
+          "module": "订单",
+          "kind": "framework",
+          "position": {
+            "x": 40,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "消费者按事件 ID 去重"
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "仓配履约",
+          "subtitle": "分仓、拣货、打包、发运",
+          "module": "履约",
+          "kind": "service",
+          "position": {
+            "x": 760,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "异步消费已支付订单",
+            "回写包裹与物流状态"
+          ]
+        },
+        {
+          "id": "after-sales",
+          "label": "售后中心",
+          "subtitle": "取消、退款与退货",
+          "module": "履约",
+          "kind": "service",
+          "position": {
+            "x": 1520,
+            "y": 715
+          },
+          "size": {
+            "width": 290,
+            "height": 150
+          },
+          "facts": [
+            "按履约进度选择退款或退货路径"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "submit",
+          "source": "channels",
+          "target": "gateway",
+          "label": "提交结算",
+          "kind": "request",
+          "evidence": "inference"
+        },
+        {
+          "id": "dispatch",
+          "source": "gateway",
+          "target": "checkout",
+          "label": "幂等结算命令",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "quote",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "重算应付金额",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "screen",
+          "source": "pricing",
+          "target": "risk",
+          "label": "价格快照",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "reserve",
+          "source": "risk",
+          "target": "inventory",
+          "label": "通过后预占",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "authorize",
+          "source": "inventory",
+          "target": "payment",
+          "label": "库存令牌 + 金额",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "create-order",
+          "source": "payment",
+          "target": "order",
+          "label": "支付确认",
+          "kind": "success",
+          "evidence": "inference"
+        },
+        {
+          "id": "publish",
+          "source": "order",
+          "target": "event-bus",
+          "label": "OrderPaid",
+          "kind": "framework",
+          "evidence": "inference"
+        },
+        {
+          "id": "fulfill",
+          "source": "event-bus",
+          "target": "fulfillment",
+          "label": "创建履约单",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "service",
+          "source": "fulfillment",
+          "target": "after-sales",
+          "label": "包裹与签收状态",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 提交订单决策流",
+        "diagramType": "flowchart",
+        "locale": "zh-CN",
+        "subtitle": "库存、风控和支付任一失败都不能留下半成品订单",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "展示主成功路径与三个关键失败出口；超时重试和人工复核未展开。"
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "提交结算",
+          "subtitle": "携带 checkoutToken",
+          "module": "结算",
+          "kind": "start",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 270,
+            "height": 130
+          },
+          "facts": [
+            "买家确认购物车、地址和优惠券。",
+            "结算令牌用于整条链路的幂等控制。"
+          ]
+        },
+        {
+          "id": "validate",
+          "label": "校验购物车",
+          "subtitle": "商品、地址、幂等键",
+          "module": "结算",
+          "kind": "process",
+          "position": {
+            "x": 410,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "拒绝无效 SKU 和失效地址。",
+            "检查 checkoutToken 是否已经产生订单。"
+          ]
+        },
+        {
+          "id": "stock",
+          "label": "可售库存足够？",
+          "subtitle": "按仓与 SKU 汇总",
+          "module": "库存",
+          "kind": "decision",
+          "position": {
+            "x": 800,
+            "y": 40
+          },
+          "size": {
+            "width": 300,
+            "height": 190
+          },
+          "facts": [
+            "同时核对可售量与预占上限。",
+            "不足时直接返回缺货明细。"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "锁定价格快照",
+          "subtitle": "商品价、优惠、运费",
+          "module": "价格",
+          "kind": "process",
+          "position": {
+            "x": 1210,
+            "y": 70
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "重新计算而不是信任客户端金额。",
+            "快照随订单保存以支持审计。"
+          ]
+        },
+        {
+          "id": "no-stock",
+          "label": "返回缺货明细",
+          "subtitle": "不创建订单",
+          "module": "库存",
+          "kind": "end",
+          "position": {
+            "x": 810,
+            "y": 350
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "向前端返回不可售 SKU。",
+            "不进入价格、支付和订单阶段。"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "交易风险通过？",
+          "subtitle": "账户、设备、金额",
+          "module": "风控",
+          "kind": "decision",
+          "position": {
+            "x": 1210,
+            "y": 320
+          },
+          "size": {
+            "width": 290,
+            "height": 190
+          },
+          "facts": [
+            "低风险进入库存预占。",
+            "可疑交易转入人工复核。"
+          ]
+        },
+        {
+          "id": "review",
+          "label": "人工复核",
+          "subtitle": "限时审核高风险交易",
+          "module": "风控",
+          "kind": "process",
+          "position": {
+            "x": 1650,
+            "y": 350
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "审核通过后回到主流程。",
+            "拒绝结果保留风险原因码。"
+          ]
+        },
+        {
+          "id": "risk-reject",
+          "label": "拒绝本次交易",
+          "subtitle": "保留风险原因",
+          "module": "风控",
+          "kind": "end",
+          "position": {
+            "x": 1655,
+            "y": 620
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "不发起支付。",
+            "记录可审计的拒绝原因。"
+          ]
+        },
+        {
+          "id": "reserve",
+          "label": "预占库存",
+          "subtitle": "生成 reservationToken",
+          "module": "库存",
+          "kind": "subprocess",
+          "position": {
+            "x": 1230,
+            "y": 600
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "预占设置 TTL，避免库存永久锁定。",
+            "支付失败时必须释放。"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "发起支付授权",
+          "subtitle": "使用价格快照金额",
+          "module": "支付",
+          "kind": "process",
+          "position": {
+            "x": 730,
+            "y": 605
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "只使用服务端价格快照。",
+            "授权请求携带业务幂等号。"
+          ]
+        },
+        {
+          "id": "pay-result",
+          "label": "支付授权成功？",
+          "subtitle": "回调与轮询去重",
+          "module": "支付",
+          "kind": "decision",
+          "position": {
+            "x": 250,
+            "y": 575
+          },
+          "size": {
+            "width": 300,
+            "height": 190
+          },
+          "facts": [
+            "成功才允许写入订单。",
+            "失败进入库存补偿路径。"
+          ]
+        },
+        {
+          "id": "release",
+          "label": "释放库存预占",
+          "subtitle": "关闭 reservationToken",
+          "module": "库存",
+          "kind": "subprocess",
+          "position": {
+            "x": 810,
+            "y": 890
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "补偿操作必须幂等。",
+            "释放完成后返回支付失败。"
+          ]
+        },
+        {
+          "id": "pay-fail",
+          "label": "返回支付失败",
+          "subtitle": "订单尚未成立",
+          "module": "支付",
+          "kind": "end",
+          "position": {
+            "x": 1210,
+            "y": 895
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "保留支付渠道原因码。",
+            "允许买家重新发起结算。"
+          ]
+        },
+        {
+          "id": "persist",
+          "label": "写订单与 Outbox",
+          "subtitle": "同一数据库事务",
+          "module": "订单",
+          "kind": "subprocess",
+          "position": {
+            "x": 250,
+            "y": 890
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "订单与领域事件原子提交。",
+            "异步履约从 Outbox 继续。"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "done",
+          "label": "返回订单号",
+          "subtitle": "异步启动履约",
+          "module": "订单",
+          "kind": "end",
+          "position": {
+            "x": 260,
+            "y": 1160
+          },
+          "size": {
+            "width": 270,
+            "height": 130
+          },
+          "facts": [
+            "同步链路到此结束。",
+            "履约失败不回滚已支付订单。"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "source": "start",
+          "target": "validate",
+          "label": "进入",
+          "kind": "flow",
+          "module": "结算",
+          "facts": [
+            "从「提交结算」到「校验购物车」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "check",
+          "source": "validate",
+          "target": "stock",
+          "label": "校验通过",
+          "kind": "flow",
+          "module": "结算",
+          "facts": [
+            "从「校验购物车」到「可售库存足够？」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-yes",
+          "source": "stock",
+          "target": "pricing",
+          "label": "是",
+          "kind": "yes",
+          "module": "库存",
+          "facts": [
+            "从「可售库存足够？」到「锁定价格快照」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-no",
+          "source": "stock",
+          "target": "no-stock",
+          "label": "否",
+          "kind": "failure",
+          "module": "库存",
+          "facts": [
+            "从「可售库存足够？」到「返回缺货明细」。",
+            "异常或补偿路径。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "price-ready",
+          "source": "pricing",
+          "target": "risk",
+          "label": "价格快照",
+          "kind": "flow",
+          "module": "价格",
+          "facts": [
+            "从「锁定价格快照」到「交易风险通过？」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-yes",
+          "source": "risk",
+          "target": "reserve",
+          "label": "通过",
+          "kind": "yes",
+          "module": "风控",
+          "facts": [
+            "从「交易风险通过？」到「预占库存」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-review",
+          "source": "risk",
+          "target": "review",
+          "label": "需复核",
+          "kind": "flow",
+          "module": "风控",
+          "facts": [
+            "从「交易风险通过？」到「人工复核」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "review-approved",
+          "source": "review",
+          "target": "reserve",
+          "label": "批准",
+          "kind": "yes",
+          "module": "风控",
+          "facts": [
+            "从「人工复核」到「预占库存」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "review-rejected",
+          "source": "review",
+          "target": "risk-reject",
+          "label": "拒绝",
+          "kind": "failure",
+          "module": "风控",
+          "facts": [
+            "从「人工复核」到「拒绝本次交易」。",
+            "异常或补偿路径。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "request-pay",
+          "source": "reserve",
+          "target": "payment",
+          "label": "reservationToken",
+          "kind": "flow",
+          "module": "库存",
+          "facts": [
+            "从「预占库存」到「发起支付授权」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "payment-result",
+          "source": "payment",
+          "target": "pay-result",
+          "label": "授权结果",
+          "kind": "flow",
+          "module": "支付",
+          "facts": [
+            "从「发起支付授权」到「支付授权成功？」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "pay-yes",
+          "source": "pay-result",
+          "target": "persist",
+          "label": "成功",
+          "kind": "success",
+          "module": "支付",
+          "facts": [
+            "从「支付授权成功？」到「写订单与 Outbox」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "pay-no",
+          "source": "pay-result",
+          "target": "release",
+          "label": "失败",
+          "kind": "failure",
+          "module": "支付",
+          "facts": [
+            "从「支付授权成功？」到「释放库存预占」。",
+            "异常或补偿路径。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "release-complete",
+          "source": "release",
+          "target": "pay-fail",
+          "label": "补偿完成",
+          "kind": "failure",
+          "module": "库存",
+          "facts": [
+            "从「释放库存预占」到「返回支付失败」。",
+            "异常或补偿路径。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "complete",
+          "source": "persist",
+          "target": "done",
+          "label": "提交成功",
+          "kind": "flow",
+          "module": "订单",
+          "facts": [
+            "从「写订单与 Outbox」到「返回订单号」。",
+            "主流程关系。"
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 一次成功结算",
+        "diagramType": "sequence",
+        "locale": "zh-CN",
+        "subtitle": "同步确认交易，异步启动履约",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "成功主链；支付失败补偿、超时与回调乱序在流程图和状态图中表达。"
+      },
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "买家",
+          "module": "渠道",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 220,
+            "height": 960
+          },
+          "facts": [
+            "提交购物车并接收订单号。"
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "结算",
+          "subtitle": "交易编排",
+          "module": "结算",
+          "kind": "service",
+          "position": {
+            "x": 390,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "编排价格、库存、风控、支付与订单。"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "价格",
+          "subtitle": "价格与优惠",
+          "module": "价格",
+          "kind": "participant",
+          "position": {
+            "x": 780,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "产生不可变价格快照。"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "库存",
+          "subtitle": "库存预占",
+          "module": "库存",
+          "kind": "participant",
+          "position": {
+            "x": 1170,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "预占 SKU 并返回令牌。"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "风控",
+          "subtitle": "交易风控",
+          "module": "风控",
+          "kind": "participant",
+          "position": {
+            "x": 1560,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "返回 PASS、REVIEW 或 REJECT。"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "支付",
+          "subtitle": "支付授权",
+          "module": "支付",
+          "kind": "external",
+          "position": {
+            "x": 1950,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "对价格快照金额进行授权。"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "订单",
+          "subtitle": "订单与 Outbox",
+          "module": "订单",
+          "kind": "database",
+          "position": {
+            "x": 2340,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "原子保存订单与 Outbox。"
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "履约",
+          "subtitle": "仓配履约",
+          "module": "履约",
+          "kind": "participant",
+          "position": {
+            "x": 2730,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "异步消费 OrderPaid。"
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "inventory-result",
+          "label": "库存结果",
+          "kind": "alt",
+          "position": {
+            "x": 350,
+            "y": 390
+          },
+          "size": {
+            "width": 1100,
+            "height": 112
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "s1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "提交结算命令",
+          "kind": "sync",
+          "module": "渠道",
+          "order": 1,
+          "facts": [
+            "发送：提交结算命令",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s2",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "重算价格与优惠",
+          "kind": "sync",
+          "module": "结算",
+          "order": 2,
+          "facts": [
+            "发送：重算价格与优惠",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s3",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "PriceSnapshot",
+          "kind": "return",
+          "module": "价格",
+          "order": 3,
+          "facts": [
+            "返回：PriceSnapshot",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s4",
+          "source": "checkout",
+          "target": "inventory",
+          "label": "预占 SKU 数量",
+          "kind": "sync",
+          "module": "结算",
+          "order": 4,
+          "facts": [
+            "发送：预占 SKU 数量",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s5",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "reservationToken",
+          "kind": "return",
+          "module": "库存",
+          "order": 5,
+          "facts": [
+            "返回：reservationToken",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s6",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "OUT_OF_STOCK",
+          "kind": "return",
+          "module": "库存",
+          "order": 6,
+          "facts": [
+            "返回：OUT_OF_STOCK",
+            "该消息表示库存不足分支。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s7",
+          "source": "checkout",
+          "target": "risk",
+          "label": "校验账户、设备与金额",
+          "kind": "sync",
+          "module": "结算",
+          "order": 7,
+          "facts": [
+            "发送：校验账户、设备与金额",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s8",
+          "source": "risk",
+          "target": "checkout",
+          "label": "PASS",
+          "kind": "return",
+          "module": "风控",
+          "order": 8,
+          "facts": [
+            "返回：PASS",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s9",
+          "source": "checkout",
+          "target": "payment",
+          "label": "授权应付金额",
+          "kind": "sync",
+          "module": "结算",
+          "order": 9,
+          "facts": [
+            "发送：授权应付金额",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s10",
+          "source": "payment",
+          "target": "checkout",
+          "label": "paymentConfirmed",
+          "kind": "return",
+          "module": "支付",
+          "order": 10,
+          "facts": [
+            "返回：paymentConfirmed",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s11",
+          "source": "checkout",
+          "target": "order",
+          "label": "保存订单 + OrderPaid",
+          "kind": "sync",
+          "module": "结算",
+          "order": 11,
+          "facts": [
+            "发送：保存订单 + OrderPaid",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s12",
+          "source": "order",
+          "target": "checkout",
+          "label": "orderId",
+          "kind": "return",
+          "module": "订单",
+          "order": 12,
+          "facts": [
+            "返回：orderId",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s13",
+          "source": "order",
+          "target": "fulfillment",
+          "label": "异步投递 OrderPaid",
+          "kind": "async",
+          "module": "订单",
+          "order": 13,
+          "facts": [
+            "发送：异步投递 OrderPaid",
+            "异步消息，不阻塞原结算请求。"
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s14",
+          "source": "checkout",
+          "target": "buyer",
+          "label": "返回订单号",
+          "kind": "return",
+          "module": "结算",
+          "order": 14,
+          "facts": [
+            "返回：返回订单号",
+            "按编号顺序阅读。"
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 交易数据模型",
+        "diagramType": "er",
+        "locale": "zh-CN",
+        "subtitle": "购物车、订单、支付、库存预占与包裹如何关联",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "用于演示 ER 记法的关系型概念模型；字段经过简化，不是可直接建库的 DDL。"
+      },
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "customer",
+          "module": "渠道",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 360,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "member_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(16)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart",
+          "label": "shopping_cart",
+          "module": "结算",
+          "kind": "entity",
+          "position": {
+            "x": 560,
+            "y": 70
+          },
+          "size": {
+            "width": 390,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "version",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart-item",
+          "label": "cart_item",
+          "module": "结算",
+          "kind": "entity",
+          "position": {
+            "x": 1120,
+            "y": 70
+          },
+          "size": {
+            "width": 420,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "cart_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "order",
+          "label": "sales_order",
+          "module": "订单",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "payable_amount",
+              "type": "decimal(18,2)",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order-item",
+          "label": "sales_order_item",
+          "module": "订单",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 500
+          },
+          "size": {
+            "width": 450,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal(18,2)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "payment_order",
+          "module": "支付",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "payment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "channel_txn_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "reservation",
+          "label": "inventory_reservation",
+          "module": "库存",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 980
+          },
+          "size": {
+            "width": 480,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "reservation_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "warehouse_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "expires_at",
+              "type": "timestamp",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "shipment",
+          "label": "shipment",
+          "module": "履约",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 980
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "shipment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "tracking_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "customer-cart",
+          "source": "customer",
+          "target": "cart",
+          "label": "拥有",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..1",
+          "evidence": "inference"
+        },
+        {
+          "id": "cart-items",
+          "source": "cart",
+          "target": "cart-item",
+          "label": "包含",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "customer-orders",
+          "source": "customer",
+          "target": "order",
+          "label": "下单",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-items",
+          "source": "order",
+          "target": "order-item",
+          "label": "包含",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "1..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-payments",
+          "source": "order",
+          "target": "payment",
+          "label": "支付尝试",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 400
+              },
+              {
+                "x": 1445,
+                "y": 400
+              }
+            ],
+            "labelAt": {
+              "x": 800,
+              "y": 375
+            }
+          }
+        },
+        {
+          "id": "item-reservations",
+          "source": "order-item",
+          "target": "reservation",
+          "label": "预占",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-shipments",
+          "source": "payment",
+          "target": "shipment",
+          "label": "支付后生成",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 多区域部署",
+        "diagramType": "deployment",
+        "locale": "zh-CN",
+        "subtitle": "交易平面与异步履约平面的运行位置",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "概念部署拓扑；副本数、云厂商和具体中间件均未指定。"
+      },
+      "groups": [
+        {
+          "id": "edge",
+          "label": "公网边缘",
+          "kind": "network",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1510,
+            "height": 250
+          }
+        },
+        {
+          "id": "region",
+          "label": "主交易区域 · Kubernetes",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 340
+          },
+          "size": {
+            "width": 1510,
+            "height": 300
+          }
+        },
+        {
+          "id": "managed",
+          "label": "数据与外部能力",
+          "kind": "host",
+          "position": {
+            "x": 10,
+            "y": 780
+          },
+          "size": {
+            "width": 1830,
+            "height": 370
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "device",
+          "label": "买家设备",
+          "subtitle": "Web / App / 小程序",
+          "module": "渠道",
+          "kind": "device",
+          "position": {
+            "x": 40,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "cdn",
+          "label": "CDN + WAF",
+          "subtitle": "静态资源与边缘防护",
+          "module": "渠道",
+          "kind": "node",
+          "position": {
+            "x": 610,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "subtitle": "公网交易入口",
+          "module": "渠道",
+          "kind": "container",
+          "position": {
+            "x": 1180,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "commerce",
+          "label": "交易服务 Pods",
+          "subtitle": "Checkout / Order / Pricing",
+          "module": "结算",
+          "kind": "service",
+          "position": {
+            "x": 40,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "control",
+          "label": "库存与风控 Pods",
+          "subtitle": "Inventory / Risk",
+          "module": "库存",
+          "kind": "service",
+          "position": {
+            "x": 580,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "履约与售后 Pods",
+          "subtitle": "Fulfillment / AfterSales",
+          "module": "履约",
+          "kind": "service",
+          "position": {
+            "x": 1120,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "database",
+          "label": "交易数据库",
+          "subtitle": "订单、支付、Outbox",
+          "module": "订单",
+          "kind": "database",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "event-bus",
+          "label": "事件总线",
+          "subtitle": "领域事件与重试主题",
+          "module": "订单",
+          "kind": "container",
+          "position": {
+            "x": 500,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "payment",
+          "label": "外部支付渠道",
+          "subtitle": "授权、回调、退款",
+          "module": "支付",
+          "kind": "external",
+          "position": {
+            "x": 960,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "wms",
+          "label": "仓储 / 物流网络",
+          "subtitle": "WMS、承运商接口",
+          "module": "履约",
+          "kind": "external",
+          "position": {
+            "x": 1420,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "device",
+          "target": "cdn",
+          "label": "HTTPS",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-2",
+          "source": "cdn",
+          "target": "gateway",
+          "label": "过滤后请求",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-3",
+          "source": "gateway",
+          "target": "commerce",
+          "label": "内部路由",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1900,
+                "y": 150
+              },
+              {
+                "x": 1900,
+                "y": 680
+              },
+              {
+                "x": 350,
+                "y": 680
+              }
+            ],
+            "labelAt": {
+              "x": 1030,
+              "y": 655
+            }
+          }
+        },
+        {
+          "id": "edge-4",
+          "source": "commerce",
+          "target": "control",
+          "label": "同步领域调用",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-5",
+          "source": "control",
+          "target": "fulfillment",
+          "label": "履约约束",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-6",
+          "source": "commerce",
+          "target": "database",
+          "label": "事务写入",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-7",
+          "source": "database",
+          "target": "event-bus",
+          "label": "Outbox",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-9",
+          "source": "commerce",
+          "target": "payment",
+          "label": "支付 API",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 0,
+                "y": 495
+              },
+              {
+                "x": 0,
+                "y": 700
+              },
+              {
+                "x": 1125,
+                "y": 700
+              }
+            ],
+            "labelAt": {
+              "x": 520,
+              "y": 675
+            }
+          }
+        },
+        {
+          "id": "edge-10",
+          "source": "event-bus",
+          "target": "wms",
+          "label": "仓配任务",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 665,
+                "y": 1100
+              },
+              {
+                "x": 1585,
+                "y": 1100
+              }
+            ],
+            "labelAt": {
+              "x": 1120,
+              "y": 1070
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 结算领域契约",
+        "diagramType": "class",
+        "locale": "zh-CN",
+        "subtitle": "应用服务依赖领域对象与端口，而不是具体基础设施",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "概念类模型；方法签名只保留理解结算协作所需的部分。"
+      },
+      "nodes": [
+        {
+          "id": "command",
+          "label": "CheckoutCommand",
+          "module": "结算",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 390,
+            "height": 260
+          },
+          "attributes": [
+            "customerId: CustomerId",
+            "items: List<CheckoutItem>",
+            "checkoutToken: String"
+          ],
+          "methods": [
+            "validate(): void"
+          ]
+        },
+        {
+          "id": "service",
+          "label": "CheckoutApplicationService",
+          "module": "结算",
+          "kind": "class",
+          "position": {
+            "x": 590,
+            "y": 40
+          },
+          "size": {
+            "width": 440,
+            "height": 230
+          },
+          "attributes": [],
+          "methods": [
+            "checkout(command): OrderId",
+            "compensate(context): void"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Order",
+          "module": "订单",
+          "kind": "class",
+          "position": {
+            "x": 1200,
+            "y": 40
+          },
+          "size": {
+            "width": 400,
+            "height": 290
+          },
+          "attributes": [
+            "id: OrderId",
+            "lines: List<OrderLine>",
+            "total: Money",
+            "status: OrderStatus"
+          ],
+          "methods": [
+            "confirmPayment(snapshot): void",
+            "cancel(reason): void"
+          ]
+        },
+        {
+          "id": "pricing-port",
+          "label": "PricingPort",
+          "module": "价格",
+          "kind": "interface",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 390,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "quote(command): PriceSnapshot"
+          ]
+        },
+        {
+          "id": "inventory-port",
+          "label": "InventoryPort",
+          "module": "库存",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 500
+          },
+          "size": {
+            "width": 440,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "reserve(items): Reservation",
+            "release(token): void"
+          ]
+        },
+        {
+          "id": "payment-port",
+          "label": "PaymentPort",
+          "module": "支付",
+          "kind": "interface",
+          "position": {
+            "x": 1200,
+            "y": 500
+          },
+          "size": {
+            "width": 400,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "authorize(amount): Payment",
+            "refund(paymentId): void"
+          ]
+        },
+        {
+          "id": "repository",
+          "label": "OrderRepository",
+          "module": "订单",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 950
+          },
+          "size": {
+            "width": 440,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "save(order): void",
+            "find(orderId): Order"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "source": "command",
+          "target": "service",
+          "label": "输入",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "creates",
+          "source": "service",
+          "target": "order",
+          "label": "创建",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "pricing",
+          "source": "service",
+          "target": "pricing-port",
+          "label": "依赖",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "inventory",
+          "source": "service",
+          "target": "inventory-port",
+          "label": "依赖",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "payment",
+          "source": "service",
+          "target": "payment-port",
+          "label": "依赖",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "aggregate",
+          "source": "order",
+          "target": "repository",
+          "label": "持久化",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1700,
+                "y": 185
+              },
+              {
+                "x": 1700,
+                "y": 1060
+              },
+              {
+                "x": 1100,
+                "y": 1060
+              }
+            ],
+            "labelAt": {
+              "x": 1500,
+              "y": 1035
+            }
+          }
+        },
+        {
+          "id": "save",
+          "source": "service",
+          "target": "repository",
+          "label": "提交",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 500,
+                "y": 155
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 810,
+                "y": 850
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 825
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 订单生命周期",
+        "diagramType": "state",
+        "locale": "zh-CN",
+        "subtitle": "支付、履约、取消与退款如何约束状态变化",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "概念状态机；部分发货、拆单和逆向物流子状态未展开。"
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "开始",
+          "module": "订单",
+          "kind": "initial",
+          "position": {
+            "x": 30,
+            "y": 100
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        },
+        {
+          "id": "pending",
+          "label": "待支付",
+          "subtitle": "库存已预占",
+          "module": "支付",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "paid",
+          "label": "已支付",
+          "subtitle": "等待仓库接单",
+          "module": "订单",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "allocated",
+          "label": "已分仓",
+          "subtitle": "锁定履约仓",
+          "module": "履约",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "packed",
+          "label": "已打包",
+          "subtitle": "待承运商揽收",
+          "module": "履约",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "shipped",
+          "label": "运输中",
+          "subtitle": "已生成运单",
+          "module": "履约",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "completed",
+          "label": "已完成",
+          "subtitle": "签收或自动确认",
+          "module": "履约",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "cancelled",
+          "label": "已取消",
+          "subtitle": "支付前关闭",
+          "module": "订单",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "refunding",
+          "label": "退款中",
+          "subtitle": "支付后逆向处理",
+          "module": "支付",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "closed",
+          "label": "关闭",
+          "module": "订单",
+          "kind": "final",
+          "position": {
+            "x": 1270,
+            "y": 740
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "source": "initial",
+          "target": "pending",
+          "label": "创建订单",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pay",
+          "source": "pending",
+          "target": "paid",
+          "label": "支付确认",
+          "guard": "校验通过",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "allocate",
+          "source": "paid",
+          "target": "allocated",
+          "label": "仓库接单",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pack",
+          "source": "allocated",
+          "target": "packed",
+          "label": "完成拣货",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "ship",
+          "source": "packed",
+          "target": "shipped",
+          "label": "承运商揽收",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "receive",
+          "source": "shipped",
+          "target": "completed",
+          "label": "确认收货",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel",
+          "source": "pending",
+          "target": "cancelled",
+          "label": "支付前取消",
+          "action": "释放库存",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 650
+              },
+              {
+                "x": 390,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 140,
+              "y": 430
+            }
+          }
+        },
+        {
+          "id": "refund-paid",
+          "source": "paid",
+          "target": "refunding",
+          "label": "取消申请",
+          "guard": "尚未发货",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 900,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 650
+              },
+              {
+                "x": 900,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 1690,
+              "y": 430
+            }
+          }
+        },
+        {
+          "id": "refund-complete",
+          "source": "completed",
+          "target": "refunding",
+          "label": "售后退款",
+          "guard": "审核通过",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel-close",
+          "source": "cancelled",
+          "target": "closed",
+          "label": "资源释放完成",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 390,
+                "y": 930
+              },
+              {
+                "x": 1315,
+                "y": 930
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 905
+            }
+          }
+        },
+        {
+          "id": "refund-close",
+          "source": "refunding",
+          "target": "closed",
+          "label": "退款到账",
+          "kind": "transition",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 参与者能力",
+        "diagramType": "usecase",
+        "locale": "zh-CN",
+        "subtitle": "买家、商家、仓库、客服与支付渠道分别参与什么",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "能力视角，不表示调用顺序；平台治理和财务对账未展开。"
+      },
+      "groups": [
+        {
+          "id": "platform",
+          "label": "电商交易与履约平台",
+          "kind": "system",
+          "position": {
+            "x": 500,
+            "y": 20
+          },
+          "size": {
+            "width": 1050,
+            "height": 970
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "买家",
+          "module": "渠道",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 80
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "merchant",
+          "label": "商家运营",
+          "module": "价格",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "warehouse",
+          "label": "仓库作业员",
+          "module": "履约",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 540
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "support",
+          "label": "客服",
+          "module": "履约",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 770
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "结算购物车",
+          "subtitle": "价格、优惠、库存",
+          "module": "结算",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "支付订单",
+          "subtitle": "选择渠道并确认",
+          "module": "支付",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "catalog",
+          "label": "维护商品与促销",
+          "subtitle": "上下架、定价、优惠",
+          "module": "价格",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "orders",
+          "label": "处理异常订单",
+          "subtitle": "审核、关闭、补偿",
+          "module": "订单",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "pick",
+          "label": "拣货与打包",
+          "subtitle": "扫描 SKU 与箱码",
+          "module": "履约",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "ship",
+          "label": "发运包裹",
+          "subtitle": "生成运单并交接",
+          "module": "履约",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "refund",
+          "label": "受理退款",
+          "subtitle": "校验支付与履约进度",
+          "module": "支付",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "return",
+          "label": "处理退货",
+          "subtitle": "逆向物流与入库",
+          "module": "履约",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "buyer-checkout",
+          "source": "buyer",
+          "target": "checkout",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "merchant-catalog",
+          "source": "merchant",
+          "target": "catalog",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "warehouse-pick",
+          "source": "warehouse",
+          "target": "pick",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "support-refund",
+          "source": "support",
+          "target": "refund",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "checkout-pay",
+          "source": "checkout",
+          "target": "pay",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "catalog-orders",
+          "source": "catalog",
+          "target": "orders",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "pick-ship",
+          "source": "pick",
+          "target": "ship",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "return-refund",
+          "source": "return",
+          "target": "refund",
+          "label": "extend",
+          "kind": "extend",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "复杂电商 · 交易数据流",
+        "diagramType": "dataflow",
+        "locale": "zh-CN",
+        "subtitle": "购物车数据怎样变成可履约、可追踪的订单",
+        "sourceRef": "README 概念示例 · 2026-09-14",
+        "scope": "强调数据资产和变换，不代表同步调用顺序或消息中间件实现。"
+      },
+      "groups": [
+        {
+          "id": "transaction",
+          "label": "交易数据边界",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 20
+          },
+          "size": {
+            "width": 1330,
+            "height": 570
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "履约数据边界",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 660
+          },
+          "size": {
+            "width": 1330,
+            "height": 260
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "买家与购物车",
+          "subtitle": "SKU、数量、地址、券",
+          "module": "渠道",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "结算计算",
+          "subtitle": "规范化输入并重算金额",
+          "module": "结算",
+          "kind": "process",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "价格规则库",
+          "subtitle": "商品价、促销、券、运费",
+          "module": "价格",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "risk",
+          "label": "风险画像",
+          "subtitle": "账户、设备、历史交易",
+          "module": "风控",
+          "kind": "dataStore",
+          "position": {
+            "x": 1500,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "decision",
+          "label": "交易决策",
+          "subtitle": "价格快照 + 风控结论",
+          "module": "风控",
+          "kind": "process",
+          "position": {
+            "x": 1500,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "inventory",
+          "label": "库存台账",
+          "subtitle": "可售量与预占记录",
+          "module": "库存",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "order",
+          "label": "订单账本",
+          "subtitle": "订单、支付与 Outbox",
+          "module": "订单",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "payment",
+          "label": "支付渠道",
+          "subtitle": "支付结果与退款结果",
+          "module": "支付",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "event",
+          "label": "订单事件流",
+          "subtitle": "OrderPaid / OrderCancelled",
+          "module": "订单",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "wms",
+          "label": "仓配处理",
+          "subtitle": "分仓、波次、包裹、运单",
+          "module": "履约",
+          "kind": "process",
+          "position": {
+            "x": 1010,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "carrier",
+          "label": "承运商",
+          "subtitle": "轨迹与签收回执",
+          "module": "履约",
+          "kind": "external",
+          "position": {
+            "x": 1500,
+            "y": 715
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "购物车快照",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 410,
+              "y": 60
+            }
+          }
+        },
+        {
+          "id": "d2",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "价格与优惠规则",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d3",
+          "source": "risk",
+          "target": "decision",
+          "label": "风险特征",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d4",
+          "source": "checkout",
+          "target": "decision",
+          "label": "价格快照",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 620
+              },
+              {
+                "x": 1640,
+                "y": 620
+              }
+            ],
+            "labelAt": {
+              "x": 1250,
+              "y": 275
+            }
+          }
+        },
+        {
+          "id": "d5",
+          "source": "decision",
+          "target": "inventory",
+          "label": "预占请求",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d6",
+          "source": "inventory",
+          "target": "order",
+          "label": "预占令牌",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d7",
+          "source": "payment",
+          "target": "order",
+          "label": "支付确认",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 410,
+              "y": 350
+            }
+          }
+        },
+        {
+          "id": "d8",
+          "source": "order",
+          "target": "event",
+          "label": "领域事件",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d9",
+          "source": "event",
+          "target": "wms",
+          "label": "已支付订单",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d10",
+          "source": "wms",
+          "target": "carrier",
+          "label": "包裹与运单",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import test from 'node:test';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const manifests = ['.codex-plugin', '.claude-plugin', '.qoder-plugin', '.cursor-plugin'];
+const guides = ['docs/clients.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/clients.${locale}.md`)];
 
 test('the distributed package declares and ships its license notices', t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-license-'));
@@ -52,19 +53,25 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.equal(manifest.version, pkg.version, directory);
   }
   const claudeMarket = readJson(path.join(root, '.claude-plugin/marketplace.json'));
-  const codexMarket = readJson(path.join(root, '.agents/plugins/marketplace.json'));
-  for (const market of [claudeMarket, codexMarket]) {
-    assert.equal(market.name, 'qgraphflow-local');
-    assert.equal(market.plugins.length, 1);
-    assert.equal(market.plugins[0].name, pkg.name);
-  }
+  assert.equal(claudeMarket.name, 'qgraphflow-local');
+  assert.equal(claudeMarket.plugins.length, 1);
+  assert.equal(claudeMarket.plugins[0].name, pkg.name);
   assert.equal(claudeMarket.plugins[0].version, pkg.version);
   assert.equal(claudeMarket.plugins[0].source, './');
-  assert.deepEqual(codexMarket.plugins[0].source, { source: 'local', path: './' });
 
-  const packed = JSON.parse(run(process.execPath, ['scripts/package.mjs', temp]));
+  // A clean source checkout has no ignored local marketplace or installed dependencies.
+  const source = path.join(temp, 'source');
+  const [preview] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--dry-run', '--json']));
+  for (const file of [...preview.files.map(file => file.path), 'scripts/package.mjs']) {
+    if (file.startsWith('.agents/')) continue;
+    fs.mkdirSync(path.dirname(path.join(source, file)), { recursive: true });
+    fs.copyFileSync(path.join(root, file), path.join(source, file));
+  }
+  assert.ok(!fs.existsSync(path.join(source, '.agents')));
+  const packed = JSON.parse(run(process.execPath, ['scripts/package.mjs', temp], source));
+  assert.ok(!fs.existsSync(path.join(source, '.agents')), 'Packaging must not create local configuration');
   const archiveBefore = fs.readFileSync(path.join(temp, packed.filename));
-  const repack = spawnSync(process.execPath, ['scripts/package.mjs', temp], { cwd: root, encoding: 'utf8' });
+  const repack = spawnSync(process.execPath, ['scripts/package.mjs', temp], { cwd: source, encoding: 'utf8' });
   assert.notEqual(repack.status, 0);
   assert.match(repack.stderr, /Refusing to overwrite/);
   assert.deepEqual(fs.readFileSync(path.join(temp, packed.filename)), archiveBefore);
@@ -73,18 +80,26 @@ test('the distributed plugin runs independently from its installed location', t 
     ...manifests.map(directory => `${directory}/plugin.json`),
     '.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
     'skills/q-flow/SKILL.md', 'skills/q-flow/agents/openai.yaml',
-    'skills/q-flow/references/graph-schema.md', 'skills/q-flow/assets/viewer-dist/index.html',
+    'skills/q-flow/references/graph-schema.md', 'skills/q-flow/references/guided-intake.md',
+    'skills/q-flow/assets/viewer-dist/index.html',
     'skills/q-flow/scripts/generate-viewer.mjs', 'skills/q-flow/scripts/validate-graph.mjs',
-    'skills/q-flow/assets/viewer/src/playback.js', 'skills/q-flow/assets/viewer/src/radix-colors.js',
+    'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
-    'README.md', 'docs/clients.md', 'examples/order-flow.graph.json', 'docs/images/order-flow.svg'
+    'README.md', ...guides, 'examples/order-flow.graph.json', 'docs/images/order-flow.svg'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
   assert.ok(files.has('examples/showcase/kafka.en.graph.json'));
   assert.ok(packed.unpackedSize < 2_000_000, `Unexpected install size: ${packed.unpackedSize}`);
   for (const locale of ['zh-CN', 'ja', 'ko', 'de', 'fr', 'es']) {
     assert.ok(!files.has(`examples/showcase/kafka.${locale}.graph.json`));
-    if (locale !== 'en') assert.ok(files.has(`docs/readme/README.${locale}.md`));
   }
+  for (const locale of ['zh-CN', 'ru', 'pt', 'ja', 'de', 'es']) {
+    assert.ok(files.has(`docs/readme/README.${locale}.md`));
+    for (const name of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
+      assert.ok(files.has(`docs/references/${locale}/${name}.md`));
+      assert.ok(!files.has(`skills/q-flow/references/${locale}/${name}.md`));
+    }
+  }
+  for (const locale of ['ko', 'fr']) assert.ok(!files.has(`docs/readme/README.${locale}.md`));
   for (const file of files) {
     assert.ok(!/(^|\/)(node_modules|\.git|\.idea|\.DS_Store)(\/|$)/.test(file), file);
     assert.ok(!/^(tests|openspec|docs\/(qa|qgraphflow|superpowers))\//.test(file), file);
@@ -97,6 +112,21 @@ test('the distributed plugin runs independently from its installed location', t 
   fs.mkdirSync(installed);
   run('tar', ['-xzf', path.join(temp, packed.filename), '-C', installed]);
   const plugin = path.join(installed, 'package');
+  const codexMarket = readJson(path.join(plugin, '.agents/plugins/marketplace.json'));
+  assert.deepEqual(codexMarket, {
+    name: 'qgraphflow-local', interface: { displayName: 'QGraphFlow Local' },
+    plugins: [{ name: pkg.name, source: { source: 'local', path: './' },
+      policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, category: 'Productivity' }]
+  });
+  const chineseReadme = fs.readFileSync(path.join(plugin, 'docs/readme/README.zh-CN.md'), 'utf8');
+  assert.match(chineseReadme, /\[客户端安装\]\(\.\.\/clients\.zh-CN\.md\)/);
+  assert.match(chineseReadme, /\[安装指南\]\(\.\.\/clients\.zh-CN\.md\)/);
+  for (const guide of guides) {
+    assert.deepEqual(fs.readFileSync(path.join(plugin, guide)), fs.readFileSync(path.join(root, guide)), guide);
+  }
+  for (const locale of ['ru', 'pt', 'ja', 'de', 'es']) {
+    assert.ok(fs.readFileSync(path.join(plugin, `docs/readme/README.${locale}.md`), 'utf8').includes(`](../clients.${locale}.md)`));
+  }
   // Compare the shared payload, including transitive JS imports, with the source being packaged.
   for (const file of files) {
     if (file.startsWith('skills/')) {
@@ -121,6 +151,20 @@ test('the distributed plugin runs independently from its installed location', t 
 
   const zip = path.join(temp, packed.zip);
   const zippedFiles = run('unzip', ['-Z1', zip]).split('\n');
+  assert.deepEqual(zippedFiles.filter(file => file && !file.endsWith('/')).sort(), [...files].sort(), 'ZIP and TGZ must contain the same files');
+  assert.deepEqual(JSON.parse(run('unzip', ['-p', zip, '.agents/plugins/marketplace.json'])), codexMarket);
   for (const directory of manifests) assert.ok(zippedFiles.includes(`${directory}/plugin.json`));
+  for (const guide of guides) assert.ok(zippedFiles.includes(guide), guide);
   assert.ok(!zippedFiles.some(file => file.startsWith('package/')), 'ZIP must start at the plugin root');
+
+  const localConfig = path.join(source, '.agents/plugins/marketplace.json');
+  fs.mkdirSync(path.dirname(localConfig), { recursive: true });
+  fs.writeFileSync(localConfig, '{"name":"private-developer-marketplace"}');
+  fs.writeFileSync(path.join(source, '.agents/plugins/private.json'), '{"private":true}');
+  const dirtyOutput = path.join(temp, 'with-local-config');
+  const dirty = JSON.parse(run(process.execPath, ['scripts/package.mjs', dirtyOutput], source));
+  assert.equal(fs.readFileSync(localConfig, 'utf8'), '{"name":"private-developer-marketplace"}');
+  assert.deepEqual(dirty.files.map(file => file.path), packed.files.map(file => file.path));
+  assert.deepEqual(JSON.parse(run('tar', ['-xOf', path.join(dirtyOutput, dirty.filename), 'package/.agents/plugins/marketplace.json'])), codexMarket);
+  assert.deepEqual(JSON.parse(run('unzip', ['-p', path.join(dirtyOutput, dirty.zip), '.agents/plugins/marketplace.json'])), codexMarket);
 });

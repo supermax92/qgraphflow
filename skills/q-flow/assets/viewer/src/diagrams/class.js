@@ -28,8 +28,4 @@ export default {
   undirected: ['association', 'composition', 'aggregation'],
   markers: { inheritance: { end: 'triangle' }, implementation: { end: 'triangle' }, composition: { start: 'diamond-filled' }, aggregation: { start: 'diamond-open' } },
   edgeLabel: edge => edge.label ?? (['composition', 'aggregation', 'inheritance', 'implementation'].includes(edge.kind) ? edge.kind : ''),
-  validateNode(node, label, errors, { validateStringArray }) {
-    validateStringArray(node?.attributes, `${label}.attributes`, errors);
-    validateStringArray(node?.methods, `${label}.methods`, errors);
-  },
 };

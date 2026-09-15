@@ -25,17 +25,17 @@ function NodeHandles({ sequence = false }) {
 
 function DiagramNode({ data, selected }) {
   const { compact } = nodeMetrics(data, data.diagramType);
-  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale);
-  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${compact ? 'is-compact' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''} ${data.playbackCurrent ? 'is-current' : ''} ${data.playbackComplete ? 'is-complete' : ''}`} title={data.label}>
+  const moduleColor = data.moduleColors?.get(data.module);
+  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
+  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${compact ? 'is-compact' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''}`} style={moduleColor ? { '--node-module': moduleColor } : undefined} title={data.label}>
     <NodeHandles sequence={getDiagram(data.diagramType).sequence} />
     <svg className="node-visual" viewBox={`0 0 ${data.size.width} ${data.size.height}`} aria-label={data.label} dangerouslySetInnerHTML={{ __html: markup }} />
     {selected && <SelectionOutline key={data.selectionPulse} data={data} pulse={data.selectionPulse} />}
-    {!selected && data.playbackCurrent && <SelectionOutline key={`playback-${data.playbackPulse}`} data={data} pulse={data.playbackPulse} playback />}
   </article>;
 }
 
 function BoundaryNode({ data }) {
-  return <section className={`boundary boundary-${data.kind}`}><span>{data.label}</span>{['alt', 'opt', 'loop'].includes(data.kind) && <small>{data.kind}</small>}</section>;
+  return <section className={`boundary boundary-${data.kind}`} aria-label={data.label}><span>{data.label}</span>{['alt', 'opt', 'loop'].includes(data.kind) && <small>{data.kind}</small>}</section>;
 }
 
 function Cardinality({ value, point, neighbor, color }) {
@@ -58,7 +58,7 @@ function RoutedEdge({ id, markerEnd, style, data }) {
     <BaseEdge id={id} path={route.path} markerEnd={end} markerStart={start} style={{ ...style, strokeOpacity: flowing ? 0.35 : data.selectionLinked ? 1 : data.directed ? 0.55 : 1 }} />
     {data.directed && <path className="edge-flow" d={route.path} style={{ stroke: style.stroke, animationPlayState: data.flowRunning ? 'running' : 'paused' }} />}
     {er && <><Cardinality value={data.sourceCardinality} point={route.points[0]} neighbor={route.points[1]} color={data.relationColor} /><Cardinality value={data.targetCardinality} point={route.points.at(-1)} neighbor={route.points.at(-2)} color={data.relationColor} /></>}
-    {route.label && <EdgeLabelRenderer><span className="edge-label" style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, fontWeight: data.selectionLinked || data.playbackCurrent ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{line}</span>)}</span></EdgeLabelRenderer>}
+    {route.label && <EdgeLabelRenderer><span className="edge-label" style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, fontWeight: data.selectionLinked ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{line}</span>)}</span></EdgeLabelRenderer>}
   </>;
 }
 

@@ -1,45 +1,38 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { PALETTES } from '../visual-style.js';
 import { useGraphLayout } from './useGraphLayout.js';
-import { usePlayback } from './usePlayback.js';
+import { hasArrow } from '../diagrams/registry.js';
 import { useSelection } from './useSelection.js';
 import { usePresentation } from './usePresentation.js';
 import { useFullscreen } from './useFullscreen.js';
-import { downloadDiagram } from './download.js';
+import { downloadDiagram, saveGraphJson } from './download.js';
 
-export function useViewerController(graph, theme, panels) {
+export function useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave) {
   const reduceMotion = useReducedMotion();
-  const [exportStatus, setStatus] = useState('');
+  const [exportStatus, setExportStatus] = useState(null);
+  const setStatus = useCallback(message => setExportStatus({ message }), []);
   const palette = PALETTES[theme];
-  const layout = useGraphLayout(graph, reduceMotion, setStatus);
-  const playback = usePlayback(graph, reduceMotion);
-  const fullscreen = useFullscreen(setStatus, () => layout.fitGraph(layout.currentGraph, 0));
-  const selection = useSelection(graph, {
-    pausePlayback: playback.pausePlayback, focusNode: layout.focusNode, panels,
-    initialFollowPlayback: playback.playing, isFullscreen: fullscreen.isFullscreen, toggleFullscreen: fullscreen.toggleFullscreen
+  const layout = useGraphLayout(graph, reduceMotion, setStatus, originalGraph);
+  const [flowEnabled, setFlowEnabled] = useState(true);
+  const flowRunning = flowEnabled && !reduceMotion;
+  const fullscreen = useFullscreen(setStatus, () => layout.readGraph(layout.currentGraph, 0));
+  const selection = useSelection(layout.currentGraph, {
+    focusNode: layout.focusNode, panels,
+    isFullscreen: fullscreen.isFullscreen, toggleFullscreen: fullscreen.toggleFullscreen
   });
-  const inspectedNode = selection.followPlayback
-    ? graph.nodes.find(node => node.id === playback.playbackNodeId)
-    : selection.selected;
-  const startPlayback = () => {
-    selection.setFollowPlayback(true);
-    playback.setPlaying(true);
-  };
-  const stepPlayback = delta => {
-    selection.setFollowPlayback(true);
-    playback.stepPlayback(delta);
-  };
-  const presentation = usePresentation(graph, layout, selection, playback, palette);
-  const exportDiagram = format => downloadDiagram(layout.currentGraph, theme, format, setStatus);
+  const presentation = usePresentation(graph, layout, selection, flowRunning, palette, moduleColors);
+  const exportDiagram = format => downloadDiagram(layout.currentGraph, theme, format, setStatus, moduleColors);
+  const saveGraph = () => saveGraphJson(graphForSave(layout.currentGraph), graph.meta.locale, setStatus);
   const reset = () => {
-    layout.resetLayout(); selection.resetSelection(playback.playbackCount > 1 && !reduceMotion); playback.resetPlayback();
-    setStatus('已重置：恢复原始位置和第一步');
+    layout.resetLayout(); selection.resetSelection(); setFlowEnabled(true);
+    setStatus('已重置：恢复原始位置和阅读视角');
   };
-  return { ...layout, ...playback, ...selection, ...presentation, ...panels, ...fullscreen,
-    diagramType: graph.meta.diagramType ?? 'architecture', palette, reduceMotion, exportStatus, exportDiagram, reset,
-    inspectedNode, startPlayback, stepPlayback,
+  return { ...layout, ...selection, ...presentation, ...panels, ...fullscreen,
+    diagramType: graph.meta.diagramType ?? 'architecture', palette, moduleColors, reduceMotion, exportStatus, exportDiagram, saveGraph, reset,
+    inspectedNode: selection.selected, inspectedEdge: selection.selectedEdge, hasFlow: graph.edges.some(edge => hasArrow(edge, graph.meta.diagramType ?? 'architecture')), flowRunning, setFlowEnabled,
     nudgeLayout: () => layout.nudgeLayout(selection.selectedId),
-    panelTransition: reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34, mass: .75 }
+    // Apple's default spring: critically damped (no bounce) with a ~0.36s visible duration. Reduced motion lands immediately.
+    panelTransition: reduceMotion ? { duration: 0 } : { type: 'spring', visualDuration: .36, bounce: 0 }
   };
 }

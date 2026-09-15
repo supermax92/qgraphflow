@@ -1,5 +1,7 @@
 # Graph JSON contract
 
+[English](graph-schema.md) · [简体中文](../../../docs/references/zh-CN/graph-schema.md) · [Русский](../../../docs/references/ru/graph-schema.md) · [Português](../../../docs/references/pt/graph-schema.md) · [日本語](../../../docs/references/ja/graph-schema.md) · [Deutsch](../../../docs/references/de/graph-schema.md) · [Español](../../../docs/references/es/graph-schema.md)
+
 `scripts/generate-viewer.mjs` accepts either one `Graph` or a graph collection. Older graphs without `meta.diagramType` remain valid and render as `architecture`.
 
 ```json
@@ -26,6 +28,7 @@
       "id": "jwt-decoder",
       "label": "NimbusJwtDecoder",
       "subtitle": "Verify and decode JWT",
+      "module": "Identity",
       "kind": "security",
       "position": { "x": 720, "y": 220 },
       "size": { "width": 220, "height": 120 },
@@ -46,6 +49,7 @@
       "source": "bearer-filter",
       "target": "jwt-decoder",
       "label": "decode and verify",
+      "module": "Identity",
       "kind": "call",
       "evidence": "framework",
       "route": {
@@ -57,7 +61,7 @@
 }
 ```
 
-Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–9 graphs in `diagrams`. Each graph must use a unique `meta.diagramType`; a three-column navigation grid follows the fixed order `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. All nine types form a 3×3 menu.
+Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–9 graphs in `diagrams`. Each graph must use a unique `meta.diagramType`; the toolbar view menu follows the fixed order `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. The view menu lists the requested types vertically.
 
 ```json
 {
@@ -73,36 +77,33 @@ The abbreviated graphs above show only the wrapper; every graph still follows th
 ## Common fields
 
 - Required: `meta.title`, `meta.sourceRef`, non-empty `nodes`, and `edges`.
+- `meta`, nodes, edges, groups and source anchors are objects; `nodes`, `edges`, and optional `groups` are arrays of objects. Invalid containers are rejected before layout or output generation.
+- Optional `meta.subtitle`, `meta.scope`, node `subtitle`, `source.symbol`, and edge `label` are strings. Optional node and edge `module` values are non-empty strings: reuse the exact same value for the same business module across every graph in a collection; do not store literal colors. Node `facts`, `tags`, `attributes`, and `methods` are arrays of non-empty strings. These rules apply to every diagram type.
+- Optional node `fields` is an array of objects with non-empty string `name` and `type`, optional `key` (`PK`, `FK`, `UK`) and boolean `nullable`; ER requires at least one field. Other types can expose these fields in search and details.
 - `meta.diagramType`: `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, or `dataflow`.
-- `meta.locale`: optional Viewer language: `en`, `zh-CN` (default), `ja`, `ko`, `de`, `fr`, or `es`. This controls built-in interface and export labels; author titles, node labels, facts and relationship text in the desired language separately. Code identifiers and standard notation remain unchanged. In a collection, each diagram uses its own locale.
+- `meta.locale`: optional Viewer language: `en`, `zh-CN` (default), `ru`, `pt`, `ja`, `de`, or `es`; `ko` and `fr` remain supported for existing graphs. This controls built-in interface and export labels; author titles, node labels, facts and relationship text in the desired language separately. Code identifiers and standard notation remain unchanged. In a collection, each diagram uses its own locale.
 - IDs are unique non-empty strings. Every edge endpoint names a node.
 - Every node and group has finite non-negative `position` and `size` values.
 - Edge `evidence`: `source`, `code`, `config`, `schema`, `test`, `document`, `framework`, or `inference`.
 - Edge `route` is optional. `via` contains graph-space waypoints and `labelAt` fixes the graph-space label center; omit both when automatic orthogonal routing is clear.
 - Every `route.via` and `route.labelAt` coordinate must be a finite non-negative number. The router inserts orthogonal elbows between waypoints and keeps the first and last connection anchored to the current node positions.
 - Optional node `source.kind` uses the same evidence values. `source.file` and `source.lineStart` identify the exact anchor.
+- With `--repo-root <directory>`, validation and generation read every node's `source.file` as repository-relative UTF-8 text and check the inclusive line range. Absolute paths, parent traversal, directories, binary files and symlinks escaping the root are rejected. Repeated references share one file read. Without the root, receipts explicitly mark existing source anchors `skipped`; without anchors they report `not-applicable`. These checks cover the local working tree, not `sourceRef` revision identity, symbol resolution or claim correctness.
 - To emphasize the business center, use the existing `business` kind where supported, or include `core` or `business` in `tags` (matched case-insensitively). Keep the diagram's legal node kind; `core` is not a new kind or schema field.
-- The warm-neutral visual system is a Viewer presentation rule. Color, typography, and core styling require no new graph fields. The order-fulfillment preview model is example content, not a default dataset or evidence source.
+- The cool-neutral visual system is a Viewer presentation rule. Color, typography, and core styling require no new graph fields. The order-fulfillment preview model is example content, not a default dataset or evidence source.
 
-## Playback
+Legacy `playback` metadata is ignored. The Viewer has no automatic or stepped playback; directed-edge motion is a separate visual cue and does not imply execution order.
 
-A graph may specify ordered playback by listing existing edge IDs. Author this path for flowcharts, data-flow diagrams, and state progressions when the source supports an order. With no explicit path, sequence diagrams use message `order`; other diagrams provide a node-directory reading tour marked as not execution order. Step controls remain available for legacy inputs without `playback`; no inferred path is written back into graph data. Selecting pauses steps only, preserving the current step and completed record. Directed-edge motion has a separate switch, and reduced motion overrides it.
+## Saving Viewer edits
 
-```json
-{
-  "playback": {
-    "edgeIds": ["receive-request", "validate-order", "persist-order"]
-  }
-}
-```
+Switching diagram types retains each graph's saved text and positions within the open page. Reset restores only the active graph's embedded original content. **Save Graph JSON** saves the entire collection (or the original single-graph shape), including edits in other views, metadata and source anchors. Supporting browsers let the user choose a `.json` file to write; other browsers download `graph.json`. Cancelling or failing a save keeps all page edits.
 
-- `playback.edgeIds` must be a non-empty array of non-blank edge IDs from the same graph.
-- Playback changes presentation only; it does not modify graph evidence or exported SVG/PNG styling.
+Reloading the HTML still starts from its embedded data. Keep the saved JSON and regenerate into a new output directory to reopen the edited model permanently. Saving does not bypass validation: manually edited labels or positions can still need layout corrections before regeneration. The browser does not reverify source anchors; rerun both CLI commands with `--repo-root` for source-backed delivery.
 
 ## Routing and spacing
 
 - Leave at least 64 graph pixels between node rectangles. A labeled corridor must fit the complete estimated label width plus 24 pixels.
-- Size ordinary cards for 20px titles, 16px body/field/member/edge text, and 14px secondary text. Enlarge individual boxes and corridors for actual content; uniformly scaling the whole layout cancels the gain when fitted. These are authoring recommendations, not new validation minimums; old compact cards and specialized symbols remain compatible. The initial reading view has a 0.9 minimum zoom; explicit fit-all remains available.
+- Size ordinary cards for 20px titles, 16px body/field/member/edge text, and 14px secondary text. Enlarge individual boxes and corridors for actual content; uniformly scaling the whole layout cancels the gain when fitted. These are authoring recommendations, not new validation minimums; old compact cards and specialized symbols remain compatible. The initial reading view fits the whole diagram around the floating toolbar and open panels, with a 0.08 minimum zoom; explicit fit-all uses the same view.
 - Parallel, fan-out, and fan-in relationships receive automatic 24-pixel lanes and may share at most 12 pixels near an endpoint; the longer ER symbol clearance is not permission to merge routes.
 - A node side must be long enough to hold its automatic lanes; enlarge the node or provide route hints when validation reports endpoint-side overflow.
 - For non-self hinted routes, the first/last waypoint determines each endpoint side and its projected border position. Keep a 28-pixel outward straight section for ER cardinality symbols and a 12-pixel section for other diagrams. Waypoints must stay outside all node interiors, including the endpoints.

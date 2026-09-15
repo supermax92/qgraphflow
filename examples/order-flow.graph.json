@@ -7,41 +7,127 @@
   "groups": [],
   "nodes": [
     {
-      "id": "client", "label": "客户端", "kind": "external",
+      "id": "client",
+      "label": "客户端",
+      "kind": "external",
       "subtitle": "发起订单请求",
-      "position": { "x": 40, "y": 80 }, "size": { "width": 240, "height": 140 },
-      "facts": ["这是虚构示例，演示如何阅读节点详情。"]
+      "position": {
+        "x": 40,
+        "y": 80
+      },
+      "size": {
+        "width": 240,
+        "height": 140
+      },
+      "facts": [
+        "这是虚构示例，演示如何阅读节点详情。"
+      ]
     },
     {
-      "id": "api", "label": "订单服务", "kind": "service",
-      "subtitle": "校验请求并保存订单", "tags": ["core"],
-      "position": { "x": 440, "y": 80 }, "size": { "width": 240, "height": 140 },
-      "facts": ["接收客户端请求。", "写入订单数据，并向队列投递事件；示例省略事务与重试策略。"]
+      "id": "api",
+      "label": "订单服务",
+      "kind": "service",
+      "subtitle": "校验请求并保存订单",
+      "tags": [
+        "core"
+      ],
+      "position": {
+        "x": 440,
+        "y": 80
+      },
+      "size": {
+        "width": 240,
+        "height": 140
+      },
+      "facts": [
+        "接收客户端请求。",
+        "写入订单数据，并向队列投递事件；示例省略事务与重试策略。"
+      ]
     },
     {
-      "id": "database", "label": "订单数据库", "kind": "database",
+      "id": "database",
+      "label": "订单数据库",
+      "kind": "database",
       "subtitle": "持久化订单",
-      "position": { "x": 840, "y": 80 }, "size": { "width": 240, "height": 140 },
-      "facts": ["保存订单记录；不表示任何特定数据库产品。"]
+      "position": {
+        "x": 840,
+        "y": 80
+      },
+      "size": {
+        "width": 240,
+        "height": 140
+      },
+      "facts": [
+        "保存订单记录；不表示任何特定数据库产品。"
+      ]
     },
     {
-      "id": "queue", "label": "事件队列", "kind": "component",
+      "id": "queue",
+      "label": "事件队列",
+      "kind": "component",
       "subtitle": "承载订单事件",
-      "position": { "x": 440, "y": 420 }, "size": { "width": 240, "height": 140 },
-      "facts": ["解耦订单创建和后续通知。"]
+      "position": {
+        "x": 440,
+        "y": 420
+      },
+      "size": {
+        "width": 240,
+        "height": 140
+      },
+      "facts": [
+        "解耦订单创建和后续通知。"
+      ]
     },
     {
-      "id": "worker", "label": "通知服务", "kind": "service",
+      "id": "worker",
+      "label": "通知服务",
+      "kind": "service",
       "subtitle": "消费事件并发送通知",
-      "position": { "x": 840, "y": 420 }, "size": { "width": 240, "height": 140 },
-      "facts": ["异步处理通知；实际系统需要另外设计失败处理。"]
+      "position": {
+        "x": 840,
+        "y": 420
+      },
+      "size": {
+        "width": 240,
+        "height": 140
+      },
+      "facts": [
+        "异步处理通知；实际系统需要另外设计失败处理。"
+      ]
     }
   ],
   "edges": [
-    { "id": "request", "source": "client", "target": "api", "kind": "request", "label": "创建订单", "evidence": "document" },
-    { "id": "save", "source": "api", "target": "database", "kind": "data", "label": "保存订单", "evidence": "document" },
-    { "id": "publish", "source": "api", "target": "queue", "kind": "data", "label": "订单事件", "evidence": "document" },
-    { "id": "consume", "source": "queue", "target": "worker", "kind": "data", "label": "异步通知", "evidence": "document" }
-  ],
-  "playback": { "edgeIds": ["request", "save", "publish", "consume"] }
+    {
+      "id": "request",
+      "source": "client",
+      "target": "api",
+      "kind": "request",
+      "label": "创建订单",
+      "evidence": "document"
+    },
+    {
+      "id": "save",
+      "source": "api",
+      "target": "database",
+      "kind": "data",
+      "label": "保存订单",
+      "evidence": "document"
+    },
+    {
+      "id": "publish",
+      "source": "api",
+      "target": "queue",
+      "kind": "data",
+      "label": "订单事件",
+      "evidence": "document"
+    },
+    {
+      "id": "consume",
+      "source": "queue",
+      "target": "worker",
+      "kind": "data",
+      "label": "异步通知",
+      "evidence": "document"
+    }
+  ]
 }

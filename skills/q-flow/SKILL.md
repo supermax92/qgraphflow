@@ -1,11 +1,18 @@
 ---
 name: q-flow
 description: Create or audit evidence-grounded interactive software diagrams from source, schemas, config, or requirements; deliver offline HTML and graph JSON.
+argument-hint: "[module or flow] [what the diagram should answer]"
 ---
 
 # Q flow
 
 Generate an offline diagram artifact in the target repository, with SVG/PNG downloads in its Viewer.
+
+## Intake
+
+A request is ready when the invocation or the conversation names a subject (repository, module, flow, entity set or document) and the question the diagram must answer, at a matching level: a behaviour question (call order, decisions, data movement, lifecycle) needs one flow or component as its subject, so a repository- or module-level subject with such a question is not ready: find entry points with the file-name and annotation search in [guided-intake.md](references/guided-intake.md) (`rg -l`; do not open source files) and ask which flow. Diagram type, granularity, output directory, language and graph count have defaults and are never asked. When the request is ready, or the skill was triggered by a request already in the conversation, do not ask; start with Evidence.
+
+When both are missing, run one guided round from [guided-intake.md](references/guided-intake.md) before Evidence: inventory the repository first so options name real modules, ask subject and intent in one message with a recommended option, and add a second round only for the cases it lists. When only one is missing, or the level does not match, ask for that one only. Use the client's structured question tool when one exists; otherwise number the options in plain text. After asking, end the turn and wait for the reply; never assume an answer. Write no output files before the round completes.
 
 ## Evidence
 
@@ -15,11 +22,10 @@ Generate an offline diagram artifact in the target repository, with SVG/PNG down
 
 ## Author
 
-1. Choose `meta.diagramType` by intent: structure → `architecture`; decisions → `flowchart`; ordered calls → `sequence`; stored data → `er`; runtime placement → `deployment`; types → `class`; lifecycle → `state`; actors/capabilities → `usecase`; data movement → `dataflow`. Default to `architecture` when ambiguous. Use one graph unless the request needs multiple types.
-2. Read [graph-schema.md](references/graph-schema.md): common fields, playback, routing, the selected kind-table row, and matching type-specific sections. Read [visual-contract.md](references/visual-contract.md) for composition. Skip unrelated types and development references.
-3. Write the smallest evidenced graph that answers the question. Set node positions and sizes explicitly; retain complete labels and source facts. Use valid `business` kinds or `core`/`business` tags for the business center, never literal colors or invented kinds. Follow the schema's spacing and text-size guidance.
-4. Author `playback.edgeIds` for evidenced flow/state/data progressions; repeated IDs may express a real loop. Sequence defaults to message order, other diagrams to labeled node reading, not execution order. Do not infer causality from coordinates.
-5. Default output: `<repository-root>/docs/qgraphflow/<scope>-<diagram-type>/`, with a short kebab-case scope or `overview`. Honor user-selected directories, including legacy paths.
+1. Choose `meta.diagramType` by intent: structure → `architecture`; decisions → `flowchart`; ordered calls → `sequence`; stored data → `er`; runtime placement → `deployment`; types → `class`; lifecycle → `state`; actors/capabilities → `usecase`; data movement → `dataflow`. Default to `architecture` when ambiguous. Use one graph unless the user explicitly requests multiple views; order a collection as architecture, flowchart, sequence, ER, deployment, class, state, use case, then data flow.
+2. Read [graph-schema.md](references/graph-schema.md): common fields, routing, the selected kind-table row, and matching type-specific sections. Read [visual-contract.md](references/visual-contract.md) for composition. Skip unrelated types and development references.
+3. Write the smallest evidenced graph that answers the question. Set node positions and sizes explicitly; retain complete labels and source facts. Use valid `business` kinds or `core`/`business` tags for the business center, never literal colors or invented kinds. Follow the schema's spacing and text-size guidance. In a collection, reuse one evidence vocabulary and the exact same non-empty `module` value for the same business module; keep type-specific notation complete, including ER keys/cardinalities, class attributes/methods, sequence direction/returns, state guards, and architecture/deployment boundaries.
+4. Default output: `<repository-root>/docs/qgraphflow/<scope>-<diagram-type>/`, with a short kebab-case scope or `overview`. Honor user-selected directories, including legacy paths.
 
 ## Generate and verify
 
@@ -28,11 +34,12 @@ Resolve this skill directory from the loaded `SKILL.md`, not the client's workin
 Run from this skill directory (or invoke these scripts by their resolved absolute paths):
 
 ```bash
-node scripts/validate-graph.mjs "<absolute-graph.json>"
-node scripts/generate-viewer.mjs "<absolute-graph.json>" "<absolute-output-directory>"
+node scripts/validate-graph.mjs "<absolute-graph.json>" --repo-root "<absolute-repository-root>"
+node scripts/generate-viewer.mjs "<absolute-graph.json>" "<absolute-output-directory>" --repo-root "<absolute-repository-root>"
 ```
 
-- Layout errors block delivery. Resolve warnings where practical by moving nodes before adding route hints; report remaining limitations and generator playback notices.
+- Layout errors block delivery. Resolve warnings where practical by moving nodes before adding route hints; report remaining limitations. Treat a collection as one delivery: validate the complete Graph JSON and inspect every requested diagram type before claiming success.
+- For repository-backed diagrams, pass the target repository root to both commands. They verify every explicit node source against local UTF-8 files, reject missing files, out-of-range lines and paths escaping that root, and report `sourceEvidence`. This checks the current working tree, not the commit named in `sourceRef` or whether code proves a relationship. If source files are unavailable, disclose that limitation; omitting `--repo-root` reports `skipped`, never verified evidence. Source-free conceptual diagrams need no repository root.
 - Reuse the prebuilt `assets/viewer-dist/index.html`. Ordinary graph generation needs no Viewer rebuild or package installation. Execute scripts without loading their implementation, the bundled HTML, or dependency trees into context; inspect only relevant code when diagnosing a concrete failure.
 - Outputs are exactly `index.html` and `graph.json`. Use `--force` only with approval to replace the named outputs. Preview examples are not default data or evidence.
 - Open the real generated page at 1440×900 and inspect one screenshot for first-screen readability, containment, and console errors. Repeat only after correcting an observed issue. Use browser tooling available in the current client; an automation HTTP server must close in the same process's `finally`. If no browser tool is available, report generation and graph validation separately and mark browser acceptance incomplete; do not claim visual or interaction checks passed.

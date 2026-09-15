@@ -1,0 +1,3257 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "E-Commerce · Vom Kauf zur Lieferung",
+        "diagramType": "architecture",
+        "locale": "de",
+        "subtitle": "Wie der Kauf Preise, Risiko, Bestand, Zahlung und Versand verbindet",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Konzeptmodell ohne Bezug zu Produktivcode; Beziehungen zeigen neun Diagrammarten."
+      },
+      "groups": [
+        {
+          "id": "transaction-runtime",
+          "label": "Synchrone Transaktion",
+          "kind": "runtime",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1810,
+            "height": 600
+          }
+        },
+        {
+          "id": "fulfillment-runtime",
+          "label": "Asynchroner Versand",
+          "kind": "ownership",
+          "position": {
+            "x": 0,
+            "y": 785
+          },
+          "size": {
+            "width": 1820,
+            "height": 310
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "channels",
+          "label": "Web / App / Mini-App",
+          "subtitle": "Warenkorb und Lieferdaten senden",
+          "module": "Kanäle",
+          "kind": "external",
+          "position": {
+            "x": 40,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Einheitlicher Einstieg in den Kauf",
+            "Keine direkten Aufrufe von Domänendiensten"
+          ]
+        },
+        {
+          "id": "gateway",
+          "label": "Commerce-API-Gateway",
+          "subtitle": "Authentifizierung, Idempotenz, Eingang",
+          "module": "Kanäle",
+          "kind": "security",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 173
+          },
+          "facts": [
+            "Benutzeridentität prüfen",
+            "checkoutToken weiterreichen"
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Kaufkoordinator",
+          "subtitle": "Einen Kauf koordinieren",
+          "module": "Kaufabschluss",
+          "kind": "business",
+          "position": {
+            "x": 1000,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Preis-, Risiko- und Bestandsprüfung bündeln",
+            "Bei Fehlern minimal kompensieren"
+          ],
+          "tags": [
+            "core",
+            "Transaktionssteuerung"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preise und Rabatte",
+          "subtitle": "Preise, Gutscheine und Versand neu berechnen",
+          "module": "Preise",
+          "kind": "service",
+          "position": {
+            "x": 1480,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "Serverpreise sind maßgeblich",
+            "Preissnapshot zurückgeben"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Transaktionsrisiko",
+          "subtitle": "Konto-, Geräte- und Bestellrisiken prüfen",
+          "module": "Risiko",
+          "kind": "failure",
+          "position": {
+            "x": 1480,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "Freigabe, Ablehnung oder manuelle Prüfung"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Bestandsreservierung",
+          "subtitle": "Verfügbare Mengen je Lager und SKU reservieren",
+          "module": "Bestand",
+          "kind": "data",
+          "position": {
+            "x": 1000,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Reservierungen laufen ab",
+            "Bei Zahlungsfehler freigeben"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Zahlungsdienst",
+          "subtitle": "Zahlung anlegen und Ergebnis bestätigen",
+          "module": "Zahlung",
+          "kind": "service",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Zahlungsrückmeldungen müssen idempotent sein",
+            "Autorisierung bedeutet keinen abgeschlossenen Versand"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Bestelldienst",
+          "subtitle": "Bestellungen, Positionen und Snapshots speichern",
+          "module": "Bestellungen",
+          "kind": "business",
+          "position": {
+            "x": 40,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Domänenregeln steuern den Bestellstatus",
+            "Bestellung und Outbox in einer Transaktion schreiben"
+          ]
+        },
+        {
+          "id": "event-bus",
+          "label": "Handelsereignisbus",
+          "subtitle": "Domänenereignisse wie OrderPaid veröffentlichen",
+          "module": "Bestellungen",
+          "kind": "framework",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Verbraucher deduplizieren nach Ereignis-ID"
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Auftragsabwicklung",
+          "subtitle": "Zuweisen, kommissionieren, verpacken, versenden",
+          "module": "Versand",
+          "kind": "service",
+          "position": {
+            "x": 760,
+            "y": 850
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "facts": [
+            "Bezahlte Bestellungen asynchron verarbeiten",
+            "Paket- und Lieferstatus zurückschreiben"
+          ]
+        },
+        {
+          "id": "after-sales",
+          "label": "Kundendienst",
+          "subtitle": "Stornierungen, Erstattungen, Retouren",
+          "module": "Versand",
+          "kind": "service",
+          "position": {
+            "x": 1520,
+            "y": 850
+          },
+          "size": {
+            "width": 290,
+            "height": 150
+          },
+          "facts": [
+            "Erstattung oder Retoure nach Versandfortschritt wählen"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "submit",
+          "source": "channels",
+          "target": "gateway",
+          "label": "Kauf absenden",
+          "kind": "request",
+          "evidence": "inference"
+        },
+        {
+          "id": "dispatch",
+          "source": "gateway",
+          "target": "checkout",
+          "label": "Idempotenter\nKaufbefehl",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "quote",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Zahlbetrag neu\nberechnen",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "screen",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Preissnapshot",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "reserve",
+          "source": "risk",
+          "target": "inventory",
+          "label": "Nach Freigabe\nreservieren",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "authorize",
+          "source": "inventory",
+          "target": "payment",
+          "label": "Bestandstoken +\nBetrag",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "create-order",
+          "source": "payment",
+          "target": "order",
+          "label": "Zahlung\nbestätigen",
+          "kind": "success",
+          "evidence": "inference"
+        },
+        {
+          "id": "publish",
+          "source": "order",
+          "target": "event-bus",
+          "label": "OrderPaid",
+          "kind": "framework",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 190,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 680
+              },
+              {
+                "x": 700,
+                "y": 880
+              }
+            ],
+            "labelAt": {
+              "x": 450,
+              "y": 660
+            }
+          }
+        },
+        {
+          "id": "fulfill",
+          "source": "event-bus",
+          "target": "fulfillment",
+          "label": "Versandauftrag\nerstellen",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "service",
+          "source": "fulfillment",
+          "target": "after-sales",
+          "label": "Paket- und\nEmpfangsstatus",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Bestellentscheidungen",
+        "diagramType": "flowchart",
+        "locale": "de",
+        "subtitle": "Bestands-, Risiko- oder Zahlungsfehler dürfen keine Teilbestellung hinterlassen",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Erfolgspfad und drei Fehlerausgänge; Wiederholungen und Prüfdetails ausgelassen."
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Kauf\nabsenden",
+          "subtitle": "checkoutToken\nmitgeben",
+          "module": "Kaufabschluss",
+          "kind": "start",
+          "position": {
+            "x": 112.5,
+            "y": 70
+          },
+          "size": {
+            "width": 270,
+            "height": 130
+          },
+          "facts": [
+            "Käufer bestätigt Warenkorb, Adresse und Gutscheine.",
+            "Das Kauftoken sichert durchgängige Idempotenz."
+          ]
+        },
+        {
+          "id": "validate",
+          "label": "Warenkorb prüfen",
+          "subtitle": "Artikel, Adresse,\nIdempotenzschlüssel",
+          "module": "Kaufabschluss",
+          "kind": "process",
+          "position": {
+            "x": 685,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "Ungültige SKUs und Adressen ablehnen.",
+            "Prüfen, ob checkoutToken bereits eine Bestellung erzeugt hat."
+          ]
+        },
+        {
+          "id": "stock",
+          "label": "Genug Bestand?",
+          "subtitle": "Nach Lager und\nSKU summieren",
+          "module": "Bestand",
+          "kind": "decision",
+          "position": {
+            "x": 1245,
+            "y": 40
+          },
+          "size": {
+            "width": 360,
+            "height": 250
+          },
+          "facts": [
+            "Verfügbare Menge und Reservierungslimit prüfen.",
+            "Bei Mangel sofort Fehlmengen zurückgeben."
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preissnapshot\nfixieren",
+          "subtitle": "Artikelpreise, Rabatte,\nVersand",
+          "module": "Preise",
+          "kind": "process",
+          "position": {
+            "x": 1887.5,
+            "y": 70
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Neu berechnen; Clientbeträgen nicht vertrauen.",
+            "Snapshot für Audits mit der Bestellung speichern."
+          ]
+        },
+        {
+          "id": "no-stock",
+          "label": "Fehlmengen\nmelden",
+          "subtitle": "Keine\nBestellung\nanlegen",
+          "module": "Bestand",
+          "kind": "end",
+          "position": {
+            "x": 1285,
+            "y": 430
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "facts": [
+            "Nicht verfügbare SKUs an den Client zurückgeben.",
+            "Preis-, Zahlungs- und Bestellphasen überspringen."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Risikoprüfung\nbestanden?",
+          "subtitle": "Konto, Gerät,\nBetrag",
+          "module": "Risiko",
+          "kind": "decision",
+          "position": {
+            "x": 1857.5,
+            "y": 400
+          },
+          "size": {
+            "width": 350,
+            "height": 250
+          },
+          "facts": [
+            "Bei geringem Risiko Bestand reservieren.",
+            "Verdächtige Transaktionen manuell prüfen."
+          ]
+        },
+        {
+          "id": "review",
+          "label": "Manuelle Prüfung",
+          "subtitle": "Risikotransaktionen\nbefristet prüfen",
+          "module": "Risiko",
+          "kind": "process",
+          "position": {
+            "x": 2547.5,
+            "y": 430
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Nach Freigabe zum Hauptpfad zurückkehren.",
+            "Risikogrund bei Ablehnung speichern."
+          ]
+        },
+        {
+          "id": "risk-reject",
+          "label": "Transaktion\nablehnen",
+          "subtitle": "Risikogrund\nspeichern",
+          "module": "Risiko",
+          "kind": "end",
+          "position": {
+            "x": 2552.5,
+            "y": 820
+          },
+          "size": {
+            "width": 280,
+            "height": 130
+          },
+          "facts": [
+            "Keine Zahlung auslösen.",
+            "Nachvollziehbaren Ablehnungsgrund erfassen."
+          ]
+        },
+        {
+          "id": "reserve",
+          "label": "Bestand reservieren",
+          "subtitle": "reservationToken erzeugen",
+          "module": "Bestand",
+          "kind": "subprocess",
+          "position": {
+            "x": 1917.5,
+            "y": 800
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "TTL verhindert dauerhafte Bestandssperren.",
+            "Bei Zahlungsfehler muss freigegeben werden."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Autorisierung\nanfordern",
+          "subtitle": "Snapshot-Betrag verwenden",
+          "module": "Zahlung",
+          "kind": "process",
+          "position": {
+            "x": 1167.5,
+            "y": 805
+          },
+          "size": {
+            "width": 290,
+            "height": 130
+          },
+          "facts": [
+            "Nur serverseitigen Preissnapshot verwenden.",
+            "Autorisierung enthält fachlichen Idempotenzschlüssel."
+          ]
+        },
+        {
+          "id": "pay-result",
+          "label": "Autorisiert?",
+          "subtitle": "Rückmeldungen\nund Abfragen\ndeduplizieren",
+          "module": "Zahlung",
+          "kind": "decision",
+          "position": {
+            "x": 430,
+            "y": 775
+          },
+          "size": {
+            "width": 340,
+            "height": 230
+          },
+          "facts": [
+            "Bestellung nur bei Erfolg speichern.",
+            "Bei Fehler Reservierung kompensieren."
+          ]
+        },
+        {
+          "id": "release",
+          "label": "Reservierung\nfreigeben",
+          "subtitle": "reservationToken schließen",
+          "module": "Bestand",
+          "kind": "subprocess",
+          "position": {
+            "x": 1287.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Kompensation muss idempotent sein.",
+            "Nach Freigabe Zahlungsfehler melden."
+          ]
+        },
+        {
+          "id": "pay-fail",
+          "label": "Zahlungsfehler\nmelden",
+          "subtitle": "Noch keine\nBestellung",
+          "module": "Zahlung",
+          "kind": "end",
+          "position": {
+            "x": 1877.5,
+            "y": 1225
+          },
+          "size": {
+            "width": 310,
+            "height": 130
+          },
+          "facts": [
+            "Fehlercode des Zahlungsanbieters speichern.",
+            "Käufer darf den Kauf erneut starten."
+          ]
+        },
+        {
+          "id": "persist",
+          "label": "Bestellung + Outbox\nschreiben",
+          "subtitle": "Eine Datenbanktransaktion",
+          "module": "Bestellungen",
+          "kind": "subprocess",
+          "position": {
+            "x": 447.5,
+            "y": 1220
+          },
+          "size": {
+            "width": 290,
+            "height": 140
+          },
+          "facts": [
+            "Bestellung und Domänenereignis atomar speichern.",
+            "Asynchroner Versand setzt bei Outbox an."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "done",
+          "label": "Bestell-ID\nzurückgeben",
+          "subtitle": "Versand\nasynchron\nstarten",
+          "module": "Bestellungen",
+          "kind": "end",
+          "position": {
+            "x": 447.5,
+            "y": 1490
+          },
+          "size": {
+            "width": 290,
+            "height": 190
+          },
+          "facts": [
+            "Der synchrone Pfad endet hier.",
+            "Versandfehler rollen bezahlte Bestellungen nicht zurück."
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "source": "start",
+          "target": "validate",
+          "label": "Start",
+          "kind": "flow",
+          "module": "Kaufabschluss",
+          "facts": [
+            "Kauf absenden → Warenkorb prüfen.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "check",
+          "source": "validate",
+          "target": "stock",
+          "label": "Gültig",
+          "kind": "flow",
+          "module": "Kaufabschluss",
+          "facts": [
+            "Warenkorb prüfen → Genug Bestand?.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1102.5,
+              "y": 335
+            }
+          }
+        },
+        {
+          "id": "stock-yes",
+          "source": "stock",
+          "target": "pricing",
+          "label": "Ja",
+          "kind": "yes",
+          "module": "Bestand",
+          "facts": [
+            "Genug Bestand? → Preissnapshot fixieren.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-no",
+          "source": "stock",
+          "target": "no-stock",
+          "label": "Nein",
+          "kind": "failure",
+          "module": "Bestand",
+          "facts": [
+            "Genug Bestand? → Fehlmengen melden.",
+            "Fehler- oder Kompensationspfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "price-ready",
+          "source": "pricing",
+          "target": "risk",
+          "label": "Preissnapshot",
+          "kind": "flow",
+          "module": "Preise",
+          "facts": [
+            "Preissnapshot fixieren → Risikoprüfung bestanden?.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-yes",
+          "source": "risk",
+          "target": "reserve",
+          "label": "Freigabe",
+          "kind": "yes",
+          "module": "Risiko",
+          "facts": [
+            "Risikoprüfung bestanden? → Bestand reservieren.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "risk-review",
+          "source": "risk",
+          "target": "review",
+          "label": "Prüfen",
+          "kind": "flow",
+          "module": "Risiko",
+          "facts": [
+            "Risikoprüfung bestanden? → Manuelle Prüfung.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 2385,
+              "y": 365
+            }
+          }
+        },
+        {
+          "id": "review-approved",
+          "source": "review",
+          "target": "reserve",
+          "label": "Genehmigen",
+          "kind": "yes",
+          "module": "Risiko",
+          "facts": [
+            "Manuelle Prüfung → Bestand reservieren.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2550,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 730
+              },
+              {
+                "x": 2355,
+                "y": 870
+              }
+            ],
+            "labelAt": {
+              "x": 2475,
+              "y": 715
+            }
+          }
+        },
+        {
+          "id": "review-rejected",
+          "source": "review",
+          "target": "risk-reject",
+          "label": "Ablehnen",
+          "kind": "failure",
+          "module": "Risiko",
+          "facts": [
+            "Manuelle Prüfung → Transaktion ablehnen.",
+            "Fehler- oder Kompensationspfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "request-pay",
+          "source": "reserve",
+          "target": "payment",
+          "label": "reservationToken",
+          "kind": "flow",
+          "module": "Bestand",
+          "facts": [
+            "Bestand reservieren → Autorisierung anfordern.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "payment-result",
+          "source": "payment",
+          "target": "pay-result",
+          "label": "Autorisierungsergebnis",
+          "kind": "flow",
+          "module": "Zahlung",
+          "facts": [
+            "Autorisierung anfordern → Autorisiert?.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 975,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "pay-yes",
+          "source": "pay-result",
+          "target": "persist",
+          "label": "Erfolg",
+          "kind": "success",
+          "module": "Zahlung",
+          "facts": [
+            "Autorisiert? → Bestellung + Outbox schreiben.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "pay-no",
+          "source": "pay-result",
+          "target": "release",
+          "label": "Fehler",
+          "kind": "failure",
+          "module": "Zahlung",
+          "facts": [
+            "Autorisiert? → Reservierung freigeben.",
+            "Fehler- oder Kompensationspfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "release-complete",
+          "source": "release",
+          "target": "pay-fail",
+          "label": "Kompensiert",
+          "kind": "failure",
+          "module": "Bestand",
+          "facts": [
+            "Reservierung freigeben → Zahlungsfehler melden.",
+            "Fehler- oder Kompensationspfad."
+          ],
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1717.5,
+              "y": 1175
+            }
+          }
+        },
+        {
+          "id": "complete",
+          "source": "persist",
+          "target": "done",
+          "label": "Gespeichert",
+          "kind": "flow",
+          "module": "Bestellungen",
+          "facts": [
+            "Bestellung + Outbox schreiben → Bestell-ID zurückgeben.",
+            "Beziehung im Hauptpfad."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Ein erfolgreicher Kauf",
+        "diagramType": "sequence",
+        "locale": "de",
+        "subtitle": "Synchron bestätigen, asynchron versenden",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Erfolgspfad; Zahlungskompensation, Zeitüberschreitungen und vertauschte Rückmeldungen gehören in Ablauf- und Zustandsansichten."
+      },
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Käufer",
+          "module": "Kanäle",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 220,
+            "height": 960
+          },
+          "facts": [
+            "Warenkorb senden und Bestell-ID erhalten."
+          ]
+        },
+        {
+          "id": "checkout",
+          "label": "Kaufabschluss",
+          "subtitle": "Transaktionssteuerung",
+          "module": "Kaufabschluss",
+          "kind": "service",
+          "position": {
+            "x": 390,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Preise, Bestand, Risiko, Zahlung und Bestellungen koordinieren."
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preise",
+          "subtitle": "Preise und Rabatte",
+          "module": "Preise",
+          "kind": "participant",
+          "position": {
+            "x": 780,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Unveränderlichen Preissnapshot erzeugen."
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "Bestand",
+          "subtitle": "Bestandsreservierung",
+          "module": "Bestand",
+          "kind": "participant",
+          "position": {
+            "x": 1170,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "SKUs reservieren und Token zurückgeben."
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "Risiko",
+          "subtitle": "Transaktionsrisiko",
+          "module": "Risiko",
+          "kind": "participant",
+          "position": {
+            "x": 1560,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "PASS, REVIEW oder REJECT zurückgeben."
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "Zahlung",
+          "subtitle": "Zahlungsautorisierung",
+          "module": "Zahlung",
+          "kind": "external",
+          "position": {
+            "x": 1950,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Snapshot-Betrag autorisieren."
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Bestellungen",
+          "subtitle": "Bestellung und Outbox",
+          "module": "Bestellungen",
+          "kind": "database",
+          "position": {
+            "x": 2340,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "Bestellung und Outbox atomar speichern."
+          ]
+        },
+        {
+          "id": "fulfillment",
+          "label": "Versand",
+          "subtitle": "Auftragsabwicklung",
+          "module": "Versand",
+          "kind": "participant",
+          "position": {
+            "x": 2730,
+            "y": 40
+          },
+          "size": {
+            "width": 250,
+            "height": 960
+          },
+          "facts": [
+            "OrderPaid asynchron verarbeiten."
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "inventory-result",
+          "label": "Bestandsergebnis",
+          "kind": "alt",
+          "position": {
+            "x": 350,
+            "y": 375
+          },
+          "size": {
+            "width": 1100,
+            "height": 117
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "s1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Kaufbefehl absenden",
+          "kind": "sync",
+          "module": "Kanäle",
+          "order": 1,
+          "facts": [
+            "Senden: Kaufbefehl absenden",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s2",
+          "source": "checkout",
+          "target": "pricing",
+          "label": "Preise und Rabatte neu berechnen",
+          "kind": "sync",
+          "module": "Kaufabschluss",
+          "order": 2,
+          "facts": [
+            "Senden: Preise und Rabatte neu berechnen",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s3",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "PriceSnapshot",
+          "kind": "return",
+          "module": "Preise",
+          "order": 3,
+          "facts": [
+            "Rückgabe: PriceSnapshot",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s4",
+          "source": "checkout",
+          "target": "inventory",
+          "label": "SKU-Mengen reservieren",
+          "kind": "sync",
+          "module": "Kaufabschluss",
+          "order": 4,
+          "facts": [
+            "Senden: SKU-Mengen reservieren",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s5",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "reservationToken",
+          "kind": "return",
+          "module": "Bestand",
+          "order": 5,
+          "facts": [
+            "Rückgabe: reservationToken",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s6",
+          "source": "inventory",
+          "target": "checkout",
+          "label": "OUT_OF_STOCK",
+          "kind": "return",
+          "module": "Bestand",
+          "order": 6,
+          "facts": [
+            "Rückgabe: OUT_OF_STOCK",
+            "Diese Nachricht steht für den Fehlbestandspfad."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s7",
+          "source": "checkout",
+          "target": "risk",
+          "label": "Konto, Gerät und Betrag prüfen",
+          "kind": "sync",
+          "module": "Kaufabschluss",
+          "order": 7,
+          "facts": [
+            "Senden: Konto, Gerät und Betrag prüfen",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s8",
+          "source": "risk",
+          "target": "checkout",
+          "label": "PASS",
+          "kind": "return",
+          "module": "Risiko",
+          "order": 8,
+          "facts": [
+            "Rückgabe: PASS",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s9",
+          "source": "checkout",
+          "target": "payment",
+          "label": "Zahlbetrag autorisieren",
+          "kind": "sync",
+          "module": "Kaufabschluss",
+          "order": 9,
+          "facts": [
+            "Senden: Zahlbetrag autorisieren",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s10",
+          "source": "payment",
+          "target": "checkout",
+          "label": "paymentConfirmed",
+          "kind": "return",
+          "module": "Zahlung",
+          "order": 10,
+          "facts": [
+            "Rückgabe: paymentConfirmed",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s11",
+          "source": "checkout",
+          "target": "order",
+          "label": "Bestellung + OrderPaid speichern",
+          "kind": "sync",
+          "module": "Kaufabschluss",
+          "order": 11,
+          "facts": [
+            "Senden: Bestellung + OrderPaid speichern",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s12",
+          "source": "order",
+          "target": "checkout",
+          "label": "orderId",
+          "kind": "return",
+          "module": "Bestellungen",
+          "order": 12,
+          "facts": [
+            "Rückgabe: orderId",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s13",
+          "source": "order",
+          "target": "fulfillment",
+          "label": "OrderPaid asynchron senden",
+          "kind": "async",
+          "module": "Bestellungen",
+          "order": 13,
+          "facts": [
+            "Senden: OrderPaid asynchron senden",
+            "Asynchrone Nachricht blockiert den Kauf nicht."
+          ],
+          "evidence": "inference"
+        },
+        {
+          "id": "s14",
+          "source": "checkout",
+          "target": "buyer",
+          "label": "Bestell-ID zurückgeben",
+          "kind": "return",
+          "module": "Kaufabschluss",
+          "order": 14,
+          "facts": [
+            "Rückgabe: Bestell-ID zurückgeben",
+            "In nummerierter Reihenfolge lesen."
+          ],
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Transaktionsdatenmodell",
+        "diagramType": "er",
+        "locale": "de",
+        "subtitle": "Beziehungen zwischen Warenkörben, Bestellungen, Zahlungen, Reservierungen und Paketen",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Relationales Konzeptmodell für ER-Notation; vereinfachte Felder, kein ausführbares DDL."
+      },
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "customer",
+          "module": "Kanäle",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 70
+          },
+          "size": {
+            "width": 360,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "member_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(16)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart",
+          "label": "shopping_cart",
+          "module": "Kaufabschluss",
+          "kind": "entity",
+          "position": {
+            "x": 560,
+            "y": 70
+          },
+          "size": {
+            "width": 390,
+            "height": 230
+          },
+          "fields": [
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "version",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "cart-item",
+          "label": "cart_item",
+          "module": "Kaufabschluss",
+          "kind": "entity",
+          "position": {
+            "x": 1120,
+            "y": 70
+          },
+          "size": {
+            "width": 420,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "cart_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "cart_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "order",
+          "label": "sales_order",
+          "module": "Bestellungen",
+          "kind": "entity",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_no",
+              "type": "varchar(32)",
+              "key": "UK",
+              "nullable": false
+            },
+            {
+              "name": "customer_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "payable_amount",
+              "type": "decimal(18,2)",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order-item",
+          "label": "sales_order_item",
+          "module": "Bestellungen",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 500
+          },
+          "size": {
+            "width": 450,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "sku_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal(18,2)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "payment_order",
+          "module": "Zahlung",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 500
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "payment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "channel_txn_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "reservation",
+          "label": "inventory_reservation",
+          "module": "Bestand",
+          "kind": "entity",
+          "position": {
+            "x": 620,
+            "y": 980
+          },
+          "size": {
+            "width": 480,
+            "height": 290
+          },
+          "fields": [
+            {
+              "name": "reservation_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_item_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "warehouse_id",
+              "type": "bigint",
+              "nullable": false
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "int",
+              "nullable": false
+            },
+            {
+              "name": "expires_at",
+              "type": "timestamp",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "shipment",
+          "label": "shipment",
+          "module": "Versand",
+          "kind": "entity",
+          "position": {
+            "x": 1230,
+            "y": 980
+          },
+          "size": {
+            "width": 430,
+            "height": 260
+          },
+          "fields": [
+            {
+              "name": "shipment_id",
+              "type": "bigint",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "bigint",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "tracking_no",
+              "type": "varchar(64)",
+              "key": "UK",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "varchar(24)",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "customer-cart",
+          "source": "customer",
+          "target": "cart",
+          "label": "Besitzt",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..1",
+          "evidence": "inference"
+        },
+        {
+          "id": "cart-items",
+          "source": "cart",
+          "target": "cart-item",
+          "label": "Enthält",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "customer-orders",
+          "source": "customer",
+          "target": "order",
+          "label": "Bestellt",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-items",
+          "source": "order",
+          "target": "order-item",
+          "label": "Enthält",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "1..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-payments",
+          "source": "order",
+          "target": "payment",
+          "label": "Zahlungsversuch",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 500,
+                "y": 400
+              },
+              {
+                "x": 1445,
+                "y": 400
+              }
+            ],
+            "labelAt": {
+              "x": 800,
+              "y": 375
+            }
+          }
+        },
+        {
+          "id": "item-reservations",
+          "source": "order-item",
+          "target": "reservation",
+          "label": "Reserviert",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        },
+        {
+          "id": "order-shipments",
+          "source": "payment",
+          "target": "shipment",
+          "label": "Nach Zahlung\nerzeugt",
+          "kind": "relationship",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Regionale Bereitstellung",
+        "diagramType": "deployment",
+        "locale": "de",
+        "subtitle": "Betriebsorte von Transaktionen und asynchronem Versand",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Konzeptuelle Bereitstellung; Replikate, Cloud-Anbieter und Middleware nicht festgelegt."
+      },
+      "groups": [
+        {
+          "id": "edge",
+          "label": "Öffentlicher Rand",
+          "kind": "network",
+          "position": {
+            "x": 10,
+            "y": 20
+          },
+          "size": {
+            "width": 1510,
+            "height": 250
+          }
+        },
+        {
+          "id": "region",
+          "label": "Primäre Handelsregion · Kubernetes",
+          "kind": "cluster",
+          "position": {
+            "x": 10,
+            "y": 340
+          },
+          "size": {
+            "width": 1510,
+            "height": 300
+          }
+        },
+        {
+          "id": "managed",
+          "label": "Daten und externe Dienste",
+          "kind": "host",
+          "position": {
+            "x": 10,
+            "y": 780
+          },
+          "size": {
+            "width": 1830,
+            "height": 370
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "device",
+          "label": "Käufergerät",
+          "subtitle": "Web / App / Mini-App",
+          "module": "Kanäle",
+          "kind": "device",
+          "position": {
+            "x": 40,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "cdn",
+          "label": "CDN + WAF",
+          "subtitle": "Statische Inhalte und Randschutz",
+          "module": "Kanäle",
+          "kind": "node",
+          "position": {
+            "x": 610,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "gateway",
+          "label": "API Gateway",
+          "subtitle": "Öffentlicher Handelseingang",
+          "module": "Kanäle",
+          "kind": "container",
+          "position": {
+            "x": 1180,
+            "y": 75
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "commerce",
+          "label": "Handels-Pods",
+          "subtitle": "Checkout / Order / Pricing",
+          "module": "Kaufabschluss",
+          "kind": "service",
+          "position": {
+            "x": 40,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "control",
+          "label": "Bestands- und Risiko-Pods",
+          "subtitle": "Inventory / Risk",
+          "module": "Bestand",
+          "kind": "service",
+          "position": {
+            "x": 580,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Versand- und Kundendienst-Pods",
+          "subtitle": "Fulfillment / AfterSales",
+          "module": "Versand",
+          "kind": "service",
+          "position": {
+            "x": 1120,
+            "y": 410
+          },
+          "size": {
+            "width": 360,
+            "height": 170
+          }
+        },
+        {
+          "id": "database",
+          "label": "Handelsdatenbank",
+          "subtitle": "Bestellungen, Zahlungen, Outbox",
+          "module": "Bestellungen",
+          "kind": "database",
+          "position": {
+            "x": 40,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "event-bus",
+          "label": "Ereignisbus",
+          "subtitle": "Domänenereignisse und Wiederholungsthemen",
+          "module": "Bestellungen",
+          "kind": "container",
+          "position": {
+            "x": 500,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Externer Zahlungsanbieter",
+          "subtitle": "Autorisierung, Rückmeldungen, Erstattungen",
+          "module": "Zahlung",
+          "kind": "external",
+          "position": {
+            "x": 960,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Lager- / Logistiknetz",
+          "subtitle": "WMS und Transportschnittstellen",
+          "module": "Versand",
+          "kind": "external",
+          "position": {
+            "x": 1420,
+            "y": 850
+          },
+          "size": {
+            "width": 330,
+            "height": 160
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "device",
+          "target": "cdn",
+          "label": "HTTPS",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-2",
+          "source": "cdn",
+          "target": "gateway",
+          "label": "Gefilterte\nAnfrage",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-3",
+          "source": "gateway",
+          "target": "commerce",
+          "label": "Internes\nRouting",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1900,
+                "y": 150
+              },
+              {
+                "x": 1900,
+                "y": 680
+              },
+              {
+                "x": 350,
+                "y": 680
+              }
+            ],
+            "labelAt": {
+              "x": 1030,
+              "y": 710
+            }
+          }
+        },
+        {
+          "id": "edge-4",
+          "source": "commerce",
+          "target": "control",
+          "label": "Synchroner\nDomänenaufruf",
+          "kind": "depends",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-5",
+          "source": "control",
+          "target": "fulfillment",
+          "label": "Versandbedingungen",
+          "kind": "depends",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1030,
+              "y": 375
+            }
+          }
+        },
+        {
+          "id": "edge-6",
+          "source": "commerce",
+          "target": "database",
+          "label": "Transaktionales\nSchreiben",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 220,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 725
+              },
+              {
+                "x": 680,
+                "y": 820
+              },
+              {
+                "x": 205,
+                "y": 820
+              }
+            ],
+            "labelAt": {
+              "x": 300,
+              "y": 714
+            }
+          }
+        },
+        {
+          "id": "edge-7",
+          "source": "database",
+          "target": "event-bus",
+          "label": "Outbox",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "edge-9",
+          "source": "commerce",
+          "target": "payment",
+          "label": "Zahlungs-API",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 0,
+                "y": 495
+              },
+              {
+                "x": 0,
+                "y": 700
+              },
+              {
+                "x": 1125,
+                "y": 700
+              }
+            ],
+            "labelAt": {
+              "x": 520,
+              "y": 675
+            }
+          }
+        },
+        {
+          "id": "edge-10",
+          "source": "event-bus",
+          "target": "wms",
+          "label": "Lageraufgaben",
+          "kind": "network",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 665,
+                "y": 1100
+              },
+              {
+                "x": 1585,
+                "y": 1100
+              }
+            ],
+            "labelAt": {
+              "x": 1120,
+              "y": 1100
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Kaufverträge im Code",
+        "diagramType": "class",
+        "locale": "de",
+        "subtitle": "Anwendungsdienste hängen von Domänenobjekten und Ports ab, nicht von Infrastruktur",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Konzeptuelles Klassenmodell; Signaturen zeigen nur die für den Kauf nötige Zusammenarbeit."
+      },
+      "nodes": [
+        {
+          "id": "command",
+          "label": "CheckoutCommand",
+          "module": "Kaufabschluss",
+          "kind": "class",
+          "position": {
+            "x": 30,
+            "y": 40
+          },
+          "size": {
+            "width": 390,
+            "height": 260
+          },
+          "attributes": [
+            "customerId: CustomerId",
+            "items: List<CheckoutItem>",
+            "checkoutToken: String"
+          ],
+          "methods": [
+            "validate(): void"
+          ]
+        },
+        {
+          "id": "service",
+          "label": "CheckoutApplicationService",
+          "module": "Kaufabschluss",
+          "kind": "class",
+          "position": {
+            "x": 590,
+            "y": 40
+          },
+          "size": {
+            "width": 440,
+            "height": 230
+          },
+          "attributes": [],
+          "methods": [
+            "checkout(command): OrderId",
+            "compensate(context): void"
+          ],
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "Order",
+          "module": "Bestellungen",
+          "kind": "class",
+          "position": {
+            "x": 1200,
+            "y": 40
+          },
+          "size": {
+            "width": 400,
+            "height": 290
+          },
+          "attributes": [
+            "id: OrderId",
+            "lines: List<OrderLine>",
+            "total: Money",
+            "status: OrderStatus"
+          ],
+          "methods": [
+            "confirmPayment(snapshot): void",
+            "cancel(reason): void"
+          ]
+        },
+        {
+          "id": "pricing-port",
+          "label": "PricingPort",
+          "module": "Preise",
+          "kind": "interface",
+          "position": {
+            "x": 30,
+            "y": 500
+          },
+          "size": {
+            "width": 390,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "quote(command): PriceSnapshot"
+          ]
+        },
+        {
+          "id": "inventory-port",
+          "label": "InventoryPort",
+          "module": "Bestand",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 500
+          },
+          "size": {
+            "width": 440,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "reserve(items): Reservation",
+            "release(token): void"
+          ]
+        },
+        {
+          "id": "payment-port",
+          "label": "PaymentPort",
+          "module": "Zahlung",
+          "kind": "interface",
+          "position": {
+            "x": 1200,
+            "y": 500
+          },
+          "size": {
+            "width": 400,
+            "height": 250
+          },
+          "attributes": [],
+          "methods": [
+            "authorize(amount): Payment",
+            "refund(paymentId): void"
+          ]
+        },
+        {
+          "id": "repository",
+          "label": "OrderRepository",
+          "module": "Bestellungen",
+          "kind": "interface",
+          "position": {
+            "x": 590,
+            "y": 950
+          },
+          "size": {
+            "width": 440,
+            "height": 220
+          },
+          "attributes": [],
+          "methods": [
+            "save(order): void",
+            "find(orderId): Order"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "source": "command",
+          "target": "service",
+          "label": "Eingabe",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "creates",
+          "source": "service",
+          "target": "order",
+          "label": "Erstellen",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "pricing",
+          "source": "service",
+          "target": "pricing-port",
+          "label": "Abhängig von",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "inventory",
+          "source": "service",
+          "target": "inventory-port",
+          "label": "Abhängig von",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "payment",
+          "source": "service",
+          "target": "payment-port",
+          "label": "Abhängig von",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "aggregate",
+          "source": "order",
+          "target": "repository",
+          "label": "Persistieren",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1700,
+                "y": 185
+              },
+              {
+                "x": 1700,
+                "y": 1060
+              },
+              {
+                "x": 1100,
+                "y": 1060
+              }
+            ],
+            "labelAt": {
+              "x": 1500,
+              "y": 1035
+            }
+          }
+        },
+        {
+          "id": "save",
+          "source": "service",
+          "target": "repository",
+          "label": "Absenden",
+          "kind": "dependency",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 500,
+                "y": 155
+              },
+              {
+                "x": 500,
+                "y": 850
+              },
+              {
+                "x": 810,
+                "y": 850
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 825
+            }
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Bestelllebenszyklus",
+        "diagramType": "state",
+        "locale": "de",
+        "subtitle": "Wie Zahlung, Versand, Stornierung und Erstattung Zustände begrenzen",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Konzeptueller Zustandsautomat; Teillieferung, Auftragsteilung und Retourenlogistik ausgelassen."
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "Start",
+          "module": "Bestellungen",
+          "kind": "initial",
+          "position": {
+            "x": 30,
+            "y": 100
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        },
+        {
+          "id": "pending",
+          "label": "Zahlung ausstehend",
+          "subtitle": "Bestand reserviert",
+          "module": "Zahlung",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "paid",
+          "label": "Bezahlt",
+          "subtitle": "Wartet auf Lagerannahme",
+          "module": "Bestellungen",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "allocated",
+          "label": "Zugewiesen",
+          "subtitle": "Versandlager festgelegt",
+          "module": "Versand",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 70
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "packed",
+          "label": "Verpackt",
+          "subtitle": "Wartet auf Abholung",
+          "module": "Versand",
+          "kind": "state",
+          "position": {
+            "x": 1270,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "shipped",
+          "label": "Unterwegs",
+          "subtitle": "Frachtbrief erstellt",
+          "module": "Versand",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "completed",
+          "label": "Abgeschlossen",
+          "subtitle": "Empfangen oder automatisch bestätigt",
+          "module": "Versand",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 390
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "cancelled",
+          "label": "Storniert",
+          "subtitle": "Vor Zahlung geschlossen",
+          "module": "Bestellungen",
+          "kind": "state",
+          "position": {
+            "x": 250,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "refunding",
+          "label": "Erstattung läuft",
+          "subtitle": "Rückabwicklung nach Zahlung",
+          "module": "Zahlung",
+          "kind": "state",
+          "position": {
+            "x": 760,
+            "y": 710
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "closed",
+          "label": "Geschlossen",
+          "module": "Bestellungen",
+          "kind": "final",
+          "position": {
+            "x": 1270,
+            "y": 740
+          },
+          "size": {
+            "width": 90,
+            "height": 90
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "source": "initial",
+          "target": "pending",
+          "label": "Bestellung\nerstellen",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pay",
+          "source": "pending",
+          "target": "paid",
+          "label": "Zahlung\nbestätigen",
+          "guard": "Gültig",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "allocate",
+          "source": "paid",
+          "target": "allocated",
+          "label": "Lager nimmt an",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "pack",
+          "source": "allocated",
+          "target": "packed",
+          "label": "Kommissioniert",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "ship",
+          "source": "packed",
+          "target": "shipped",
+          "label": "Transportabholung",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "receive",
+          "source": "shipped",
+          "target": "completed",
+          "label": "Empfang\nbestätigen",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel",
+          "source": "pending",
+          "target": "cancelled",
+          "label": "Vor Zahlung\nstornieren",
+          "action": "Bestand freigeben",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 300
+              },
+              {
+                "x": 180,
+                "y": 650
+              },
+              {
+                "x": 390,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 130,
+              "y": 615
+            }
+          }
+        },
+        {
+          "id": "refund-paid",
+          "source": "paid",
+          "target": "refunding",
+          "label": "Stornoantrag",
+          "guard": "Nicht versandt",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 900,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 20
+              },
+              {
+                "x": 1600,
+                "y": 650
+              },
+              {
+                "x": 900,
+                "y": 650
+              }
+            ],
+            "labelAt": {
+              "x": 1720,
+              "y": 595
+            }
+          }
+        },
+        {
+          "id": "refund-complete",
+          "source": "completed",
+          "target": "refunding",
+          "label": "Erstattung im\nKundendienst",
+          "guard": "Prüfung bestanden",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "cancel-close",
+          "source": "cancelled",
+          "target": "closed",
+          "label": "Ressourcen\nfreigegeben",
+          "kind": "transition",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 390,
+                "y": 930
+              },
+              {
+                "x": 1315,
+                "y": 930
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 905
+            }
+          }
+        },
+        {
+          "id": "refund-close",
+          "source": "refunding",
+          "target": "closed",
+          "label": "Erstattung\neingegangen",
+          "kind": "transition",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Akteursfähigkeiten",
+        "diagramType": "usecase",
+        "locale": "de",
+        "subtitle": "Aufgaben von Käufern, Händlern, Lagern, Support und Zahlungsanbietern",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Fähigkeitsansicht ohne Aufrufreihenfolge; Plattformverwaltung und Abgleich ausgelassen."
+      },
+      "groups": [
+        {
+          "id": "platform",
+          "label": "Handels- und Versandplattform",
+          "kind": "system",
+          "position": {
+            "x": 500,
+            "y": 20
+          },
+          "size": {
+            "width": 1050,
+            "height": 970
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Käufer",
+          "module": "Kanäle",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 80
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "merchant",
+          "label": "Händlerbetrieb",
+          "module": "Preise",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 310
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "warehouse",
+          "label": "Lagermitarbeiter",
+          "module": "Versand",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 540
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "support",
+          "label": "Kundenbetreuung",
+          "module": "Versand",
+          "kind": "actor",
+          "position": {
+            "x": 30,
+            "y": 770
+          },
+          "size": {
+            "width": 260,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Warenkorb abschließen",
+          "subtitle": "Preise, Rabatte, Bestand",
+          "module": "Kaufabschluss",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "Bestellung bezahlen",
+          "subtitle": "Anbieter wählen und bestätigen",
+          "module": "Zahlung",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 80
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "catalog",
+          "label": "Produkte und Aktionen verwalten",
+          "subtitle": "Angebot, Preise, Rabatte",
+          "module": "Preise",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "orders",
+          "label": "Bestellprobleme bearbeiten",
+          "subtitle": "Prüfen, schließen, kompensieren",
+          "module": "Bestellungen",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 310
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "pick",
+          "label": "Kommissionieren und verpacken",
+          "subtitle": "SKUs und Kartoncodes scannen",
+          "module": "Versand",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "ship",
+          "label": "Pakete versenden",
+          "subtitle": "Frachtbrief erstellen und übergeben",
+          "module": "Versand",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 540
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "refund",
+          "label": "Erstattungen bearbeiten",
+          "subtitle": "Zahlung und Versandfortschritt prüfen",
+          "module": "Zahlung",
+          "kind": "usecase",
+          "position": {
+            "x": 590,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        },
+        {
+          "id": "return",
+          "label": "Retouren bearbeiten",
+          "subtitle": "Retourenlogistik und Einlagerung",
+          "module": "Versand",
+          "kind": "usecase",
+          "position": {
+            "x": 1090,
+            "y": 770
+          },
+          "size": {
+            "width": 360,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "buyer-checkout",
+          "source": "buyer",
+          "target": "checkout",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "merchant-catalog",
+          "source": "merchant",
+          "target": "catalog",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "warehouse-pick",
+          "source": "warehouse",
+          "target": "pick",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "support-refund",
+          "source": "support",
+          "target": "refund",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "checkout-pay",
+          "source": "checkout",
+          "target": "pay",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "catalog-orders",
+          "source": "catalog",
+          "target": "orders",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "pick-ship",
+          "source": "pick",
+          "target": "ship",
+          "label": "include",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "return-refund",
+          "source": "return",
+          "target": "refund",
+          "label": "extend",
+          "kind": "extend",
+          "evidence": "inference"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "E-Commerce · Transaktionsdatenfluss",
+        "diagramType": "dataflow",
+        "locale": "de",
+        "subtitle": "Wie Warenkorbdaten zu lieferbaren, verfolgbaren Bestellungen werden",
+        "sourceRef": "README-Konzeptbeispiel · 2026-09-14",
+        "scope": "Zeigt Daten und Transformationen, keine synchrone Aufrufreihenfolge oder Messaging-Implementierung."
+      },
+      "groups": [
+        {
+          "id": "transaction",
+          "label": "Transaktionsdatengrenze",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 20
+          },
+          "size": {
+            "width": 1330,
+            "height": 570
+          }
+        },
+        {
+          "id": "fulfillment",
+          "label": "Versanddatengrenze",
+          "kind": "ownership",
+          "position": {
+            "x": 480,
+            "y": 660
+          },
+          "size": {
+            "width": 1330,
+            "height": 260
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Käufer und Warenkorb",
+          "subtitle": "SKU, Menge, Adresse, Gutscheine",
+          "module": "Kanäle",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "checkout",
+          "label": "Kaufberechnung",
+          "subtitle": "Eingabe normalisieren und Betrag neu berechnen",
+          "module": "Kaufabschluss",
+          "kind": "process",
+          "position": {
+            "x": 520,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pricing",
+          "label": "Preisregelspeicher",
+          "subtitle": "Preise, Aktionen, Gutscheine, Versand",
+          "module": "Preise",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 85
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "risk",
+          "label": "Risikoprofil",
+          "subtitle": "Konto, Gerät, Transaktionshistorie",
+          "module": "Risiko",
+          "kind": "dataStore",
+          "position": {
+            "x": 1500,
+            "y": 85
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "decision",
+          "label": "Entscheidung\nzur Transaktion",
+          "subtitle": "Preissnapshot + Risikoentscheidung",
+          "module": "Risiko",
+          "kind": "process",
+          "position": {
+            "x": 1500,
+            "y": 375
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        },
+        {
+          "id": "inventory",
+          "label": "Bestandsbuch",
+          "subtitle": "Verfügbare Mengen und Reservierungen",
+          "module": "Bestand",
+          "kind": "dataStore",
+          "position": {
+            "x": 1010,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "order",
+          "label": "Bestellbuch",
+          "subtitle": "Bestellungen, Zahlungen und Outbox",
+          "module": "Bestellungen",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "payment",
+          "label": "Zahlungsanbieter",
+          "subtitle": "Zahlungs- und Erstattungsergebnisse",
+          "module": "Zahlung",
+          "kind": "external",
+          "position": {
+            "x": 30,
+            "y": 375
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "event",
+          "label": "Bestellereignisstrom",
+          "subtitle": "OrderPaid / OrderCancelled",
+          "module": "Bestellungen",
+          "kind": "dataStore",
+          "position": {
+            "x": 520,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "wms",
+          "label": "Lagerabwicklung",
+          "subtitle": "Zuweisung, Wellen, Pakete, Frachtbriefe",
+          "module": "Versand",
+          "kind": "process",
+          "position": {
+            "x": 1010,
+            "y": 715
+          },
+          "size": {
+            "width": 300,
+            "height": 150
+          }
+        },
+        {
+          "id": "carrier",
+          "label": "Frachtführer",
+          "subtitle": "Verfolgung und Empfangsbelege",
+          "module": "Versand",
+          "kind": "external",
+          "position": {
+            "x": 1500,
+            "y": 715
+          },
+          "size": {
+            "width": 280,
+            "height": 150
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "buyer",
+          "target": "checkout",
+          "label": "Warenkorbsnapshot",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 390,
+              "y": 280
+            }
+          }
+        },
+        {
+          "id": "d2",
+          "source": "pricing",
+          "target": "checkout",
+          "label": "Preis- und\nRabattregeln",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d3",
+          "source": "risk",
+          "target": "decision",
+          "label": "Risikomerkmale",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d4",
+          "source": "checkout",
+          "target": "decision",
+          "label": "Preissnapshot",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 300
+              },
+              {
+                "x": 1850,
+                "y": 620
+              },
+              {
+                "x": 1640,
+                "y": 620
+              }
+            ],
+            "labelAt": {
+              "x": 1250,
+              "y": 275
+            }
+          }
+        },
+        {
+          "id": "d5",
+          "source": "decision",
+          "target": "inventory",
+          "label": "Reservierungsanfrage",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 1405,
+              "y": 330
+            }
+          }
+        },
+        {
+          "id": "d6",
+          "source": "inventory",
+          "target": "order",
+          "label": "Reservierungstoken",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 915,
+              "y": 330
+            }
+          }
+        },
+        {
+          "id": "d7",
+          "source": "payment",
+          "target": "order",
+          "label": "Zahlung\nbestätigen",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "labelAt": {
+              "x": 400,
+              "y": 585
+            }
+          }
+        },
+        {
+          "id": "d8",
+          "source": "order",
+          "target": "event",
+          "label": "Domänenereignisse",
+          "kind": "data",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 670,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 620
+              },
+              {
+                "x": 440,
+                "y": 790
+              }
+            ],
+            "labelAt": {
+              "x": 670,
+              "y": 620
+            }
+          }
+        },
+        {
+          "id": "d9",
+          "source": "event",
+          "target": "wms",
+          "label": "Bezahlte\nBestellungen",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "d10",
+          "source": "wms",
+          "target": "carrier",
+          "label": "Pakete und\nFrachtbriefe",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ]
+    }
+  ]
+}

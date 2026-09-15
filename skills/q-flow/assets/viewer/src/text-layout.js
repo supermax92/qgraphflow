@@ -1,6 +1,7 @@
 import { TYPOGRAPHY } from './visual-style.js';
 
-const textWidth = (value, fontSize) => [...value].reduce((width, character) => width + fontSize * (/[^\u0000-\u00ff]|[MW@%&]/.test(character) ? 1 : 6.8 / 12), 0);
+// Conservative system-font widths keep server-rendered SVG and browser labels in the same bounds.
+const textWidth = (value, fontSize) => [...value].reduce((width, character) => width + fontSize * (/[^\u0000-\u00ff]|[MWmw@%&]/.test(character) ? 1 : /[A-Z]/.test(character) ? .8 : 6.8 / 12), 0);
 
 export function layoutText(value, maxWidth, fontSize = TYPOGRAPHY.body, lineHeight = fontSize * 1.5) {
   const content = String(value ?? '');
@@ -44,4 +45,3 @@ export function estimateLabelSize(value) {
   const layout = layoutText(value, Infinity);
   return layout.lines.length ? { width: Math.max(24, layout.width + 12), height: layout.height + 6 } : { width: 0, height: 0 };
 }
-

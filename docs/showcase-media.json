@@ -1,321 +1,819 @@
 {
-  "release": "showcase-v1",
-  "baseUrl": "https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/",
-  "assets": [
+  "status": "published",
+  "release": {
+    "tag": "showcase-v1",
+    "url": "https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1",
+    "assetBaseUrl": "https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/",
+    "verifiedAt": "2026-09-15T13:37:46.798Z",
+    "retainedLegacyAssets": 63
+  },
+  "directory": "docs/images/showcase",
+  "viewerSha256": "c27ab9c3f1cd61f37f187fb66d3f4161cab4b2165071443c3d18863b699be756",
+  "locales": [
     {
-      "name": "kafka.de.architecture.gif",
-      "bytes": 2927213,
-      "sha256": "06329be07dc176f262ef7a9bea24c4ba1d2a6ac6c66cecc5e66c41ca12e338dc"
+      "locale": "en",
+      "graph": "examples/showcase/ecommerce.en.graph.json",
+      "graphSha256": "ed2b4caa8c496c21c1fb2b5fd824fe4eefde30b01c0a78e96fd0e2c5b1323aec",
+      "assets": [
+        {
+          "name": "ecommerce.en.architecture.png",
+          "bytes": 277091,
+          "sha256": "eb4c0a4a7d5ef92b88d3cfd8ce6ce12a07ffd4dde50b58be9feb7c94a9e31eba",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.en.flowchart.png",
+          "bytes": 331136,
+          "sha256": "6ab8b95f66d56025b4cdc27c301b2e60fd94e580f4fe6a5e5e7d5bad207a33d8",
+          "width": 2853,
+          "height": 1816
+        },
+        {
+          "name": "ecommerce.en.sequence.png",
+          "bytes": 204215,
+          "sha256": "0e1a85cbeb18f2e7d9498ed6cc30678bfb2e3baf58f3a1c6518a5e78bfe06165",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.en.er.png",
+          "bytes": 238262,
+          "sha256": "e3a79de3a888a0230854af72414e0d6dce755896ce192080574a92c9cb4ac21e",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.en.deployment.png",
+          "bytes": 250773,
+          "sha256": "2365def5b3b049b41a9cb37664860c2465e30ff3885a3b088790eb9321356aea",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.en.class.png",
+          "bytes": 204991,
+          "sha256": "1831caf0139655fea6616e4ca23f7cfbc43a18a74f76bfabd3e7d5f384ceffc5",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.en.state.png",
+          "bytes": 138959,
+          "sha256": "e331d3a9c65b86d701fe8834c3ca5333ddc10a53f247aad02ee561974e45c83e",
+          "width": 1938,
+          "height": 1128
+        },
+        {
+          "name": "ecommerce.en.usecase.png",
+          "bytes": 163122,
+          "sha256": "d7dc921874c4ed13003e05037fb8ed38a6616ab9789e4daf63d547d974d69ed0",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.en.dataflow.png",
+          "bytes": 154969,
+          "sha256": "e14bc171e786ca20c1ff780259864af1af38260ed5eaf1ce8ffcbfc6753c7f46",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.en.core-three.gif",
+          "bytes": 828161,
+          "sha256": "3435f4b314422f80564c9aa7542bd38be8748c327f8bbdf2b1dac6bad651e52d",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.en.explore.gif",
+          "bytes": 6067864,
+          "sha256": "c3be48dcee8801b718c7359df0cc6382488c3aaee3e64e7fe35ddc36a0885f95",
+          "width": 1440,
+          "height": 900,
+          "frames": 112,
+          "durationMs": 11200
+        },
+        {
+          "name": "ecommerce.en.verify.gif",
+          "bytes": 2529559,
+          "sha256": "1edadca5b66f00a536fc4ec59337a7d96f39b1373256a4875dc3b60add18268c",
+          "width": 1440,
+          "height": 900,
+          "frames": 94,
+          "durationMs": 9400
+        },
+        {
+          "name": "ecommerce.en.edit.gif",
+          "bytes": 2716538,
+          "sha256": "85118548c256f7b6816eda91233db42fc6f18001faaad09ebeb673a66e81819b",
+          "width": 1440,
+          "height": 900,
+          "frames": 125,
+          "durationMs": 12500
+        },
+        {
+          "name": "ecommerce.en.share.gif",
+          "bytes": 1263333,
+          "sha256": "d6f22006bcb012ea8677c9f20d1c318873c69af57751446e3993fd9466a794cf",
+          "width": 1440,
+          "height": 900,
+          "frames": 80,
+          "durationMs": 8000
+        }
+      ]
     },
     {
-      "name": "kafka.de.class.gif",
-      "bytes": 2328389,
-      "sha256": "0a4e1271f89fe3d73ac955b767a07ca4a66d4d9710c81b16498a32691c3a8d1e"
+      "locale": "zh-CN",
+      "graph": "examples/showcase/ecommerce.zh-CN.graph.json",
+      "graphSha256": "a0348bc92efe22a707de80de8265a454b22d5a2f56a8a395ae7fdb071230fbc4",
+      "assets": [
+        {
+          "name": "ecommerce.zh-CN.architecture.png",
+          "bytes": 238556,
+          "sha256": "417ddbdf4add91074d8f6b1b40ccb3e74310468873ea2b8057c59f89274fd554",
+          "width": 1938,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.zh-CN.flowchart.png",
+          "bytes": 267152,
+          "sha256": "9cf81b9a8dcba0c47cd331782a2dc861a208406e656946e930bd9e109269e9f6",
+          "width": 2038,
+          "height": 1466
+        },
+        {
+          "name": "ecommerce.zh-CN.sequence.png",
+          "bytes": 195158,
+          "sha256": "04642bed805849265de5408bcbe9775d412601a3bb173647cb808b94d062ad19",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.zh-CN.er.png",
+          "bytes": 236465,
+          "sha256": "f9e220d7498ffd785914a55655f6c477c726d702335a2474ac6b852f1258c44d",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.zh-CN.deployment.png",
+          "bytes": 235848,
+          "sha256": "1a0fdded4340f32655265adafee73b82f936e94d04df37a46314b84f841cf01d",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.zh-CN.class.png",
+          "bytes": 206148,
+          "sha256": "79adef5d8fd08c6d836e54588c1cdf36b977aba0a653adb6fa76e2ac0a5e89ad",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.zh-CN.state.png",
+          "bytes": 130970,
+          "sha256": "f7d689fcca0a2c21f0eaabeb0edc1d463db51fee005d2f346f69f5b3fd1d18d5",
+          "width": 1872,
+          "height": 1126
+        },
+        {
+          "name": "ecommerce.zh-CN.usecase.png",
+          "bytes": 153894,
+          "sha256": "14b31fac66462c631af31e1929050d40b303a6ffdb8c33d12bb5d99ab9cd6f00",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.zh-CN.dataflow.png",
+          "bytes": 145777,
+          "sha256": "2d1d7b71b1456835ae5946460f46f71c3c1ebc188261a3ee801fa3fbfe4df7ef",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.zh-CN.core-three.gif",
+          "bytes": 760189,
+          "sha256": "cdd88fbe312e92d87f0daddb85578ee1c48632c2890aaef473fcf3f423926699",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.zh-CN.explore.gif",
+          "bytes": 5590174,
+          "sha256": "6100a40813394a510deeeac8c1c48e8e0911a5d2cfd0c7068d5a208e21d8c033",
+          "width": 1440,
+          "height": 900,
+          "frames": 113,
+          "durationMs": 11300
+        },
+        {
+          "name": "ecommerce.zh-CN.verify.gif",
+          "bytes": 2198701,
+          "sha256": "4cac60091f200439417286b9ae75e2ae6f633df2be4041e7afaa60a54f32465d",
+          "width": 1440,
+          "height": 900,
+          "frames": 95,
+          "durationMs": 9500
+        },
+        {
+          "name": "ecommerce.zh-CN.edit.gif",
+          "bytes": 2084210,
+          "sha256": "7e1bc2cc810e7b888fd30925f19189fbc094fe7e528ea4a80ea4d43408a70e37",
+          "width": 1440,
+          "height": 900,
+          "frames": 124,
+          "durationMs": 12400
+        },
+        {
+          "name": "ecommerce.zh-CN.share.gif",
+          "bytes": 1004462,
+          "sha256": "cddc388405ee03f3e5b47a9bb89b63b3ca636a9889b1267d32b49875414dcf47",
+          "width": 1440,
+          "height": 900,
+          "frames": 81,
+          "durationMs": 8100
+        }
+      ]
     },
     {
-      "name": "kafka.de.dataflow.gif",
-      "bytes": 1740938,
-      "sha256": "db804001fbb3bd39d67e151874c4610091e4053599bc8b0de2c2ff2f33f2b2dc"
+      "locale": "ru",
+      "graph": "examples/showcase/ecommerce.ru.graph.json",
+      "graphSha256": "21a3cb00c1690c756c3a3b3a2fb62c2cbdd307c3b888ad215743a5f64ac617b1",
+      "assets": [
+        {
+          "name": "ecommerce.ru.architecture.png",
+          "bytes": 289227,
+          "sha256": "0440e7f2d4ecf9c714d529f5fa10002a45622b926f2b18be1f82f733875f02e2",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.ru.flowchart.png",
+          "bytes": 372482,
+          "sha256": "afe45477699d3e6521fbbb82d555976a1935a16dd4f24cb7d52cfd2242eb0740",
+          "width": 2928,
+          "height": 1876
+        },
+        {
+          "name": "ecommerce.ru.sequence.png",
+          "bytes": 203220,
+          "sha256": "652a9ab8c46cb1c016742bac414bc83f67e658544709876c9edd0c12408c1484",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.ru.er.png",
+          "bytes": 244132,
+          "sha256": "21686be2c8859c3c94cfe32aa78996faf3c67e136922c63794df3dbafcaef77f",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.ru.deployment.png",
+          "bytes": 266055,
+          "sha256": "521bddd725a3a4016f3e94a3643d17269ed2c420e3e5292851abe1a455dadf80",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.ru.class.png",
+          "bytes": 204679,
+          "sha256": "d7c096edf9b639b09fa50b5243d2a72848dd52276fc627b40f3218c1683e9f8f",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.ru.state.png",
+          "bytes": 151663,
+          "sha256": "b942bc2624b4ec652e3bb936e9717ca613c845b5a255d62feb92e433714f7c5e",
+          "width": 2071,
+          "height": 1163
+        },
+        {
+          "name": "ecommerce.ru.usecase.png",
+          "bytes": 176137,
+          "sha256": "fb22461ccd3eb0a0795d58c97443811d73237759ef60ef86d5d6ddc301e259bb",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.ru.dataflow.png",
+          "bytes": 164473,
+          "sha256": "579d7a00a8fd87b6ca3d2da7ca9500b930e6b2bbc923a1d62ff35345c6153564",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.ru.core-three.gif",
+          "bytes": 820214,
+          "sha256": "f5baa86c6c78f0e9e7be0fd8411ee56a1f10a0801fb427b5ee76b1ebaa60f8fd",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.ru.explore.gif",
+          "bytes": 6502205,
+          "sha256": "86f51d32eea50ccf4187e3e857ed57df554eb06790546db9c8c81b85a8e10d49",
+          "width": 1440,
+          "height": 900,
+          "frames": 112,
+          "durationMs": 11200
+        },
+        {
+          "name": "ecommerce.ru.verify.gif",
+          "bytes": 2713390,
+          "sha256": "71f5f19f6a42f22e355de27b7662ceafccddb4762c0c3d6c27080486a970a569",
+          "width": 1440,
+          "height": 900,
+          "frames": 94,
+          "durationMs": 9400
+        },
+        {
+          "name": "ecommerce.ru.edit.gif",
+          "bytes": 2795390,
+          "sha256": "a9570f22f821c489dca1e8effe752edbb6acf597b6bf916d677e7f2b897cd611",
+          "width": 1440,
+          "height": 900,
+          "frames": 122,
+          "durationMs": 12200
+        },
+        {
+          "name": "ecommerce.ru.share.gif",
+          "bytes": 1328494,
+          "sha256": "f02b2fd2c61b3c12087ccf69e4f417f8f3c5cfa0d4532cf5678d5c6e283fda1b",
+          "width": 1440,
+          "height": 900,
+          "frames": 82,
+          "durationMs": 8200
+        }
+      ]
     },
     {
-      "name": "kafka.de.deployment.gif",
-      "bytes": 2229571,
-      "sha256": "4213670bad4df88fd9c24bf6ae580180407535b74ada24dfadbf4d4755762677"
+      "locale": "pt",
+      "graph": "examples/showcase/ecommerce.pt.graph.json",
+      "graphSha256": "651a91f7c4458d0e693049ba81343424bd90055c8da1ef8d709a99e8ec2cc39f",
+      "assets": [
+        {
+          "name": "ecommerce.pt.architecture.png",
+          "bytes": 288988,
+          "sha256": "e751d68f876c0ea7196888bc1592fbbb6ed2cb0b6c79e63f3ac29fc0cc595728",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.pt.flowchart.png",
+          "bytes": 346243,
+          "sha256": "5c4dcd54924ccc0cfb1b558dec501a699c3bd673beec7217be9c970936707ec6",
+          "width": 2853,
+          "height": 1796
+        },
+        {
+          "name": "ecommerce.pt.sequence.png",
+          "bytes": 217580,
+          "sha256": "845f696d3517eb3bb8f78a932053649678e5f5bdd3ef0d004621f71223028c55",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.pt.er.png",
+          "bytes": 248514,
+          "sha256": "449263056ee38ff8b10441981d5950b7ade40c4a59bdb8bb95cf112c140a1ca6",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.pt.deployment.png",
+          "bytes": 271204,
+          "sha256": "431e2869eeb97b01c222c5754f40530ce7f7897fea1243ec464a7d816ce63ef5",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.pt.class.png",
+          "bytes": 206905,
+          "sha256": "3f65f42429b1b92fe489e8003f8a5e01d0794b20da89dce2f655d84527528750",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.pt.state.png",
+          "bytes": 154954,
+          "sha256": "e93ffd318b1af9e326ec7ea6b4a4cf270588859b2e60080c68ea50c958900de0",
+          "width": 1974,
+          "height": 1128
+        },
+        {
+          "name": "ecommerce.pt.usecase.png",
+          "bytes": 173875,
+          "sha256": "2e37469a107cdfb16ff4025799781574381513039e8f85065c2d1116d934a076",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.pt.dataflow.png",
+          "bytes": 180419,
+          "sha256": "27fa553c6a37eaafebb1acf81195e6403ece5cf038cc8016286dbf3f97feca27",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.pt.core-three.gif",
+          "bytes": 828223,
+          "sha256": "a74f06378974f5cc2e902fee2705e720888fddbcd85f83042315e2f89162a56a",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.pt.explore.gif",
+          "bytes": 6619212,
+          "sha256": "75251bf783be50ac1c489b394ae2bc900fe976a7b0b5a36da11e42b0ffb369dc",
+          "width": 1440,
+          "height": 900,
+          "frames": 114,
+          "durationMs": 11400
+        },
+        {
+          "name": "ecommerce.pt.verify.gif",
+          "bytes": 2620831,
+          "sha256": "2bb5c63ce6dc091ac8c9aa8a275789c3916666363248b07a35f37a6f808756fc",
+          "width": 1440,
+          "height": 900,
+          "frames": 94,
+          "durationMs": 9400
+        },
+        {
+          "name": "ecommerce.pt.edit.gif",
+          "bytes": 2741905,
+          "sha256": "fe12fef0b4cf4fd06ace7420130c0446514f20aabc6cb7032eb7b5b5cb7d6f95",
+          "width": 1440,
+          "height": 900,
+          "frames": 123,
+          "durationMs": 12300
+        },
+        {
+          "name": "ecommerce.pt.share.gif",
+          "bytes": 1309117,
+          "sha256": "d5854d3d00e9348457fb8418c8a1ae09b42d7d497888e263b0f4291c5b3e71b5",
+          "width": 1440,
+          "height": 900,
+          "frames": 81,
+          "durationMs": 8100
+        }
+      ]
     },
     {
-      "name": "kafka.de.er.gif",
-      "bytes": 1736085,
-      "sha256": "aeec19ee59e08fb2e548ade4ca14f35ad979c4bf54720bab1cd54a6cbcff47bc"
+      "locale": "ja",
+      "graph": "examples/showcase/ecommerce.ja.graph.json",
+      "graphSha256": "b16ab13858543fc0e82d92b4461d666f11af3d1e89c54bdd0fee77122bd4c90b",
+      "assets": [
+        {
+          "name": "ecommerce.ja.architecture.png",
+          "bytes": 265539,
+          "sha256": "144d46ca56a21cd28be4dbaa71e311074f786fa27c3cdb91a3eb37e315dac149",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.ja.flowchart.png",
+          "bytes": 348300,
+          "sha256": "7bf38e4bef9118cd5494565db973e3ffe9ac82ee73f8fd68c9a7dfb5b2e5db55",
+          "width": 2853,
+          "height": 1796
+        },
+        {
+          "name": "ecommerce.ja.sequence.png",
+          "bytes": 204945,
+          "sha256": "b21025d6e112257e9ed48ca98183ec757d1442ae50413f11df86fe760b77d659",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.ja.er.png",
+          "bytes": 234248,
+          "sha256": "e2531c48d225c617acdd65497c06c61303cef4cb347de005d0f5d29b03e1a544",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.ja.deployment.png",
+          "bytes": 243550,
+          "sha256": "28eebafb494930570e85db7f3af4fc4ff6c857eda5788f8a6cdd5d18deab95a7",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.ja.class.png",
+          "bytes": 204014,
+          "sha256": "5d43f6c9257ec737b9fe10deb85b524ce7b3ed4ccd28e0be2481488c4506f4b1",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.ja.state.png",
+          "bytes": 142401,
+          "sha256": "b202913c5f558575e60d52fbf889aaaf7c76e776839be2050852b721baccc2c1",
+          "width": 1902,
+          "height": 1126
+        },
+        {
+          "name": "ecommerce.ja.usecase.png",
+          "bytes": 161980,
+          "sha256": "f77151b4de4b626f9d125fe136135caaa82c8a93a9bdeb1267f544d8b829a5c7",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.ja.dataflow.png",
+          "bytes": 148618,
+          "sha256": "4b562ab9235f707ea46feffb9a370d949ff9b254e10e2a6f3959f21b33af220d",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.ja.core-three.gif",
+          "bytes": 806946,
+          "sha256": "eea2ad4544b9826b6d796dc6c753a1cf26f1dac14e4718fd039ac09558cb6454",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.ja.explore.gif",
+          "bytes": 5996437,
+          "sha256": "6a2238ef2bc43a61e2c9bf44785ce01956fff3a3b4e511458cdabefbf6e822f8",
+          "width": 1440,
+          "height": 900,
+          "frames": 115,
+          "durationMs": 11500
+        },
+        {
+          "name": "ecommerce.ja.verify.gif",
+          "bytes": 2631400,
+          "sha256": "64de0eb052dcc8c401b3f7cbc1d98eb5d91167e9c1cf3c91a1ded846a26324a5",
+          "width": 1440,
+          "height": 900,
+          "frames": 94,
+          "durationMs": 9400
+        },
+        {
+          "name": "ecommerce.ja.edit.gif",
+          "bytes": 2961355,
+          "sha256": "62c5d876713aafee8d02ea3930b69a77b71a076b7e2b603e654b2ae3a07925b1",
+          "width": 1440,
+          "height": 900,
+          "frames": 128,
+          "durationMs": 12800
+        },
+        {
+          "name": "ecommerce.ja.share.gif",
+          "bytes": 1273741,
+          "sha256": "408d5e4a6debe5ed6b8662f66b9bf7a8f9b171b23c90cfd91800e2a2886ddff4",
+          "width": 1440,
+          "height": 900,
+          "frames": 80,
+          "durationMs": 8000
+        }
+      ]
     },
     {
-      "name": "kafka.de.flowchart.gif",
-      "bytes": 2117199,
-      "sha256": "881c40389292fedbd01c788b14cfe926647f36e3b916b02fe0241d85776ad677"
+      "locale": "de",
+      "graph": "examples/showcase/ecommerce.de.graph.json",
+      "graphSha256": "d3045df0f015bf288148fe23a2ed4d7d0410d77b0a8df6f978fb39e04daa9532",
+      "assets": [
+        {
+          "name": "ecommerce.de.architecture.png",
+          "bytes": 282050,
+          "sha256": "f942201a18b1f0b02c5ac251411d08964915211ffb02d92b30a09b65bd1f7c9d",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.de.flowchart.png",
+          "bytes": 364465,
+          "sha256": "5631e33339a5131be5d4ecfa82241d36b393551325c9a91199d9568f5f74c752",
+          "width": 2853,
+          "height": 1856
+        },
+        {
+          "name": "ecommerce.de.sequence.png",
+          "bytes": 207298,
+          "sha256": "d2827cbeceb52550a3c859d0e11055867c402f2fa42f7c392a4a3ed8f31664e7",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.de.er.png",
+          "bytes": 241205,
+          "sha256": "0ae702301b2c15ce33ae68d2c1333ed36cef85e88a285f16e4eb6434e7d786f4",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.de.deployment.png",
+          "bytes": 260549,
+          "sha256": "32e6b930ed2c69a0eac20c9735862ec128167c529e9fd5b4e51075ab8cda0f22",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.de.class.png",
+          "bytes": 208149,
+          "sha256": "f7cf397679da59753a815b15519ac3e4e78469ac371ad04c2e8ad57e21a46c9b",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.de.state.png",
+          "bytes": 152769,
+          "sha256": "066c9993311efd6159dc98a1895dcbd95a2832e8fcf202c03735240eac36247f",
+          "width": 2004,
+          "height": 1128
+        },
+        {
+          "name": "ecommerce.de.usecase.png",
+          "bytes": 174746,
+          "sha256": "9024ae2f8610d72dfdd0a5ade25991fc28bb1fd137666a18dd82ad56d8fbdf1b",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.de.dataflow.png",
+          "bytes": 164875,
+          "sha256": "5be8b72ddbc28daef7500cb414ec66af7c00d7085abcf1d11b17f9f1a8b14842",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.de.core-three.gif",
+          "bytes": 806341,
+          "sha256": "96b7b75797f5d0ac33d58cb46e0ea91c991febf9c398163a3db9f7f2dfd244d5",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.de.explore.gif",
+          "bytes": 5891713,
+          "sha256": "3b5ec08f2ff70525a1781cb796767ccabccf45b1c5da83245b2250f3211493d4",
+          "width": 1440,
+          "height": 900,
+          "frames": 115,
+          "durationMs": 11500
+        },
+        {
+          "name": "ecommerce.de.verify.gif",
+          "bytes": 2451324,
+          "sha256": "5520c409d5df96e4b5410d2ff7d1d5dc7f48f47fccb989dae06f037f8d6e3859",
+          "width": 1440,
+          "height": 900,
+          "frames": 95,
+          "durationMs": 9500
+        },
+        {
+          "name": "ecommerce.de.edit.gif",
+          "bytes": 2662935,
+          "sha256": "3cac2de931bde7c27788e8b96858460d8b05c143bda808786fce22ce0e39b2f9",
+          "width": 1440,
+          "height": 900,
+          "frames": 124,
+          "durationMs": 12400
+        },
+        {
+          "name": "ecommerce.de.share.gif",
+          "bytes": 1247225,
+          "sha256": "4006f828ed9007534ecc5e14c27ccd3418769b2f87d1f30d8e44a864bdacaeeb",
+          "width": 1440,
+          "height": 900,
+          "frames": 81,
+          "durationMs": 8100
+        }
+      ]
     },
     {
-      "name": "kafka.de.sequence.gif",
-      "bytes": 2117716,
-      "sha256": "82da74b7e6f22d597136928dc9eba59f51aad85523da495cdd38d32b77b5b893"
-    },
-    {
-      "name": "kafka.de.state.gif",
-      "bytes": 2212621,
-      "sha256": "7fde6bfb5a3851c82ed76d54cd1ed544911f835388d30ea986e4aa5815e00368"
-    },
-    {
-      "name": "kafka.de.usecase.gif",
-      "bytes": 1600292,
-      "sha256": "79ae7ba133d04ec54dfe6c260df8ca2c1b87a45594867ce4bfaf38948dbc3b2d"
-    },
-    {
-      "name": "kafka.en.architecture.gif",
-      "bytes": 2767105,
-      "sha256": "b9b99e2e418728409728c9fa06934614ceaf0a884c66a0448f778d571eab976f"
-    },
-    {
-      "name": "kafka.en.class.gif",
-      "bytes": 2193268,
-      "sha256": "bd6c2caced6cd26e52fc165f14859cbc3cbcf9dde9e674161f28c75c74560e69"
-    },
-    {
-      "name": "kafka.en.dataflow.gif",
-      "bytes": 1684195,
-      "sha256": "6618d43a2cf4476e0bb1a5a74057c9e6770eb12a6f7f15e8cbd125e6c9994d3a"
-    },
-    {
-      "name": "kafka.en.deployment.gif",
-      "bytes": 2060653,
-      "sha256": "a4d7e5e314d9249adcea699c3723fb978c3100cbe2f215374695ac3e41b54a73"
-    },
-    {
-      "name": "kafka.en.er.gif",
-      "bytes": 1723362,
-      "sha256": "2cd1d3ffcbe7ef812e637575197ddd300830e35e2961b0c1f2e3ecbaed5af049"
-    },
-    {
-      "name": "kafka.en.flowchart.gif",
-      "bytes": 1944876,
-      "sha256": "c4de9ac92c21badb95af8fc96a647b908a5d0e22af2d44c9d8ad103295db0bb4"
-    },
-    {
-      "name": "kafka.en.sequence.gif",
-      "bytes": 2066293,
-      "sha256": "d36fe74c5da6eff947c3bc64103c637839828ff0eec677ee635337e5844af1e6"
-    },
-    {
-      "name": "kafka.en.state.gif",
-      "bytes": 2023733,
-      "sha256": "887d81f1ac58e133d3d110733dcaa34d733372992844dc6641db0e1328297c88"
-    },
-    {
-      "name": "kafka.en.usecase.gif",
-      "bytes": 1545998,
-      "sha256": "6ee947d084c08d757660460cc4174ebeaa8feaee9aaab360583a1f0185574a43"
-    },
-    {
-      "name": "kafka.es.architecture.gif",
-      "bytes": 2847957,
-      "sha256": "6f88492acc273f16d20cc6c9e5e7dbf597e082c70650a422af8330b0a02ee30b"
-    },
-    {
-      "name": "kafka.es.class.gif",
-      "bytes": 2305778,
-      "sha256": "394c5780e2320c1708ceb18f04808c9fa5f45cd8558c23cf75e0ca56fd90be94"
-    },
-    {
-      "name": "kafka.es.dataflow.gif",
-      "bytes": 1788903,
-      "sha256": "ee072666429316bba1204b43e92eff957a019a6c06406e84262c49adf2461ec4"
-    },
-    {
-      "name": "kafka.es.deployment.gif",
-      "bytes": 2226992,
-      "sha256": "f780a4ba35f5d8830aa5895d3d4d4f7f06a0c42243c5c33669a99c5ea416c89d"
-    },
-    {
-      "name": "kafka.es.er.gif",
-      "bytes": 1870228,
-      "sha256": "de19684f657e67d3fb73e2c7785eafd179c094c3d64bae5a75f076b3cab5f1d5"
-    },
-    {
-      "name": "kafka.es.flowchart.gif",
-      "bytes": 2063762,
-      "sha256": "42d2f6d1a631ac03391cc38c8e0c3dda5b149737de18817c8a756fa59ce453c9"
-    },
-    {
-      "name": "kafka.es.sequence.gif",
-      "bytes": 2123979,
-      "sha256": "c753c46b902f078eaf55acc7ed016173272eca21fc9fb54843ee698045d99f61"
-    },
-    {
-      "name": "kafka.es.state.gif",
-      "bytes": 2167328,
-      "sha256": "f757fdc3c6ead8b55e7b02cb31a7184cc9812484ad8e924ca5506a36b738ece6"
-    },
-    {
-      "name": "kafka.es.usecase.gif",
-      "bytes": 1591231,
-      "sha256": "7476b6f84982babdb5be5636e8b4a630260abde179c8bbb9d075945801227263"
-    },
-    {
-      "name": "kafka.fr.architecture.gif",
-      "bytes": 2999333,
-      "sha256": "0d9ae7d19210175832b21e8ba35ad7cfef3d7c6d9ccd05178d0036372b6df756"
-    },
-    {
-      "name": "kafka.fr.class.gif",
-      "bytes": 2283204,
-      "sha256": "ea469a143bc5284793d65cae67926235174eba698778ba37f019dcd3153f903c"
-    },
-    {
-      "name": "kafka.fr.dataflow.gif",
-      "bytes": 1816814,
-      "sha256": "c1a980969a557694bac00a36489374cfc1a78e2c66ff6c4b72324f06610b3827"
-    },
-    {
-      "name": "kafka.fr.deployment.gif",
-      "bytes": 2250324,
-      "sha256": "d3088d0b84f4e2ea9e3ce20222c4dbdd3166340ad70b5c95cb4d228ecde898f8"
-    },
-    {
-      "name": "kafka.fr.er.gif",
-      "bytes": 1781943,
-      "sha256": "16cf1fe08b6f5a92602091d9148e5939ea1cc231d42844884e411c2ac658a195"
-    },
-    {
-      "name": "kafka.fr.flowchart.gif",
-      "bytes": 2063735,
-      "sha256": "fdffa4ebacf04b7afb8c0f6fc0d38e1ce09808d67c134c199efb339936410caa"
-    },
-    {
-      "name": "kafka.fr.sequence.gif",
-      "bytes": 2132656,
-      "sha256": "ad52307dac07c65347ddbe29fd928b964fd67f7ba0b709fe15882a6ba805712b"
-    },
-    {
-      "name": "kafka.fr.state.gif",
-      "bytes": 2084885,
-      "sha256": "a2e1c7e844bc927ae004e7fbc362cc713ef69b03747037c92c5eb151866bcfdf"
-    },
-    {
-      "name": "kafka.fr.usecase.gif",
-      "bytes": 1675281,
-      "sha256": "0afb4086460151bb6fed796b543c45fd6113d2fe64b511f9bc0b41049a194cb6"
-    },
-    {
-      "name": "kafka.ja.architecture.gif",
-      "bytes": 2627540,
-      "sha256": "38a22ab18e73f9669a2c23a3a1842034e3ed3a7efeee768b6e6abd78d241bd63"
-    },
-    {
-      "name": "kafka.ja.class.gif",
-      "bytes": 2226606,
-      "sha256": "ffe02a37cff14fcd2dd601bbbf8bc0a92f130672d58a587abf3970ba963c64e5"
-    },
-    {
-      "name": "kafka.ja.dataflow.gif",
-      "bytes": 1702158,
-      "sha256": "c068ba398572fe499869fb95ef092ad8b4ec1f23dd73b150f78ddb5dd28f8e89"
-    },
-    {
-      "name": "kafka.ja.deployment.gif",
-      "bytes": 2012994,
-      "sha256": "2bc7b86db51107d8feb2dd0711197513be0e4608e2d18f6973da5851c8b2127f"
-    },
-    {
-      "name": "kafka.ja.er.gif",
-      "bytes": 1698417,
-      "sha256": "988104372cace87e281ab96b7b620de1bae3b6abffe39a1f54fd8749b5067141"
-    },
-    {
-      "name": "kafka.ja.flowchart.gif",
-      "bytes": 1986903,
-      "sha256": "2d0d461682992b6339f4d43648552184ff83f4dfee9642c3180c9b7b73f9b312"
-    },
-    {
-      "name": "kafka.ja.sequence.gif",
-      "bytes": 1950414,
-      "sha256": "e25aacb8b7d0e6abf9498a2bb56115a3669e4849926e29faf135029a9f075869"
-    },
-    {
-      "name": "kafka.ja.state.gif",
-      "bytes": 2096020,
-      "sha256": "c40a9f29420ea34fb389e6b749be47affa1b6feeefaae31276e81a0f4c842eab"
-    },
-    {
-      "name": "kafka.ja.usecase.gif",
-      "bytes": 1596591,
-      "sha256": "dc34045a55d16626d51d2dde89aa50924fd445fc0f8ca76935d8feeb7c17d1b8"
-    },
-    {
-      "name": "kafka.ko.architecture.gif",
-      "bytes": 2664397,
-      "sha256": "3939602330ddfd8b230775835e7012a75ddc63d13123bb6442aa63a214b63707"
-    },
-    {
-      "name": "kafka.ko.class.gif",
-      "bytes": 2259052,
-      "sha256": "5cdafbaa098ab0396f5bb92de2a3b84318e10114757c12f83d9a682c3e1c3325"
-    },
-    {
-      "name": "kafka.ko.dataflow.gif",
-      "bytes": 1661543,
-      "sha256": "f794e72277fbf1bb3133a2e628aecc321c50c29d79a0a57b314a05ff40a7c2b5"
-    },
-    {
-      "name": "kafka.ko.deployment.gif",
-      "bytes": 2099973,
-      "sha256": "6cd75427788adbf3101e10550253de0998b3a13bad2bbcab122fe73c17254cd5"
-    },
-    {
-      "name": "kafka.ko.er.gif",
-      "bytes": 1672661,
-      "sha256": "e43355a1fb6a9c109baba4a1ea078468825899485b6582f23eefca6cf466b027"
-    },
-    {
-      "name": "kafka.ko.flowchart.gif",
-      "bytes": 2027833,
-      "sha256": "2212506748d070448d435f100debca860f39a00e6de5488052b1bd44b56eb8a0"
-    },
-    {
-      "name": "kafka.ko.sequence.gif",
-      "bytes": 2087271,
-      "sha256": "fc68f55430a6a990fd010eb08de74e16bb3076a8bb7503bc98f25ddfe13ed6c5"
-    },
-    {
-      "name": "kafka.ko.state.gif",
-      "bytes": 2148099,
-      "sha256": "2112377a3295ba75d99a5d44b106200ceb53659c3adcd073045e0085a2284e61"
-    },
-    {
-      "name": "kafka.ko.usecase.gif",
-      "bytes": 1605395,
-      "sha256": "772cfd3892e4ffc2e259444d081e360a2773a7dd800c5b176f765561328a2a94"
-    },
-    {
-      "name": "kafka.zh-CN.architecture.gif",
-      "bytes": 2797859,
-      "sha256": "b24d35494f41fde071414962a61f26831a0ac52f00c8b9b868a691b006aea71b"
-    },
-    {
-      "name": "kafka.zh-CN.class.gif",
-      "bytes": 2118200,
-      "sha256": "ee2c355d142150d73ce8a693268ab11d5fdb1d206c70f3f0c7ed840fa45cca78"
-    },
-    {
-      "name": "kafka.zh-CN.dataflow.gif",
-      "bytes": 1575899,
-      "sha256": "14e145c34494f70a0fc970f1af3e4f3c9c419fb54239c19176a7820877a5837a"
-    },
-    {
-      "name": "kafka.zh-CN.deployment.gif",
-      "bytes": 2024604,
-      "sha256": "e5460e5c4a18d31949c9be18024007eef4c244ab8dea07d1552e7dde4d015611"
-    },
-    {
-      "name": "kafka.zh-CN.er.gif",
-      "bytes": 1678527,
-      "sha256": "63aff0ca620468b7741ac23cbe2735a85ca25de33f116c2a24efbf85e507a1aa"
-    },
-    {
-      "name": "kafka.zh-CN.flowchart.gif",
-      "bytes": 1982943,
-      "sha256": "eb10ed87dc2ab348296f6b9455925beb8477db7c1a7f94d1e703b0e1171c9b59"
-    },
-    {
-      "name": "kafka.zh-CN.sequence.gif",
-      "bytes": 2079863,
-      "sha256": "6a5f8760d275d15fc3460c351c7f1baa73bc40fc341cb290895796b668aba17d"
-    },
-    {
-      "name": "kafka.zh-CN.state.gif",
-      "bytes": 2108510,
-      "sha256": "b9b28b9ce9d428fde4322c6f1a91fa2188e7598b232681063557b1843a3a4868"
-    },
-    {
-      "name": "kafka.zh-CN.usecase.gif",
-      "bytes": 1500875,
-      "sha256": "ab5b5da34cd3a087dac5f78c4ee5e838fe769a30e45da91e076d488a482e0483"
+      "locale": "es",
+      "graph": "examples/showcase/ecommerce.es.graph.json",
+      "graphSha256": "08c837367f18e12567dbc9288a7a7165b46fce6e8d134ee37341b1b4c1628aa4",
+      "assets": [
+        {
+          "name": "ecommerce.es.architecture.png",
+          "bytes": 289584,
+          "sha256": "8106ccdb27c8de1bb668a4cdbc237604205601e759c61181cdb9f385bb60daf1",
+          "width": 1948,
+          "height": 1291
+        },
+        {
+          "name": "ecommerce.es.flowchart.png",
+          "bytes": 351318,
+          "sha256": "beb2824b6ab90a0080edfe02e6204eea843644a22b4f3525217c44f132232249",
+          "width": 2853,
+          "height": 1796
+        },
+        {
+          "name": "ecommerce.es.sequence.png",
+          "bytes": 218094,
+          "sha256": "f4075dd51d093a2302c6bf001741489ddcb06a1213c73e425e36c4c241749fdd",
+          "width": 3078,
+          "height": 1176
+        },
+        {
+          "name": "ecommerce.es.er.png",
+          "bytes": 244248,
+          "sha256": "e817e85fe6ef5a5e30d83bac8157665cc9b94201cd0ef21bb4cc651e75a71f95",
+          "width": 1758,
+          "height": 1416
+        },
+        {
+          "name": "ecommerce.es.deployment.png",
+          "bytes": 269175,
+          "sha256": "eddd73f5d69eee3e24d74bb52e348a274ee4570b9dd7a3403dd2de47a5a5345e",
+          "width": 2028,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.es.class.png",
+          "bytes": 207433,
+          "sha256": "977f4f6cf6d4976cd94a1406c5c7ff0c2c430191ed14b105cca899042fa6c6d8",
+          "width": 1798,
+          "height": 1346
+        },
+        {
+          "name": "ecommerce.es.state.png",
+          "bytes": 152964,
+          "sha256": "df8d2401b9a72eb86dd86a0d92f9380e3cf66c3ea3e7b2e04a1288f055d7d991",
+          "width": 1975,
+          "height": 1138
+        },
+        {
+          "name": "ecommerce.es.usecase.png",
+          "bytes": 174026,
+          "sha256": "08864dd96632890fd95b21e3d15a4ebd19f1e0936493d40557b24712f02b2bd2",
+          "width": 1648,
+          "height": 1186
+        },
+        {
+          "name": "ecommerce.es.dataflow.png",
+          "bytes": 180052,
+          "sha256": "70e1f5deef34f54d6da192d718672ed4e9efda5ba7eeabbc3d6094b2a291c915",
+          "width": 1948,
+          "height": 1116
+        },
+        {
+          "name": "ecommerce.es.core-three.gif",
+          "bytes": 830211,
+          "sha256": "be27c26f6176d9281f8c5f00f2771b37a91fe1b73862108d2cf975da4e46fbca",
+          "width": 1440,
+          "height": 900,
+          "frames": 24,
+          "durationMs": 2400
+        },
+        {
+          "name": "ecommerce.es.explore.gif",
+          "bytes": 6021889,
+          "sha256": "858c027453a2433f847016012c616507935363f50bb76d4eb518cc7155f2d661",
+          "width": 1440,
+          "height": 900,
+          "frames": 113,
+          "durationMs": 11300
+        },
+        {
+          "name": "ecommerce.es.verify.gif",
+          "bytes": 2470692,
+          "sha256": "2b59b035bd86a672d38c746154676d869ea589d05d060764d1990dd334d69f1f",
+          "width": 1440,
+          "height": 900,
+          "frames": 95,
+          "durationMs": 9500
+        },
+        {
+          "name": "ecommerce.es.edit.gif",
+          "bytes": 2614718,
+          "sha256": "6008df2a2abd45c078cb8fe9572b618791c9d2ce629226aba7995a4e53054765",
+          "width": 1440,
+          "height": 900,
+          "frames": 125,
+          "durationMs": 12500
+        },
+        {
+          "name": "ecommerce.es.share.gif",
+          "bytes": 1208835,
+          "sha256": "09840334595d2caca58208f29b84bc83c201bbeb9c31ad674babefda4994d31e",
+          "width": 1440,
+          "height": 900,
+          "frames": 81,
+          "durationMs": 8100
+        }
+      ]
     }
   ]
 }
