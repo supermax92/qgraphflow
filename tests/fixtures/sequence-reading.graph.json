@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Sequence reading geometry test fixture",
+    "diagramType": "sequence",
+    "locale": "zh-CN",
+    "subtitle": "Synthetic viewer interaction regression",
+    "sourceRef": "Viewer test fixture · no business source evidence",
+    "scope": "Synthetic names and messages for viewer geometry tests only; no claim describes a real system."
+  },
+  "groups": [],
+  "nodes": [
+    {
+      "id": "java",
+      "label": "Java client",
+      "kind": "actor",
+      "position": { "x": 30, "y": 40 },
+      "size": { "width": 220, "height": 780 },
+      "facts": ["Synthetic actor variant for testing the 108px visible head and long content wrapping."]
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "subtitle": "test cache",
+      "kind": "database",
+      "position": { "x": 390, "y": 40 },
+      "size": { "width": 220, "height": 780 },
+      "facts": ["Synthetic node used to verify that quick look anchors to the 72px participant head instead of the lifeline bottom."]
+    },
+    {
+      "id": "kafka",
+      "label": "Kafka",
+      "subtitle": "test broker",
+      "kind": "participant",
+      "position": { "x": 750, "y": 40 },
+      "size": { "width": 220, "height": 780 },
+      "facts": ["Synthetic participant for left-to-right and right-to-left message tests."]
+    },
+    {
+      "id": "pigeon",
+      "label": "Pigeon",
+      "subtitle": "test RPC",
+      "kind": "service",
+      "position": { "x": 1110, "y": 40 },
+      "size": { "width": 220, "height": 780 },
+      "facts": ["Synthetic participant for framework-evidence dash tests."]
+    },
+    {
+      "id": "dotnet",
+      "label": ".NET worker",
+      "subtitle": "test consumer",
+      "kind": "external",
+      "position": { "x": 1470, "y": 40 },
+      "size": { "width": 220, "height": 780 },
+      "facts": ["Synthetic participant for self-call and long-lifeline tests."]
+    }
+  ],
+  "edges": [
+    { "id": "m1", "source": "java", "target": "redis", "kind": "sync", "label": "read(test:key)", "evidence": "test", "order": 1 },
+    { "id": "m2", "source": "redis", "target": "java", "kind": "return", "label": "cached test value", "evidence": "test", "order": 2 },
+    { "id": "m3", "source": "java", "target": "pigeon", "kind": "sync", "label": "invoke(test request)", "evidence": "framework", "order": 3 },
+    { "id": "m4", "source": "pigeon", "target": "java", "kind": "return", "label": "test response", "evidence": "test", "order": 4 },
+    { "id": "m5", "source": "java", "target": "kafka", "kind": "async", "label": "publish(test event)", "evidence": "test", "order": 5 },
+    { "id": "m6", "source": "kafka", "target": "dotnet", "kind": "async", "label": "deliver(test event)", "evidence": "test", "order": 6 },
+    { "id": "m7", "source": "dotnet", "target": "dotnet", "kind": "sync", "label": "handle(test event)", "evidence": "inference", "order": 7, "route": { "via": [{ "x": 1750, "y": 530 }, { "x": 1750, "y": 560 }] } },
+    { "id": "m8", "source": "dotnet", "target": "kafka", "kind": "return", "label": "test acknowledgement", "evidence": "test", "order": 8 },
+    { "id": "m9", "source": "java", "target": "redis", "kind": "sync", "label": "infer fallback read", "evidence": "inference", "order": 9 },
+    { "id": "m10", "source": "redis", "target": "java", "kind": "return", "label": "fallback test value", "evidence": "test", "order": 10 }
+  ]
+}

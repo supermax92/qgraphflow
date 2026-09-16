@@ -2,7 +2,7 @@
 // Replays the production Viewer contract over the canvas-first shell: one floating toolbar, collapsed floating panels,
 // quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
-// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_ONLY_EXTRAS=1, QA_EXTRAS=none|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance, QA_FIXTURE_DIR.
+// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_ONLY_EXTRAS=1, QA_EXTRAS=none|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|sequence-reading|file-url, QA_FIXTURE_DIR.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { renderNode } from '../assets/viewer/src/node-svg.js';
 import { moduleColorMap, PALETTES, TYPOGRAPHY, isCore } from '../assets/viewer/src/visual-style.js';
-import { diagramLabels as labels, getDiagram, hasArrow } from '../assets/viewer/src/diagrams/registry.js';
+import { diagramLabels as labels, getDiagram, hasArrow, isDashed } from '../assets/viewer/src/diagrams/registry.js';
 import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 
 const [inputDirectory, reportDirectory] = process.argv.slice(2);
@@ -380,15 +380,18 @@ function points(d) {
 async function exportsMatch(page, graph, name) {
   const svgFile = await download(page, 'SVG', name), pngFile = await download(page, 'PNG', name);
   const svg = fs.readFileSync(svgFile, 'utf8'), png = fs.readFileSync(pngFile);
-  assert.ok(!/selection-outline|selection-edge-|playback-feedback|playback-outline/.test(svg), 'Exports omit transient selection and playback feedback.');
+  assert.ok(!/selection-outline|selection-edge-|playback-feedback|playback-outline|sequence-flow-|edge-flow|<mask/.test(svg), 'Exports omit transient selection, flow and masks.');
   assert.match(svg, /MIT License/); assert.match(svg, /WorkOS/);
   const parsed = await page.evaluate(async xml => {
     const document = new DOMParser().parseFromString(xml, 'image/svg+xml');
     if (document.querySelector('parsererror')) throw Error('Invalid SVG XML');
     const root = document.documentElement;
-    const paths = [...root.children].filter(element => element.tagName === 'g' && element.firstElementChild?.tagName === 'path' && element.firstElementChild.getAttribute('stroke-width') === '1.5' && element.firstElementChild.getAttribute('fill') === 'none').map(element => element.firstElementChild.getAttribute('d'));
+    const edges = [...root.children].filter(element => element.tagName === 'g' && element.firstElementChild?.tagName === 'path' && element.firstElementChild.getAttribute('stroke-width') === '1.5' && element.firstElementChild.getAttribute('fill') === 'none');
+    const paths = edges.map(element => element.firstElementChild.getAttribute('d'));
+    const notation = edges.map(element => ({ dashed: element.firstElementChild.hasAttribute('stroke-dasharray'), arrow: element.firstElementChild.hasAttribute('marker-end'), label: [...element.querySelectorAll('text')].map(text => text.textContent).join('') }));
+    const lifelines = [...root.querySelectorAll('.lifeline')].map(element => element.getAttribute('d'));
     const image = new Image(); image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml); await image.decode();
-    return { title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths };
+    return { title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths, notation, lifelines };
   }, svg);
   assert.equal(parsed.title, graph.meta.title); assert.equal(parsed.paths.length, graph.edges.length);
   const pagePaths = await page.locator('.react-flow__edge-path').evaluateAll(elements => elements.map(element => element.getAttribute('d')));
@@ -402,7 +405,32 @@ async function exportsMatch(page, graph, name) {
   const pngSize = await page.evaluate(async value => { const image = new Image(); image.src = 'data:image/png;base64,' + value; await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; }, png.toString('base64'));
   assert.equal(pngSize.width, png.readUInt32BE(16)); assert.equal(pngSize.height, png.readUInt32BE(20));
   assert.ok(Math.abs(pngSize.width - parsed.width) <= 1 && Math.abs(pngSize.height - parsed.height) <= 1);
-  report.exports.push({ name, svg: svgFile, png: pngFile, ...pngSize, pathParity: true, decoded: true });
+  const sequence = getDiagram(graph.meta.diagramType).sequence;
+  if (sequence) {
+    const pageNotation = await page.locator('.react-flow__edge-path').evaluateAll(elements => elements.map(element => ({ dashed: getComputedStyle(element).strokeDasharray !== 'none', arrow: element.hasAttribute('marker-end') })));
+    parsed.notation.forEach((edge, index) => {
+      assert.deepEqual({ dashed: edge.dashed, arrow: edge.arrow }, pageNotation[index], `${graph.edges[index].id}: export and page agree on dashes and arrows`);
+      assert.ok(edge.label.startsWith(`${String(graph.edges[index].order).padStart(2, '0')} · `), 'Export preserves message order.');
+    });
+    const current = await geometry(page);
+    assert.equal(parsed.lifelines.length, graph.nodes.length);
+    parsed.lifelines.forEach((line, index) => {
+      const [start, end] = points(line), node = current.nodes[index];
+      assert.ok(Math.abs(end.y - start.y - (Number.parseFloat(node.height) - (graph.nodes[index].kind === 'actor' ? 108 : 72))) < .01, 'Export retains the full authored lifeline length.');
+      assert.ok(Math.abs(end.y - node.position.y - Number.parseFloat(node.height) - offset.y) < .01, 'Export retains the lifeline endpoint.');
+    });
+    const pixelDifference = await page.evaluate(async ({ svg, png }) => {
+      const sources = ['data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), 'data:image/png;base64,' + png];
+      const pixels = await Promise.all(sources.map(async source => {
+        const image = new Image(); image.src = source; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d'); context.drawImage(image, 0, 0); return context.getImageData(0, 0, canvas.width, canvas.height).data;
+      }));
+      return pixels[0].reduce((sum, value, index) => sum + Math.abs(value - pixels[1][index]), 0);
+    }, { svg, png: png.toString('base64') });
+    assert.equal(pixelDifference, 0, 'PNG pixels exactly reproduce the semantic SVG, including arrows, gaps and lifelines.');
+  }
+  report.exports.push({ name, svg: svgFile, png: pngFile, ...pngSize, pathParity: true, decoded: true, ...(sequence ? { notationParity: true, lifelineParity: true, pngPixelParity: true } : {}) });
   return { svgFile, pngFile };
 }
 async function runCase(browser, name, viewport, options, run, extra = false) {
@@ -693,6 +721,27 @@ async function relationshipCardAvoidanceCheck(browser, url) {
     assert.deepEqual(placement.overlaps, [], 'The relationship card does not cover either adjacent node.');
     return { below: true, nodeOverlap: false };
   }, true);
+  await runCase(browser, 'quick-card-overlap', viewports[0], { reducedMotion: 'reduce' }, async page => {
+    const crowded = { meta: { ...graph.meta, title: 'Four-direction quick-look test fixture' }, groups: [], edges: [],
+      nodes: [['center', 600, 340], ['left', 390, 340], ['right', 810, 340], ['below', 600, 480], ['above', 600, 180]].map(([id, x, y]) => ({ id, label: id, kind: 'process', position: { x, y }, size: { width: 180, height: 100 } })) };
+    assert.deepEqual(validateGraph(crowded), []);
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html.replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/, (_, start, end) => start + JSON.stringify(crowded) + end) }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor(); await fit(page);
+    await nodeElement(page, 'center').locator('.diagram-node').click(); await page.locator('.node-card').waitFor();
+    const placement = await page.locator('.node-card').evaluate(card => {
+      const box = card.getBoundingClientRect(), node = document.querySelector('[data-id="center"]').getBoundingClientRect();
+      const neighbours = [...document.querySelectorAll('.react-flow__node-diagram')].filter(element => element.dataset.id !== 'center').map(element => element.getBoundingClientRect());
+      const areaBottom = Math.min(...[...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].map(element => element.getBoundingClientRect().top - 12));
+      const candidates = [{ side: 'right', x: node.right + 14, y: node.top }, { side: 'left', x: node.left - 14 - box.width, y: node.top },
+        { side: 'below', x: node.left, y: node.bottom + 14 }, { side: 'above', x: node.left, y: node.top - 14 - box.height }].map(item => ({ ...item,
+          fits: item.x >= 24 && item.x + box.width <= innerWidth - 24 && item.y >= 76 && item.y + box.height <= areaBottom,
+          covered: neighbours.reduce((sum, neighbour) => sum + Math.max(0, Math.min(item.x + box.width, neighbour.right) - Math.max(item.x, neighbour.left)) * Math.max(0, Math.min(item.y + box.height, neighbour.bottom) - Math.max(item.y, neighbour.top)), 0) }));
+      return { candidates, chosen: candidates.find(item => Math.abs(item.x - box.left) < 1 && Math.abs(item.y - box.top) < 1)?.side };
+    });
+    assert.ok(placement.candidates.every(item => item.fits && item.covered > 0), 'All four fitting directions must actually overlap in this counterexample.');
+    assert.equal(placement.candidates.find(item => item.side === placement.chosen)?.covered, Math.min(...placement.candidates.map(item => item.covered)), 'The quick look chooses the least covered direction.');
+    return placement;
+  }, true);
 }
 
 async function editPersistenceChecks(browser, url) {
@@ -816,15 +865,95 @@ async function edgeContrast(page, edgeId, details = false) {
   return details ? sample : sample.ratio;
 }
 
+async function sequenceEdgeSample(page, edgeId) {
+  return page.evaluate(id => {
+    const properties = element => {
+      const style = getComputedStyle(element);
+      return { d: element.getAttribute('d'), dash: style.strokeDasharray === 'none' ? [] : style.strokeDasharray.split(/[ ,]+/).map(parseFloat),
+        dashOffset: style.strokeDashoffset, opacity: Number(style.strokeOpacity), elementOpacity: Number(style.opacity), width: parseFloat(style.strokeWidth), filter: style.filter,
+        markerEnd: element.getAttribute('marker-end'), mask: element.getAttribute('mask') };
+    };
+    const base = document.getElementById(id), edge = base.closest('.react-flow__edge'), flow = edge.querySelector('.edge-flow');
+    const maskId = flow?.getAttribute('mask')?.match(/^url\(#(.+)\)$/)?.[1];
+    const mask = maskId ? document.getElementById(maskId) : null, maskPath = mask?.querySelector('path');
+    return { base: properties(base), flow: flow ? properties(flow) : null, maskId,
+      mask: mask ? { x: mask.getAttribute('x'), y: mask.getAttribute('y'), width: mask.getAttribute('width'), height: mask.getAttribute('height'), path: properties(maskPath) } : null,
+      overlays: [...edge.querySelectorAll('.selection-edge-halo,.selection-edge-shine')].map(properties) };
+  }, edgeId);
+}
+
+// Sample the rendered page, not a re-created canvas stroke or animation clock.
+async function sequenceFlowPixels(page, checked, name) {
+  const frames = [], viewports = [];
+  for (const phase of [null, 0, 600]) {
+    await page.locator('.sequence-edge-flow').evaluateAll((elements, phase) => {
+      for (const element of elements) {
+        element.style.visibility = phase === null ? 'hidden' : '';
+        for (const animation of element.getAnimations()) { animation.pause(); animation.currentTime = phase ?? 0; }
+      }
+    }, phase);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    viewports.push(await page.locator('.react-flow__viewport').getAttribute('style'));
+    frames.push((await page.screenshot({ ...(name ? { path: path.join(outputRoot, 'screens', `${name}-${phase ?? 'baseline'}.png`) } : {}), animations: 'allow' })).toString('base64'));
+  }
+  const samples = await page.evaluate(async ({ frames, checked }) => {
+    const images = await Promise.all(frames.map(async frame => {
+      const image = new Image(); image.src = 'data:image/png;base64,' + frame; await image.decode();
+      const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
+      const context = canvas.getContext('2d'); context.drawImage(image, 0, 0);
+      return { width: image.width, height: image.height, pixels: context.getImageData(0, 0, image.width, image.height).data };
+    }));
+    const scale = images[0].width / innerWidth;
+    const pixel = (image, point) => { const i = (Math.floor(point.y * scale) * image.width + Math.floor(point.x * scale)) * 4; return image.pixels.slice(i, i + 3); };
+    const delta = (a, b) => a.reduce((sum, value, index) => sum + Math.abs(value - b[index]), 0);
+    const labels = [...document.querySelectorAll('.edge-label')].map(element => element.getBoundingClientRect());
+    return checked.map(({ id, dashed }) => {
+      const path = document.getElementById(id), matrix = path.getScreenCTM(), length = path.getTotalLength();
+      let motion = 0, gapChange = 0, ink = 0, gap = 0, inkCount = 0, gapCount = 0, gapWorst;
+      for (let distance = 21.5; distance < length - 16; distance += 10) for (const offset of [0, 6]) {
+        const local = path.getPointAtLength(distance + offset), point = new DOMPoint(local.x, local.y).matrixTransform(matrix);
+        if (point.x < 1 || point.y < 8 || point.x >= innerWidth - 1 || point.y >= innerHeight - 8 || labels.some(box => point.x >= box.left - 2 && point.x <= box.right + 2 && point.y >= box.top - 2 && point.y <= box.bottom + 2)) continue;
+        if (dashed && offset === 6) {
+          // Only test pixels wholly inside the gap, excluding stroke-edge antialiasing at fractional zoom.
+          const next = path.getPointAtLength(distance + offset + .1), tangent = new DOMPoint(next.x, next.y).matrixTransform(matrix);
+          const dx = (tangent.x - point.x) / .1, dy = (tangent.y - point.y) / .1, zoom = Math.hypot(dx, dy);
+          const center = { x: (Math.floor(point.x * scale) + .5) / scale, y: (Math.floor(point.y * scale) + .5) / scale };
+          const phase = 7.5 + ((center.x - point.x) * dx + (center.y - point.y) * dy) / (zoom * zoom);
+          const halfPixel = .5 * (Math.abs(dx) + Math.abs(dy)) / (scale * zoom * zoom);
+          if (phase - halfPixel < 5.5 || phase + halfPixel > 9.5) continue;
+        }
+        const colors = images.map(image => pixel(image, point));
+        const contrast = Math.max(...images.map((image, index) => delta(colors[index], pixel(image, { x: point.x, y: point.y + 7 }))));
+        if (dashed && offset === 6) {
+          gapCount++; gap += contrast;
+          // Allow at most three 8-bit levels per channel for fractional-scale SVG compositing.
+          const change = Math.max(...colors[1].map((value, index) => Math.abs(value - colors[2][index])));
+          if (change > gapChange) { gapChange = change; gapWorst = { distance: distance + offset, x: point.x, y: point.y, colors: colors.map(color => [...color]) }; }
+        } else { inkCount++; ink += contrast; motion += delta(colors[1], colors[2]); }
+      }
+      return { id, dashed, motion, gapChange, gapWorst, ink: ink / Math.max(1, inkCount), gap: gap / Math.max(1, gapCount), inkCount, gapCount };
+    });
+  }, { frames, checked });
+  assert.equal(new Set(viewports).size, 1, 'Pixel sampling keeps the viewport fixed.');
+  for (const sample of samples) {
+    assert.ok(sample.inkCount > 0 && sample.motion > 12, `${sample.id}: no visible sequence motion in rendered pixels (${JSON.stringify(sample)})`);
+    if (sample.dashed) {
+      assert.ok(sample.gapCount > 0 && sample.gapChange <= 3, `${sample.id}: flow paints the semantic dash gaps (${JSON.stringify(sample)})`);
+      assert.ok(sample.gap < sample.ink * .5, `${sample.id}: selected dash gaps are no longer distinguishable (${JSON.stringify(sample)})`);
+    }
+  }
+  return samples;
+}
+
 async function flowContrastChecks(browser, url, graph) {
   for (const colorTheme of ['light', 'dark']) {
-    await runCase(browser, `${graph.meta.diagramType}-${colorTheme}-flow-contrast`, viewports[0], {}, async page => {
+    await runCase(browser, `${graph.meta.diagramType}-${colorTheme}-flow-contrast`, viewports[0], {}, async (page, context) => {
       await page.goto(url); await chooseGraph(page, graph, false);
       await theme(page, colorTheme);
       const selected = target(graph); await searchSelect(page, graph, selected);
       await page.waitForTimeout(800);
-      const stable = await geometry(page);
-      const linked = graph.edges.filter(e => e.source === selected.id || e.target === selected.id);
+      const stable = await geometry(page), sequence = getDiagram(graph.meta.diagramType).sequence;
+      const linked = sequence ? graph.edges : graph.edges.filter(e => e.source === selected.id || e.target === selected.id);
       const directedLinked = linked.filter(edge => hasArrow(edge, graph.meta.diagramType));
       const checked = [];
       for (const edge of linked) {
@@ -835,14 +964,30 @@ async function flowContrastChecks(browser, url, graph) {
         const before = await flow.evaluate(e => getComputedStyle(e).strokeDashoffset);
         await page.waitForTimeout(230);
         assert.notEqual(await flow.evaluate(e => getComputedStyle(e).strokeDashoffset), before, `${edge.id}: moving`);
-        const ratio = await edgeContrast(page, edge.id);
-        assert.ok(ratio >= 0.6, `${edge.id}: selected flow contrast ${ratio.toFixed(3)} is below 60% of reference`);
-        checked.push({ id: edge.id, ratio });
+        if (sequence) {
+          const sample = await sequenceEdgeSample(page, edge.id), dashed = isDashed(edge, graph.meta.diagramType);
+          assert.equal(sample.base.opacity, 1, `${edge.id}: sequence baseline stays opaque`);
+          assert.equal(sample.base.dash.length > 0, dashed, `${edge.id}: sequence baseline preserves semantic dashes`);
+          assert.ok(sample.flow.width <= sample.base.width && sample.flow.filter === 'none', `${edge.id}: sequence flow remains subordinate`);
+          assert.ok(sample.base.markerEnd && !sample.flow.markerEnd, `${edge.id}: the baseline arrow remains unclipped and the overlay adds no arrow`);
+          assert.equal(Boolean(sample.mask), dashed, `${edge.id}: only dashed sequence messages use a mask`);
+          if (sample.mask) {
+            assert.equal(sample.mask.path.d, sample.base.d, `${edge.id}: mask reuses the current route`);
+            assert.deepEqual(sample.mask.path.dash, sample.base.dash, `${edge.id}: mask reuses the semantic dash cycle`);
+            assert.ok(Number(sample.mask.width) > 0 && Number(sample.mask.height) > 0, `${edge.id}: mask has a local non-empty range`);
+          }
+          checked.push({ id: edge.id, dashed, maskId: sample.maskId });
+        } else {
+          const ratio = await edgeContrast(page, edge.id);
+          assert.ok(ratio >= 0.6, `${edge.id}: selected flow contrast ${ratio.toFixed(3)} is below 60% of reference`);
+          checked.push({ id: edge.id, ratio });
+        }
       }
       assert.equal(checked.length, directedLinked.length, 'Every expected directed incident edge has a checked flow path.');
+      if (sequence) assert.equal(new Set(checked.filter(item => item.dashed).map(item => item.maskId)).size, checked.filter(item => item.dashed).length, 'Every dashed sequence edge has a unique mask id.');
       assert.deepEqual(await geometry(page), stable);
       await searchSelect(page, graph, selected);
-      const phaseSamples = [];
+      const phaseSamples = [], pixelSamples = [];
       for (const time of [0, 182, 334, 479, 608, 760]) {
         await page.locator('.selection-feedback').evaluateAll((elements, time) => {
           for (const animation of new Set(elements.flatMap(e => e.getAnimations({ subtree: true })))) {
@@ -851,15 +996,31 @@ async function flowContrastChecks(browser, url, graph) {
         }, time);
         await page.evaluate(() => new Promise(requestAnimationFrame));
         for (const { id } of checked) {
-          const sample = await edgeContrast(page, id, true);
-          phaseSamples.push({ id, time, ...sample });
-          assert.ok(sample.ratio >= 0.6, `${id} at ${time}ms: ${JSON.stringify(sample)}`);
+          if (sequence) {
+            const sample = await sequenceEdgeSample(page, id);
+            phaseSamples.push({ id, time, base: sample.base, flow: sample.flow, overlays: sample.overlays });
+            assert.equal(sample.base.opacity, 1);
+            assert.ok(sample.overlays.every(overlay => overlay.d === sample.base.d));
+            if (isDashed(graph.edges.find(edge => edge.id === id), graph.meta.diagramType)) assert.ok(sample.overlays.every(overlay => overlay.dash.length > 0));
+          } else {
+            const sample = await edgeContrast(page, id, true);
+            phaseSamples.push({ id, time, ...sample });
+            assert.ok(sample.ratio >= 0.6, `${id} at ${time}ms: ${JSON.stringify(sample)}`);
+          }
         }
         assert.deepEqual(await geometry(page), stable);
+        if (sequence && checked.length) pixelSamples.push({ time, samples: await sequenceFlowPixels(page, checked, `${graph.meta.diagramType}-${colorTheme}-selection-${time}`) });
       }
       await page.locator('.selection-feedback').evaluateAll(elements => {
         for (const animation of new Set(elements.flatMap(e => e.getAnimations({ subtree: true })))) animation.finish();
       });
+      if (sequence) for (const { id } of checked) {
+        const sample = await sequenceEdgeSample(page, id);
+        for (const [index, overlay] of sample.overlays.entries()) {
+          if (index % 2 === 0) assert.ok(overlay.width <= 9.01 && overlay.elementOpacity <= .16, `${id}: sequence halo lands on the limited static value`);
+          else assert.ok(overlay.width <= 2.01, `${id}: sequence shine lands on the limited static value`);
+        }
+      }
       for (const phase of [0, 600]) {
         await page.locator('.edge-flow').evaluateAll((elements, phase) => {
           for (const element of elements) for (const animation of element.getAnimations()) {
@@ -868,7 +1029,29 @@ async function flowContrastChecks(browser, url, graph) {
         }, phase);
         await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${colorTheme}-flow-${phase}.png`), animations: 'allow' });
       }
+      const media = [];
+      if (sequence) {
+        const session = await context.newCDPSession(page);
+        for (const feature of ['prefers-contrast', 'prefers-reduced-transparency']) {
+          await session.send('Emulation.setEmulatedMedia', { features: [{ name: feature, value: feature === 'prefers-contrast' ? 'more' : 'reduce' }] });
+          await page.evaluate(() => new Promise(requestAnimationFrame));
+          const samples = await Promise.all(checked.map(item => sequenceEdgeSample(page, item.id)));
+          assert.ok(samples.every(sample => sample.flow.width <= sample.base.width && sample.flow.filter === 'none' && sample.base.opacity === 1), `${feature}: sequence notation remains subordinate`);
+          media.push(feature);
+        }
+        await session.send('Emulation.setEmulatedMedia', { features: [] });
+      }
       let negativeGuard = false;
+      if (sequence && checked.length) {
+        const hidden = await page.addStyleTag({ content: '.sequence-edge-flow { opacity: 0 !important; }' });
+        await assert.rejects(() => sequenceFlowPixels(page, checked), /no visible sequence motion/);
+        await hidden.evaluate(element => element.remove());
+        if (checked.some(edge => edge.dashed)) {
+          const unmasked = await page.addStyleTag({ content: '.sequence-edge-flow { mask: none !important; }' });
+          await assert.rejects(() => sequenceFlowPixels(page, checked), /paints the semantic dash gaps/);
+          await unmasked.evaluate(element => element.remove());
+        }
+      }
       if (directedLinked.length) {
         const edgeId = directedLinked[0].id;
         await page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(edgeId)}]`)).locator('.edge-flow').evaluate(element => element.remove());
@@ -878,7 +1061,7 @@ async function flowContrastChecks(browser, url, graph) {
         }, /expected one rendered flow path/);
         negativeGuard = true;
       }
-      return { theme: colorTheme, checked, phaseSamples, expectedDirected: directedLinked.length, negativeGuard, staticRelations: linked.length - checked.length };
+      return { theme: colorTheme, checked, phaseSamples, pixelSamples, media, expectedDirected: directedLinked.length, negativeGuard, invisibleFlowRejected: sequence && checked.length > 0, staticRelations: linked.length - checked.length };
     }, true);
   }
 }
@@ -925,9 +1108,239 @@ async function flowChecks(browser, url, graph) {
       assert.notEqual(await flow.evaluate(element => getComputedStyle(element).strokeDashoffset), before);
       await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click();
       await assertFlow(page, false); await dismiss(page);
+      if (getDiagram(graph.meta.diagramType).sequence) assert.equal(await count(page, '.edge-flow'), 0, 'Stopping sequence flow removes the overlay instead of freezing it.');
       await openMore(page); await menuItem(page, '重置').click(); await assertFlow(page);
     }
     return { playbackRemoved: true, directedEdges: directed.length, flowSwitch: true };
+  }, true);
+}
+
+async function sequenceReadingChecks(browser, url, graph) {
+  // These named-node counterexamples belong only to the explicit synthetic reading fixture.
+  if (graph.meta.diagramType !== 'sequence' || graph.meta.sourceRef !== 'Viewer test fixture · no business source evidence') return;
+  await runCase(browser, 'sequence-reading', viewports[0], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
+    const redis = graph.nodes.find(node => node.id === 'redis');
+    assert.ok(redis, 'The sequence-reading fixture includes Redis.');
+    const positions = (await geometry(page)).nodes.map(node => ({ id: node.id, position: node.position }));
+    const readingState = id => page.evaluate(id => {
+      const rect = element => { const box = element.getBoundingClientRect(); return { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height }; };
+      const canvas = rect(document.querySelector('.canvas')), toolbar = rect(document.querySelector('.toolbar'));
+      const nav = document.querySelector('.nav'), inspector = document.querySelector('.inspector');
+      const node = id ? document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"]`) : null;
+      const controls = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].map(rect).filter(box => box.width && box.height);
+      const area = { left: nav ? rect(nav).right + 12 : canvas.left + 24, right: inspector ? rect(inspector).left - 12 : canvas.right - 24, top: toolbar.bottom + 12, bottom: Math.min(canvas.bottom - 24, ...controls.map(box => box.top - 12)) };
+      return { area, head: node ? rect(node.querySelector('.participant-head,.actor-figure')) : null,
+        labels: [...document.querySelectorAll('.edge-label')].map(rect), selected: node?.querySelector('.diagram-node').classList.contains('is-selected') ?? false,
+        inspected: document.querySelector('.drawer-body')?.dataset.nodeId, inspectedEdge: document.querySelector('.drawer-body')?.dataset.edgeId };
+    }, id);
+    const traceZoom = async action => {
+      await page.evaluate(() => {
+        const viewport = document.querySelector('.react-flow__viewport');
+        window.__qaZoomTrace = [new DOMMatrix(getComputedStyle(viewport).transform).a];
+        window.__qaZoomObserver = new MutationObserver(() => window.__qaZoomTrace.push(new DOMMatrix(getComputedStyle(viewport).transform).a));
+        window.__qaZoomObserver.observe(viewport, { attributes: true, attributeFilter: ['style'] });
+      });
+      await action(); await page.waitForTimeout(460);
+      return page.evaluate(() => { window.__qaZoomObserver.disconnect(); return window.__qaZoomTrace; });
+    };
+    const outside = (box, area) => box && (box.left < area.left - 1 || box.right > area.right + 1 || box.top < area.top - 1 || box.bottom > area.bottom + 1);
+    const issues = [];
+
+    await nav(page, true);
+    await page.waitForTimeout(380);
+    const navOnly = await readingState();
+    if (navOnly.labels.some(box => outside(box, navOnly.area))) issues.push('opening navigation without a selection hides message labels');
+    await page.locator('.nav .search-results button').filter({ hasText: redis.label }).click();
+    await selection(page, graph, redis.id); await page.locator('.inspector').waitFor(); await page.waitForTimeout(460);
+    const reading = await readingState(redis.id);
+
+    await clear(page, 'close'); await hidePanels(page); await fit(page);
+    const dotnet = graph.nodes.find(node => node.id === 'dotnet');
+    const searchZoom = await traceZoom(() => searchSelect(page, graph, dotnet));
+    const searchReading = await readingState(dotnet.id);
+    if (searchReading.labels.some(box => outside(box, searchReading.area)) || outside(searchReading.head, searchReading.area)) issues.push('search does not preserve sequence reading context');
+    if (Math.max(...searchZoom) > searchZoom[0] + .01) issues.push('search enlarges or uses a second centring target before reveal');
+
+    await clear(page, 'close'); await fit(page);
+    const pigeon = graph.nodes.find(node => node.id === 'pigeon');
+    const keyboardZoom = await traceZoom(async () => { await nodeElement(page, pigeon.id).focus(); await page.keyboard.press('Enter'); await selection(page, graph, pigeon.id); });
+    const keyboardReading = await readingState(pigeon.id);
+    if (keyboardReading.labels.some(box => outside(box, keyboardReading.area)) || outside(keyboardReading.head, keyboardReading.area)) issues.push('keyboard locate does not preserve sequence reading context');
+    if (Math.max(...keyboardZoom) > keyboardZoom[0] + .01) issues.push('keyboard locate enlarges or uses a second centring target before reveal');
+    await clear(page, 'close'); await fit(page); await nodeElement(page, pigeon.id).focus(); await page.keyboard.press('Space'); await selection(page, graph, pigeon.id);
+
+    await hidePanels(page); await fit(page);
+    await nodeElement(page, redis.id).locator('.participant-title').click();
+    const card = page.locator('.node-card'); await card.waitFor();
+    const quickLook = await page.evaluate(() => {
+      const head = document.querySelector('.react-flow__node[data-id="redis"] .participant-head').getBoundingClientRect();
+      const card = document.querySelector('.node-card').getBoundingClientRect();
+      return { below: document.querySelector('.node-card').classList.contains('is-below'), gap: card.top - head.bottom, headBottom: head.bottom, cardTop: card.top };
+    });
+
+    const notation = await page.evaluate(() => {
+      const read = id => {
+        const base = document.getElementById(id), edge = base.closest('.react-flow__edge'), flow = edge.querySelector('.edge-flow');
+        const style = getComputedStyle(base), moving = getComputedStyle(flow);
+        return { dash: style.strokeDasharray, opacity: Number(style.strokeOpacity), width: parseFloat(style.strokeWidth), flowWidth: parseFloat(moving.strokeWidth), flowFilter: moving.filter };
+      };
+      return { request: read('m1'), returned: read('m2') };
+    });
+
+    await card.getByRole('button', { name: '查看详情', exact: true }).click(); await page.locator('.inspector').waitFor(); await page.waitForTimeout(380);
+    await nav(page, true); await page.waitForTimeout(380);
+    const doublePanels = await readingState(redis.id);
+    if (doublePanels.labels.some(box => outside(box, doublePanels.area))) issues.push('node quick-look handoff does not avoid both panels');
+    const beforeClose = await page.locator('.react-flow__viewport').getAttribute('style'); await nav(page, false);
+    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), beforeClose, 'Closing navigation preserves the sequence viewport.');
+    await clear(page, 'close'); await hidePanels(page); await fit(page);
+    await page.locator('.react-flow__edge').and(page.locator('[data-id="m2"]')).locator('.react-flow__edge-interaction').dispatchEvent('click');
+    const relation = page.locator('.relation-card'); await relation.waitFor(); await page.waitForTimeout(220);
+    const relationshipPlacement = await relation.evaluate(card => {
+      const box = card.getBoundingClientRect(), label = [...document.querySelectorAll('.edge-label')].find(element => element.textContent.startsWith('02 ·')).getBoundingClientRect();
+      const overlaps = element => { const other = element.getBoundingClientRect(); return box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top; };
+      return { rightGap: box.left - (label.left + label.width / 2), topGap: box.top - (label.top + label.height / 2),
+        headOverlaps: [...document.querySelectorAll('.participant-head,.actor-figure,.participant-title')].filter(overlaps).length,
+        lifelineBoxOverlaps: [...document.querySelectorAll('.react-flow__node-diagram')].filter(overlaps).length };
+    });
+    assert.ok(Math.abs(relationshipPlacement.rightGap - 14) < 1 && Math.abs(relationshipPlacement.topGap) < 1, 'The message quick look stays 14px beside its label anchor.');
+    assert.equal(relationshipPlacement.headOverlaps, 0);
+    assert.ok(relationshipPlacement.lifelineBoxOverlaps > 0, 'Empty lifeline rectangles do not displace the message quick look.');
+    await relation.getByRole('button', { name: '查看详情', exact: true }).click(); await page.locator('.inspector').waitFor(); await page.waitForTimeout(380);
+    const relationReading = await readingState();
+    if (relationReading.inspectedEdge !== 'm2' || relationReading.labels.some(box => outside(box, relationReading.area))) issues.push('relationship quick-look handoff does not preserve its message and reading context');
+    await clear(page, 'close'); await hidePanels(page); await fit(page); await setLocked(page, false);
+    const selfBefore = await sequenceEdgeSample(page, 'm7'); await pointerNode(page, graph.nodes.find(node => node.id === 'dotnet'), true);
+    const selfAfter = await sequenceEdgeSample(page, 'm7');
+    assert.notEqual(selfAfter.base.d, selfBefore.base.d, 'Horizontal participant dragging recomputes the self-call route.');
+    assert.equal(selfAfter.mask.path.d, selfAfter.base.d, 'The dashed self-call mask follows the recomputed route.');
+    await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page);
+    await nodeElement(page, 'java').locator('.participant-title').click(); const actorCard = page.locator('.node-card'); await actorCard.waitFor();
+    assert.equal(await actorCard.evaluate(card => {
+      const box = card.getBoundingClientRect(), label = document.querySelector('[data-id="java"] .participant-title').getBoundingClientRect();
+      return box.left < label.right && box.right > label.left && box.top < label.bottom && box.bottom > label.top;
+    }), false, 'The actor quick look does not cover the actor name.');
+    await actorCard.getByRole('button', { name: '关闭', exact: true }).click(); await nav(page, true); await page.waitForTimeout(380);
+    await nodeElement(page, 'redis').locator('.participant-title').click(); const navCard = page.locator('.node-card'); await navCard.waitFor();
+    const navCardBefore = await navCard.boundingBox();
+    assert.ok(await navCard.evaluate(card => card.getBoundingClientRect().left >= document.querySelector('.nav').getBoundingClientRect().right + 11), 'The quick look stays outside open navigation.');
+    await page.locator('.react-flow__controls-zoomin').click(); await page.waitForTimeout(260); const navCardAfter = await navCard.boundingBox();
+    assert.ok(Math.abs(navCardAfter.x - navCardBefore.x) > 1 || Math.abs(navCardAfter.y - navCardBefore.y) > 1, 'The head-anchored quick look follows zoom.');
+    await navCard.getByRole('button', { name: '关闭', exact: true }).click(); await nav(page, false); await fit(page);
+    await page.screenshot({ path: path.join(outputRoot, 'screens', 'sequence-reading.png'), animations: 'disabled' });
+
+    if (!reading.selected || reading.inspected !== redis.id) issues.push('directory selection and details are inconsistent');
+    if (outside(reading.head, reading.area)) issues.push('Redis head is outside the two-panel reading area');
+    if (reading.labels.some(box => outside(box, reading.area))) issues.push('one or more message labels are outside the two-panel reading area');
+    if (!quickLook.below || Math.abs(quickLook.gap - 14) > 1) issues.push(`Redis quick look is not 14px below its head (${quickLook.gap.toFixed(1)}px)`);
+    if (notation.request.dash !== 'none') issues.push('direct request baseline is not solid');
+    if (notation.returned.dash === 'none') issues.push('return baseline is not dashed');
+    if (notation.request.opacity < .99 || notation.returned.opacity < .99) issues.push('sequence baseline is faded while flow is enabled');
+    if (notation.request.flowWidth > notation.request.width + .01 || notation.request.flowFilter !== 'none') issues.push('sequence flow is thicker or glowing over its baseline');
+    assert.deepEqual((await geometry(page)).nodes.map(node => ({ id: node.id, position: node.position })), positions, 'Sequence locating preserves authored graph coordinates.');
+    assert.deepEqual(issues, [], `Sequence reading regressions after native user actions:\n- ${issues.join('\n- ')}`);
+    return { directory: true, panels: true, quickLook, relationshipPlacement, notation };
+  }, true);
+  await runCase(browser, 'tall-sequence-reading', viewports[0], { reducedMotion: 'reduce' }, async page => {
+    const tall = structuredClone(graph);
+    tall.nodes.forEach(node => { node.size.height = 1700; });
+    const message = tall.edges.find(edge => edge.id === 'm7'); message.target = 'pigeon'; delete message.route;
+    assert.deepEqual(validateGraph(tall), []);
+    await openFixture(page, tall, viewports[0], url); await fit(page);
+    await page.locator('.react-flow__controls-zoomin').click(); await page.waitForTimeout(260);
+    await nav(page, true); await page.locator('.nav .search-results button').filter({ hasText: 'Redis' }).click(); await selection(page, tall, 'redis'); await page.locator('.inspector').waitFor();
+    const clearance = await page.evaluate(() => {
+      const controls = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].map(element => element.getBoundingClientRect()).filter(box => box.width && box.height);
+      const lines = [...document.querySelectorAll('.lifeline')].map(element => element.getBoundingClientRect());
+      return Math.min(...lines.flatMap(line => controls.map(control => control.top - line.bottom)));
+    });
+    assert.ok(clearance >= 11.5, `Long lifelines clear visible bottom controls by 12px, actual ${clearance}px.`);
+    await page.screenshot({ path: path.join(outputRoot, 'screens', 'tall-sequence-reading.png'), animations: 'disabled' });
+    await exportsMatch(page, tall, 'tall-sequence');
+    return { lifelineHeight: 1700, bottomControlClearance: clearance };
+  }, true);
+  await runCase(browser, '390-sequence-reading', viewports[2], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, true); await hidePanels(page); await fit(page);
+    const before = await page.locator('.react-flow__viewport').getAttribute('style');
+    await nav(page, true); await page.locator('.nav .search-results button').filter({ hasText: 'Redis' }).click();
+    await selection(page, graph, 'redis'); await page.locator('.inspector').waitFor(); await page.locator('.nav').waitFor({ state: 'detached' });
+    assert.equal(await count(page, '.nav'), 0, 'Narrow panels remain mutually exclusive.');
+    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), before, 'Narrow panel opening does not force the sequence smaller.');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'The narrow page has no horizontal overflow.');
+    const opened = await page.locator('.react-flow__viewport').getAttribute('style'); await clear(page, 'close');
+    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), opened, 'Closing the narrow panel preserves the viewport.');
+    return { mutuallyExclusive: true, forcedViewport: false, pageOverflow: false };
+  }, true);
+  await runCase(browser, '200pct-sequence-reading', { width: 720, height: 450 }, { deviceScaleFactor: 2 }, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page); await nav(page, true);
+    await page.locator('.nav .search-results button').filter({ hasText: 'Redis' }).click(); await selection(page, graph, 'redis'); await page.locator('.inspector').waitFor(); await page.waitForTimeout(460);
+    const visible = await page.evaluate(() => {
+      const head = document.querySelector('[data-id="redis"] .participant-head').getBoundingClientRect();
+      const nav = document.querySelector('.nav').getBoundingClientRect(), drawer = document.querySelector('.inspector').getBoundingClientRect(), toolbar = document.querySelector('.toolbar').getBoundingClientRect();
+      return head.left >= nav.right + 11 && head.right <= drawer.left - 11 && head.top >= toolbar.bottom + 11 && document.documentElement.scrollWidth <= innerWidth + 1;
+    });
+    assert.equal(visible, true, 'At a 200% equivalent CSS viewport, the minimum-zoom fallback prioritizes the selected head without page overflow.');
+    return { deviceScaleFactor: 2, selectedHeadVisible: true, pageOverflow: false };
+  }, true);
+  await runCase(browser, 'reduced-motion-sequence-reading', viewports[0], { reducedMotion: 'reduce' }, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page); await nav(page, true);
+    await page.locator('.nav .search-results button').filter({ hasText: 'Redis' }).click(); await selection(page, graph, 'redis'); await page.locator('.inspector').waitFor();
+    assert.ok(await page.locator('.selection-outline,.selection-outline *,.selection-feedback,.selection-feedback *').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none')), 'Reduced motion lands without selection or viewport animation.');
+    const visible = await page.evaluate(() => {
+      const box = document.querySelector('[data-id="redis"] .participant-head').getBoundingClientRect(), nav = document.querySelector('.nav').getBoundingClientRect(), drawer = document.querySelector('.inspector').getBoundingClientRect();
+      return box.left >= nav.right + 11 && box.right <= drawer.left - 11;
+    });
+    assert.equal(visible, true, 'Reduced motion keeps the same final reading geometry.');
+    return { immediate: true, geometryMatches: true };
+  }, true);
+  await runCase(browser, 'fullscreen-sequence-reading', viewports[0], {}, async page => {
+    await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page); await nav(page, true);
+    await page.locator('.nav .search-results button').filter({ hasText: 'Redis' }).click(); await selection(page, graph, 'redis'); await page.locator('.inspector').waitFor();
+    await button(page, '进入全屏').click(); await fullscreenState(page, true); await page.waitForTimeout(420);
+    assert.ok(await page.locator('.canvas').evaluate(canvas => {
+      const bounds = canvas.getBoundingClientRect();
+      return [...canvas.querySelectorAll('.edge-label')].every(label => { const box = label.getBoundingClientRect(); return box.left >= bounds.left && box.right <= bounds.right && box.top >= bounds.top && box.bottom <= bounds.bottom; });
+    }), 'Panels outside fullscreen do not reduce its reading area.');
+    const fullscreenViewport = await page.locator('.react-flow__viewport').getAttribute('style');
+    await button(page, '退出全屏').click(); await fullscreenState(page, false);
+    assert.equal(await page.locator('.react-flow__viewport').getAttribute('style'), fullscreenViewport, 'Exiting fullscreen preserves its reading position.');
+
+    await hidePanels(page); await button(page, '进入全屏').click(); await fullscreenState(page, true);
+    await nodeElement(page, 'redis').locator('.participant-title').click(); const card = page.locator('.node-card'); await card.waitFor();
+    await page.evaluate(() => { window.nativeExitFullscreen = document.exitFullscreen; document.exitFullscreen = () => Promise.reject(new Error('Exit denied')); });
+    await card.getByRole('button', { name: '查看详情', exact: true }).click(); await page.waitForFunction(() => /无法退出全屏/.test(document.querySelector('.toast').textContent));
+    assert.equal(await card.count(), 1, 'A failed fullscreen exit leaves the original quick look usable.');
+    await page.evaluate(() => { document.exitFullscreen = window.nativeExitFullscreen; return document.exitFullscreen(); }); await fullscreenState(page, false);
+    return { outsidePanelsIgnored: true, exitPreserved: true, rejectedExitRecovery: true };
+  }, true);
+}
+
+async function fileUrlSequenceCheck(browser, graph) {
+  if (graph.meta.diagramType !== 'sequence') return;
+  const selected = target(graph), edge = graph.edges[0];
+  await runCase(browser, 'sequence-file-url', viewports[0], {}, async page => {
+    const external = [], failed = [];
+    page.on('request', request => { if (!/^(file|data|blob):/.test(request.url())) external.push(request.url()); });
+    page.on('requestfailed', request => failed.push({ url: request.url(), error: request.failure()?.errorText }));
+    await page.goto(pathToFileURL(path.join(inputRoot, 'index.html')).href); await page.locator('.diagram-node').first().waitFor(); await chooseGraph(page, graph, false);
+    await nav(page, true); await page.locator('.nav .search-results button').filter({ hasText: selected.label }).click(); await selection(page, graph, selected.id); await page.locator('.inspector').waitFor();
+    await clear(page, 'close'); await hidePanels(page); await fit(page); await nodeElement(page, selected.id).locator('.participant-title').click();
+    const nodeCard = page.locator('.node-card'); await nodeCard.waitFor(); await nodeCard.getByRole('button', { name: '查看详情', exact: true }).click(); await page.locator('.inspector').waitFor();
+    await clear(page, 'close');
+    if (edge) {
+      await page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(edge.id)}]`)).locator('.react-flow__edge-interaction').dispatchEvent('click');
+      const relationCard = page.locator('.relation-card'); await relationCard.waitFor(); await relationCard.getByRole('button', { name: '查看详情', exact: true }).click(); await page.locator('.inspector').waitFor();
+      await clear(page, 'close');
+    }
+    await openLegend(page); const flow = page.getByRole('switch', { name: '连线流动', exact: true });
+    if (await flow.count()) {
+      await flow.click(); assert.equal(await count(page, '.edge-flow'), 0, 'The file page removes sequence overlays when flow is off.'); await flow.click();
+    }
+    await dismiss(page); await assertFlow(page);
+    assert.deepEqual(external, [], 'The copied file page makes no external requests.'); assert.deepEqual(failed, [], 'The copied file page has no failed requests.');
+    await page.screenshot({ path: path.join(outputRoot, 'screens', 'sequence-file-url.png'), animations: 'disabled' });
+    return { protocol: 'file:', directory: true, nodeQuickLook: selected.id, relationshipQuickLook: edge?.id ?? null, flowSwitch: Boolean(edge), externalRequests: 0, failedRequests: 0, scope: graph.meta.scope ?? graph.meta.sourceRef, originalUserHtmlVerified: false };
   }, true);
 }
 async function openFixture(page, fixture, viewport, url) {
@@ -1327,6 +1740,8 @@ try {
   const layoutGraph = filtered.find(graph => graph.meta.diagramType === 'state' && graph.nodes.length >= 4) ?? filtered.find(graph => graph.nodes.length >= 4);
   if (layoutGraph && process.env.QA_EXTRAS !== 'none') await informationLayoutChecks(browser, url, layoutGraph);
   if (!process.env.QA_ONLY_EXTRAS) await Promise.all(viewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await matrix(browser, url, graph, viewport, colorTheme); }));
+  if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) await sequenceReadingChecks(browser, url, graph);
+  if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) await fileUrlSequenceCheck(browser, graph);
   if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) {
     await textBoundsChecks(browser, url, graph);
     await entrypoints(browser, url, graph);
@@ -1339,6 +1754,7 @@ try {
       const flowSwitch = page.getByRole('switch', { name: '连线流动', exact: true });
       if (await flowSwitch.count()) assert.equal(await flowSwitch.isDisabled(), true);
       await dismiss(page);
+      if (getDiagram(graph.meta.diagramType).sequence) assert.equal(await count(page, '.edge-flow'), 0, 'Reduced motion leaves only the sequence semantic baseline.');
       await searchSelect(page, graph, target(graph));
       assert.ok(await page.locator('.selection-outline,.selection-outline *,.selection-feedback,.selection-feedback *').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none')), 'Reduced motion suppresses selection recoil.');
       await openMore(page); await menuItem(page, '重置').click(); await assertFlow(page);

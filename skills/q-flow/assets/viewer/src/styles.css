@@ -253,6 +253,7 @@ button:disabled { cursor: not-allowed; }
 .boundary-loop { border-radius: 5px; }
 .flow-edge--dashed .react-flow__edge-path { stroke-dasharray: 5 5; }
 .edge-flow { fill: none; stroke-width: 2; stroke-dasharray: 5 10; stroke-linecap: round; pointer-events: none; animation: edge-flow 1.2s linear infinite; }
+.flow-edge--sequence .edge-flow { stroke-width: 1.2; stroke-dasharray: 2 8; opacity: .78; filter: none; animation: sequence-edge-flow 1s linear infinite; }
 .selection-feedback { pointer-events: none; }
 .selection-node-outline { position: absolute; inset: 0; width: 100%; overflow: visible; z-index: 6; fill: none; stroke: var(--accent); }
 .selection-node-halo, .selection-node-shine, .selection-edge-halo, .selection-edge-shine { fill: none; stroke-linejoin: round; stroke-linecap: round; }
@@ -263,6 +264,8 @@ button:disabled { cursor: not-allowed; }
 .selection-feedback.is-animated .selection-node-halo, .selection-feedback.is-animated .selection-edge-halo { animation: selection-glow .76s ease-out both; }
 .selection-feedback.is-animated .selection-node-shine { animation: selection-node-jelly .76s ease-out both; }
 .selection-feedback.is-animated .selection-edge-shine { animation: selection-line-jelly .76s ease-out both; }
+.flow-edge--sequence .selection-edge-shine { stroke-width: 2px; opacity: .72; }
+.flow-edge--sequence .selection-feedback.is-animated .selection-edge-shine { animation-name: sequence-line-jelly; }
 .selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .5; }
 .selection-feedback.has-flow .selection-edge-shine { opacity: .1; }
 @keyframes selection-glow {
@@ -288,6 +291,14 @@ button:disabled { cursor: not-allowed; }
   63% { stroke-width: 3.5px; }
   80% { stroke-width: 2.4px; }
   100% { stroke-width: 2.8px; }
+}
+@keyframes sequence-line-jelly {
+  0% { stroke-width: 1.2px; }
+  24% { stroke-width: 3px; }
+  44% { stroke-width: 1.4px; }
+  63% { stroke-width: 2.5px; }
+  80% { stroke-width: 1.7px; }
+  100% { stroke-width: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .selection-feedback, .selection-feedback * { animation: none !important; }
@@ -341,6 +352,7 @@ button:disabled { cursor: not-allowed; }
 .legend i.legend-module { width: 10px; height: 10px; border-radius: 50%; }
 
 @keyframes edge-flow { to { stroke-dashoffset: -15; } }
+@keyframes sequence-edge-flow { to { stroke-dashoffset: -10; } }
 
 @media (max-width: 1080px) {
   .tb-title span { display: none; }

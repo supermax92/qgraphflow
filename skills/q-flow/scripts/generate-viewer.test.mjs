@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
+import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, occupiedBox, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
 import { edgeColor, isCore, moduleColorMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
 import { RADIX } from '../assets/viewer/src/radix-colors.js';
@@ -15,6 +15,7 @@ import { constrainNodeChanges, currentGraphFromFlow, graphInputWithEdits } from 
 import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
+import { readingRect, readingViewport } from '../assets/viewer/src/reading-area.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const box = (id, label, kind, x, y, width = 180, height = 100, extra = {}) => ({
@@ -286,6 +287,39 @@ export const fixtures = {
     box('client', 'Client', 'external', 0, 0), box('verify', 'Verify payment', 'process', 340, 0), box('ledger', 'Ledger', 'dataStore', 680, 0)
   ], [edge('request', 'client', 'verify', 'data', { label: 'payment request' }), edge('entry', 'verify', 'ledger', 'data', { label: 'ledger entry' })])
 };
+
+test('uses visible sequence heads for interaction without changing authored lifelines', () => {
+  const ordinary = box('ordinary', 'Ordinary', 'service', 10, 20, 180, 360);
+  const participant = box('participant', 'Participant', 'participant', 10, 20, 180, 960);
+  const actor = box('actor', 'Actor', 'actor', 10, 20, 180, 960);
+  const before = structuredClone([ordinary, participant, actor]);
+  assert.deepEqual(occupiedBox(ordinary, 'architecture'), { x: 10, y: 20, width: 180, height: 360 });
+  assert.deepEqual(occupiedBox(participant, 'sequence'), { x: 10, y: 20, width: 180, height: 72 });
+  assert.deepEqual(occupiedBox(actor, 'sequence'), { x: 10, y: 20, width: 180, height: 108 });
+  assert.deepEqual([ordinary, participant, actor], before, 'interaction bounds do not shorten lifelines');
+});
+
+test('reading area clears actual visible bottom controls', () => {
+  const boxes = [{ top: 806, width: 28, height: 112 }, { top: 840, width: 112, height: 78 }];
+  const canvas = { clientWidth: 1440, clientHeight: 900, getBoundingClientRect: () => ({ top: 30 }),
+    querySelectorAll: () => boxes.map(box => ({ getBoundingClientRect: () => box })) };
+  assert.equal(readingRect(canvas, true, true).bottom, 764, '112px controls plus 12px clearance determine the reading bottom');
+  boxes[0] = { top: 0, width: 0, height: 0 };
+  assert.equal(readingRect(canvas, true, true).bottom, 798, 'hidden controls do not contribute; the visible minimap still does');
+});
+
+test('keeps, pans, shrinks and falls back within the sequence reading area', () => {
+  const area = { left: 0, top: 0, right: 500, bottom: 400, width: 500, height: 400 };
+  const inside = { x: 100, y: 100, zoom: 1 };
+  assert.equal(readingViewport({ x: 0, y: 0, width: 200, height: 100 }, area, inside), inside);
+  assert.deepEqual(readingViewport({ x: 0, y: 0, width: 200, height: 100 }, area, { x: 450, y: 100, zoom: 1 }), { x: 300, y: 100, zoom: 1 });
+  assert.deepEqual(readingViewport({ x: 0, y: 0, width: 1000, height: 500 }, area, { x: 0, y: 0, zoom: 1 }), { x: 0, y: 75, zoom: .5 });
+  const priority = { x: 9000, y: 0, width: 100, height: 72 };
+  const fallback = readingViewport({ x: 0, y: 0, width: 10000, height: 10000 }, area, { x: 0, y: 0, zoom: 1 }, priority);
+  assert.equal(fallback.zoom, .08);
+  assert.ok(Math.abs((priority.x + priority.width / 2) * fallback.zoom + fallback.x - 250) < 1e-7);
+  assert.ok(Math.abs((priority.y + priority.height / 2) * fallback.zoom + fallback.y - 200) < 1e-7);
+});
 
 test('derives session text and positions without mutating the authored graph, then resets exactly', () => {
   const authored = structuredClone(fixtures.flowchart), before = structuredClone(authored);

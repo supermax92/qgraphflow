@@ -24,6 +24,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
 
   const visibleEdges = useMemo(() => {
     const routes = createEdgeRoutes(currentGraph);
+    const sequence = getDiagram(diagramType).sequence;
     return edges.map(edge => {
       const route = routes.get(edge.id);
       const failure = edge.data.kind === 'failure';
@@ -37,12 +38,12 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
         ...edge,
         sourceHandle: getDiagram(diagramType).sequence ? 'source-right' : `source-${routes.get(edge.id).sourceSide}`,
         targetHandle: getDiagram(diagramType).sequence ? 'target-left' : `target-${routes.get(edge.id).targetSide}`,
-        className: dashed ? 'flow-edge--dashed' : '',
+        className: [sequence ? 'flow-edge--sequence' : '', dashed ? 'flow-edge--dashed' : ''].filter(Boolean).join(' '),
         style: { stroke: color, strokeWidth: 1.6 },
         ariaLabel: route.label || `${source.label} → ${target.label}`,
         markerEnd: edge.markerEnd ? { type: MarkerType.ArrowClosed, color } : undefined,
         selected: edge.id === selectedEdgeId,
-        data: { ...edge.data, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, labelColor: selectionLinked ? selectionColor : failure ? color : palette.ink3, onSelect: () => selectEdge(edge.data) }
+        data: { ...edge.data, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: selectionLinked ? selectionColor : failure ? color : palette.ink3, onSelect: () => selectEdge(edge.data) }
       };
     });
   }, [diagramType, edges, graph, currentGraph, palette, moduleColors, flowRunning, selectEdge, selectedEdgeId, selectedId, selectionPulse]);

@@ -11,11 +11,14 @@ export function useSelection(graph, { focusNode, panels, isFullscreen = false, t
   const results = useMemo(() => normalizedQuery ? searchNodes(graph.nodes, normalizedQuery) : graph.nodes, [graph, normalizedQuery]);
   const selected = graph.nodes.find(node => node.id === selectedId);
   const selectedEdge = graph.edges.find(edge => edge.id === selectedEdgeId);
-  const { drawerOpen, openDetails, closeDetails, closeMobile, closeNav } = panels;
+  const { toolbarOpen, drawerOpen, openDetails, closeDetails, closeMobile, closeNav } = panels;
   const selectNode = useCallback((node, focusDetails = true) => {
     setSelectedId(node.id); setSelectedEdgeId(null); setSelectionPulse(value => value + 1); setQuery('');
-    if (focusDetails) { if (!isFullscreen && !drawerOpen) openDetails(); focusNode(node.id); }
-  }, [drawerOpen, openDetails, focusNode, isFullscreen]);
+    if (focusDetails) {
+      if (!isFullscreen && !drawerOpen) openDetails();
+      focusNode(node.id, { navOpen: toolbarOpen, drawerOpen: isFullscreen ? drawerOpen : true });
+    }
+  }, [drawerOpen, openDetails, focusNode, isFullscreen, toolbarOpen]);
   const selectEdge = useCallback((edge, focusDetails = false) => {
     setSelectedId(null); setSelectedEdgeId(edge.id); setSelectionPulse(value => value + 1); setQuery('');
     if (focusDetails && !isFullscreen && !drawerOpen) openDetails();

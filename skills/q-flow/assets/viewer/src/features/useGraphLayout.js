@@ -3,8 +3,9 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import { cubicBezier } from 'motion';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
-import { auditGraphLayout, graphBounds } from '../edge-routing.js';
+import { auditGraphLayout, graphBounds, occupiedBox } from '../edge-routing.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
+import { readingPadding, readingRect, readingViewport } from '../reading-area.js';
 import { constrainNodeChanges, currentGraphFromFlow } from '../session-graph.js';
 
 // cubic-bezier(.32,.72,0,1) as an easing function, so viewport moves share the chrome's curve (--ease in styles.css).
@@ -17,29 +18,31 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
   const [edges, setEdges] = useEdgesState(initialEdges(graph, diagramType));
   const [locked, setLocked] = useState(true);
   const canvasRef = useRef(null);
-  const { setCenter, setViewport } = useReactFlow();
+  const { getViewport, setCenter, setViewport } = useReactFlow();
   const currentGraph = useMemo(() => currentGraphFromFlow(originalGraph, nodes, edges), [originalGraph, nodes, edges]);
   const onNodesChange = useCallback(changes => applyNodeChanges(constrainNodeChanges(changes, nodes, diagramType)), [applyNodeChanges, diagramType, nodes]);
   const updateNodeText = useCallback((id, label, subtitle) => setNodes(current => current.map(node => node.id === id ? { ...node, data: { ...node.data, label, subtitle } } : node)), [setNodes]);
   const updateEdgeText = useCallback((id, label) => setEdges(current => current.map(edge => edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge)), [setEdges]);
-  // The canvas runs under the floating toolbar and beside any open panel, so fitting subtracts those layers instead of
-  // centring on the whole window. Values mirror --tb-h, --side-w and --gutter in styles.css; px strings are required
-  // because a bare number in this padding object is read by React Flow as a ratio of the canvas size.
-  const readingPadding = () => {
-    const insets = canvasRef.current?.dataset ?? {};
-    const px = value => `${value}px`;
-    return { top: px(52 + 12 + 12), bottom: px(12 + 40), left: px((insets.navOpen === 'true' ? 304 + 24 : 12) + 12), right: px((insets.drawerOpen === 'true' ? 304 + 24 : 12) + 12) };
-  };
   // Whole-diagram reading view: every node, boundary and label fits whenever the Viewer opens, resets or switches diagram.
   const readGraph = (targetGraph, duration = reduceMotion ? 0 : 320) => {
     const canvas = canvasRef.current; if (!canvas) return;
-    const viewport = getViewportForBounds(graphBounds(targetGraph), canvas.clientWidth, canvas.clientHeight, .08, 2, readingPadding());
+    const viewport = getViewportForBounds(graphBounds(targetGraph), canvas.clientWidth, canvas.clientHeight, .08, 2,
+      readingPadding(canvas, canvas.dataset.navOpen === 'true', canvas.dataset.drawerOpen === 'true'));
     return setViewport(viewport, { duration, ease: appleEase });
   };
-  const focusNode = useCallback(id => {
+  const focusNode = useCallback((id, panels = {}) => {
     const node = currentGraph.nodes.find(item => item.id === id);
-    if (node) setCenter(node.position.x + node.size.width / 2, node.position.y + node.size.height / 2, { zoom: 1.1, duration: reduceMotion ? 0 : 420, ease: appleEase });
-  }, [currentGraph, reduceMotion, setCenter]);
+    if (!node) return;
+    if (diagramType !== 'sequence') {
+      setCenter(node.position.x + node.size.width / 2, node.position.y + node.size.height / 2, { zoom: 1.1, duration: reduceMotion ? 0 : 420, ease: appleEase });
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas || canvas.clientWidth <= 700) return;
+    const area = readingRect(canvas, panels.navOpen ?? canvas.dataset.navOpen === 'true', panels.drawerOpen ?? canvas.dataset.drawerOpen === 'true');
+    const viewport = readingViewport(graphBounds(currentGraph), area, getViewport(), occupiedBox(node, diagramType));
+    setViewport(viewport, { duration: reduceMotion ? 0 : 420, ease: appleEase });
+  }, [currentGraph, diagramType, getViewport, reduceMotion, setCenter, setViewport]);
   const resetLayout = () => { setNodes(initialNodes(originalGraph, diagramType)); setEdges(initialEdges(originalGraph, diagramType)); requestAnimationFrame(() => readGraph(originalGraph)); };
   const nudgeLayout = selectedId => {
     if (locked) { setStatus('请先解除布局锁定，再整理间距'); return; }

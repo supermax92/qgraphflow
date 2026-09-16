@@ -290,7 +290,7 @@ function boxesIntersect(a, b, margin = 0) {
     && a.y + a.height > b.y - margin;
 }
 
-function occupiedBox(node, type) {
+export function occupiedBox(node, type) {
   if (!getDiagram(type).sequence) return { ...node.position, ...node.size };
   return { ...node.position, width: node.size.width, height: node.kind === 'actor' ? Math.min(node.size.height, TYPOGRAPHY.sequenceActorHeader) : Math.min(node.size.height, TYPOGRAPHY.sequenceHeader) };
 }

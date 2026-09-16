@@ -32,7 +32,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
   } = useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave);
   const { open, toggle, close } = usePopover();
-  const reveal = useReveal(canvasRef, nodes, reduceMotion);
+  const reveal = useReveal(canvasRef, nodes, currentGraph, diagramType, reduceMotion);
   const [searchActive, setSearchActive] = useState(false);
   const [toast, setToast] = useState('');
   const MiniMapNode = useMemo(() => {
@@ -68,7 +68,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   return <main className="app-shell">
     <header className="toolbar">
       <div className="tb-group tb-left">
-        <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); reveal(selectedId, !toolbarOpen, drawerOpen); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('隐藏图谱导航') : t('显示图谱导航')} title={toolbarOpen ? t('隐藏图谱导航') : t('显示图谱导航')}><Icon name="panel-left" /></button>
+        <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); if (!toolbarOpen) reveal(selectedId, selectedEdgeId, true, drawerOpen); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('隐藏图谱导航') : t('显示图谱导航')} title={toolbarOpen ? t('隐藏图谱导航') : t('显示图谱导航')}><Icon name="panel-left" /></button>
         {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
           <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('图类型')}><Icon name="views" /><span>{t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
           {open === 'views' && <div className="popover menu" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
@@ -114,7 +114,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             </div>
           </div>}
         </div>
-        <button className="tb" ref={drawerButtonRef} onClick={() => { toggleDrawer(); reveal(selectedId, toolbarOpen, !drawerOpen); }} aria-controls="node-inspector" aria-expanded={drawerOpen} aria-pressed={drawerOpen} title={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')} aria-label={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')}><Icon name="panel-right" /></button>
+        <button className="tb" ref={drawerButtonRef} onClick={() => { toggleDrawer(); if (!drawerOpen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-controls="node-inspector" aria-expanded={drawerOpen} aria-pressed={drawerOpen} title={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')} aria-label={drawerOpen ? t('隐藏右侧详情栏') : t('显示右侧详情栏')}><Icon name="panel-right" /></button>
       </div>
     </header>
 
@@ -175,11 +175,12 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
 
           {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} onSaveNode={updateNodeText} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;
-            openDetails(); reveal(selectedId, toolbarOpen, true);
+            openDetails(); reveal(selectedId, selectedEdgeId, toolbarOpen, true);
           }} onClose={() => clearSelectedNode()} />}
           {cardEdge && <NodeCard node={cardEdgeAnchor} edge={{ ...cardEdge, diagramType }} source={edgeSource} target={edgeTarget} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} onSaveEdge={updateEdgeText} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;
             openDetails();
+            reveal(selectedId, selectedEdgeId, toolbarOpen, true);
           }} onClose={() => clearSelectedNode()} />}
 
           <div className={`toast ${toast ? 'is-on' : ''}`} role="status" aria-live="polite">{toast}</div>

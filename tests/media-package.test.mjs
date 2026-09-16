@@ -21,7 +21,7 @@ test('media packaging ships only verified receipts and refuses missing, stale or
   write(`docs/images/showcase/${asset}`, 'GIF89a');
   write('docs/images/showcase/old-private-recording.gif', 'excluded');
   write('docs/showcase-media.json', JSON.stringify({
-    directory: 'docs/images/showcase', viewerSha256: hash('viewer'),
+    status: 'published', directory: 'docs/images/showcase', viewerSha256: hash('viewer'),
     locales: [{ locale: 'zh-CN', graph: 'examples/graph.json', graphSha256: hash('{}'),
       assets: [{ name: asset, bytes: 6, sha256: hash('GIF89a') }] }]
   }));
@@ -41,7 +41,10 @@ test('media packaging ships only verified receipts and refuses missing, stale or
   write('examples/graph.json', '{"changed":true}');
   assert.match(run('bad-graph').stderr, /graph changed/);
   assert.ok(!fs.existsSync(path.join(temp, 'bad-graph')));
+  write('examples/graph.json', '{}');
   write('skills/q-flow/assets/viewer-dist/index.html', 'new viewer');
-  assert.match(run('bad-viewer').stderr, /Viewer changed/);
+  const stale = run('bad-viewer');
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stderr, /Viewer changed/);
   assert.ok(!fs.existsSync(path.join(temp, 'bad-viewer')));
 });

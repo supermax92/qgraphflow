@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "qgraphflow",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "source": "./",
       "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export."
     }
