@@ -3,6 +3,11 @@
   "version": "0.0.4",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "author": {
-    "name": "Max Zheng"
-  }
+    "name": "Max Zheng",
+    "url": "https://github.com/supermax92"
+  },
+  "homepage": "https://github.com/supermax92/qgraphflow#readme",
+  "repository": "https://github.com/supermax92/qgraphflow",
+  "license": "MIT",
+  "keywords": ["diagram", "architecture", "sequence-diagram", "visualization", "documentation"]
 }
