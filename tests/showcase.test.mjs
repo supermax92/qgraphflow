@@ -86,8 +86,12 @@ test('localized ecommerce preserves domain structure and renders complete node t
   }
 });
 
-test('each README links to its matching guide, references and localized media', () => {
+test('each README links to its inline installation guide, references and localized media', () => {
   const documents = readmeLocales.map(locale => locale === 'en' ? 'README.md' : `docs/readme/README.${locale}.md`);
+  const installationHeadings = {
+    en: 'Installation guide', 'zh-CN': '安装指南', ru: 'Установка', pt: 'Guia de instalação',
+    ja: 'インストールガイド', de: 'Installationsanleitung', es: 'Guía de instalación'
+  };
   const media = JSON.parse(read('docs/showcase-media.json'));
   const assets = new Set(media.locales.flatMap(entry => entry.assets.map(asset => asset.name)));
   const prefix = 'https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/';
@@ -104,9 +108,18 @@ test('each README links to its matching guide, references and localized media', 
       else assert.ok(fs.existsSync(target), `${file}: ${target}`);
     }
     for (const document of documents) assert.ok(local.includes(path.join(root, document)), `${file}: ${document}`);
-    const guide = locale === 'en' ? 'docs/clients.md' : `docs/clients.${locale}.md`;
-    assert.ok(local.includes(path.join(root, guide)));
-    assert.ok(read(guide).includes(locale === 'en' ? '../README.md' : `readme/README.${locale}.md`));
+    const heading = installationHeadings[locale];
+    assert.ok(links.includes(`#${heading.toLowerCase().replaceAll(' ', '-')}`), `${file}: installation link`);
+    const installation = markdown.split(`\n## ${heading}\n`)[1]?.split('\n## ')[0];
+    assert.ok(installation, `${file}: inline installation guide`);
+    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder IDE', 'Cursor']) {
+      assert.ok(installation.includes(`#### ${client}\n`), `${file}: ${client}`);
+    }
+    for (const command of [
+      'codex plugin marketplace add .', 'codex plugin add qgraphflow@qgraphflow-local',
+      'claude plugin marketplace add .', 'claude plugin install qgraphflow@qgraphflow-local --scope user',
+      'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
+    ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
       const directory = locale === 'en' ? 'skills/q-flow/references' : `docs/references/${locale}`;
       assert.ok(local.includes(path.join(root, directory, `${reference}.md`)));
@@ -120,10 +133,16 @@ test('each README links to its matching guide, references and localized media', 
   for (const locale of ['ko', 'fr']) assert.ok(!fs.existsSync(path.join(root, `docs/readme/README.${locale}.md`)));
 });
 
-test('media receipts match source graphs, the bundled Viewer and local files when present', () => {
+test('published media receipts retain Viewer provenance and match source graphs and local files when present', t => {
   const sha = file => createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
   const media = JSON.parse(read('docs/showcase-media.json'));
-  assert.equal(media.viewerSha256, sha('skills/q-flow/assets/viewer-dist/index.html'));
+  assert.equal(media.status, 'published');
+  assert.match(media.viewerSha256, /^[a-f0-9]{64}$/);
+  // Published receipts describe the recording's Viewer, not later runtime builds.
+  // package-media.mjs separately rejects stale media before creating a new package.
+  if (media.viewerSha256 !== sha('skills/q-flow/assets/viewer-dist/index.html')) {
+    t.diagnostic('Published media use a historical Viewer; package:media requires re-recording for the current Viewer.');
+  }
   assert.deepEqual(media.locales.map(entry => entry.locale), readmeLocales);
   for (const entry of media.locales) {
     assert.equal(entry.graphSha256, sha(entry.graph), entry.locale);
@@ -131,10 +150,14 @@ test('media receipts match source graphs, the bundled Viewer and local files whe
     for (const asset of entry.assets) {
       assert.ok(asset.name.startsWith(`ecommerce.${entry.locale}.`));
       assert.ok(asset.width > 0 && asset.height > 0 && asset.bytes > 0);
+      assert.match(asset.sha256, /^[a-f0-9]{64}$/, asset.name);
       if (asset.name.endsWith('.gif')) assert.ok(asset.frames > 1 && asset.durationMs > 0);
       if (asset.name.endsWith('.core-three.gif')) assert.equal(asset.durationMs, 2400);
       const file = `${media.directory}/${asset.name}`;
-      if (fs.existsSync(path.join(root, file))) assert.equal(asset.sha256, sha(file), file);
+      if (fs.existsSync(path.join(root, file))) {
+        assert.equal(fs.statSync(path.join(root, file)).size, asset.bytes, file);
+        assert.equal(asset.sha256, sha(file), file);
+      }
     }
   }
 });

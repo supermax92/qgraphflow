@@ -8,7 +8,7 @@ Siga o caminho. Confira as evidências. Compartilhe um arquivo offline.
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[Instalação por cliente](../clients.pt.md) · [Relatar problema](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[Instalação por cliente](#guia-de-instalação) · [Relatar problema](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -43,11 +43,96 @@ Os caminhos, números de linha e símbolos desta demonstração são fictícios.
 
 A visão geral mostra cada um dos três diagramas por 0,8 segundo: 2,4 segundos por ciclo. As quatro animações de interação reservam tempo para leitura. Toda a mídia usa o Viewer compilado do código-fonte, com textos dos diagramas e da interface em português. Os cinco GIFs e nove PNGs estão disponíveis como [arquivos independentes do Release showcase-v1](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), com downloads públicos e somas SHA-256 verificados. Não fazem parte do histórico Git nem dos pacotes do plugin; sua visualização requer internet. O HTML gerado para o diagrama funciona offline.
 
+## Guia de instalação
+
+Você precisa do Node.js 22 e de um cliente com suporte a plugins e acesso ao modelo configurado.
+
+### 1. Baixe o plugin
+
+Baixe [qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip) e extraia em um diretório separado, preservando os arquivos ocultos.
+
+Execute os comandos abaixo na **raiz do plugin extraído, que contém `skills/`**.
+
+### 2. Instale no seu cliente
+
+#### Codex App / CLI
+
+O Codex CLI precisa estar instalado e disponível no terminal:
+
+```bash
+codex plugin marketplace add .
+codex plugin add qgraphflow@qgraphflow-local
+```
+
+Inicie uma nova sessão, digite `$` e selecione `qgraphflow:q-flow`.
+
+#### Claude Code
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@qgraphflow-local --scope user
+```
+
+Inicie uma nova sessão e digite `/qgraphflow:q-flow`.
+
+#### Qoder CLI
+
+```bash
+qodercli plugins install .
+```
+
+Inicie uma nova sessão e selecione `q-flow`.
+
+#### Qoder IDE
+
+Abra **Settings → Plugins → Custom → Import**, importe o diretório raiz completo do plugin e selecione `q-flow`.
+
+#### Cursor
+
+Copie todo o conteúdo da raiz do plugin, incluindo os arquivos ocultos, para:
+
+```text
+~/.cursor/plugins/local/qgraphflow/
+```
+
+Confirme que `.cursor-plugin/plugin.json` existe nesse local, recarregue a janela e encontre `q-flow` em **Customize**. Se houver uma versão anterior, faça backup primeiro; não misture arquivos antigos e novos.
+
+### 3. Comece a usar
+
+Abra seu projeto no cliente, inicie uma nova sessão e selecione a habilidade. Descreva a tarefa seguindo os exemplos de [Início rápido](#início-rápido) abaixo. Abra o HTML gerado no navegador.
+
+<details>
+<summary>Outra forma de instalação: GitHub npm</summary>
+
+Você também pode obter o plugin pelo npm em vez do ZIP.
+
+O GitHub npm exige seu próprio GitHub **Personal access token (classic)** com a permissão `read:packages`. No login, informe seu nome de usuário do GitHub e use o token como senha.
+
+Não compartilhe o token nem o inclua em commits. Consulte a [autenticação do GitHub](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry).
+
+```bash
+npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
+npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
+```
+
+Crie um diretório separado, fora do projeto da sua aplicação:
+
+```bash
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+cd node_modules/@supermax92/qgraphflow
+```
+
+Agora você está na raiz do plugin. Continue com as etapas de instalação no cliente acima. **Baixar pelo npm não instala automaticamente o plugin no cliente.**
+
+</details>
+
+Quer compilar por conta própria? Consulte as [instruções de compilação do código-fonte](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally).
+
 ## Início rápido
 
-Instale pelo repositório ou por um diretório local do plugin conforme o [guia de instalação](../clients.pt.md). `qgraphflow-local` é o nome da origem de distribuição do projeto. A versão do código `0.0.2` não significa que um pacote Release correspondente já foi publicado.
-
-Após instalar, inicie uma nova sessão e confirme que `q-flow` aparece na lista de habilidades do cliente. Os exemplos usam `$qgraphflow:q-flow` no Codex App. Se o cliente mostrar `$q-flow`, selecione essa entrada. As formas de chamada de outros clientes estão no guia de instalação.
+Os exemplos usam `$qgraphflow:q-flow` no Codex. Se o cliente mostrar `$q-flow`, selecione essa entrada. Nos demais clientes, use a forma de chamada da habilidade indicada acima.
 
 **Sem saber por onde começar?** Chame a habilidade e escolha o assunto e a pergunta quando solicitado.
 

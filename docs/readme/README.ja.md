@@ -8,7 +8,7 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[クライアントへの導入](../clients.ja.md) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[クライアントへの導入](#インストールガイド) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -43,11 +43,96 @@ QGraphFlow はソースコード、データ構造、設定、要件から対話
 
 上の総覧は各図0.8秒、1周2.4秒です。下の4つの操作動画には読む時間を確保しています。ソースからビルドした Viewer を使い、図と画面の文字を日本語に揃えています。5つの GIF と9つの PNG は [showcase-v1 Release の独立した添付ファイル](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1)として公開し、ダウンロードと SHA-256 を検証済みです。Git 履歴やプラグインパッケージには含まれず、表示にはインターネット接続が必要です。生成した図の HTML 自体はオフラインで使用できます。
 
+## インストールガイド
+
+Node.js 22 と、プラグインに対応しモデルへのアクセスを設定済みのクライアントを用意してください。
+
+### 1. プラグインをダウンロード
+
+[qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
+
+以下のコマンドはすべて、**展開後の `skills/` を含むプラグインのルートディレクトリ**で実行してください。
+
+### 2. クライアントにインストール
+
+#### Codex App / CLI
+
+ターミナルで Codex CLI を使用できるよう、あらかじめインストールしてください。
+
+```bash
+codex plugin marketplace add .
+codex plugin add qgraphflow@qgraphflow-local
+```
+
+新しいセッションを開始し、`$` を入力して `qgraphflow:q-flow` を選択します。
+
+#### Claude Code
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@qgraphflow-local --scope user
+```
+
+新しいセッションを開始し、`/qgraphflow:q-flow` を入力します。
+
+#### Qoder CLI
+
+```bash
+qodercli plugins install .
+```
+
+新しいセッションを開始し、`q-flow` を選択します。
+
+#### Qoder IDE
+
+**Settings → Plugins → Custom → Import** を開き、プラグインのルートディレクトリ全体をインポートして `q-flow` を選択します。
+
+#### Cursor
+
+プラグインのルートディレクトリ内のすべてのファイル（隠しファイルを含む）を、次の場所にコピーします。
+
+```text
+~/.cursor/plugins/local/qgraphflow/
+```
+
+その中に `.cursor-plugin/plugin.json` があることを確認し、ウィンドウを再読み込みして **Customize** で `q-flow` を探します。旧バージョンがある場合は先にバックアップし、新旧のファイルを混在させないでください。
+
+### 3. 使い始める
+
+クライアントで対象のプロジェクトを開き、新しいセッションでスキルを選択します。下の[すぐに使う](#すぐに使う)の例を参考に依頼し、生成された HTML をブラウザで開いてください。
+
+<details>
+<summary>別のインストール方法：GitHub npm</summary>
+
+ZIP の代わりに npm からプラグインを取得することもできます。
+
+GitHub npm では、自分の GitHub **Personal access token（classic）** に `read:packages` 権限を付けて認証します。ログイン時は自分の GitHub ユーザー名を使い、パスワード欄にトークンを入力してください。
+
+トークンを共有したり、リポジトリにコミットしたりしないでください。[GitHub の認証ガイド](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)も参照できます。
+
+```bash
+npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
+npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
+```
+
+業務プロジェクトの外に専用ディレクトリを作成します。
+
+```bash
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+cd node_modules/@supermax92/qgraphflow
+```
+
+これでプラグインのルートディレクトリに移動できました。上記のクライアント別インストール手順に進んでください。**npm でダウンロードしても、クライアントへのインストールは自動では行われません。**
+
+</details>
+
+自分でビルドする場合は、[ソースからのビルド手順](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)を参照してください。
+
 ## すぐに使う
 
-[導入ガイド](../clients.ja.md)に従い、リポジトリまたはローカルのプラグインディレクトリから導入します。`qgraphflow-local` はプロジェクトの配布元名です。ソースのバージョン `0.0.2` は、同じバージョンの Release パッケージが公開済みという意味ではありません。
-
-導入後は新しいセッションを開始し、クライアントのスキル一覧に `q-flow` が表示されることを確認してください。以下は Codex App の `$qgraphflow:q-flow` を使う例です。クライアントに `$q-flow` と表示される場合は、その入口を選択します。他のクライアントの呼び出し方は導入ガイドを参照してください。
+以下は Codex の `$qgraphflow:q-flow` を使う例です。クライアントに `$q-flow` と表示される場合は、その入口を選択してください。他のクライアントでは、上記の対応するスキルの呼び出し方を使います。
 
 **どこから始めるか迷ったら：** スキルを呼び出し、案内に従って対象と知りたいことを選びます。
 

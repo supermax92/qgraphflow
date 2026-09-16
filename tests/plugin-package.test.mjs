@@ -118,14 +118,8 @@ test('the distributed plugin runs independently from its installed location', t 
     plugins: [{ name: pkg.name, source: { source: 'local', path: './' },
       policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, category: 'Productivity' }]
   });
-  const chineseReadme = fs.readFileSync(path.join(plugin, 'docs/readme/README.zh-CN.md'), 'utf8');
-  assert.match(chineseReadme, /\[客户端安装\]\(\.\.\/clients\.zh-CN\.md\)/);
-  assert.match(chineseReadme, /\[安装指南\]\(\.\.\/clients\.zh-CN\.md\)/);
-  for (const guide of guides) {
-    assert.deepEqual(fs.readFileSync(path.join(plugin, guide)), fs.readFileSync(path.join(root, guide)), guide);
-  }
-  for (const locale of ['ru', 'pt', 'ja', 'de', 'es']) {
-    assert.ok(fs.readFileSync(path.join(plugin, `docs/readme/README.${locale}.md`), 'utf8').includes(`](../clients.${locale}.md)`));
+  for (const document of ['README.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/readme/README.${locale}.md`), ...guides]) {
+    assert.deepEqual(fs.readFileSync(path.join(plugin, document)), fs.readFileSync(path.join(root, document)), document);
   }
   // Compare the shared payload, including transitive JS imports, with the source being packaged.
   for (const file of files) {

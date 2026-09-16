@@ -14,7 +14,7 @@ Node.js 22、Git、npm、`tar`、`zip`、`unzip` と、モデルへのアクセ�
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.2.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.3.zip -d dist/runtime
 ```
 
 QGraphFlow のソースコードが手元にある場合はクローンを省略し、そのルートディレクトリに移動してください。ZIP 名は QGraphFlow の `package.json` のバージョンに合わせます。出力先と展開先には新しいディレクトリを使い、既存ファイルを上書きしないでください。Git で取得できるのはプッシュ済みのコードのみで、未コミットのローカル変更は含まれません。

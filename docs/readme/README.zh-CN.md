@@ -8,7 +8,7 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[客户端安装](../clients.zh-CN.md) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -43,11 +43,94 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 
 顶部三图总览每类展示 0.8 秒，完整循环 2.4 秒；下方四张能力动图留出操作与阅读时间，保留模块配色、完整文字和连线流动。全部 GIF 与 PNG 使用源码构建的 Viewer 生成，图中文字和界面均为中文。这五张 GIF 和九张 PNG 作为独立附件托管在 [showcase-v1 Release](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1)，已核验公开下载与 SHA-256；不进入 Git 历史或插件包，查看这些媒体需要联网。生成的图形 HTML 本身支持离线使用。
 
+## 安装指南
+
+准备 Node.js 22，以及已配置好模型访问、支持插件功能的客户端。
+
+### 1. 下载插件
+
+下载 [qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip)，解压到独立目录，保留隐藏文件。
+
+以下终端命令均在**解压后包含 `skills/` 的插件根目录**执行。
+
+### 2. 选择客户端安装
+
+#### Codex App / CLI
+
+终端需已安装 Codex CLI：
+
+```bash
+codex plugin marketplace add .
+codex plugin add qgraphflow@qgraphflow-local
+```
+
+新建会话，输入 `$`，选择 `qgraphflow:q-flow`。
+
+#### Claude Code
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@qgraphflow-local --scope user
+```
+
+新建会话，输入 `/qgraphflow:q-flow`。
+
+#### Qoder CLI
+
+```bash
+qodercli plugins install .
+```
+
+新建会话，选择 `q-flow`。
+
+#### Qoder IDE
+
+打开 **Settings → Plugins → Custom → Import**，导入完整的插件根目录，再选择 `q-flow`。
+
+#### Cursor
+
+将插件根目录中的全部内容（含隐藏文件）复制到：
+
+```text
+~/.cursor/plugins/local/qgraphflow/
+```
+
+确认其中存在 `.cursor-plugin/plugin.json`，重新加载窗口，在 **Customize** 中找到 `q-flow`。若已有旧版本，先备份，勿混合新旧文件。
+
+### 3. 开始使用
+
+在客户端打开你的业务项目，新建会话并选择技能，按下方[快速使用](#快速使用)中的示例描述需求。生成后，用浏览器打开输出的 HTML。
+
+<details>
+<summary>其他安装方式：GitHub npm</summary>
+
+不使用 ZIP 时，也可以通过 npm 获取插件。
+
+GitHub npm 需要使用你自己的 GitHub **Personal access token（classic）**，授予 `read:packages` 权限。登录时，用户名填写你的 GitHub 用户名，密码填写令牌。不要分享令牌或将其提交到仓库。参见 [GitHub 认证说明](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)。
+
+```bash
+npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
+npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
+```
+
+在业务项目之外创建独立目录：
+
+```bash
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+cd node_modules/@supermax92/qgraphflow
+```
+
+此时已进入插件根目录，继续执行上面的客户端安装步骤。**npm 下载不会自动完成客户端安装。**
+
+</details>
+
+需要自行构建？参见[源码构建说明](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)。
+
 ## 快速使用
 
-截至 2026-09-15，QGraphFlow 尚未在 Codex、Claude Code、Qoder、Cursor 的公开插件市场上架。当前通过 GitHub 仓库或本地插件目录安装；`qgraphflow-local` 是项目自带的分发源名称，不是官方市场。源码版本 `0.0.2` 也不代表同版本 Release 安装包已经发布。
-
-按[安装指南](../clients.zh-CN.md)先下载源码、构建运行包，再按客户端安装。安装后新建会话，先在客户端技能列表中确认 `q-flow` 可见。以下以当前 Codex App 的 `$qgraphflow:q-flow` 入口为例；如果客户端显示 `$q-flow`，请选择它实际提供的入口。其他客户端的调用方式见安装指南。
+以下以 Codex 的 `$qgraphflow:q-flow` 入口为例；如果客户端显示 `$q-flow`，请选择它实际提供的入口。其他客户端使用上方对应的技能入口。
 
 **不知道从哪里开始？** 直接调用，按提示选择要分析的部分和想了解的问题。
 
