@@ -14,7 +14,7 @@ Necesitas Node.js 22, Git, npm, `tar`, `zip`, `unzip` y un cliente con acceso al
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.3.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.4.zip -d dist/runtime
 ```
 
 Si ya tienes el código fuente de QGraphFlow, omite la clonación y entra en su directorio raíz. Ajusta el nombre del ZIP a la versión del `package.json` de QGraphFlow. Usa directorios nuevos para generar y extraer el paquete, sin sobrescribir archivos existentes. Git solo descarga el código enviado al repositorio, no los cambios locales sin commit.

@@ -49,7 +49,7 @@ Se necesitan Node.js 22 y un cliente compatible con complementos que tenga confi
 
 ### 1. Descargar el complemento
 
-Descargar [qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
+Descargar [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
 
 Ejecutar los comandos siguientes desde **la raíz del complemento extraído, que contiene `skills/`**.
 
@@ -129,7 +129,7 @@ Crear un directorio independiente fuera del proyecto de la aplicación:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 

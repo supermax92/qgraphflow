@@ -14,7 +14,7 @@ Claude Code может установить плагин напрямую с Git
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.3.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.4.zip -d dist/runtime
 ```
 
 Если исходный код QGraphFlow уже скачан, пропустите клонирование и перейдите в его корневой каталог. Имя ZIP должно соответствовать версии в `package.json` проекта QGraphFlow. Используйте новые каталоги для сборки и распаковки, не перезаписывая старые файлы. Git скачивает только отправленный в репозиторий код, без незакоммиченных локальных изменений.

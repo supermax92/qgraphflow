@@ -1,6 +1,6 @@
 {
   "name": "qgraphflow",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "repository": {

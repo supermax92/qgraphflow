@@ -49,7 +49,7 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 
 ### 1. 下载插件
 
-下载 [qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip)，解压到独立目录，保留隐藏文件。
+下载 [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip)，解压到独立目录，保留隐藏文件。
 
 以下终端命令均在**解压后包含 `skills/` 的插件根目录**执行。
 
@@ -127,7 +127,7 @@ npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.gith
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 

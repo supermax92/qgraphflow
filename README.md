@@ -49,7 +49,7 @@ You need Node.js 22 and a plugin-capable client with model access configured.
 
 ### 1. Download the plugin
 
-Download [qgraphflow-0.0.3.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.3/qgraphflow-0.0.3.zip) and extract it into a separate directory, keeping hidden files.
+Download [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) and extract it into a separate directory, keeping hidden files.
 
 Run the following terminal commands from **the extracted plugin root containing `skills/`**.
 
@@ -129,7 +129,7 @@ Create a separate directory outside your application project:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.3 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 
