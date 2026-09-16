@@ -61,19 +61,28 @@ QGraphFlow создаёт интерактивные диаграммы прог
 
 ```bash
 codex plugin marketplace add .
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 Начните новую сессию, введите `$` и выберите `qgraphflow:q-flow`.
 
 #### Claude Code
 
+Установите напрямую с GitHub без скачивания ZIP:
+
 ```bash
-claude plugin marketplace add .
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-Начните новую сессию и введите `/qgraphflow:q-flow`.
+Или из корня распакованного плагина:
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+Начните новую сессию и введите `/q-flow` (или полное имя `/qgraphflow:q-flow`).
 
 #### Qoder CLI
 

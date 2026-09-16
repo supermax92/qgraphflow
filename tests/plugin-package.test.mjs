@@ -53,7 +53,7 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.equal(manifest.version, pkg.version, directory);
   }
   const claudeMarket = readJson(path.join(root, '.claude-plugin/marketplace.json'));
-  assert.equal(claudeMarket.name, 'qgraphflow-local');
+  assert.equal(claudeMarket.name, 'supermax92');
   assert.equal(claudeMarket.plugins.length, 1);
   assert.equal(claudeMarket.plugins[0].name, pkg.name);
   assert.equal(claudeMarket.plugins[0].version, pkg.version);
@@ -114,7 +114,7 @@ test('the distributed plugin runs independently from its installed location', t 
   const plugin = path.join(installed, 'package');
   const codexMarket = readJson(path.join(plugin, '.agents/plugins/marketplace.json'));
   assert.deepEqual(codexMarket, {
-    name: 'qgraphflow-local', interface: { displayName: 'QGraphFlow Local' },
+    name: 'supermax92', interface: { displayName: 'QGraphFlow Local' },
     plugins: [{ name: pkg.name, source: { source: 'local', path: './' },
       policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, category: 'Productivity' }]
   });

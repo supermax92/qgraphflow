@@ -4,7 +4,7 @@
 
 [README に戻る](readme/README.ja.md)
 
-このプラグインは、まだ公開マーケットプレイスには掲載されていません。まず QGraphFlow のソースコードをダウンロードして実行用パッケージを作成し、各クライアントにインストールしてください。
+Claude Code では、このプラグインを GitHub から直接インストールできます（下記の Claude Code の項を参照）。その他のクライアントでは、まず QGraphFlow のソースコードをダウンロードして実行用パッケージを作成し、各クライアントにインストールしてください。
 
 Node.js 22、Git、npm、`tar`、`zip`、`unzip` と、モデルへのアクセスを設定済みのクライアントが必要です。
 
@@ -27,7 +27,7 @@ QGraphFlow のソースコードが手元にある場合はクローンを省略
 
 ```bash
 codex plugin marketplace add ./dist/runtime
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 ここでの `marketplace add` はローカルのインストール元を登録するだけで、公開マーケットプレイスへの掲載は不要です。[OpenAI 公式ドキュメント](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli)を参照してください。
@@ -36,12 +36,21 @@ codex plugin add qgraphflow@qgraphflow-local
 
 ### Claude Code
 
+手順 1 を省略して GitHub から直接インストールします：
+
 ```bash
-claude plugin marketplace add ./dist/runtime
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-新しいセッションを開始し、`/qgraphflow:q-flow` を入力します。
+または、手順 1 で作成した実行用パッケージを使います：
+
+```bash
+claude plugin marketplace add ./dist/runtime
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+新しいセッションを開始し、`/q-flow`（または完全名 `/qgraphflow:q-flow`）を入力します。
 
 ### Qoder CLI
 

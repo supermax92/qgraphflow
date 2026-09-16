@@ -4,7 +4,7 @@
 
 [Voltar ao README](readme/README.pt.md)
 
-O plugin ainda não foi publicado nos marketplaces públicos. Primeiro baixe o código-fonte do QGraphFlow, gere o pacote de execução e instale-o no seu cliente.
+O Claude Code pode instalar o plugin diretamente do GitHub (veja a seção Claude Code abaixo). Para os demais clientes, primeiro baixe o código-fonte do QGraphFlow, gere o pacote de execução e instale-o no seu cliente.
 
 Você precisa de Node.js 22, Git, npm, `tar`, `zip`, `unzip` e um cliente com acesso ao modelo configurado.
 
@@ -27,7 +27,7 @@ Execute os comandos abaixo na raiz do código-fonte do QGraphFlow, não no diret
 
 ```bash
 codex plugin marketplace add ./dist/runtime
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 Aqui, `marketplace add` apenas registra uma fonte de instalação local; não exige publicação em um marketplace público. Consulte a [documentação oficial da OpenAI](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli).
@@ -36,12 +36,21 @@ Inicie uma nova sessão, digite `$` e selecione `qgraphflow:q-flow` (use o nome 
 
 ### Claude Code
 
+Instale diretamente do GitHub, sem o passo 1:
+
 ```bash
-claude plugin marketplace add ./dist/runtime
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-Inicie uma nova sessão e digite `/qgraphflow:q-flow`.
+Ou a partir do pacote de execução gerado no passo 1:
+
+```bash
+claude plugin marketplace add ./dist/runtime
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+Inicie uma nova sessão e digite `/q-flow` (ou o nome completo `/qgraphflow:q-flow`).
 
 ### Qoder CLI
 

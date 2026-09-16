@@ -61,19 +61,28 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 
 ```bash
 codex plugin marketplace add .
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 新建会话，输入 `$`，选择 `qgraphflow:q-flow`。
 
 #### Claude Code
 
+直接从 GitHub 安装，无需下载 ZIP：
+
 ```bash
-claude plugin marketplace add .
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-新建会话，输入 `/qgraphflow:q-flow`。
+或在解压后的插件根目录执行：
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+新建会话，输入 `/q-flow`（或完整名称 `/qgraphflow:q-flow`）。
 
 #### Qoder CLI
 

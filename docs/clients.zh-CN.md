@@ -4,7 +4,7 @@
 
 [返回 README](readme/README.zh-CN.md)
 
-插件尚未上架公开市场。先下载 QGraphFlow 源码并构建运行包，再按客户端安装。
+Claude Code 可直接从 GitHub 安装本插件（见下方 Claude Code 小节）。其他客户端需先下载 QGraphFlow 源码并构建运行包，再按客户端安装。
 
 准备 Node.js 22、Git、npm、`tar`、`zip`、`unzip`，以及已配置好模型访问的客户端。
 
@@ -27,7 +27,7 @@ unzip -q dist/qgraphflow-0.0.3.zip -d dist/runtime
 
 ```bash
 codex plugin marketplace add ./dist/runtime
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 这里的 `marketplace add` 只注册本地安装源，不要求公开市场上架。参见 [OpenAI 官方文档](https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli)。
@@ -36,12 +36,21 @@ codex plugin add qgraphflow@qgraphflow-local
 
 ### Claude Code
 
+直接从 GitHub 安装，无需执行第 1 步：
+
 ```bash
-claude plugin marketplace add ./dist/runtime
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-新建会话，输入 `/qgraphflow:q-flow`。
+或使用第 1 步构建的运行包：
+
+```bash
+claude plugin marketplace add ./dist/runtime
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+新建会话，输入 `/q-flow`（或完整名称 `/qgraphflow:q-flow`）。
 
 ### Qoder CLI
 

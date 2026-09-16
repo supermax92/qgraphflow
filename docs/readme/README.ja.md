@@ -61,19 +61,28 @@ Node.js 22 と、プラグインに対応しモデルへのアクセスを設定
 
 ```bash
 codex plugin marketplace add .
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 新しいセッションを開始し、`$` を入力して `qgraphflow:q-flow` を選択します。
 
 #### Claude Code
 
+ZIP をダウンロードせず、GitHub から直接インストールします：
+
 ```bash
-claude plugin marketplace add .
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-新しいセッションを開始し、`/qgraphflow:q-flow` を入力します。
+または、展開したプラグインのルートで実行します：
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+新しいセッションを開始し、`/q-flow`（または完全名 `/qgraphflow:q-flow`）を入力します。
 
 #### Qoder CLI
 

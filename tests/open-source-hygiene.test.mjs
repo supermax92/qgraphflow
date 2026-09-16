@@ -16,15 +16,16 @@ test('seven installation guides preserve the Chinese commands and working links'
   const guides = ['docs/clients.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/clients.${locale}.md`)];
   const commands = markdown => [...markdown.matchAll(/```bash\n([\s\S]*?)```/g)].map(match => match[1]);
   const expected = commands(read('docs/clients.zh-CN.md'));
-  assert.equal(expected.length, 4);
+  assert.equal(expected.length, 5);
   assert.match(expected[0], /^git clone /);
   assert.match(expected[1], /codex plugin marketplace add \.\/dist\/runtime/);
-  assert.match(expected[2], /claude plugin marketplace add \.\/dist\/runtime/);
-  assert.match(expected[3], /qodercli plugins install \.\/dist\/runtime/);
+  assert.match(expected[2], /claude plugin marketplace add supermax92\/qgraphflow/);
+  assert.match(expected[3], /claude plugin marketplace add \.\/dist\/runtime/);
+  assert.match(expected[4], /qodercli plugins install \.\/dist\/runtime/);
   for (const file of guides) {
     const markdown = read(file);
     assert.deepEqual(commands(markdown), expected, file);
-    assert.equal((markdown.match(/^```/gm) ?? []).length, 8, `${file}: code fences`);
+    assert.equal((markdown.match(/^```/gm) ?? []).length, 10, `${file}: code fences`);
     for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder IDE', 'Cursor']) {
       assert.ok(markdown.includes(`### ${client}`), `${file}: ${client}`);
     }

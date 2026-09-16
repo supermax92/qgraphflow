@@ -61,19 +61,28 @@ Codex CLI must be installed and available in your terminal:
 
 ```bash
 codex plugin marketplace add .
-codex plugin add qgraphflow@qgraphflow-local
+codex plugin add qgraphflow@supermax92
 ```
 
 Start a new session, type `$`, and select `qgraphflow:q-flow`.
 
 #### Claude Code
 
+Install directly from GitHub without downloading the ZIP:
+
 ```bash
-claude plugin marketplace add .
-claude plugin install qgraphflow@qgraphflow-local --scope user
+claude plugin marketplace add supermax92/qgraphflow
+claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-Start a new session and enter `/qgraphflow:q-flow`.
+Or, from the extracted plugin root:
+
+```bash
+claude plugin marketplace add .
+claude plugin install qgraphflow@supermax92 --scope user
+```
+
+Start a new session and enter `/q-flow` (or the fully qualified `/qgraphflow:q-flow`).
 
 #### Qoder CLI
 

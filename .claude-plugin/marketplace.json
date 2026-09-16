@@ -1,10 +1,10 @@
 {
-  "name": "qgraphflow-local",
+  "name": "supermax92",
   "owner": {
     "name": "Max Zheng"
   },
   "metadata": {
-    "description": "Local QGraphFlow plugin for evidence-grounded interactive diagrams."
+    "description": "Plugins by Max Zheng, including QGraphFlow for evidence-grounded interactive diagrams."
   },
   "plugins": [
     {

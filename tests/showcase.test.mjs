@@ -116,8 +116,9 @@ test('each README links to its inline installation guide, references and localiz
       assert.ok(installation.includes(`#### ${client}\n`), `${file}: ${client}`);
     }
     for (const command of [
-      'codex plugin marketplace add .', 'codex plugin add qgraphflow@qgraphflow-local',
-      'claude plugin marketplace add .', 'claude plugin install qgraphflow@qgraphflow-local --scope user',
+      'codex plugin marketplace add .', 'codex plugin add qgraphflow@supermax92',
+      'claude plugin marketplace add supermax92/qgraphflow',
+      'claude plugin marketplace add .', 'claude plugin install qgraphflow@supermax92 --scope user',
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
