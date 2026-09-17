@@ -217,7 +217,7 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 São necessários Node.js 22, npm, tar, zip e unzip. Ao relatar problemas, inclua um grafo mínimo sem informações sensíveis, versões do cliente e navegador e passos de reprodução.
 
-[Fontes de evidência](../references/pt/evidence-sources.md) · [Formato dos grafos](../references/pt/graph-schema.md) · [Consulta guiada](../references/pt/guided-intake.md) · [Desenvolvimento do Viewer](../references/pt/viewer-development.md) · [Composição de diagramas](../references/pt/visual-contract.md)
+Documentação de referência (em inglês): [Fontes de evidência](../../skills/q-flow/references/evidence-sources.md) · [Formato dos grafos](../../skills/q-flow/references/graph-schema.md) · [Consulta guiada](../../skills/q-flow/references/guided-intake.md) · [Desenvolvimento do Viewer](../../skills/q-flow/references/viewer-development.md) · [Composição de diagramas](../../skills/q-flow/references/visual-contract.md)
 
 ## Licença e atribuição
 

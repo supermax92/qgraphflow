@@ -40,5 +40,5 @@ export default {
   groupKinds: ["host", "network", "cluster", "namespace"],
   edgeKinds: ["deploy", "network", "depends"],
   render: (node, ...args) => genericCard(node, ...args, deploymentOutline, contentInset(node)), outline: deploymentOutline, anchor,
-  cardLayout: true,
+  cardLayout: true, contentInset,
 };

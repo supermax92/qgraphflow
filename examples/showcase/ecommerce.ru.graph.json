@@ -15,12 +15,12 @@
           "label": "Синхронная транзакция",
           "kind": "runtime",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 100
           },
           "size": {
-            "width": 1810,
-            "height": 600
+            "width": 902,
+            "height": 3440
           }
         },
         {
@@ -28,12 +28,12 @@
           "label": "Асинхронная доставка",
           "kind": "ownership",
           "position": {
-            "x": 0,
-            "y": 785
+            "x": 52,
+            "y": 3850
           },
           "size": {
-            "width": 1820,
-            "height": 310
+            "width": 882,
+            "height": 1217
           }
         }
       ],
@@ -45,17 +45,18 @@
           "module": "Каналы",
           "kind": "external",
           "position": {
-            "x": 40,
-            "y": 85
+            "x": 422,
+            "y": 200
           },
           "size": {
-            "width": 300,
-            "height": 225
+            "width": 480,
+            "height": 141
           },
           "facts": [
             "Единая точка оформления покупки",
             "Без прямых вызовов доменных сервисов"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "gateway",
@@ -64,17 +65,18 @@
           "module": "Каналы",
           "kind": "security",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 422,
+            "y": 651
           },
           "size": {
-            "width": 300,
-            "height": 197
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Проверить пользователя",
             "Передать checkoutToken"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "checkout",
@@ -83,12 +85,12 @@
           "module": "Оформление",
           "kind": "business",
           "position": {
-            "x": 1000,
-            "y": 85
+            "x": 422,
+            "y": 1124
           },
           "size": {
-            "width": 300,
-            "height": 173
+            "width": 480,
+            "height": 115
           },
           "facts": [
             "Объединить решения по цене, риску и запасам",
@@ -97,7 +99,8 @@
           "tags": [
             "core",
             "Координация транзакции"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "pricing",
@@ -106,17 +109,18 @@
           "module": "Цены",
           "kind": "service",
           "position": {
-            "x": 1480,
-            "y": 85
+            "x": 422,
+            "y": 1549
           },
           "size": {
-            "width": 280,
-            "height": 171
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Цена сервера является окончательной",
             "Вернуть снимок цены"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "risk",
@@ -125,16 +129,17 @@
           "module": "Риски",
           "kind": "failure",
           "position": {
-            "x": 1480,
-            "y": 375
+            "x": 422,
+            "y": 1998
           },
           "size": {
-            "width": 280,
-            "height": 195
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Результат: допуск, отказ или ручная проверка"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "inventory",
@@ -143,17 +148,18 @@
           "module": "Запасы",
           "kind": "data",
           "position": {
-            "x": 1000,
-            "y": 375
+            "x": 450.5,
+            "y": 2471
           },
           "size": {
-            "width": 300,
-            "height": 173
+            "width": 423,
+            "height": 115
           },
           "facts": [
             "У резерва есть срок действия",
             "Освободить при сбое оплаты"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "payment",
@@ -162,17 +168,18 @@
           "module": "Оплата",
           "kind": "service",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 422,
+            "y": 2920
           },
           "size": {
-            "width": 300,
-            "height": 197
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Платёжные колбэки должны быть идемпотентны",
             "Авторизация не означает завершение доставки"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "order",
@@ -181,17 +188,18 @@
           "module": "Заказы",
           "kind": "business",
           "position": {
-            "x": 40,
-            "y": 375
+            "x": 422,
+            "y": 3369
           },
           "size": {
-            "width": 300,
-            "height": 197
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Состояние заказа меняют доменные правила",
             "Заказ и Outbox в одной транзакции"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "event-bus",
@@ -200,16 +208,17 @@
           "module": "Заказы",
           "kind": "framework",
           "position": {
-            "x": 40,
-            "y": 850
+            "x": 422,
+            "y": 3950
           },
           "size": {
-            "width": 300,
-            "height": 197
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Потребители удаляют дубли по ID события"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "fulfillment",
@@ -218,17 +227,18 @@
           "module": "Доставка",
           "kind": "service",
           "position": {
-            "x": 760,
-            "y": 850
+            "x": 422,
+            "y": 4423
           },
           "size": {
-            "width": 300,
-            "height": 221
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Асинхронно обработать оплаченные заказы",
             "Записать статусы посылки и доставки"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "after-sales",
@@ -237,16 +247,17 @@
           "module": "Доставка",
           "kind": "service",
           "position": {
-            "x": 1520,
-            "y": 850
+            "x": 422,
+            "y": 4896
           },
           "size": {
-            "width": 290,
-            "height": 173
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Возврат денег или товара зависит от этапа доставки"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         }
       ],
       "edges": [
@@ -256,7 +267,23 @@
           "target": "gateway",
           "label": "Оформить\nпокупку",
           "kind": "request",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 353
+              },
+              {
+                "x": 662,
+                "y": 639
+              }
+            ],
+            "labelAt": {
+              "x": 568,
+              "y": 496
+            }
+          }
         },
         {
           "id": "dispatch",
@@ -266,9 +293,19 @@
           "kind": "call",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 802
+              },
+              {
+                "x": 662,
+                "y": 1112
+              }
+            ],
             "labelAt": {
-              "x": 945,
-              "y": 323.5
+              "x": 528,
+              "y": 957
             }
           }
         },
@@ -280,9 +317,19 @@
           "kind": "call",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 1251
+              },
+              {
+                "x": 662,
+                "y": 1537
+              }
+            ],
             "labelAt": {
-              "x": 1345,
-              "y": 311.5
+              "x": 544,
+              "y": 1394
             }
           }
         },
@@ -292,7 +339,23 @@
           "target": "risk",
           "label": "Снимок\nцены",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 1700
+              },
+              {
+                "x": 662,
+                "y": 1986
+              }
+            ],
+            "labelAt": {
+              "x": 584,
+              "y": 1843
+            }
+          }
         },
         {
           "id": "reserve",
@@ -300,7 +363,23 @@
           "target": "inventory",
           "label": "Резерв\nпосле\nдопуска",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 2149
+              },
+              {
+                "x": 662,
+                "y": 2459
+              }
+            ],
+            "labelAt": {
+              "x": 576,
+              "y": 2304
+            }
+          }
         },
         {
           "id": "authorize",
@@ -308,7 +387,23 @@
           "target": "payment",
           "label": "Токен\nзапаса +\nсумма",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 2598
+              },
+              {
+                "x": 662,
+                "y": 2908
+              }
+            ],
+            "labelAt": {
+              "x": 574.5,
+              "y": 2753
+            }
+          }
         },
         {
           "id": "create-order",
@@ -318,9 +413,19 @@
           "kind": "success",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 3071
+              },
+              {
+                "x": 662,
+                "y": 3357
+              }
+            ],
             "labelAt": {
-              "x": 450,
-              "y": 333.5
+              "x": 544,
+              "y": 3214
             }
           }
         },
@@ -334,21 +439,17 @@
           "route": {
             "via": [
               {
-                "x": 190,
-                "y": 680
+                "x": 662,
+                "y": 3520
               },
               {
-                "x": 700,
-                "y": 680
-              },
-              {
-                "x": 700,
-                "y": 880
+                "x": 662,
+                "y": 3938
               }
             ],
             "labelAt": {
-              "x": 450,
-              "y": 660
+              "x": 587,
+              "y": 3695
             }
           }
         },
@@ -358,7 +459,23 @@
           "target": "fulfillment",
           "label": "Создать\nзадание\nдоставки",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 4101
+              },
+              {
+                "x": 662,
+                "y": 4411
+              }
+            ],
+            "labelAt": {
+              "x": 568,
+              "y": 4256
+            }
+          }
         },
         {
           "id": "service",
@@ -366,9 +483,29 @@
           "target": "after-sales",
           "label": "Посылка и\nстатус\nполучения",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 662,
+                "y": 4574
+              },
+              {
+                "x": 662,
+                "y": 4884
+              }
+            ],
+            "labelAt": {
+              "x": 560,
+              "y": 4729
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -387,12 +524,12 @@
           "module": "Оформление",
           "kind": "start",
           "position": {
-            "x": 72.5,
-            "y": 70
+            "x": 335,
+            "y": 100
           },
           "size": {
-            "width": 350,
-            "height": 170
+            "width": 419,
+            "height": 145
           },
           "facts": [
             "Покупатель подтверждает корзину, адрес и купоны.",
@@ -406,12 +543,12 @@
           "module": "Оформление",
           "kind": "process",
           "position": {
-            "x": 675,
-            "y": 70
+            "x": 304.5,
+            "y": 531
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 480,
+            "height": 192
           },
           "facts": [
             "Отклонить неверные SKU и адреса.",
@@ -425,12 +562,12 @@
           "module": "Запасы",
           "kind": "decision",
           "position": {
-            "x": 1255,
-            "y": 40
+            "x": 333,
+            "y": 1009
           },
           "size": {
-            "width": 340,
-            "height": 290
+            "width": 423,
+            "height": 284
           },
           "facts": [
             "Проверить доступное количество и лимит резерва.",
@@ -444,12 +581,12 @@
           "module": "Цены",
           "kind": "process",
           "position": {
-            "x": 1877.5,
-            "y": 70
+            "x": 635.5,
+            "y": 1602.5
           },
           "size": {
-            "width": 310,
-            "height": 130
+            "width": 465,
+            "height": 145
           },
           "facts": [
             "Пересчитать, не доверять сумме клиента.",
@@ -463,12 +600,12 @@
           "module": "Запасы",
           "kind": "end",
           "position": {
-            "x": 1275,
-            "y": 430
+            "x": 87,
+            "y": 1579
           },
           "size": {
-            "width": 300,
-            "height": 190
+            "width": 396,
+            "height": 192
           },
           "facts": [
             "Вернуть недоступные SKU клиенту.",
@@ -482,12 +619,12 @@
           "module": "Риски",
           "kind": "decision",
           "position": {
-            "x": 1837.5,
-            "y": 400
+            "x": 628,
+            "y": 2081
           },
           "size": {
-            "width": 390,
-            "height": 290
+            "width": 480,
+            "height": 284
           },
           "facts": [
             "Низкий риск: переход к резерву.",
@@ -501,12 +638,12 @@
           "module": "Риски",
           "kind": "process",
           "position": {
-            "x": 2547.5,
-            "y": 430
+            "x": 340,
+            "y": 2651
           },
           "size": {
-            "width": 290,
-            "height": 150
+            "width": 480,
+            "height": 192
           },
           "facts": [
             "После одобрения вернуться в основной поток.",
@@ -520,12 +657,12 @@
           "module": "Риски",
           "kind": "end",
           "position": {
-            "x": 2512.5,
-            "y": 820
+            "x": 932,
+            "y": 3129
           },
           "size": {
-            "width": 360,
-            "height": 170
+            "width": 419,
+            "height": 145
           },
           "facts": [
             "Не начинать оплату.",
@@ -539,12 +676,12 @@
           "module": "Запасы",
           "kind": "subprocess",
           "position": {
-            "x": 1887.5,
-            "y": 800
+            "x": 340,
+            "y": 3144
           },
           "size": {
-            "width": 350,
-            "height": 140
+            "width": 480,
+            "height": 100
           },
           "facts": [
             "TTL предотвращает бессрочную блокировку запасов.",
@@ -558,12 +695,12 @@
           "module": "Оплата",
           "kind": "process",
           "position": {
-            "x": 1167.5,
-            "y": 805
+            "x": 340,
+            "y": 3560
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 480,
+            "height": 145
           },
           "facts": [
             "Только серверный снимок цены.",
@@ -577,12 +714,12 @@
           "module": "Оплата",
           "kind": "decision",
           "position": {
-            "x": 330,
-            "y": 775
+            "x": 340,
+            "y": 4015
           },
           "size": {
-            "width": 540,
-            "height": 290
+            "width": 480,
+            "height": 284
           },
           "facts": [
             "Записать заказ только после успеха.",
@@ -596,12 +733,12 @@
           "module": "Запасы",
           "kind": "subprocess",
           "position": {
-            "x": 1287.5,
-            "y": 1220
+            "x": 71,
+            "y": 4585
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 442,
+            "height": 145
           },
           "facts": [
             "Компенсация должна быть идемпотентной.",
@@ -615,12 +752,12 @@
           "module": "Оплата",
           "kind": "end",
           "position": {
-            "x": 1877.5,
-            "y": 1225
+            "x": 53,
+            "y": 5016
           },
           "size": {
-            "width": 310,
-            "height": 190
+            "width": 478,
+            "height": 203
           },
           "facts": [
             "Сохранить код причины платёжного канала.",
@@ -634,12 +771,12 @@
           "module": "Заказы",
           "kind": "subprocess",
           "position": {
-            "x": 447.5,
-            "y": 1220
+            "x": 643,
+            "y": 4585
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 480,
+            "height": 145
           },
           "facts": [
             "Атомарно сохранить заказ и событие.",
@@ -656,12 +793,12 @@
           "module": "Заказы",
           "kind": "end",
           "position": {
-            "x": 417.5,
-            "y": 1490
+            "x": 643,
+            "y": 5016
           },
           "size": {
-            "width": 350,
-            "height": 210
+            "width": 480,
+            "height": 192
           },
           "facts": [
             "Здесь заканчивается синхронный путь.",
@@ -681,7 +818,23 @@
             "Оформить покупку → Проверить корзину.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 544.5,
+                "y": 257
+              },
+              {
+                "x": 544.5,
+                "y": 519
+              }
+            ],
+            "labelAt": {
+              "x": 482.5,
+              "y": 388
+            }
+          }
         },
         {
           "id": "check",
@@ -696,9 +849,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 544.5,
+                "y": 735
+              },
+              {
+                "x": 544.5,
+                "y": 997
+              }
+            ],
             "labelAt": {
-              "x": 1102.5,
-              "y": 335
+              "x": 442.5,
+              "y": 866
             }
           }
         },
@@ -713,7 +876,27 @@
             "Хватает запасов? → Зафиксировать цену.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 768,
+                "y": 1151
+              },
+              {
+                "x": 868,
+                "y": 1151
+              },
+              {
+                "x": 868,
+                "y": 1590.5
+              }
+            ],
+            "labelAt": {
+              "x": 915,
+              "y": 1436
+            }
+          }
         },
         {
           "id": "stock-no",
@@ -726,7 +909,27 @@
             "Хватает запасов? → Вернуть дефицит.",
             "Путь сбоя или компенсации."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 321,
+                "y": 1151
+              },
+              {
+                "x": 285,
+                "y": 1151
+              },
+              {
+                "x": 285,
+                "y": 1567
+              }
+            ],
+            "labelAt": {
+              "x": 231,
+              "y": 1436
+            }
+          }
         },
         {
           "id": "price-ready",
@@ -739,7 +942,23 @@
             "Зафиксировать цену → Риск допустим?.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 868,
+                "y": 1759.5
+              },
+              {
+                "x": 868,
+                "y": 2069
+              }
+            ],
+            "labelAt": {
+              "x": 790,
+              "y": 1926
+            }
+          }
         },
         {
           "id": "risk-yes",
@@ -752,7 +971,35 @@
             "Риск допустим? → Зарезервировать запас.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1120,
+                "y": 2223
+              },
+              {
+                "x": 1190.5,
+                "y": 2223
+              },
+              {
+                "x": 1190.5,
+                "y": 3049
+              },
+              {
+                "x": 604,
+                "y": 3049
+              },
+              {
+                "x": 604,
+                "y": 3132
+              }
+            ],
+            "labelAt": {
+              "x": 1269.5,
+              "y": 2747
+            }
+          }
         },
         {
           "id": "risk-review",
@@ -767,9 +1014,23 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 616,
+                "y": 2223
+              },
+              {
+                "x": 580,
+                "y": 2223
+              },
+              {
+                "x": 580,
+                "y": 2639
+              }
+            ],
             "labelAt": {
-              "x": 2385,
-              "y": 365
+              "x": 510,
+              "y": 2508
             }
           }
         },
@@ -788,21 +1049,17 @@
           "route": {
             "via": [
               {
-                "x": 2550,
-                "y": 730
+                "x": 556,
+                "y": 2855
               },
               {
-                "x": 2355,
-                "y": 730
-              },
-              {
-                "x": 2355,
-                "y": 870
+                "x": 556,
+                "y": 3132
               }
             ],
             "labelAt": {
-              "x": 2475,
-              "y": 715
+              "x": 462,
+              "y": 2986
             }
           }
         },
@@ -817,7 +1074,31 @@
             "Ручная проверка → Отклонить сделку.",
             "Путь сбоя или компенсации."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 604,
+                "y": 2855
+              },
+              {
+                "x": 604,
+                "y": 2891
+              },
+              {
+                "x": 1141.5,
+                "y": 2891
+              },
+              {
+                "x": 1141.5,
+                "y": 3117
+              }
+            ],
+            "labelAt": {
+              "x": 1071.5,
+              "y": 2986
+            }
+          }
         },
         {
           "id": "request-pay",
@@ -830,7 +1111,23 @@
             "Зарезервировать запас → Запросить авторизацию.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 3256
+              },
+              {
+                "x": 580,
+                "y": 3548
+              }
+            ],
+            "labelAt": {
+              "x": 475.5,
+              "y": 3417
+            }
+          }
         },
         {
           "id": "payment-result",
@@ -845,9 +1142,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 3717
+              },
+              {
+                "x": 580,
+                "y": 4003
+              }
+            ],
             "labelAt": {
-              "x": 975,
-              "y": 710
+              "x": 462,
+              "y": 3860
             }
           }
         },
@@ -862,7 +1169,27 @@
             "Авторизовано? → Записать заказ + Outbox.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 832,
+                "y": 4157
+              },
+              {
+                "x": 883,
+                "y": 4157
+              },
+              {
+                "x": 883,
+                "y": 4573
+              }
+            ],
+            "labelAt": {
+              "x": 954,
+              "y": 4442
+            }
+          }
         },
         {
           "id": "pay-no",
@@ -875,7 +1202,27 @@
             "Авторизовано? → Освободить резерв.",
             "Путь сбоя или компенсации."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 328,
+                "y": 4157
+              },
+              {
+                "x": 292,
+                "y": 4157
+              },
+              {
+                "x": 292,
+                "y": 4573
+              }
+            ],
+            "labelAt": {
+              "x": 230,
+              "y": 4442
+            }
+          }
         },
         {
           "id": "release-complete",
@@ -890,9 +1237,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 292,
+                "y": 4742
+              },
+              {
+                "x": 292,
+                "y": 5004
+              }
+            ],
             "labelAt": {
-              "x": 1717.5,
-              "y": 1175
+              "x": 150,
+              "y": 4873
             }
           }
         },
@@ -907,9 +1264,29 @@
             "Записать заказ + Outbox → Вернуть ID заказа.",
             "Связь основного потока."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 883,
+                "y": 4742
+              },
+              {
+                "x": 883,
+                "y": 5004
+              }
+            ],
+            "labelAt": {
+              "x": 1018,
+              "y": 4873
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -927,12 +1304,12 @@
           "module": "Каналы",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 298,
+            "y": 48
           },
           "size": {
-            "width": 220,
-            "height": 960
+            "width": 258,
+            "height": 1672
           },
           "facts": [
             "Отправить корзину и получить ID заказа."
@@ -945,12 +1322,12 @@
           "module": "Оформление",
           "kind": "service",
           "position": {
-            "x": 390,
-            "y": 40
+            "x": 925,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 426,
+            "height": 1672
           },
           "facts": [
             "Координировать цены, запасы, риски, оплату и заказы."
@@ -966,12 +1343,12 @@
           "module": "Цены",
           "kind": "participant",
           "position": {
-            "x": 780,
-            "y": 40
+            "x": 4566.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 253,
+            "height": 1672
           },
           "facts": [
             "Создать неизменяемый снимок цены."
@@ -984,12 +1361,12 @@
           "module": "Запасы",
           "kind": "participant",
           "position": {
-            "x": 1170,
-            "y": 40
+            "x": 2420.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 279,
+            "height": 1672
           },
           "facts": [
             "Зарезервировать SKU и вернуть токен."
@@ -1002,12 +1379,12 @@
           "module": "Риски",
           "kind": "participant",
           "position": {
-            "x": 1560,
-            "y": 40
+            "x": 5283,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 242,
+            "height": 1672
           },
           "facts": [
             "Вернуть PASS, REVIEW или REJECT."
@@ -1020,12 +1397,12 @@
           "module": "Оплата",
           "kind": "external",
           "position": {
-            "x": 1950,
-            "y": 40
+            "x": 3805.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 353,
+            "height": 1672
           },
           "facts": [
             "Авторизовать сумму снимка."
@@ -1038,12 +1415,12 @@
           "module": "Заказы",
           "kind": "database",
           "position": {
-            "x": 2340,
-            "y": 40
+            "x": 3157.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 227,
+            "height": 1672
           },
           "facts": [
             "Атомарно сохранить заказ и Outbox."
@@ -1056,12 +1433,12 @@
           "module": "Доставка",
           "kind": "participant",
           "position": {
-            "x": 2730,
-            "y": 40
+            "x": 1630.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 437,
+            "height": 1672
           },
           "facts": [
             "Асинхронно обработать OrderPaid."
@@ -1074,13 +1451,27 @@
           "label": "Результат запасов",
           "kind": "alt",
           "position": {
-            "x": 350,
-            "y": 375
+            "x": 32,
+            "y": 508
           },
           "size": {
-            "width": 1100,
-            "height": 117
-          }
+            "width": 6268,
+            "height": 508
+          },
+          "operands": [
+            {
+              "guard": "reservationToken",
+              "edgeIds": [
+                "s5"
+              ]
+            },
+            {
+              "guard": "OUT_OF_STOCK",
+              "edgeIds": [
+                "s6"
+              ]
+            }
+          ]
         }
       ],
       "edges": [
@@ -1096,7 +1487,10 @@
             "Отправка: Отправить команду покупки",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 262
+          }
         },
         {
           "id": "s2",
@@ -1110,7 +1504,10 @@
             "Отправка: Пересчитать цены и скидки",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 334
+          }
         },
         {
           "id": "s3",
@@ -1124,7 +1521,10 @@
             "Возврат: PriceSnapshot",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 406
+          }
         },
         {
           "id": "s4",
@@ -1138,7 +1538,10 @@
             "Отправка: Резерв количества SKU",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 478
+          }
         },
         {
           "id": "s5",
@@ -1152,7 +1555,10 @@
             "Возврат: reservationToken",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 670
+          }
         },
         {
           "id": "s6",
@@ -1166,7 +1572,10 @@
             "Возврат: OUT_OF_STOCK",
             "Сообщение обозначает ветку нехватки запасов."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 866
+          }
         },
         {
           "id": "s7",
@@ -1180,7 +1589,10 @@
             "Отправка: Проверить аккаунт, устройство, сумму",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1122
+          }
         },
         {
           "id": "s8",
@@ -1194,7 +1606,10 @@
             "Возврат: PASS",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1194
+          }
         },
         {
           "id": "s9",
@@ -1208,7 +1623,10 @@
             "Отправка: Авторизовать сумму",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1266
+          }
         },
         {
           "id": "s10",
@@ -1222,7 +1640,10 @@
             "Возврат: paymentConfirmed",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1338
+          }
         },
         {
           "id": "s11",
@@ -1236,7 +1657,10 @@
             "Отправка: Сохранить заказ + OrderPaid",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1410
+          }
         },
         {
           "id": "s12",
@@ -1250,7 +1674,10 @@
             "Возврат: orderId",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1482
+          }
         },
         {
           "id": "s13",
@@ -1264,7 +1691,10 @@
             "Отправка: Асинхронно передать OrderPaid",
             "Асинхронное сообщение не блокирует покупку."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1554
+          }
         },
         {
           "id": "s14",
@@ -1278,9 +1708,16 @@
             "Возврат: Вернуть ID заказа",
             "Читать по номерам."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1626
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "sequence-0"
+      }
     },
     {
       "meta": {
@@ -1298,12 +1735,12 @@
           "module": "Каналы",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 70
+            "x": 32,
+            "y": 134
           },
           "size": {
-            "width": 360,
-            "height": 230
+            "width": 300,
+            "height": 180
           },
           "fields": [
             {
@@ -1331,12 +1768,12 @@
           "module": "Оформление",
           "kind": "entity",
           "position": {
-            "x": 560,
-            "y": 70
+            "x": 799.5,
+            "y": 110
           },
           "size": {
-            "width": 390,
-            "height": 230
+            "width": 262,
+            "height": 180
           },
           "fields": [
             {
@@ -1364,12 +1801,12 @@
           "module": "Оформление",
           "kind": "entity",
           "position": {
-            "x": 1120,
-            "y": 70
+            "x": 1513,
+            "y": 100
           },
           "size": {
-            "width": 420,
-            "height": 260
+            "width": 272,
+            "height": 200
           },
           "fields": [
             {
@@ -1402,12 +1839,12 @@
           "module": "Заказы",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 744,
+            "y": 436
           },
           "size": {
-            "width": 430,
-            "height": 290
+            "width": 373,
+            "height": 232
           },
           "fields": [
             {
@@ -1449,12 +1886,12 @@
           "module": "Заказы",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 500
+            "x": 1519.5,
+            "y": 412
           },
           "size": {
-            "width": 450,
-            "height": 290
+            "width": 323,
+            "height": 232
           },
           "fields": [
             {
@@ -1492,12 +1929,12 @@
           "module": "Оплата",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 500
+            "x": 1513,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 336,
+            "height": 200
           },
           "fields": [
             {
@@ -1531,12 +1968,12 @@
           "module": "Запасы",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 980
+            "x": 2293,
+            "y": 412
           },
           "size": {
-            "width": 480,
-            "height": 290
+            "width": 301,
+            "height": 232
           },
           "fields": [
             {
@@ -1574,12 +2011,12 @@
           "module": "Доставка",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 980
+            "x": 2293,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 304,
+            "height": 200
           },
           "fields": [
             {
@@ -1617,7 +2054,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..1",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 200
+              },
+              {
+                "x": 771.5,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 538,
+              "y": 160
+            }
+          }
         },
         {
           "id": "cart-items",
@@ -1627,7 +2080,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1089.5,
+                "y": 200
+              },
+              {
+                "x": 1485,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 1315,
+              "y": 240
+            }
+          }
         },
         {
           "id": "customer-orders",
@@ -1637,7 +2106,31 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 552
+              },
+              {
+                "x": 716,
+                "y": 552
+              }
+            ],
+            "labelAt": {
+              "x": 538,
+              "y": 604
+            }
+          }
         },
         {
           "id": "order-items",
@@ -1649,9 +2142,19 @@
           "targetCardinality": "1..*",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 1145,
+                "y": 528
+              },
+              {
+                "x": 1491.5,
+                "y": 528
+              }
+            ],
             "labelAt": {
-              "x": 540,
-              "y": 465
+              "x": 1315,
+              "y": 568
             }
           }
         },
@@ -1667,25 +2170,25 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 850
+                "x": 1145,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 1165,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 400
+                "x": 1165,
+                "y": 856
               },
               {
-                "x": 1445,
-                "y": 400
+                "x": 1485,
+                "y": 856
               }
             ],
             "labelAt": {
-              "x": 800,
-              "y": 375
+              "x": 1315,
+              "y": 908
             }
           }
         },
@@ -1697,7 +2200,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1870.5,
+                "y": 528
+              },
+              {
+                "x": 2265,
+                "y": 528
+              }
+            ],
+            "labelAt": {
+              "x": 2071,
+              "y": 488
+            }
+          }
         },
         {
           "id": "order-shipments",
@@ -1707,9 +2226,29 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1877,
+                "y": 856
+              },
+              {
+                "x": 2265,
+                "y": 856
+              }
+            ],
+            "labelAt": {
+              "x": 2071,
+              "y": 920
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -1726,12 +2265,12 @@
           "label": "Публичный периметр",
           "kind": "network",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 258.5
           },
           "size": {
-            "width": 1510,
-            "height": 250
+            "width": 2639,
+            "height": 281.5
           }
         },
         {
@@ -1739,12 +2278,12 @@
           "label": "Основной торговый регион · Kubernetes",
           "kind": "cluster",
           "position": {
-            "x": 10,
-            "y": 340
+            "x": 3171,
+            "y": 201
           },
           "size": {
-            "width": 1510,
-            "height": 300
+            "width": 2708,
+            "height": 366.5
           }
         },
         {
@@ -1752,12 +2291,12 @@
           "label": "Данные и внешние сервисы",
           "kind": "host",
           "position": {
-            "x": 10,
-            "y": 780
+            "x": 6395,
+            "y": 100
           },
           "size": {
-            "width": 1830,
-            "height": 370
+            "width": 2631,
+            "height": 549
           }
         }
       ],
@@ -1769,13 +2308,14 @@
           "module": "Каналы",
           "kind": "device",
           "position": {
-            "x": 40,
-            "y": 75
+            "x": 370,
+            "y": 358.5
           },
           "size": {
-            "width": 300,
-            "height": 173
-          }
+            "width": 480,
+            "height": 139
+          },
+          "groupId": "edge"
         },
         {
           "id": "cdn",
@@ -1784,13 +2324,14 @@
           "module": "Каналы",
           "kind": "node",
           "position": {
-            "x": 610,
-            "y": 75
+            "x": 1182,
+            "y": 370.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "gateway",
@@ -1799,13 +2340,14 @@
           "module": "Каналы",
           "kind": "container",
           "position": {
-            "x": 1180,
-            "y": 75
+            "x": 2170,
+            "y": 370.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 469,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "commerce",
@@ -1814,16 +2356,17 @@
           "module": "Оформление",
           "kind": "service",
           "position": {
-            "x": 40,
-            "y": 410
+            "x": 3719,
+            "y": 370.5
           },
           "size": {
-            "width": 360,
-            "height": 170
+            "width": 345,
+            "height": 115
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "region"
         },
         {
           "id": "control",
@@ -1832,13 +2375,14 @@
           "module": "Запасы",
           "kind": "service",
           "position": {
-            "x": 580,
-            "y": 410
+            "x": 4492,
+            "y": 346.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 479,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "fulfillment",
@@ -1847,13 +2391,14 @@
           "module": "Доставка",
           "kind": "service",
           "position": {
-            "x": 1120,
-            "y": 410
+            "x": 5367,
+            "y": 346.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 480,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "database",
@@ -1862,13 +2407,14 @@
           "module": "Заказы",
           "kind": "database",
           "position": {
-            "x": 40,
-            "y": 850
+            "x": 6850.5,
+            "y": 225
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 409,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "event-bus",
@@ -1877,13 +2423,14 @@
           "module": "Заказы",
           "kind": "container",
           "position": {
-            "x": 500,
-            "y": 850
+            "x": 7622,
+            "y": 213
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 480,
+            "height": 139
+          },
+          "groupId": "managed"
         },
         {
           "id": "payment",
@@ -1892,13 +2439,14 @@
           "module": "Оплата",
           "kind": "external",
           "position": {
-            "x": 960,
-            "y": 850
+            "x": 6815,
+            "y": 452
           },
           "size": {
-            "width": 330,
-            "height": 199
-          }
+            "width": 480,
+            "height": 165
+          },
+          "groupId": "managed"
         },
         {
           "id": "wms",
@@ -1907,13 +2455,14 @@
           "module": "Доставка",
           "kind": "external",
           "position": {
-            "x": 1420,
-            "y": 850
+            "x": 8514,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 199
-          }
+            "width": 480,
+            "height": 165
+          },
+          "groupId": "managed"
         }
       ],
       "edges": [
@@ -1923,7 +2472,23 @@
           "target": "cdn",
           "label": "HTTPS",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 862,
+                "y": 428
+              },
+              {
+                "x": 1170,
+                "y": 428
+              }
+            ],
+            "labelAt": {
+              "x": 1016,
+              "y": 468
+            }
+          }
         },
         {
           "id": "edge-2",
@@ -1933,9 +2498,19 @@
           "kind": "network",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 1674,
+                "y": 428
+              },
+              {
+                "x": 2158,
+                "y": 428
+              }
+            ],
             "labelAt": {
-              "x": 1045,
-              "y": 310
+              "x": 1916,
+              "y": 480
             }
           }
         },
@@ -1949,21 +2524,17 @@
           "route": {
             "via": [
               {
-                "x": 1900,
-                "y": 150
+                "x": 2651,
+                "y": 428
               },
               {
-                "x": 1900,
-                "y": 680
-              },
-              {
-                "x": 350,
-                "y": 680
+                "x": 3707,
+                "y": 428
               }
             ],
             "labelAt": {
-              "x": 1030,
-              "y": 710
+              "x": 2921,
+              "y": 480
             }
           }
         },
@@ -1975,9 +2546,19 @@
           "kind": "depends",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 4076,
+                "y": 404
+              },
+              {
+                "x": 4480,
+                "y": 404
+              }
+            ],
             "labelAt": {
-              "x": 690,
-              "y": 695
+              "x": 4278,
+              "y": 340
             }
           }
         },
@@ -1987,7 +2568,23 @@
           "target": "fulfillment",
           "label": "Условия\nдоставки",
           "kind": "depends",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4983,
+                "y": 404
+              },
+              {
+                "x": 5355,
+                "y": 404
+              }
+            ],
+            "labelAt": {
+              "x": 5169,
+              "y": 352
+            }
+          }
         },
         {
           "id": "edge-6",
@@ -1999,25 +2596,33 @@
           "route": {
             "via": [
               {
-                "x": 220,
-                "y": 725
+                "x": 4076,
+                "y": 428
               },
               {
-                "x": 680,
-                "y": 725
+                "x": 4136,
+                "y": 428
               },
               {
-                "x": 680,
-                "y": 820
+                "x": 4136,
+                "y": 509.5
               },
               {
-                "x": 205,
-                "y": 820
+                "x": 6303,
+                "y": 509.5
+              },
+              {
+                "x": 6303,
+                "y": 282.5
+              },
+              {
+                "x": 6838.5,
+                "y": 282.5
               }
             ],
             "labelAt": {
-              "x": 300,
-              "y": 714
+              "x": 6137,
+              "y": 457.5
             }
           }
         },
@@ -2027,7 +2632,23 @@
           "target": "event-bus",
           "label": "Outbox",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 7271.5,
+                "y": 282.5
+              },
+              {
+                "x": 7610,
+                "y": 282.5
+              }
+            ],
+            "labelAt": {
+              "x": 7458.5,
+              "y": 322.5
+            }
+          }
         },
         {
           "id": "edge-9",
@@ -2039,21 +2660,25 @@
           "route": {
             "via": [
               {
-                "x": 0,
-                "y": 495
+                "x": 4076,
+                "y": 452
               },
               {
-                "x": 0,
-                "y": 700
+                "x": 4112,
+                "y": 452
               },
               {
-                "x": 1125,
-                "y": 700
+                "x": 4112,
+                "y": 534.5
+              },
+              {
+                "x": 6803,
+                "y": 534.5
               }
             ],
             "labelAt": {
-              "x": 520,
-              "y": 675
+              "x": 6137,
+              "y": 574.5
             }
           }
         },
@@ -2067,21 +2692,25 @@
           "route": {
             "via": [
               {
-                "x": 665,
-                "y": 1100
+                "x": 8114,
+                "y": 282.5
               },
               {
-                "x": 1585,
-                "y": 1100
+                "x": 8502,
+                "y": 282.5
               }
             ],
             "labelAt": {
-              "x": 1120,
-              "y": 1100
+              "x": 8308,
+              "y": 334.5
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2099,12 +2728,12 @@
           "module": "Оформление",
           "kind": "class",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 102,
+            "y": 100
           },
           "size": {
-            "width": 390,
-            "height": 260
+            "width": 316,
+            "height": 206
           },
           "attributes": [
             "customerId: CustomerId",
@@ -2121,12 +2750,12 @@
           "module": "Оформление",
           "kind": "class",
           "position": {
-            "x": 590,
-            "y": 40
+            "x": 69,
+            "y": 592
           },
           "size": {
-            "width": 440,
-            "height": 230
+            "width": 382,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2143,12 +2772,12 @@
           "module": "Заказы",
           "kind": "class",
           "position": {
-            "x": 1200,
-            "y": 40
+            "x": 32,
+            "y": 1109
           },
           "size": {
-            "width": 400,
-            "height": 290
+            "width": 360,
+            "height": 262
           },
           "attributes": [
             "id: OrderId",
@@ -2167,12 +2796,12 @@
           "module": "Цены",
           "kind": "interface",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 1368,
+            "y": 1109
           },
           "size": {
-            "width": 390,
-            "height": 220
+            "width": 354,
+            "height": 139
           },
           "attributes": [],
           "methods": [
@@ -2185,12 +2814,12 @@
           "module": "Запасы",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 500
+            "x": 504,
+            "y": 1109
           },
           "size": {
-            "width": 440,
-            "height": 250
+            "width": 321,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2204,12 +2833,12 @@
           "module": "Оплата",
           "kind": "interface",
           "position": {
-            "x": 1200,
-            "y": 500
+            "x": 937,
+            "y": 1109
           },
           "size": {
-            "width": 400,
-            "height": 250
+            "width": 319,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2223,12 +2852,12 @@
           "module": "Заказы",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 950
+            "x": 102,
+            "y": 1657
           },
           "size": {
-            "width": 440,
-            "height": 220
+            "width": 244,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2244,7 +2873,23 @@
           "target": "service",
           "label": "Вход",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 318
+              },
+              {
+                "x": 260,
+                "y": 580
+              }
+            ],
+            "labelAt": {
+              "x": 198,
+              "y": 449
+            }
+          }
         },
         {
           "id": "creates",
@@ -2254,9 +2899,19 @@
           "kind": "association",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 212,
+                "y": 771
+              },
+              {
+                "x": 212,
+                "y": 1097
+              }
+            ],
             "labelAt": {
-              "x": 1115,
-              "y": 345
+              "x": 126,
+              "y": 954
             }
           }
         },
@@ -2266,7 +2921,31 @@
           "target": "pricing-port",
           "label": "Зависит\nот",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 284,
+                "y": 771
+              },
+              {
+                "x": 284,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 1097
+              }
+            ],
+            "labelAt": {
+              "x": 1459,
+              "y": 954
+            }
+          }
         },
         {
           "id": "inventory",
@@ -2274,7 +2953,31 @@
           "target": "inventory-port",
           "label": "Зависит\nот",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 771
+              },
+              {
+                "x": 236,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 1097
+              }
+            ],
+            "labelAt": {
+              "x": 578.5,
+              "y": 954
+            }
+          }
         },
         {
           "id": "payment",
@@ -2282,7 +2985,31 @@
           "target": "payment-port",
           "label": "Зависит\nот",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 771
+              },
+              {
+                "x": 260,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 1097
+              }
+            ],
+            "labelAt": {
+              "x": 1010.5,
+              "y": 954
+            }
+          }
         },
         {
           "id": "aggregate",
@@ -2294,21 +3021,17 @@
           "route": {
             "via": [
               {
-                "x": 1700,
-                "y": 185
+                "x": 212,
+                "y": 1383
               },
               {
-                "x": 1700,
-                "y": 1060
-              },
-              {
-                "x": 1100,
-                "y": 1060
+                "x": 212,
+                "y": 1645
               }
             ],
             "labelAt": {
-              "x": 1500,
-              "y": 1035
+              "x": 110,
+              "y": 1514
             }
           }
         },
@@ -2322,25 +3045,41 @@
           "route": {
             "via": [
               {
-                "x": 500,
-                "y": 155
+                "x": 308,
+                "y": 771
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 308,
+                "y": 807
               },
               {
-                "x": 810,
-                "y": 850
+                "x": 1834,
+                "y": 807
+              },
+              {
+                "x": 1834,
+                "y": 1577
+              },
+              {
+                "x": 236,
+                "y": 1577
+              },
+              {
+                "x": 236,
+                "y": 1645
               }
             ],
             "labelAt": {
-              "x": 560,
-              "y": 825
+              "x": 1937,
+              "y": 1240
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2358,12 +3097,12 @@
           "module": "Заказы",
           "kind": "initial",
           "position": {
-            "x": 30,
+            "x": 421,
             "y": 100
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 64,
+            "height": 28
           }
         },
         {
@@ -2373,12 +3112,12 @@
           "module": "Оплата",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 70
+            "x": 242,
+            "y": 438
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 422,
+            "height": 100
           },
           "tags": [
             "core"
@@ -2391,12 +3130,12 @@
           "module": "Заказы",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 70
+            "x": 723,
+            "y": 848
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -2406,12 +3145,12 @@
           "module": "Доставка",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 70
+            "x": 711,
+            "y": 1258
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -2421,12 +3160,12 @@
           "module": "Доставка",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 390
+            "x": 749.5,
+            "y": 1668
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 403,
+            "height": 100
           }
         },
         {
@@ -2436,12 +3175,12 @@
           "module": "Доставка",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 390
+            "x": 768,
+            "y": 2078
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 366,
+            "height": 100
           }
         },
         {
@@ -2451,12 +3190,12 @@
           "module": "Доставка",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 390
+            "x": 711,
+            "y": 2488
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -2466,12 +3205,12 @@
           "module": "Заказы",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 710
+            "x": 271,
+            "y": 848
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 340,
+            "height": 100
           }
         },
         {
@@ -2481,12 +3220,12 @@
           "module": "Оплата",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 710
+            "x": 723,
+            "y": 2922
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -2495,12 +3234,12 @@
           "module": "Заказы",
           "kind": "final",
           "position": {
-            "x": 1270,
-            "y": 740
+            "x": 409,
+            "y": 3332
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 88,
+            "height": 28
           }
         }
       ],
@@ -2511,7 +3250,23 @@
           "target": "pending",
           "label": "Создать\nзаказ",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 453,
+                "y": 140
+              },
+              {
+                "x": 453,
+                "y": 426
+              }
+            ],
+            "labelAt": {
+              "x": 367,
+              "y": 283
+            }
+          }
         },
         {
           "id": "pay",
@@ -2522,9 +3277,27 @@
           "kind": "transition",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 465,
+                "y": 550
+              },
+              {
+                "x": 465,
+                "y": 586
+              },
+              {
+                "x": 963,
+                "y": 586
+              },
+              {
+                "x": 963,
+                "y": 836
+              }
+            ],
             "labelAt": {
-              "x": 645,
-              "y": 280
+              "x": 1128,
+              "y": 693
             }
           }
         },
@@ -2534,7 +3307,23 @@
           "target": "allocated",
           "label": "Склад\nпринял",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 951,
+                "y": 960
+              },
+              {
+                "x": 951,
+                "y": 1246
+              }
+            ],
+            "labelAt": {
+              "x": 873,
+              "y": 1103
+            }
+          }
         },
         {
           "id": "pack",
@@ -2542,7 +3331,23 @@
           "target": "packed",
           "label": "Сборка\nзавершена",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 951,
+                "y": 1370
+              },
+              {
+                "x": 951,
+                "y": 1656
+              }
+            ],
+            "labelAt": {
+              "x": 849,
+              "y": 1513
+            }
+          }
         },
         {
           "id": "ship",
@@ -2550,7 +3355,23 @@
           "target": "shipped",
           "label": "Забор\nперевозчиком",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 951,
+                "y": 1780
+              },
+              {
+                "x": 951,
+                "y": 2066
+              }
+            ],
+            "labelAt": {
+              "x": 825,
+              "y": 1923
+            }
+          }
         },
         {
           "id": "receive",
@@ -2560,9 +3381,19 @@
           "kind": "transition",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 951,
+                "y": 2190
+              },
+              {
+                "x": 951,
+                "y": 2476
+              }
+            ],
             "labelAt": {
-              "x": 653,
-              "y": 459
+              "x": 833,
+              "y": 2333
             }
           }
         },
@@ -2577,25 +3408,17 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 300
+                "x": 441,
+                "y": 550
               },
               {
-                "x": 180,
-                "y": 300
-              },
-              {
-                "x": 180,
-                "y": 650
-              },
-              {
-                "x": 390,
-                "y": 650
+                "x": 441,
+                "y": 836
               }
             ],
             "labelAt": {
-              "x": 130,
-              "y": 615
+              "x": 224.5,
+              "y": 693
             }
           }
         },
@@ -2610,25 +3433,33 @@
           "route": {
             "via": [
               {
-                "x": 900,
-                "y": 20
+                "x": 975,
+                "y": 960
               },
               {
-                "x": 1600,
-                "y": 20
+                "x": 975,
+                "y": 996
               },
               {
-                "x": 1600,
-                "y": 650
+                "x": 1321,
+                "y": 996
               },
               {
-                "x": 900,
-                "y": 650
+                "x": 1321,
+                "y": 2842
+              },
+              {
+                "x": 975,
+                "y": 2842
+              },
+              {
+                "x": 975,
+                "y": 2910
               }
             ],
             "labelAt": {
-              "x": 1720,
-              "y": 595
+              "x": 1136.5,
+              "y": 1923
             }
           }
         },
@@ -2639,7 +3470,23 @@
           "label": "Возврат\nпосле\nпродажи",
           "guard": "Проверка пройдена",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 951,
+                "y": 2600
+              },
+              {
+                "x": 951,
+                "y": 2910
+              }
+            ],
+            "labelAt": {
+              "x": 718.5,
+              "y": 2755
+            }
+          }
         },
         {
           "id": "cancel-close",
@@ -2651,17 +3498,17 @@
           "route": {
             "via": [
               {
-                "x": 390,
-                "y": 930
+                "x": 441,
+                "y": 960
               },
               {
-                "x": 1315,
-                "y": 930
+                "x": 441,
+                "y": 3320
               }
             ],
             "labelAt": {
-              "x": 600,
-              "y": 940
+              "x": 323,
+              "y": 2128
             }
           }
         },
@@ -2671,9 +3518,37 @@
           "target": "closed",
           "label": "Возврат\nполучен",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 963,
+                "y": 3034
+              },
+              {
+                "x": 963,
+                "y": 3252
+              },
+              {
+                "x": 465,
+                "y": 3252
+              },
+              {
+                "x": 465,
+                "y": 3320
+              }
+            ],
+            "labelAt": {
+              "x": 1050,
+              "y": 3177
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2690,12 +3565,12 @@
           "label": "Платформа торговли и доставки",
           "kind": "system",
           "position": {
-            "x": 500,
-            "y": 20
+            "x": 582,
+            "y": 100
           },
           "size": {
-            "width": 1050,
-            "height": 970
+            "width": 1842,
+            "height": 1359
           }
         }
       ],
@@ -2706,12 +3581,12 @@
           "module": "Каналы",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 80
+            "x": 184,
+            "y": 554
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 258,
+            "height": 104
           }
         },
         {
@@ -2720,12 +3595,12 @@
           "module": "Цены",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 310
+            "x": 32,
+            "y": 891
           },
           "size": {
-            "width": 356,
-            "height": 150
+            "width": 410,
+            "height": 104
           }
         },
         {
@@ -2734,12 +3609,12 @@
           "module": "Доставка",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 540
+            "x": 78,
+            "y": 246
           },
           "size": {
-            "width": 316,
-            "height": 150
+            "width": 364,
+            "height": 104
           }
         },
         {
@@ -2748,12 +3623,12 @@
           "module": "Доставка",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 770
+            "x": 207,
+            "y": 1374
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 235,
+            "height": 104
           }
         },
         {
@@ -2763,16 +3638,17 @@
           "module": "Оформление",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 80
+            "x": 1112.5,
+            "y": 508
           },
           "size": {
-            "width": 360,
-            "height": 150
+            "width": 419,
+            "height": 196
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "platform"
         },
         {
           "id": "pay",
@@ -2781,13 +3657,14 @@
           "module": "Оплата",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 80
+            "x": 1912,
+            "y": 537
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "catalog",
@@ -2796,13 +3673,14 @@
           "module": "Цены",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 310
+            "x": 1082,
+            "y": 816
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 254
+          },
+          "groupId": "platform"
         },
         {
           "id": "orders",
@@ -2811,13 +3689,14 @@
           "module": "Заказы",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 310
+            "x": 1912,
+            "y": 845
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 196
+          },
+          "groupId": "platform"
         },
         {
           "id": "pick",
@@ -2826,13 +3705,14 @@
           "module": "Доставка",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 540
+            "x": 1082,
+            "y": 200
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 196
+          },
+          "groupId": "platform"
         },
         {
           "id": "ship",
@@ -2841,13 +3721,14 @@
           "module": "Доставка",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 540
+            "x": 1912,
+            "y": 229
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "refund",
@@ -2856,13 +3737,14 @@
           "module": "Оплата",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 770
+            "x": 1912,
+            "y": 1194
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 196
+          },
+          "groupId": "platform"
         },
         {
           "id": "return",
@@ -2871,13 +3753,14 @@
           "module": "Доставка",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 770
+            "x": 1082,
+            "y": 1182
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 196
+          },
+          "groupId": "platform"
         }
       ],
       "edges": [
@@ -2886,28 +3769,84 @@
           "source": "buyer",
           "target": "checkout",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 454,
+                "y": 606
+              },
+              {
+                "x": 1100.5,
+                "y": 606
+              }
+            ]
+          }
         },
         {
           "id": "merchant-catalog",
           "source": "merchant",
           "target": "catalog",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 454,
+                "y": 943
+              },
+              {
+                "x": 1070,
+                "y": 943
+              }
+            ]
+          }
         },
         {
           "id": "warehouse-pick",
           "source": "warehouse",
           "target": "pick",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 454,
+                "y": 298
+              },
+              {
+                "x": 1070,
+                "y": 298
+              }
+            ]
+          }
         },
         {
           "id": "support-refund",
           "source": "support",
           "target": "refund",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 454,
+                "y": 1426
+              },
+              {
+                "x": 1832,
+                "y": 1426
+              },
+              {
+                "x": 1832,
+                "y": 1304
+              },
+              {
+                "x": 1900,
+                "y": 1304
+              }
+            ]
+          }
         },
         {
           "id": "checkout-pay",
@@ -2915,7 +3854,23 @@
           "target": "pay",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1543.5,
+                "y": 606
+              },
+              {
+                "x": 1900,
+                "y": 606
+              }
+            ],
+            "labelAt": {
+              "x": 1737,
+              "y": 646
+            }
+          }
         },
         {
           "id": "catalog-orders",
@@ -2923,7 +3878,23 @@
           "target": "orders",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1574,
+                "y": 943
+              },
+              {
+                "x": 1900,
+                "y": 943
+              }
+            ],
+            "labelAt": {
+              "x": 1737,
+              "y": 983
+            }
+          }
         },
         {
           "id": "pick-ship",
@@ -2931,7 +3902,23 @@
           "target": "ship",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1574,
+                "y": 298
+              },
+              {
+                "x": 1900,
+                "y": 298
+              }
+            ],
+            "labelAt": {
+              "x": 1737,
+              "y": 338
+            }
+          }
         },
         {
           "id": "return-refund",
@@ -2939,9 +3926,29 @@
           "target": "refund",
           "label": "extend",
           "kind": "extend",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1574,
+                "y": 1280
+              },
+              {
+                "x": 1900,
+                "y": 1280
+              }
+            ],
+            "labelAt": {
+              "x": 1737,
+              "y": 1320
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2958,12 +3965,12 @@
           "label": "Граница данных сделки",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 20
+            "x": 968,
+            "y": 100
           },
           "size": {
-            "width": 1330,
-            "height": 570
+            "width": 4294,
+            "height": 600.5
           }
         },
         {
@@ -2971,12 +3978,12 @@
           "label": "Граница данных доставки",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 660
+            "x": 5666,
+            "y": 467
           },
           "size": {
-            "width": 1330,
-            "height": 260
+            "width": 2723,
+            "height": 263.5
           }
         }
       ],
@@ -2988,12 +3995,12 @@
           "module": "Каналы",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 85
+            "x": 32,
+            "y": 322
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -3003,16 +4010,17 @@
           "module": "Оформление",
           "kind": "process",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 2207,
+            "y": 415
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 480,
+            "height": 103
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "transaction"
         },
         {
           "id": "pricing",
@@ -3021,13 +4029,14 @@
           "module": "Цены",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 85
+            "x": 1347,
+            "y": 421
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 115
+          },
+          "groupId": "transaction"
         },
         {
           "id": "risk",
@@ -3036,13 +4045,14 @@
           "module": "Риски",
           "kind": "dataStore",
           "position": {
-            "x": 1500,
-            "y": 85
+            "x": 2207,
+            "y": 200
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 480,
+            "height": 103
+          },
+          "groupId": "transaction"
         },
         {
           "id": "decision",
@@ -3051,13 +4061,14 @@
           "module": "Риски",
           "kind": "process",
           "position": {
-            "x": 1500,
-            "y": 375
+            "x": 3083,
+            "y": 404.5
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 480,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "inventory",
@@ -3066,13 +4077,14 @@
           "module": "Запасы",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 375
+            "x": 3943,
+            "y": 403
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 103
+          },
+          "groupId": "transaction"
         },
         {
           "id": "order",
@@ -3081,13 +4093,14 @@
           "module": "Заказы",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 4803,
+            "y": 568.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 427,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "payment",
@@ -3096,12 +4109,12 @@
           "module": "Оплата",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 375
+            "x": 32,
+            "y": 580.5
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 480,
+            "height": 100
           }
         },
         {
@@ -3111,13 +4124,14 @@
           "module": "Заказы",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 715
+            "x": 6077,
+            "y": 568.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "wms",
@@ -3126,13 +4140,14 @@
           "module": "Доставка",
           "kind": "process",
           "position": {
-            "x": 1010,
-            "y": 715
+            "x": 6985,
+            "y": 567
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 103
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "carrier",
@@ -3141,13 +4156,14 @@
           "module": "Доставка",
           "kind": "external",
           "position": {
-            "x": 1500,
-            "y": 715
+            "x": 7877,
+            "y": 567
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 480,
+            "height": 103
+          },
+          "groupId": "fulfillment"
         }
       ],
       "edges": [
@@ -3159,9 +4175,27 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 524,
+                "y": 372
+              },
+              {
+                "x": 2127,
+                "y": 372
+              },
+              {
+                "x": 2127,
+                "y": 454.5
+              },
+              {
+                "x": 2195,
+                "y": 454.5
+              }
+            ],
             "labelAt": {
-              "x": 410,
-              "y": 280
+              "x": 734,
+              "y": 320
             }
           }
         },
@@ -3171,7 +4205,23 @@
           "target": "checkout",
           "label": "Правила\nцен и\nскидок",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1839,
+                "y": 478.5
+              },
+              {
+                "x": 2195,
+                "y": 478.5
+              }
+            ],
+            "labelAt": {
+              "x": 2017,
+              "y": 542.5
+            }
+          }
         },
         {
           "id": "d3",
@@ -3179,7 +4229,31 @@
           "target": "decision",
           "label": "Признаки\nриска",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2699,
+                "y": 251.5
+              },
+              {
+                "x": 3003,
+                "y": 251.5
+              },
+              {
+                "x": 3003,
+                "y": 442.5
+              },
+              {
+                "x": 3071,
+                "y": 442.5
+              }
+            ],
+            "labelAt": {
+              "x": 2885,
+              "y": 303.5
+            }
+          }
         },
         {
           "id": "d4",
@@ -3191,25 +4265,17 @@
           "route": {
             "via": [
               {
-                "x": 670,
-                "y": 300
+                "x": 2699,
+                "y": 466.5
               },
               {
-                "x": 1850,
-                "y": 300
-              },
-              {
-                "x": 1850,
-                "y": 620
-              },
-              {
-                "x": 1640,
-                "y": 620
+                "x": 3071,
+                "y": 466.5
               }
             ],
             "labelAt": {
-              "x": 1250,
-              "y": 275
+              "x": 2885,
+              "y": 518.5
             }
           }
         },
@@ -3219,7 +4285,23 @@
           "target": "inventory",
           "label": "Запрос\nрезерва",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 3575,
+                "y": 454.5
+              },
+              {
+                "x": 3931,
+                "y": 454.5
+              }
+            ],
+            "labelAt": {
+              "x": 3753,
+              "y": 402.5
+            }
+          }
         },
         {
           "id": "d6",
@@ -3227,7 +4309,31 @@
           "target": "order",
           "label": "Токен\nрезерва",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4435,
+                "y": 454.5
+              },
+              {
+                "x": 4723,
+                "y": 454.5
+              },
+              {
+                "x": 4723,
+                "y": 606.5
+              },
+              {
+                "x": 4791,
+                "y": 606.5
+              }
+            ],
+            "labelAt": {
+              "x": 4613,
+              "y": 402.5
+            }
+          }
         },
         {
           "id": "d7",
@@ -3237,9 +4343,19 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 524,
+                "y": 630.5
+              },
+              {
+                "x": 4791,
+                "y": 630.5
+              }
+            ],
             "labelAt": {
-              "x": 380,
-              "y": 585
+              "x": 734,
+              "y": 682.5
             }
           }
         },
@@ -3253,21 +4369,17 @@
           "route": {
             "via": [
               {
-                "x": 670,
-                "y": 620
+                "x": 5242,
+                "y": 618.5
               },
               {
-                "x": 440,
-                "y": 620
-              },
-              {
-                "x": 440,
-                "y": 790
+                "x": 6065,
+                "y": 618.5
               }
             ],
             "labelAt": {
-              "x": 670,
-              "y": 620
+              "x": 5464,
+              "y": 670.5
             }
           }
         },
@@ -3279,9 +4391,19 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 6569,
+                "y": 618.5
+              },
+              {
+                "x": 6973,
+                "y": 618.5
+              }
+            ],
             "labelAt": {
-              "x": 915,
-              "y": 630
+              "x": 6771,
+              "y": 670.5
             }
           }
         },
@@ -3291,9 +4413,29 @@
           "target": "carrier",
           "label": "Посылки и\nнакладные",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 7477,
+                "y": 618.5
+              },
+              {
+                "x": 7865,
+                "y": 618.5
+              }
+            ],
+            "labelAt": {
+              "x": 7671,
+              "y": 670.5
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     }
   ]
 }

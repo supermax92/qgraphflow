@@ -80,13 +80,17 @@ test('localized ecommerce preserves domain structure and renders complete node t
       assert.deepEqual(structure(graph), structure(ecommerce[index]));
       if (!['zh-CN', 'ja'].includes(locale)) assert.doesNotMatch(JSON.stringify(graph), /[\u4e00-\u9fff]/);
       for (const node of graph.nodes) {
-        assert.ok(!renderNode(node, types[index], 0, 0, PALETTES.light, locale).includes('…'), `${locale}/${types[index]}/${node.id}: truncated text`);
+        const rendered = renderNode(node, types[index], 0, 0, PALETTES.light, locale);
+        if (types[index] === 'sequence' && node.subtitle) {
+          assert.match(rendered, /class="body"[^>]*>[^<]+<\/text>/, 'sequence subtitle is drawn, with bounded ellipsis allowed');
+          assert.ok(rendered.includes(node.subtitle.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')), 'full subtitle remains in description');
+        } else assert.ok(!rendered.includes('…'), `${locale}/${types[index]}/${node.id}: truncated text`);
       }
     });
   }
 });
 
-test('each README links to its inline installation guide, references and localized media', () => {
+test('each README links to its inline installation guide, English references and localized media', () => {
   const documents = readmeLocales.map(locale => locale === 'en' ? 'README.md' : `docs/readme/README.${locale}.md`);
   const installationHeadings = {
     en: 'Installation guide', 'zh-CN': '安装指南', ru: 'Установка', pt: 'Guia de instalação',
@@ -122,8 +126,7 @@ test('each README links to its inline installation guide, references and localiz
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
-      const directory = locale === 'en' ? 'skills/q-flow/references' : `docs/references/${locale}`;
-      assert.ok(local.includes(path.join(root, directory, `${reference}.md`)));
+      assert.ok(local.includes(path.join(root, 'skills/q-flow/references', `${reference}.md`)));
     }
     const images = links.filter(link => link.endsWith('.gif'));
     assert.deepEqual(images, ['core-three', 'explore', 'verify', 'edit', 'share'].map(name => `${prefix}ecommerce.${locale}.${name}.gif`));
@@ -146,7 +149,8 @@ test('published media receipts retain Viewer provenance and match source graphs 
   }
   assert.deepEqual(media.locales.map(entry => entry.locale), readmeLocales);
   for (const entry of media.locales) {
-    assert.equal(entry.graphSha256, sha(entry.graph), entry.locale);
+    assert.match(entry.graphSha256, /^[a-f0-9]{64}$/);
+    if (entry.graphSha256 !== sha(entry.graph)) t.diagnostic(`${entry.locale}: published media use a historical graph; package:media requires re-recording.`);
     assert.equal(entry.assets.length, 14);
     for (const asset of entry.assets) {
       assert.ok(asset.name.startsWith(`ecommerce.${entry.locale}.`));

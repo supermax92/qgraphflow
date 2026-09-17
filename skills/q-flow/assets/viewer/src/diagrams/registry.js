@@ -15,7 +15,10 @@ export const diagramLabels = Object.fromEntries(DIAGRAMS.map(diagram => [diagram
 const byId = new Map(DIAGRAMS.map(diagram => [diagram.id, diagram]));
 if (byId.size !== DIAGRAMS.length) throw new Error('Duplicate diagram type');
 export const getDiagram = (type = 'architecture') => byId.get(type);
+// Starting space budgets only; content bounds still determine the actual canvas and exports.
+export const canvasBudgetFor = type => getDiagram(type).sequence ? null
+  : ['flowchart', 'state'].includes(type) ? { width: 1600, height: 2400 } : { width: 2400, height: 1600 };
 export const hasArrow = (edge, type) => !(getDiagram(type).undirected ?? []).includes(edge.kind);
-export const isDashed = (edge, type) => ['framework', 'inference'].includes(edge.evidence) || (getDiagram(type).dashedKinds ?? []).includes(edge.kind);
+export const isDashed = (edge, type) => !(type === 'sequence' && edge.kind === 'sync') && (['framework', 'inference'].includes(edge.evidence) || (getDiagram(type).dashedKinds ?? []).includes(edge.kind));
 
 export const edgeMarkers = (edge, type) => ({ start: null, end: hasArrow(edge, type) ? 'arrow' : null, ...getDiagram(type).markers?.[edge.kind] });

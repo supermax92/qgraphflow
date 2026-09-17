@@ -1,0 +1,1578 @@
+{
+  "layoutVersion": "strict-v1-elkjs-0.11.0",
+  "inputSha256": "8f0ec0bd9a59b18b5e15402c44e15b098e96ffea91456eb14813ec52621c7f64",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "strategy": "layered-3",
+      "nodes": [
+        {
+          "id": "client",
+          "position": {
+            "x": 140,
+            "y": 100
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "gateway",
+          "position": {
+            "x": 140,
+            "y": 452
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "orders",
+          "position": {
+            "x": 116,
+            "y": 680
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "stock",
+          "position": {
+            "x": 468,
+            "y": 680
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "cache",
+          "position": {
+            "x": 116,
+            "y": 964
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "db",
+          "position": {
+            "x": 140,
+            "y": 1192
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "request",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 212
+              },
+              {
+                "x": 260,
+                "y": 440
+              }
+            ]
+          }
+        },
+        {
+          "id": "orders-call",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 564
+              },
+              {
+                "x": 236,
+                "y": 668
+              }
+            ]
+          }
+        },
+        {
+          "id": "stock-call",
+          "route": {
+            "via": [
+              {
+                "x": 284,
+                "y": 564
+              },
+              {
+                "x": 284,
+                "y": 600
+              },
+              {
+                "x": 588,
+                "y": 600
+              },
+              {
+                "x": 588,
+                "y": 668
+              }
+            ]
+          }
+        },
+        {
+          "id": "orders-cache",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 792
+              },
+              {
+                "x": 236,
+                "y": 952
+              }
+            ]
+          }
+        },
+        {
+          "id": "stock-db",
+          "route": {
+            "via": [
+              {
+                "x": 588,
+                "y": 792
+              },
+              {
+                "x": 588,
+                "y": 1112
+              },
+              {
+                "x": 284,
+                "y": 1112
+              },
+              {
+                "x": 284,
+                "y": 1180
+              }
+            ]
+          }
+        },
+        {
+          "id": "cache-db",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 1076
+              },
+              {
+                "x": 236,
+                "y": 1180
+              }
+            ]
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "app",
+          "position": {
+            "x": 32,
+            "y": 352
+          },
+          "size": {
+            "width": 708,
+            "height": 460
+          }
+        }
+      ]
+    },
+    {
+      "type": "flowchart",
+      "strategy": "layered-0",
+      "nodes": [
+        {
+          "id": "start",
+          "position": {
+            "x": 259,
+            "y": 100
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "check",
+          "position": {
+            "x": 200,
+            "y": 328
+          },
+          "size": {
+            "width": 382,
+            "height": 134
+          }
+        },
+        {
+          "id": "reserve",
+          "position": {
+            "x": 728,
+            "y": 748
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "reject",
+          "position": {
+            "x": 32,
+            "y": 748
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "join",
+          "position": {
+            "x": 32,
+            "y": 976
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "end",
+          "position": {
+            "x": 32,
+            "y": 1204
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "route": {
+            "via": [
+              {
+                "x": 379,
+                "y": 212
+              },
+              {
+                "x": 379,
+                "y": 316
+              }
+            ]
+          }
+        },
+        {
+          "id": "yes",
+          "route": {
+            "via": [
+              {
+                "x": 594,
+                "y": 395
+              },
+              {
+                "x": 848,
+                "y": 395
+              },
+              {
+                "x": 848,
+                "y": 736
+              }
+            ],
+            "labelAt": {
+              "x": 810,
+              "y": 605
+            }
+          }
+        },
+        {
+          "id": "no",
+          "route": {
+            "via": [
+              {
+                "x": 188,
+                "y": 395
+              },
+              {
+                "x": 152,
+                "y": 395
+              },
+              {
+                "x": 152,
+                "y": 736
+              }
+            ],
+            "labelAt": {
+              "x": 114,
+              "y": 605
+            }
+          }
+        },
+        {
+          "id": "reserved",
+          "route": {
+            "via": [
+              {
+                "x": 848,
+                "y": 860
+              },
+              {
+                "x": 848,
+                "y": 920
+              },
+              {
+                "x": 164,
+                "y": 920
+              },
+              {
+                "x": 164,
+                "y": 964
+              }
+            ]
+          }
+        },
+        {
+          "id": "rejected",
+          "route": {
+            "via": [
+              {
+                "x": 140,
+                "y": 860
+              },
+              {
+                "x": 140,
+                "y": 964
+              }
+            ]
+          }
+        },
+        {
+          "id": "retry",
+          "route": {
+            "via": [
+              {
+                "x": 164,
+                "y": 860
+              },
+              {
+                "x": 164,
+                "y": 896
+              },
+              {
+                "x": 630,
+                "y": 896
+              },
+              {
+                "x": 630,
+                "y": 248
+              },
+              {
+                "x": 403,
+                "y": 248
+              },
+              {
+                "x": 403,
+                "y": 316
+              }
+            ],
+            "labelAt": {
+              "x": 713.5,
+              "y": 605
+            }
+          }
+        },
+        {
+          "id": "finish",
+          "route": {
+            "via": [
+              {
+                "x": 152,
+                "y": 1088
+              },
+              {
+                "x": 152,
+                "y": 1192
+              }
+            ]
+          }
+        }
+      ],
+      "groups": []
+    },
+    {
+      "type": "sequence",
+      "strategy": "sequence-0",
+      "nodes": [
+        {
+          "id": "client",
+          "position": {
+            "x": 546,
+            "y": 48
+          },
+          "size": {
+            "width": 160,
+            "height": 2682
+          }
+        },
+        {
+          "id": "order",
+          "position": {
+            "x": 894,
+            "y": 48
+          },
+          "size": {
+            "width": 166,
+            "height": 2682
+          }
+        },
+        {
+          "id": "inventory",
+          "position": {
+            "x": 1248,
+            "y": 48
+          },
+          "size": {
+            "width": 160,
+            "height": 2682
+          }
+        },
+        {
+          "id": "risk",
+          "position": {
+            "x": 1599,
+            "y": 48
+          },
+          "size": {
+            "width": 160,
+            "height": 2682
+          }
+        },
+        {
+          "id": "audit",
+          "position": {
+            "x": 1950,
+            "y": 48
+          },
+          "size": {
+            "width": 160,
+            "height": 2682
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "c1",
+          "route": {
+            "messageY": 262
+          }
+        },
+        {
+          "id": "c2",
+          "route": {
+            "messageY": 323
+          }
+        },
+        {
+          "id": "c3",
+          "route": {
+            "messageY": 425
+          }
+        },
+        {
+          "id": "r3",
+          "route": {
+            "messageY": 497
+          }
+        },
+        {
+          "id": "r2",
+          "route": {
+            "messageY": 558
+          }
+        },
+        {
+          "id": "c4",
+          "route": {
+            "messageY": 780
+          }
+        },
+        {
+          "id": "r4",
+          "route": {
+            "messageY": 852
+          }
+        },
+        {
+          "id": "c5",
+          "route": {
+            "messageY": 1856
+          }
+        },
+        {
+          "id": "r5",
+          "route": {
+            "messageY": 1928
+          }
+        },
+        {
+          "id": "c6",
+          "route": {
+            "messageY": 2124
+          }
+        },
+        {
+          "id": "r6",
+          "route": {
+            "messageY": 2196
+          }
+        },
+        {
+          "id": "r1",
+          "route": {
+            "messageY": 2636
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "retry",
+          "position": {
+            "x": 32,
+            "y": 618
+          },
+          "size": {
+            "width": 2493,
+            "height": 892
+          }
+        },
+        {
+          "id": "outcome",
+          "position": {
+            "x": 64,
+            "y": 882
+          },
+          "size": {
+            "width": 2429,
+            "height": 444
+          }
+        },
+        {
+          "id": "optional",
+          "position": {
+            "x": 32,
+            "y": 1574
+          },
+          "size": {
+            "width": 2493,
+            "height": 956
+          }
+        },
+        {
+          "id": "parallel",
+          "position": {
+            "x": 64,
+            "y": 1694
+          },
+          "size": {
+            "width": 2429,
+            "height": 652
+          }
+        }
+      ]
+    },
+    {
+      "type": "er",
+      "strategy": "layered-3",
+      "nodes": [
+        {
+          "id": "orders",
+          "position": {
+            "x": 32,
+            "y": 392
+          },
+          "size": {
+            "width": 240,
+            "height": 180
+          }
+        },
+        {
+          "id": "items",
+          "position": {
+            "x": 32,
+            "y": 100
+          },
+          "size": {
+            "width": 240,
+            "height": 180
+          }
+        },
+        {
+          "id": "order_items",
+          "position": {
+            "x": 400,
+            "y": 124
+          },
+          "size": {
+            "width": 247,
+            "height": 180
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "order-lines",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 482
+              },
+              {
+                "x": 320,
+                "y": 482
+              },
+              {
+                "x": 320,
+                "y": 238
+              },
+              {
+                "x": 372,
+                "y": 238
+              }
+            ]
+          }
+        },
+        {
+          "id": "item-lines",
+          "route": {
+            "via": [
+              {
+                "x": 300,
+                "y": 190
+              },
+              {
+                "x": 372,
+                "y": 190
+              }
+            ]
+          }
+        }
+      ],
+      "groups": []
+    },
+    {
+      "type": "deployment",
+      "strategy": "layered-0",
+      "nodes": [
+        {
+          "id": "client",
+          "position": {
+            "x": 32,
+            "y": 350
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "api",
+          "position": {
+            "x": 1144,
+            "y": 437
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "image",
+          "position": {
+            "x": 776,
+            "y": 449
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "db",
+          "position": {
+            "x": 1600,
+            "y": 437
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "connect",
+          "route": {
+            "via": [
+              {
+                "x": 284,
+                "y": 400
+              },
+              {
+                "x": 1064,
+                "y": 400
+              },
+              {
+                "x": 1064,
+                "y": 475
+              },
+              {
+                "x": 1132,
+                "y": 475
+              }
+            ]
+          }
+        },
+        {
+          "id": "deploy",
+          "route": {
+            "via": [
+              {
+                "x": 1028,
+                "y": 499
+              },
+              {
+                "x": 1132,
+                "y": 499
+              }
+            ]
+          }
+        },
+        {
+          "id": "query",
+          "route": {
+            "via": [
+              {
+                "x": 1396,
+                "y": 487
+              },
+              {
+                "x": 1588,
+                "y": 487
+              }
+            ]
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "network",
+          "position": {
+            "x": 412,
+            "y": 100
+          },
+          "size": {
+            "width": 1460,
+            "height": 545
+          }
+        },
+        {
+          "id": "cluster",
+          "position": {
+            "x": 551,
+            "y": 200
+          },
+          "size": {
+            "width": 909,
+            "height": 413
+          }
+        },
+        {
+          "id": "host",
+          "position": {
+            "x": 683,
+            "y": 300
+          },
+          "size": {
+            "width": 733,
+            "height": 281
+          }
+        }
+      ]
+    },
+    {
+      "type": "class",
+      "strategy": "layered-0",
+      "nodes": [
+        {
+          "id": "Repository",
+          "position": {
+            "x": 32,
+            "y": 100
+          },
+          "size": {
+            "width": 470,
+            "height": 139
+          }
+        },
+        {
+          "id": "SqlRepository",
+          "position": {
+            "x": 32,
+            "y": 525
+          },
+          "size": {
+            "width": 470,
+            "height": 150
+          }
+        },
+        {
+          "id": "Order",
+          "position": {
+            "x": 122,
+            "y": 803
+          },
+          "size": {
+            "width": 290,
+            "height": 167
+          }
+        },
+        {
+          "id": "OrderLine",
+          "position": {
+            "x": 130.5,
+            "y": 1256
+          },
+          "size": {
+            "width": 273,
+            "height": 139
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "implements",
+          "route": {
+            "via": [
+              {
+                "x": 267,
+                "y": 513
+              },
+              {
+                "x": 267,
+                "y": 251
+              }
+            ],
+            "labelAt": {
+              "x": 166.5,
+              "y": 382
+            }
+          }
+        },
+        {
+          "id": "loads",
+          "route": {
+            "via": [
+              {
+                "x": 267,
+                "y": 687
+              },
+              {
+                "x": 267,
+                "y": 791
+              }
+            ]
+          }
+        },
+        {
+          "id": "contains",
+          "route": {
+            "via": [
+              {
+                "x": 267,
+                "y": 982
+              },
+              {
+                "x": 267,
+                "y": 1244
+              }
+            ],
+            "labelAt": {
+              "x": 183.5,
+              "y": 1113
+            }
+          }
+        }
+      ],
+      "groups": []
+    },
+    {
+      "type": "state",
+      "strategy": "layered-3",
+      "nodes": [
+        {
+          "id": "initial",
+          "position": {
+            "x": 402,
+            "y": 100
+          },
+          "size": {
+            "width": 64,
+            "height": 28
+          }
+        },
+        {
+          "id": "pending",
+          "position": {
+            "x": 338,
+            "y": 256
+          },
+          "size": {
+            "width": 240,
+            "height": 112
+          }
+        },
+        {
+          "id": "decide",
+          "position": {
+            "x": 338,
+            "y": 654
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "done",
+          "position": {
+            "x": 522,
+            "y": 1040
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "failed",
+          "position": {
+            "x": 170,
+            "y": 1040
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "final",
+          "position": {
+            "x": 610,
+            "y": 1268
+          },
+          "size": {
+            "width": 64,
+            "height": 28
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "route": {
+            "via": [
+              {
+                "x": 434,
+                "y": 140
+              },
+              {
+                "x": 434,
+                "y": 244
+              }
+            ]
+          }
+        },
+        {
+          "id": "verify",
+          "route": {
+            "via": [
+              {
+                "x": 458,
+                "y": 380
+              },
+              {
+                "x": 458,
+                "y": 642
+              }
+            ],
+            "labelAt": {
+              "x": 677.5,
+              "y": 511
+            }
+          }
+        },
+        {
+          "id": "success",
+          "route": {
+            "via": [
+              {
+                "x": 590,
+                "y": 704
+              },
+              {
+                "x": 642,
+                "y": 704
+              },
+              {
+                "x": 642,
+                "y": 1028
+              }
+            ],
+            "labelAt": {
+              "x": 566.5,
+              "y": 897
+            }
+          }
+        },
+        {
+          "id": "failure",
+          "route": {
+            "via": [
+              {
+                "x": 326,
+                "y": 704
+              },
+              {
+                "x": 290,
+                "y": 704
+              },
+              {
+                "x": 290,
+                "y": 1028
+              }
+            ],
+            "labelAt": {
+              "x": 214.5,
+              "y": 897
+            }
+          }
+        },
+        {
+          "id": "recover",
+          "route": {
+            "via": [
+              {
+                "x": 290,
+                "y": 1152
+              },
+              {
+                "x": 290,
+                "y": 1188
+              },
+              {
+                "x": 114,
+                "y": 1188
+              },
+              {
+                "x": 114,
+                "y": 176
+              },
+              {
+                "x": 482,
+                "y": 176
+              },
+              {
+                "x": 482,
+                "y": 244
+              }
+            ],
+            "labelAt": {
+              "x": 61,
+              "y": 704
+            }
+          }
+        },
+        {
+          "id": "self",
+          "route": {
+            "via": [
+              {
+                "x": 590,
+                "y": 288
+              },
+              {
+                "x": 588,
+                "y": 288
+              },
+              {
+                "x": 588,
+                "y": 336
+              },
+              {
+                "x": 590,
+                "y": 336
+              }
+            ],
+            "labelAt": {
+              "x": 650,
+              "y": 312
+            }
+          }
+        },
+        {
+          "id": "finish",
+          "route": {
+            "via": [
+              {
+                "x": 642,
+                "y": 1152
+              },
+              {
+                "x": 642,
+                "y": 1256
+              }
+            ]
+          }
+        }
+      ],
+      "groups": []
+    },
+    {
+      "type": "usecase",
+      "strategy": "layered-0",
+      "nodes": [
+        {
+          "id": "buyer",
+          "position": {
+            "x": 32,
+            "y": 191
+          },
+          "size": {
+            "width": 160,
+            "height": 104
+          }
+        },
+        {
+          "id": "admin",
+          "position": {
+            "x": 32,
+            "y": 415
+          },
+          "size": {
+            "width": 160,
+            "height": 104
+          }
+        },
+        {
+          "id": "purchase",
+          "position": {
+            "x": 1246,
+            "y": 205
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "refund",
+          "position": {
+            "x": 1246,
+            "y": 417
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "authorize",
+          "position": {
+            "x": 1836,
+            "y": 217
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "coupon",
+          "position": {
+            "x": 425,
+            "y": 292
+          },
+          "size": {
+            "width": 480,
+            "height": 100
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "buy",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 243
+              },
+              {
+                "x": 1234,
+                "y": 243
+              }
+            ]
+          }
+        },
+        {
+          "id": "manage",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 467
+              },
+              {
+                "x": 1234,
+                "y": 467
+              }
+            ]
+          }
+        },
+        {
+          "id": "purchase-auth",
+          "route": {
+            "via": [
+              {
+                "x": 1498,
+                "y": 255
+              },
+              {
+                "x": 1824,
+                "y": 255
+              }
+            ],
+            "labelAt": {
+              "x": 1661,
+              "y": 215
+            }
+          }
+        },
+        {
+          "id": "refund-auth",
+          "route": {
+            "via": [
+              {
+                "x": 1498,
+                "y": 467
+              },
+              {
+                "x": 1756,
+                "y": 467
+              },
+              {
+                "x": 1756,
+                "y": 279
+              },
+              {
+                "x": 1824,
+                "y": 279
+              }
+            ],
+            "labelAt": {
+              "x": 1661,
+              "y": 507
+            }
+          }
+        },
+        {
+          "id": "discount",
+          "route": {
+            "via": [
+              {
+                "x": 917,
+                "y": 342
+              },
+              {
+                "x": 1166,
+                "y": 342
+              },
+              {
+                "x": 1166,
+                "y": 267
+              },
+              {
+                "x": 1234,
+                "y": 267
+              }
+            ],
+            "labelAt": {
+              "x": 1075.5,
+              "y": 382
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "shop",
+          "position": {
+            "x": 332,
+            "y": 100
+          },
+          "size": {
+            "width": 1776,
+            "height": 455
+          }
+        }
+      ]
+    },
+    {
+      "type": "dataflow",
+      "strategy": "layered-3",
+      "nodes": [
+        {
+          "id": "requester",
+          "position": {
+            "x": 652,
+            "y": 459
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "validate",
+          "position": {
+            "x": 1303,
+            "y": 203
+          },
+          "size": {
+            "width": 240,
+            "height": 112
+          }
+        },
+        {
+          "id": "enrich",
+          "position": {
+            "x": 652,
+            "y": 203
+          },
+          "size": {
+            "width": 240,
+            "height": 160
+          }
+        },
+        {
+          "id": "orders",
+          "position": {
+            "x": 80,
+            "y": 209
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        },
+        {
+          "id": "receiver",
+          "position": {
+            "x": 1303,
+            "y": 563
+          },
+          "size": {
+            "width": 240,
+            "height": 100
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "route": {
+            "via": [
+              {
+                "x": 904,
+                "y": 509
+              },
+              {
+                "x": 1223,
+                "y": 509
+              },
+              {
+                "x": 1223,
+                "y": 283
+              },
+              {
+                "x": 1291,
+                "y": 283
+              }
+            ],
+            "labelAt": {
+              "x": 1105.5,
+              "y": 549
+            }
+          }
+        },
+        {
+          "id": "valid",
+          "route": {
+            "via": [
+              {
+                "x": 1555,
+                "y": 259
+              },
+              {
+                "x": 1591,
+                "y": 259
+              },
+              {
+                "x": 1591,
+                "y": 155
+              },
+              {
+                "x": 572,
+                "y": 155
+              },
+              {
+                "x": 572,
+                "y": 307
+              },
+              {
+                "x": 640,
+                "y": 307
+              }
+            ],
+            "labelAt": {
+              "x": 1105.5,
+              "y": 115
+            }
+          }
+        },
+        {
+          "id": "store",
+          "route": {
+            "via": [
+              {
+                "x": 904,
+                "y": 331
+              },
+              {
+                "x": 940,
+                "y": 331
+              },
+              {
+                "x": 940,
+                "y": 411
+              },
+              {
+                "x": 32,
+                "y": 411
+              },
+              {
+                "x": 32,
+                "y": 259
+              },
+              {
+                "x": 68,
+                "y": 259
+              }
+            ],
+            "labelAt": {
+              "x": 486,
+              "y": 451
+            }
+          }
+        },
+        {
+          "id": "read",
+          "route": {
+            "via": [
+              {
+                "x": 332,
+                "y": 259
+              },
+              {
+                "x": 640,
+                "y": 259
+              }
+            ],
+            "labelAt": {
+              "x": 486,
+              "y": 219
+            }
+          }
+        },
+        {
+          "id": "output",
+          "route": {
+            "via": [
+              {
+                "x": 904,
+                "y": 283
+              },
+              {
+                "x": 988,
+                "y": 283
+              },
+              {
+                "x": 988,
+                "y": 613
+              },
+              {
+                "x": 1291,
+                "y": 613
+              }
+            ],
+            "labelAt": {
+              "x": 1105.5,
+              "y": 653
+            }
+          }
+        },
+        {
+          "id": "feedback",
+          "route": {
+            "via": [
+              {
+                "x": 904,
+                "y": 235
+              },
+              {
+                "x": 1291,
+                "y": 235
+              }
+            ],
+            "labelAt": {
+              "x": 1105.5,
+              "y": 275
+            }
+          }
+        }
+      ],
+      "groups": []
+    }
+  ]
+}

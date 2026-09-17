@@ -31,6 +31,7 @@ function useAppearance() {
 function Viewer() {
   const [activeType, setActiveType] = useState(diagrams[0].meta.diagramType ?? 'architecture');
   const drafts = useRef(new Map());
+  const flowControl = useState(true);
   const { preference, setPreference, theme } = useAppearance();
   const panels = usePanels();
   const originalGraph = diagrams.find(item => (item.meta.diagramType ?? 'architecture') === activeType) ?? diagrams[0];
@@ -48,7 +49,7 @@ function Viewer() {
     document.documentElement.dataset.appearance = preference;
     for (const [name, value] of Object.entries(themeVariables(PALETTES[theme]))) document.documentElement.style.setProperty(name, value);
   }, [theme, preference]);
-  return <ReactFlowProvider><ViewerShell key={activeType} graph={graph} originalGraph={originalGraph} graphForSave={graphForSave} allDiagrams={diagrams} moduleColors={moduleColors} onDiagramChange={switchDiagram} theme={theme} appearance={preference} setAppearance={setPreference} panels={panels} /></ReactFlowProvider>;
+  return <ReactFlowProvider><ViewerShell flowControl={flowControl} key={activeType} graph={graph} originalGraph={originalGraph} graphForSave={graphForSave} allDiagrams={diagrams} moduleColors={moduleColors} onDiagramChange={switchDiagram} theme={theme} appearance={preference} setAppearance={setPreference} panels={panels} /></ReactFlowProvider>;
 }
 
 createRoot(document.getElementById('root')).render(<Viewer />);

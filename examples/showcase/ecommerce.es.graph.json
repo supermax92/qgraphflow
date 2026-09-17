@@ -15,12 +15,12 @@
           "label": "Transacción síncrona",
           "kind": "runtime",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 100
           },
           "size": {
-            "width": 1810,
-            "height": 600
+            "width": 754,
+            "height": 3270
           }
         },
         {
@@ -28,12 +28,12 @@
           "label": "Entrega asíncrona",
           "kind": "ownership",
           "position": {
-            "x": 0,
-            "y": 785
+            "x": 60,
+            "y": 3680
           },
           "size": {
-            "width": 1820,
-            "height": 310
+            "width": 726,
+            "height": 1097
           }
         }
       ],
@@ -45,17 +45,18 @@
           "module": "Canales",
           "kind": "external",
           "position": {
-            "x": 40,
-            "y": 85
+            "x": 301.5,
+            "y": 200
           },
           "size": {
-            "width": 300,
-            "height": 173
+            "width": 425,
+            "height": 115
           },
           "facts": [
             "Usar una entrada única de compra",
             "No llamar directamente a servicios de dominio"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "gateway",
@@ -64,17 +65,18 @@
           "module": "Canales",
           "kind": "security",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 284,
+            "y": 601
           },
           "size": {
-            "width": 300,
-            "height": 173
+            "width": 460,
+            "height": 115
           },
           "facts": [
             "Verificar identidad del usuario",
             "Propagar checkoutToken"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "checkout",
@@ -83,12 +85,12 @@
           "module": "Compra",
           "kind": "business",
           "position": {
-            "x": 1000,
-            "y": 85
+            "x": 339,
+            "y": 1050
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 350,
+            "height": 115
           },
           "facts": [
             "Combinar decisiones de precio, riesgo e inventario",
@@ -97,7 +99,8 @@
           "tags": [
             "core",
             "Coordinación de transacciones"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "pricing",
@@ -106,17 +109,18 @@
           "module": "Precios",
           "kind": "service",
           "position": {
-            "x": 1480,
-            "y": 85
+            "x": 298.5,
+            "y": 1475
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 431,
+            "height": 115
           },
           "facts": [
             "El precio del servidor es definitivo",
             "Devolver la instantánea de precios"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "risk",
@@ -125,16 +129,17 @@
           "module": "Riesgo",
           "kind": "failure",
           "position": {
-            "x": 1480,
-            "y": 375
+            "x": 274,
+            "y": 1900
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Devolver aprobación, rechazo o revisión manual"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "inventory",
@@ -143,17 +148,18 @@
           "module": "Inventario",
           "kind": "data",
           "position": {
-            "x": 1000,
-            "y": 375
+            "x": 288.5,
+            "y": 2349
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 451,
+            "height": 115
           },
           "facts": [
             "Las reservas caducan",
             "Liberar tras fallar el pago"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "payment",
@@ -162,17 +168,18 @@
           "module": "Pago",
           "kind": "service",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 310.5,
+            "y": 2798
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 407,
+            "height": 115
           },
           "facts": [
             "Los callbacks de pago deben ser idempotentes",
             "La autorización no significa entrega completada"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "order",
@@ -181,17 +188,18 @@
           "module": "Pedidos",
           "kind": "business",
           "position": {
-            "x": 40,
-            "y": 375
+            "x": 274,
+            "y": 3199
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 480,
+            "height": 139
           },
           "facts": [
             "Las reglas de dominio avanzan el estado del pedido",
             "Escribir pedido y Outbox en una transacción"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "event-bus",
@@ -200,16 +208,17 @@
           "module": "Pedidos",
           "kind": "framework",
           "position": {
-            "x": 40,
-            "y": 850
+            "x": 274,
+            "y": 3780
           },
           "size": {
-            "width": 300,
-            "height": 173
+            "width": 480,
+            "height": 115
           },
           "facts": [
             "Los consumidores deduplican por ID de evento"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "fulfillment",
@@ -218,17 +227,18 @@
           "module": "Entrega",
           "kind": "service",
           "position": {
-            "x": 760,
-            "y": 850
+            "x": 300.5,
+            "y": 4205
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 427,
+            "height": 115
           },
           "facts": [
             "Procesar pedidos pagados de forma asíncrona",
             "Actualizar estado de paquetes y transporte"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "after-sales",
@@ -237,16 +247,17 @@
           "module": "Entrega",
           "kind": "service",
           "position": {
-            "x": 1520,
-            "y": 850
+            "x": 274,
+            "y": 4630
           },
           "size": {
-            "width": 290,
-            "height": 150
+            "width": 480,
+            "height": 115
           },
           "facts": [
             "Elegir reembolso o devolución según el avance de entrega"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         }
       ],
       "edges": [
@@ -256,7 +267,23 @@
           "target": "gateway",
           "label": "Enviar compra",
           "kind": "request",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 327
+              },
+              {
+                "x": 514,
+                "y": 589
+              }
+            ],
+            "labelAt": {
+              "x": 419.5,
+              "y": 458
+            }
+          }
         },
         {
           "id": "dispatch",
@@ -264,7 +291,23 @@
           "target": "checkout",
           "label": "Comando de\ncompra\nidempotente",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 728
+              },
+              {
+                "x": 514,
+                "y": 1038
+              }
+            ],
+            "labelAt": {
+              "x": 430.5,
+              "y": 883
+            }
+          }
         },
         {
           "id": "quote",
@@ -272,7 +315,23 @@
           "target": "pricing",
           "label": "Recalcular\nimporte debido",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 1177
+              },
+              {
+                "x": 514,
+                "y": 1463
+              }
+            ],
+            "labelAt": {
+              "x": 417,
+              "y": 1320
+            }
+          }
         },
         {
           "id": "screen",
@@ -280,7 +339,23 @@
           "target": "risk",
           "label": "Instantánea de\nprecios",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 1602
+              },
+              {
+                "x": 514,
+                "y": 1888
+              }
+            ],
+            "labelAt": {
+              "x": 418.5,
+              "y": 1745
+            }
+          }
         },
         {
           "id": "reserve",
@@ -288,7 +363,23 @@
           "target": "inventory",
           "label": "Reservar tras\naprobación",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 2051
+              },
+              {
+                "x": 514,
+                "y": 2337
+              }
+            ],
+            "labelAt": {
+              "x": 423,
+              "y": 2194
+            }
+          }
         },
         {
           "id": "authorize",
@@ -296,7 +387,23 @@
           "target": "payment",
           "label": "Token de\ninventario +\nimporte",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 2476
+              },
+              {
+                "x": 514,
+                "y": 2786
+              }
+            ],
+            "labelAt": {
+              "x": 429.5,
+              "y": 2631
+            }
+          }
         },
         {
           "id": "create-order",
@@ -304,7 +411,23 @@
           "target": "order",
           "label": "Confirmar pago",
           "kind": "success",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 2925
+              },
+              {
+                "x": 514,
+                "y": 3187
+              }
+            ],
+            "labelAt": {
+              "x": 415,
+              "y": 3056
+            }
+          }
         },
         {
           "id": "publish",
@@ -316,21 +439,17 @@
           "route": {
             "via": [
               {
-                "x": 190,
-                "y": 680
+                "x": 514,
+                "y": 3350
               },
               {
-                "x": 700,
-                "y": 680
-              },
-              {
-                "x": 700,
-                "y": 880
+                "x": 514,
+                "y": 3768
               }
             ],
             "labelAt": {
-              "x": 450,
-              "y": 660
+              "x": 439,
+              "y": 3525
             }
           }
         },
@@ -340,7 +459,23 @@
           "target": "fulfillment",
           "label": "Crear orden de\nentrega",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 3907
+              },
+              {
+                "x": 514,
+                "y": 4193
+              }
+            ],
+            "labelAt": {
+              "x": 418.5,
+              "y": 4050
+            }
+          }
         },
         {
           "id": "service",
@@ -348,9 +483,29 @@
           "target": "after-sales",
           "label": "Paquete y estado\nde recepción",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 514,
+                "y": 4332
+              },
+              {
+                "x": 514,
+                "y": 4618
+              }
+            ],
+            "labelAt": {
+              "x": 409.5,
+              "y": 4475
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -369,12 +524,12 @@
           "module": "Compra",
           "kind": "start",
           "position": {
-            "x": 112.5,
-            "y": 70
+            "x": 382.5,
+            "y": 100
           },
           "size": {
-            "width": 270,
-            "height": 130
+            "width": 288,
+            "height": 145
           },
           "facts": [
             "El comprador confirma carrito, dirección y cupones.",
@@ -388,12 +543,12 @@
           "module": "Compra",
           "kind": "process",
           "position": {
-            "x": 685,
-            "y": 70
+            "x": 286.5,
+            "y": 531
           },
           "size": {
-            "width": 280,
-            "height": 130
+            "width": 480,
+            "height": 100
           },
           "facts": [
             "Rechazar SKUs y direcciones inválidos.",
@@ -407,12 +562,12 @@
           "module": "Inventario",
           "kind": "decision",
           "position": {
-            "x": 1275,
-            "y": 40
+            "x": 317.5,
+            "y": 917
           },
           "size": {
-            "width": 300,
-            "height": 190
+            "width": 418,
+            "height": 295
           },
           "facts": [
             "Comprobar cantidad disponible y límites de reserva.",
@@ -426,12 +581,12 @@
           "module": "Precios",
           "kind": "process",
           "position": {
-            "x": 1887.5,
-            "y": 70
+            "x": 568,
+            "y": 1498
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 431,
+            "height": 100
           },
           "facts": [
             "Recalcular; no confiar en importes del cliente.",
@@ -445,12 +600,12 @@
           "module": "Inventario",
           "kind": "end",
           "position": {
-            "x": 1285,
-            "y": 430
+            "x": 119,
+            "y": 1498
           },
           "size": {
-            "width": 280,
-            "height": 130
+            "width": 301,
+            "height": 100
           },
           "facts": [
             "Devolver SKUs no disponibles al cliente.",
@@ -464,12 +619,12 @@
           "module": "Riesgo",
           "kind": "decision",
           "position": {
-            "x": 1837.5,
-            "y": 400
+            "x": 601,
+            "y": 1908
           },
           "size": {
-            "width": 390,
-            "height": 290
+            "width": 365,
+            "height": 284
           },
           "facts": [
             "El riesgo bajo pasa a reserva de inventario.",
@@ -483,12 +638,12 @@
           "module": "Riesgo",
           "kind": "process",
           "position": {
-            "x": 2547.5,
-            "y": 430
+            "x": 221.5,
+            "y": 2478
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 470,
+            "height": 100
           },
           "facts": [
             "La aprobación vuelve al flujo principal.",
@@ -502,12 +657,12 @@
           "module": "Riesgo",
           "kind": "end",
           "position": {
-            "x": 2552.5,
-            "y": 820
+            "x": 728.5,
+            "y": 2864
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 345,
+            "height": 192
           },
           "facts": [
             "No iniciar el pago.",
@@ -521,12 +676,12 @@
           "module": "Inventario",
           "kind": "subprocess",
           "position": {
-            "x": 1917.5,
-            "y": 800
+            "x": 296.5,
+            "y": 2894.667
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 320,
+            "height": 100
           },
           "facts": [
             "Definir TTL para evitar bloqueos permanentes del inventario.",
@@ -540,12 +695,12 @@
           "module": "Pago",
           "kind": "process",
           "position": {
-            "x": 1167.5,
-            "y": 805
+            "x": 248,
+            "y": 3342
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 417,
+            "height": 145
           },
           "facts": [
             "Usar solo la instantánea de precios del servidor.",
@@ -559,12 +714,12 @@
           "module": "Pago",
           "kind": "decision",
           "position": {
-            "x": 430,
-            "y": 775
+            "x": 257,
+            "y": 3797
           },
           "size": {
-            "width": 340,
-            "height": 230
+            "width": 399,
+            "height": 226
           },
           "facts": [
             "Guardar el pedido solo tras el éxito.",
@@ -578,12 +733,12 @@
           "module": "Inventario",
           "kind": "subprocess",
           "position": {
-            "x": 1287.5,
-            "y": 1220
+            "x": 54.5,
+            "y": 4331.5
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 309,
+            "height": 100
           },
           "facts": [
             "La compensación debe ser idempotente.",
@@ -597,12 +752,12 @@
           "module": "Pago",
           "kind": "end",
           "position": {
-            "x": 1887.5,
-            "y": 1225
+            "x": 32,
+            "y": 4740
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 354,
+            "height": 145
           },
           "facts": [
             "Conservar el código de motivo del proveedor de pago.",
@@ -616,12 +771,12 @@
           "module": "Pedidos",
           "kind": "subprocess",
           "position": {
-            "x": 447.5,
-            "y": 1220
+            "x": 504.5,
+            "y": 4309
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 399,
+            "height": 145
           },
           "facts": [
             "Confirmar pedido y evento de dominio atómicamente.",
@@ -638,12 +793,12 @@
           "module": "Pedidos",
           "kind": "end",
           "position": {
-            "x": 457.5,
-            "y": 1490
+            "x": 522,
+            "y": 4740
           },
           "size": {
-            "width": 270,
-            "height": 130
+            "width": 364,
+            "height": 145
           },
           "facts": [
             "El camino síncrono termina aquí.",
@@ -663,7 +818,23 @@
             "Enviar compra → Validar carrito.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 526.5,
+                "y": 257
+              },
+              {
+                "x": 526.5,
+                "y": 519
+              }
+            ],
+            "labelAt": {
+              "x": 467,
+              "y": 388
+            }
+          }
         },
         {
           "id": "check",
@@ -678,9 +849,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 526.5,
+                "y": 643
+              },
+              {
+                "x": 526.5,
+                "y": 905
+              }
+            ],
             "labelAt": {
-              "x": 1102.5,
-              "y": 335
+              "x": 467,
+              "y": 774
             }
           }
         },
@@ -695,7 +876,27 @@
             "¿Hay inventario suficiente? → Fijar instantánea de precios.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 747.5,
+                "y": 1064.5
+              },
+              {
+                "x": 783.5,
+                "y": 1064.5
+              },
+              {
+                "x": 783.5,
+                "y": 1486
+              }
+            ],
+            "labelAt": {
+              "x": 825.5,
+              "y": 1355
+            }
+          }
         },
         {
           "id": "stock-no",
@@ -708,7 +909,27 @@
             "¿Hay inventario suficiente? → Devolver faltantes.",
             "Ruta de fallo o compensación."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 305.5,
+                "y": 1064.5
+              },
+              {
+                "x": 269.5,
+                "y": 1064.5
+              },
+              {
+                "x": 269.5,
+                "y": 1486
+              }
+            ],
+            "labelAt": {
+              "x": 228.5,
+              "y": 1355
+            }
+          }
         },
         {
           "id": "price-ready",
@@ -721,7 +942,23 @@
             "Fijar instantánea de precios → ¿Riesgo aprobado?.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 783.5,
+                "y": 1610
+              },
+              {
+                "x": 783.5,
+                "y": 1896
+              }
+            ],
+            "labelAt": {
+              "x": 688,
+              "y": 1753
+            }
+          }
         },
         {
           "id": "risk-yes",
@@ -734,7 +971,35 @@
             "¿Riesgo aprobado? → Reservar inventario.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 978,
+                "y": 2050
+              },
+              {
+                "x": 1014,
+                "y": 2050
+              },
+              {
+                "x": 1014,
+                "y": 2784
+              },
+              {
+                "x": 480.5,
+                "y": 2784
+              },
+              {
+                "x": 480.5,
+                "y": 2882.667
+              }
+            ],
+            "labelAt": {
+              "x": 1083.5,
+              "y": 2528
+            }
+          }
         },
         {
           "id": "risk-review",
@@ -749,9 +1014,23 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 589,
+                "y": 2050
+              },
+              {
+                "x": 456.5,
+                "y": 2050
+              },
+              {
+                "x": 456.5,
+                "y": 2466
+              }
+            ],
             "labelAt": {
-              "x": 2385,
-              "y": 365
+              "x": 392.5,
+              "y": 2335
             }
           }
         },
@@ -770,21 +1049,17 @@
           "route": {
             "via": [
               {
-                "x": 2550,
-                "y": 730
+                "x": 432.5,
+                "y": 2590
               },
               {
-                "x": 2355,
-                "y": 730
-              },
-              {
-                "x": 2355,
-                "y": 870
+                "x": 432.5,
+                "y": 2882.667
               }
             ],
             "labelAt": {
-              "x": 2475,
-              "y": 715
+              "x": 368.5,
+              "y": 2721
             }
           }
         },
@@ -799,7 +1074,31 @@
             "Revisión manual → Rechazar transacción.",
             "Ruta de fallo o compensación."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 480.5,
+                "y": 2590
+              },
+              {
+                "x": 480.5,
+                "y": 2626
+              },
+              {
+                "x": 901,
+                "y": 2626
+              },
+              {
+                "x": 901,
+                "y": 2852
+              }
+            ],
+            "labelAt": {
+              "x": 832.5,
+              "y": 2721
+            }
+          }
         },
         {
           "id": "request-pay",
@@ -812,7 +1111,23 @@
             "Reservar inventario → Solicitar autorización.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 456.5,
+                "y": 3006.667
+              },
+              {
+                "x": 456.5,
+                "y": 3330
+              }
+            ],
+            "labelAt": {
+              "x": 352,
+              "y": 3199
+            }
+          }
         },
         {
           "id": "payment-result",
@@ -827,9 +1142,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 456.5,
+                "y": 3499
+              },
+              {
+                "x": 456.5,
+                "y": 3785
+              }
+            ],
             "labelAt": {
-              "x": 975,
-              "y": 710
+              "x": 370,
+              "y": 3642
             }
           }
         },
@@ -844,7 +1169,27 @@
             "¿Autorizado? → Escribir pedido + Outbox.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 668,
+                "y": 3910
+              },
+              {
+                "x": 704,
+                "y": 3910
+              },
+              {
+                "x": 704,
+                "y": 4297
+              }
+            ],
+            "labelAt": {
+              "x": 758,
+              "y": 4166
+            }
+          }
         },
         {
           "id": "pay-no",
@@ -857,7 +1202,27 @@
             "¿Autorizado? → Liberar reserva.",
             "Ruta de fallo o compensación."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 245,
+                "y": 3910
+              },
+              {
+                "x": 209,
+                "y": 3910
+              },
+              {
+                "x": 209,
+                "y": 4319.5
+              }
+            ],
+            "labelAt": {
+              "x": 154,
+              "y": 4166
+            }
+          }
         },
         {
           "id": "release-complete",
@@ -872,9 +1237,19 @@
           ],
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 209,
+                "y": 4443.5
+              },
+              {
+                "x": 209,
+                "y": 4728
+              }
+            ],
             "labelAt": {
-              "x": 1717.5,
-              "y": 1175
+              "x": 128,
+              "y": 4597
             }
           }
         },
@@ -889,9 +1264,29 @@
             "Escribir pedido + Outbox → Devolver ID del pedido.",
             "Relación del flujo principal."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 704,
+                "y": 4466
+              },
+              {
+                "x": 704,
+                "y": 4728
+              }
+            ],
+            "labelAt": {
+              "x": 786,
+              "y": 4597
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -909,12 +1304,12 @@
           "module": "Canales",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 298,
+            "y": 48
           },
           "size": {
-            "width": 220,
-            "height": 960
+            "width": 162,
+            "height": 1672
           },
           "facts": [
             "Enviar carrito y recibir ID del pedido."
@@ -927,12 +1322,12 @@
           "module": "Compra",
           "kind": "service",
           "position": {
-            "x": 390,
-            "y": 40
+            "x": 745,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 336,
+            "height": 1672
           },
           "facts": [
             "Coordinar precios, inventario, riesgo, pago y pedidos."
@@ -948,12 +1343,12 @@
           "module": "Precios",
           "kind": "participant",
           "position": {
-            "x": 780,
-            "y": 40
+            "x": 3462,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 242,
+            "height": 1672
           },
           "facts": [
             "Generar una instantánea de precios inmutable."
@@ -966,12 +1361,12 @@
           "module": "Inventario",
           "kind": "participant",
           "position": {
-            "x": 1170,
-            "y": 40
+            "x": 1854.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 253,
+            "height": 1672
           },
           "facts": [
             "Reservar SKUs y devolver un token."
@@ -984,12 +1379,12 @@
           "module": "Riesgo",
           "kind": "participant",
           "position": {
-            "x": 1560,
-            "y": 40
+            "x": 3990.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 253,
+            "height": 1672
           },
           "facts": [
             "Devolver PASS, REVIEW o REJECT."
@@ -1002,12 +1397,12 @@
           "module": "Pago",
           "kind": "external",
           "position": {
-            "x": 1950,
-            "y": 40
+            "x": 2928,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 242,
+            "height": 1672
           },
           "facts": [
             "Autorizar el importe de la instantánea."
@@ -1020,12 +1415,12 @@
           "module": "Pedidos",
           "kind": "database",
           "position": {
-            "x": 2340,
-            "y": 40
+            "x": 2418,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 194,
+            "height": 1672
           },
           "facts": [
             "Guardar pedido y Outbox atómicamente."
@@ -1038,12 +1433,12 @@
           "module": "Entrega",
           "kind": "participant",
           "position": {
-            "x": 2730,
-            "y": 40
+            "x": 1320.5,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 253,
+            "height": 1672
           },
           "facts": [
             "Consumir OrderPaid de forma asíncrona."
@@ -1056,13 +1451,27 @@
           "label": "Resultado de inventario",
           "kind": "alt",
           "position": {
-            "x": 350,
-            "y": 375
+            "x": 32,
+            "y": 508
           },
           "size": {
-            "width": 1100,
-            "height": 117
-          }
+            "width": 4810,
+            "height": 508
+          },
+          "operands": [
+            {
+              "guard": "reservationToken",
+              "edgeIds": [
+                "s5"
+              ]
+            },
+            {
+              "guard": "OUT_OF_STOCK",
+              "edgeIds": [
+                "s6"
+              ]
+            }
+          ]
         }
       ],
       "edges": [
@@ -1078,7 +1487,10 @@
             "Enviar: Enviar comando de compra",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 262
+          }
         },
         {
           "id": "s2",
@@ -1092,7 +1504,10 @@
             "Enviar: Recalcular precios y descuentos",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 334
+          }
         },
         {
           "id": "s3",
@@ -1106,7 +1521,10 @@
             "Retorno: PriceSnapshot",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 406
+          }
         },
         {
           "id": "s4",
@@ -1120,7 +1538,10 @@
             "Enviar: Reservar cantidades de SKU",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 478
+          }
         },
         {
           "id": "s5",
@@ -1134,7 +1555,10 @@
             "Retorno: reservationToken",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 670
+          }
         },
         {
           "id": "s6",
@@ -1148,7 +1572,10 @@
             "Retorno: OUT_OF_STOCK",
             "Este mensaje representa la rama de falta de inventario."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 866
+          }
         },
         {
           "id": "s7",
@@ -1162,7 +1589,10 @@
             "Enviar: Verificar cuenta, dispositivo e importe",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1122
+          }
         },
         {
           "id": "s8",
@@ -1176,7 +1606,10 @@
             "Retorno: PASS",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1194
+          }
         },
         {
           "id": "s9",
@@ -1190,7 +1623,10 @@
             "Enviar: Autorizar importe debido",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1266
+          }
         },
         {
           "id": "s10",
@@ -1204,7 +1640,10 @@
             "Retorno: paymentConfirmed",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1338
+          }
         },
         {
           "id": "s11",
@@ -1218,7 +1657,10 @@
             "Enviar: Guardar pedido + OrderPaid",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1410
+          }
         },
         {
           "id": "s12",
@@ -1232,7 +1674,10 @@
             "Retorno: orderId",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1482
+          }
         },
         {
           "id": "s13",
@@ -1246,7 +1691,10 @@
             "Enviar: Publicar OrderPaid de forma asíncrona",
             "Mensaje asíncrono; no bloquea la compra."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1554
+          }
         },
         {
           "id": "s14",
@@ -1260,9 +1708,16 @@
             "Retorno: Devolver ID del pedido",
             "Leer en orden numérico."
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1626
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "sequence-0"
+      }
     },
     {
       "meta": {
@@ -1280,12 +1735,12 @@
           "module": "Canales",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 70
+            "x": 32,
+            "y": 134
           },
           "size": {
-            "width": 360,
-            "height": 230
+            "width": 300,
+            "height": 180
           },
           "fields": [
             {
@@ -1313,12 +1768,12 @@
           "module": "Compra",
           "kind": "entity",
           "position": {
-            "x": 560,
-            "y": 70
+            "x": 759.5,
+            "y": 110
           },
           "size": {
-            "width": 390,
-            "height": 230
+            "width": 262,
+            "height": 180
           },
           "fields": [
             {
@@ -1346,12 +1801,12 @@
           "module": "Compra",
           "kind": "entity",
           "position": {
-            "x": 1120,
-            "y": 70
+            "x": 1485,
+            "y": 100
           },
           "size": {
-            "width": 420,
-            "height": 260
+            "width": 272,
+            "height": 200
           },
           "fields": [
             {
@@ -1384,12 +1839,12 @@
           "module": "Pedidos",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 704,
+            "y": 436
           },
           "size": {
-            "width": 430,
-            "height": 290
+            "width": 373,
+            "height": 232
           },
           "fields": [
             {
@@ -1431,12 +1886,12 @@
           "module": "Pedidos",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 500
+            "x": 1491.5,
+            "y": 412
           },
           "size": {
-            "width": 450,
-            "height": 290
+            "width": 323,
+            "height": 232
           },
           "fields": [
             {
@@ -1474,12 +1929,12 @@
           "module": "Pago",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 500
+            "x": 1485,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 336,
+            "height": 200
           },
           "fields": [
             {
@@ -1513,12 +1968,12 @@
           "module": "Inventario",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 980
+            "x": 2220,
+            "y": 412
           },
           "size": {
-            "width": 480,
-            "height": 290
+            "width": 301,
+            "height": 232
           },
           "fields": [
             {
@@ -1556,12 +2011,12 @@
           "module": "Entrega",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 980
+            "x": 2220,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 304,
+            "height": 200
           },
           "fields": [
             {
@@ -1599,7 +2054,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..1",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 200
+              },
+              {
+                "x": 731.5,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 518,
+              "y": 160
+            }
+          }
         },
         {
           "id": "cart-items",
@@ -1609,7 +2080,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1049.5,
+                "y": 200
+              },
+              {
+                "x": 1457,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 1281,
+              "y": 240
+            }
+          }
         },
         {
           "id": "customer-orders",
@@ -1619,7 +2106,31 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 552
+              },
+              {
+                "x": 676,
+                "y": 552
+              }
+            ],
+            "labelAt": {
+              "x": 518,
+              "y": 592
+            }
+          }
         },
         {
           "id": "order-items",
@@ -1629,7 +2140,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "1..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1105,
+                "y": 528
+              },
+              {
+                "x": 1463.5,
+                "y": 528
+              }
+            ],
+            "labelAt": {
+              "x": 1281,
+              "y": 568
+            }
+          }
         },
         {
           "id": "order-payments",
@@ -1643,25 +2170,25 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 850
+                "x": 1105,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 1125,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 400
+                "x": 1125,
+                "y": 856
               },
               {
-                "x": 1445,
-                "y": 400
+                "x": 1457,
+                "y": 856
               }
             ],
             "labelAt": {
-              "x": 800,
-              "y": 375
+              "x": 1281,
+              "y": 896
             }
           }
         },
@@ -1673,7 +2200,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1842.5,
+                "y": 528
+              },
+              {
+                "x": 2192,
+                "y": 528
+              }
+            ],
+            "labelAt": {
+              "x": 2020.5,
+              "y": 488
+            }
+          }
         },
         {
           "id": "order-shipments",
@@ -1683,9 +2226,29 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1849,
+                "y": 856
+              },
+              {
+                "x": 2192,
+                "y": 856
+              }
+            ],
+            "labelAt": {
+              "x": 2020.5,
+              "y": 908
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -1702,12 +2265,12 @@
           "label": "Borde público",
           "kind": "network",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 220.5
           },
           "size": {
-            "width": 1510,
-            "height": 250
+            "width": 2112,
+            "height": 269.5
           }
         },
         {
@@ -1715,12 +2278,12 @@
           "label": "Región comercial principal · Kubernetes",
           "kind": "cluster",
           "position": {
-            "x": 10,
-            "y": 340
+            "x": 2556,
+            "y": 151
           },
           "size": {
-            "width": 1510,
-            "height": 300
+            "width": 2409,
+            "height": 366.5
           }
         },
         {
@@ -1728,12 +2291,12 @@
           "label": "Datos y servicios externos",
           "kind": "host",
           "position": {
-            "x": 10,
-            "y": 780
+            "x": 5375,
+            "y": 100
           },
           "size": {
-            "width": 1830,
-            "height": 370
+            "width": 2368,
+            "height": 474
           }
         }
       ],
@@ -1745,13 +2308,14 @@
           "module": "Canales",
           "kind": "device",
           "position": {
-            "x": 40,
-            "y": 75
+            "x": 210,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 402,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "cdn",
@@ -1760,13 +2324,14 @@
           "module": "Canales",
           "kind": "node",
           "position": {
-            "x": 610,
-            "y": 75
+            "x": 944,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 480,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "gateway",
@@ -1775,13 +2340,14 @@
           "module": "Canales",
           "kind": "container",
           "position": {
-            "x": 1180,
-            "y": 75
+            "x": 1778,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 334,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "commerce",
@@ -1790,16 +2356,17 @@
           "module": "Compra",
           "kind": "service",
           "position": {
-            "x": 40,
-            "y": 410
+            "x": 2980,
+            "y": 320.5
           },
           "size": {
-            "width": 360,
-            "height": 170
+            "width": 345,
+            "height": 115
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "region"
         },
         {
           "id": "control",
@@ -1808,13 +2375,14 @@
           "module": "Inventario",
           "kind": "service",
           "position": {
-            "x": 580,
-            "y": 410
+            "x": 3693,
+            "y": 296.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 418,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "fulfillment",
@@ -1823,13 +2391,14 @@
           "module": "Entrega",
           "kind": "service",
           "position": {
-            "x": 1120,
-            "y": 410
+            "x": 4528,
+            "y": 296.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 405,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "database",
@@ -1838,13 +2407,14 @@
           "module": "Pedidos",
           "kind": "database",
           "position": {
-            "x": 40,
-            "y": 850
+            "x": 5701.5,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 377,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "event-bus",
@@ -1853,13 +2423,14 @@
           "module": "Pedidos",
           "kind": "container",
           "position": {
-            "x": 500,
-            "y": 850
+            "x": 6436,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 480,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "payment",
@@ -1868,13 +2439,14 @@
           "module": "Pago",
           "kind": "external",
           "position": {
-            "x": 960,
-            "y": 850
+            "x": 5671,
+            "y": 427
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 438,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "wms",
@@ -1883,13 +2455,14 @@
           "module": "Entrega",
           "kind": "external",
           "position": {
-            "x": 1420,
-            "y": 850
+            "x": 7270,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 173
-          }
+            "width": 441,
+            "height": 115
+          },
+          "groupId": "managed"
         }
       ],
       "edges": [
@@ -1899,7 +2472,23 @@
           "target": "cdn",
           "label": "HTTPS",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 624,
+                "y": 378
+              },
+              {
+                "x": 932,
+                "y": 378
+              }
+            ],
+            "labelAt": {
+              "x": 778,
+              "y": 418
+            }
+          }
         },
         {
           "id": "edge-2",
@@ -1907,7 +2496,23 @@
           "target": "gateway",
           "label": "Solicitud\nfiltrada",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1436,
+                "y": 378
+              },
+              {
+                "x": 1766,
+                "y": 378
+              }
+            ],
+            "labelAt": {
+              "x": 1601,
+              "y": 430
+            }
+          }
         },
         {
           "id": "edge-3",
@@ -1919,21 +2524,17 @@
           "route": {
             "via": [
               {
-                "x": 1900,
-                "y": 150
+                "x": 2124,
+                "y": 378
               },
               {
-                "x": 1900,
-                "y": 680
-              },
-              {
-                "x": 350,
-                "y": 680
+                "x": 2968,
+                "y": 378
               }
             ],
             "labelAt": {
-              "x": 1030,
-              "y": 710
+              "x": 2350,
+              "y": 430
             }
           }
         },
@@ -1943,7 +2544,23 @@
           "target": "control",
           "label": "Llamada\nsíncrona de\ndominio",
           "kind": "depends",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 3337,
+                "y": 354
+              },
+              {
+                "x": 3681,
+                "y": 354
+              }
+            ],
+            "labelAt": {
+              "x": 3509,
+              "y": 290
+            }
+          }
         },
         {
           "id": "edge-5",
@@ -1953,9 +2570,19 @@
           "kind": "depends",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 4123,
+                "y": 354
+              },
+              {
+                "x": 4516,
+                "y": 354
+              }
+            ],
             "labelAt": {
-              "x": 1030,
-              "y": 375
+              "x": 4319.5,
+              "y": 302
             }
           }
         },
@@ -1969,25 +2596,33 @@
           "route": {
             "via": [
               {
-                "x": 220,
-                "y": 725
+                "x": 3337,
+                "y": 378
               },
               {
-                "x": 680,
-                "y": 725
+                "x": 3397,
+                "y": 378
               },
               {
-                "x": 680,
-                "y": 820
+                "x": 3397,
+                "y": 459.5
               },
               {
-                "x": 205,
-                "y": 820
+                "x": 5283,
+                "y": 459.5
+              },
+              {
+                "x": 5283,
+                "y": 257.5
+              },
+              {
+                "x": 5689.5,
+                "y": 257.5
               }
             ],
             "labelAt": {
-              "x": 300,
-              "y": 714
+              "x": 5170,
+              "y": 407.5
             }
           }
         },
@@ -1997,7 +2632,23 @@
           "target": "event-bus",
           "label": "Outbox",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 6090.5,
+                "y": 257.5
+              },
+              {
+                "x": 6424,
+                "y": 257.5
+              }
+            ],
+            "labelAt": {
+              "x": 6272.5,
+              "y": 297.5
+            }
+          }
         },
         {
           "id": "edge-9",
@@ -2009,21 +2660,25 @@
           "route": {
             "via": [
               {
-                "x": 0,
-                "y": 495
+                "x": 3337,
+                "y": 402
               },
               {
-                "x": 0,
-                "y": 700
+                "x": 3373,
+                "y": 402
               },
               {
-                "x": 1125,
-                "y": 700
+                "x": 3373,
+                "y": 484.5
+              },
+              {
+                "x": 5659,
+                "y": 484.5
               }
             ],
             "labelAt": {
-              "x": 520,
-              "y": 675
+              "x": 5170,
+              "y": 524.5
             }
           }
         },
@@ -2037,21 +2692,25 @@
           "route": {
             "via": [
               {
-                "x": 665,
-                "y": 1100
+                "x": 6928,
+                "y": 257.5
               },
               {
-                "x": 1585,
-                "y": 1100
+                "x": 7258,
+                "y": 257.5
               }
             ],
             "labelAt": {
-              "x": 1120,
-              "y": 1100
+              "x": 7093,
+              "y": 309.5
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2069,12 +2728,12 @@
           "module": "Compra",
           "kind": "class",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 102,
+            "y": 100
           },
           "size": {
-            "width": 390,
-            "height": 260
+            "width": 316,
+            "height": 206
           },
           "attributes": [
             "customerId: CustomerId",
@@ -2091,12 +2750,12 @@
           "module": "Compra",
           "kind": "class",
           "position": {
-            "x": 590,
-            "y": 40
+            "x": 69,
+            "y": 592
           },
           "size": {
-            "width": 440,
-            "height": 230
+            "width": 382,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2113,12 +2772,12 @@
           "module": "Pedidos",
           "kind": "class",
           "position": {
-            "x": 1200,
-            "y": 40
+            "x": 32,
+            "y": 1085
           },
           "size": {
-            "width": 400,
-            "height": 290
+            "width": 360,
+            "height": 262
           },
           "attributes": [
             "id: OrderId",
@@ -2137,12 +2796,12 @@
           "module": "Precios",
           "kind": "interface",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 1368,
+            "y": 1085
           },
           "size": {
-            "width": 390,
-            "height": 220
+            "width": 354,
+            "height": 139
           },
           "attributes": [],
           "methods": [
@@ -2155,12 +2814,12 @@
           "module": "Inventario",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 500
+            "x": 504,
+            "y": 1085
           },
           "size": {
-            "width": 440,
-            "height": 250
+            "width": 321,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2174,12 +2833,12 @@
           "module": "Pago",
           "kind": "interface",
           "position": {
-            "x": 1200,
-            "y": 500
+            "x": 937,
+            "y": 1085
           },
           "size": {
-            "width": 400,
-            "height": 250
+            "width": 319,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2193,12 +2852,12 @@
           "module": "Pedidos",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 950
+            "x": 102,
+            "y": 1633
           },
           "size": {
-            "width": 440,
-            "height": 220
+            "width": 244,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2214,7 +2873,23 @@
           "target": "service",
           "label": "Entrada",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 318
+              },
+              {
+                "x": 260,
+                "y": 580
+              }
+            ],
+            "labelAt": {
+              "x": 196,
+              "y": 449
+            }
+          }
         },
         {
           "id": "creates",
@@ -2222,7 +2897,23 @@
           "target": "order",
           "label": "Crear",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 212,
+                "y": 771
+              },
+              {
+                "x": 212,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 157,
+              "y": 942
+            }
+          }
         },
         {
           "id": "pricing",
@@ -2230,7 +2921,31 @@
           "target": "pricing-port",
           "label": "Depende de",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 284,
+                "y": 771
+              },
+              {
+                "x": 284,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 1467.5,
+              "y": 942
+            }
+          }
         },
         {
           "id": "inventory",
@@ -2238,7 +2953,31 @@
           "target": "inventory-port",
           "label": "Depende de",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 771
+              },
+              {
+                "x": 236,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 587,
+              "y": 942
+            }
+          }
         },
         {
           "id": "payment",
@@ -2246,7 +2985,31 @@
           "target": "payment-port",
           "label": "Depende de",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 771
+              },
+              {
+                "x": 260,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 1019,
+              "y": 942
+            }
+          }
         },
         {
           "id": "aggregate",
@@ -2258,21 +3021,17 @@
           "route": {
             "via": [
               {
-                "x": 1700,
-                "y": 185
+                "x": 212,
+                "y": 1359
               },
               {
-                "x": 1700,
-                "y": 1060
-              },
-              {
-                "x": 1100,
-                "y": 1060
+                "x": 212,
+                "y": 1621
               }
             ],
             "labelAt": {
-              "x": 1500,
-              "y": 1035
+              "x": 139,
+              "y": 1490
             }
           }
         },
@@ -2286,25 +3045,41 @@
           "route": {
             "via": [
               {
-                "x": 500,
-                "y": 155
+                "x": 308,
+                "y": 771
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 308,
+                "y": 807
               },
               {
-                "x": 810,
-                "y": 850
+                "x": 1834,
+                "y": 807
+              },
+              {
+                "x": 1834,
+                "y": 1553
+              },
+              {
+                "x": 236,
+                "y": 1553
+              },
+              {
+                "x": 236,
+                "y": 1621
               }
             ],
             "labelAt": {
-              "x": 560,
-              "y": 825
+              "x": 1894.5,
+              "y": 1216
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2322,12 +3097,12 @@
           "module": "Pedidos",
           "kind": "initial",
           "position": {
-            "x": 30,
+            "x": 315,
             "y": 100
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 64,
+            "height": 28
           }
         },
         {
@@ -2337,12 +3112,12 @@
           "module": "Pago",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 70
+            "x": 203,
+            "y": 414
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 288,
+            "height": 100
           },
           "tags": [
             "core"
@@ -2355,12 +3130,12 @@
           "module": "Pedidos",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 70
+            "x": 594.5,
+            "y": 824
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 407,
+            "height": 100
           }
         },
         {
@@ -2370,12 +3145,12 @@
           "module": "Entrega",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 70
+            "x": 619,
+            "y": 1210
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 334,
+            "height": 100
           }
         },
         {
@@ -2385,12 +3160,12 @@
           "module": "Entrega",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 390
+            "x": 659.5,
+            "y": 1620
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 253,
+            "height": 100
           }
         },
         {
@@ -2400,12 +3175,12 @@
           "module": "Entrega",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 390
+            "x": 649,
+            "y": 2030
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 274,
+            "height": 100
           }
         },
         {
@@ -2415,12 +3190,12 @@
           "module": "Entrega",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 390
+            "x": 549,
+            "y": 2440
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 474,
+            "height": 100
           }
         },
         {
@@ -2430,12 +3205,12 @@
           "module": "Pedidos",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 710
+            "x": 187.5,
+            "y": 824
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 295,
+            "height": 100
           }
         },
         {
@@ -2445,12 +3220,12 @@
           "module": "Pago",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 710
+            "x": 619.5,
+            "y": 2850
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 357,
+            "height": 100
           }
         },
         {
@@ -2459,12 +3234,12 @@
           "module": "Pedidos",
           "kind": "final",
           "position": {
-            "x": 1270,
-            "y": 740
+            "x": 303,
+            "y": 3260
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 88,
+            "height": 28
           }
         }
       ],
@@ -2475,7 +3250,23 @@
           "target": "pending",
           "label": "Crear pedido",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 347,
+                "y": 140
+              },
+              {
+                "x": 347,
+                "y": 402
+              }
+            ],
+            "labelAt": {
+              "x": 260.5,
+              "y": 271
+            }
+          }
         },
         {
           "id": "pay",
@@ -2486,9 +3277,27 @@
           "kind": "transition",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 359,
+                "y": 526
+              },
+              {
+                "x": 359,
+                "y": 562
+              },
+              {
+                "x": 798,
+                "y": 562
+              },
+              {
+                "x": 798,
+                "y": 812
+              }
+            ],
             "labelAt": {
-              "x": 645,
-              "y": 25
+              "x": 940.5,
+              "y": 669
             }
           }
         },
@@ -2498,7 +3307,23 @@
           "target": "allocated",
           "label": "Almacén acepta",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 786,
+                "y": 936
+              },
+              {
+                "x": 786,
+                "y": 1198
+              }
+            ],
+            "labelAt": {
+              "x": 687,
+              "y": 1067
+            }
+          }
         },
         {
           "id": "pack",
@@ -2506,7 +3331,23 @@
           "target": "packed",
           "label": "Recogida\ncompletada",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 786,
+                "y": 1322
+              },
+              {
+                "x": 786,
+                "y": 1608
+              }
+            ],
+            "labelAt": {
+              "x": 707,
+              "y": 1465
+            }
+          }
         },
         {
           "id": "ship",
@@ -2514,7 +3355,23 @@
           "target": "shipped",
           "label": "Recogida del\ntransportista",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 786,
+                "y": 1732
+              },
+              {
+                "x": 786,
+                "y": 2018
+              }
+            ],
+            "labelAt": {
+              "x": 697,
+              "y": 1875
+            }
+          }
         },
         {
           "id": "receive",
@@ -2522,7 +3379,23 @@
           "target": "completed",
           "label": "Confirmar\nrecepción",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 786,
+                "y": 2142
+              },
+              {
+                "x": 786,
+                "y": 2428
+              }
+            ],
+            "labelAt": {
+              "x": 709.5,
+              "y": 2285
+            }
+          }
         },
         {
           "id": "cancel",
@@ -2535,25 +3408,17 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 300
+                "x": 335,
+                "y": 526
               },
               {
-                "x": 180,
-                "y": 300
-              },
-              {
-                "x": 180,
-                "y": 650
-              },
-              {
-                "x": 390,
-                "y": 650
+                "x": 335,
+                "y": 812
               }
             ],
             "labelAt": {
-              "x": 130,
-              "y": 615
+              "x": 171.5,
+              "y": 669
             }
           }
         },
@@ -2568,25 +3433,33 @@
           "route": {
             "via": [
               {
-                "x": 900,
-                "y": 20
+                "x": 810,
+                "y": 936
               },
               {
-                "x": 1600,
-                "y": 20
+                "x": 810,
+                "y": 972
               },
               {
-                "x": 1600,
-                "y": 650
+                "x": 1071,
+                "y": 972
               },
               {
-                "x": 900,
-                "y": 650
+                "x": 1071,
+                "y": 2770
+              },
+              {
+                "x": 810,
+                "y": 2770
+              },
+              {
+                "x": 810,
+                "y": 2838
               }
             ],
             "labelAt": {
-              "x": 1720,
-              "y": 595
+              "x": 930,
+              "y": 1875
             }
           }
         },
@@ -2597,7 +3470,23 @@
           "label": "Reembolso de\nposventa",
           "guard": "Revisión aprobada",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 786,
+                "y": 2552
+              },
+              {
+                "x": 786,
+                "y": 2838
+              }
+            ],
+            "labelAt": {
+              "x": 627,
+              "y": 2695
+            }
+          }
         },
         {
           "id": "cancel-close",
@@ -2609,17 +3498,17 @@
           "route": {
             "via": [
               {
-                "x": 390,
-                "y": 930
+                "x": 335,
+                "y": 936
               },
               {
-                "x": 1315,
-                "y": 930
+                "x": 335,
+                "y": 3248
               }
             ],
             "labelAt": {
-              "x": 560,
-              "y": 905
+              "x": 264,
+              "y": 2080
             }
           }
         },
@@ -2629,9 +3518,37 @@
           "target": "closed",
           "label": "Reembolso\nrecibido",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 798,
+                "y": 2962
+              },
+              {
+                "x": 798,
+                "y": 3180
+              },
+              {
+                "x": 359,
+                "y": 3180
+              },
+              {
+                "x": 359,
+                "y": 3248
+              }
+            ],
+            "labelAt": {
+              "x": 875.5,
+              "y": 3105
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2648,12 +3565,12 @@
           "label": "Plataforma de comercio y entrega",
           "kind": "system",
           "position": {
-            "x": 500,
-            "y": 20
+            "x": 490,
+            "y": 100
           },
           "size": {
-            "width": 1050,
-            "height": 970
+            "width": 1671,
+            "height": 1080
           }
         }
       ],
@@ -2664,12 +3581,12 @@
           "module": "Canales",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 80
+            "x": 188,
+            "y": 467
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 162,
+            "height": 104
           }
         },
         {
@@ -2678,12 +3595,12 @@
           "module": "Precios",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 310
+            "x": 32,
+            "y": 722.5
           },
           "size": {
-            "width": 276,
-            "height": 150
+            "width": 318,
+            "height": 104
           }
         },
         {
@@ -2692,12 +3609,12 @@
           "module": "Entrega",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 540
+            "x": 58,
+            "y": 217
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 292,
+            "height": 104
           }
         },
         {
@@ -2706,12 +3623,12 @@
           "module": "Entrega",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 770
+            "x": 67,
+            "y": 1095
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 283,
+            "height": 104
           }
         },
         {
@@ -2721,16 +3638,17 @@
           "module": "Compra",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 80
+            "x": 900,
+            "y": 450
           },
           "size": {
-            "width": 360,
-            "height": 150
+            "width": 388,
+            "height": 138
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "platform"
         },
         {
           "id": "pay",
@@ -2739,13 +3657,14 @@
           "module": "Pago",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 80
+            "x": 1684,
+            "y": 450
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 365,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "catalog",
@@ -2754,13 +3673,14 @@
           "module": "Precios",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 310
+            "x": 854,
+            "y": 700
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 480,
+            "height": 149
+          },
+          "groupId": "platform"
         },
         {
           "id": "orders",
@@ -2769,13 +3689,14 @@
           "module": "Pedidos",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 310
+            "x": 1684,
+            "y": 700
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 445,
+            "height": 149
+          },
+          "groupId": "platform"
         },
         {
           "id": "pick",
@@ -2784,13 +3705,14 @@
           "module": "Entrega",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 540
+            "x": 888,
+            "y": 200
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 412,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "ship",
@@ -2799,13 +3721,14 @@
           "module": "Entrega",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 540
+            "x": 1684,
+            "y": 200
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 285,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "refund",
@@ -2814,13 +3737,14 @@
           "module": "Pago",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 770
+            "x": 1684,
+            "y": 973
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 419,
+            "height": 138
+          },
+          "groupId": "platform"
         },
         {
           "id": "return",
@@ -2829,13 +3753,14 @@
           "module": "Entrega",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 770
+            "x": 956,
+            "y": 961
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 378,
+            "height": 138
+          },
+          "groupId": "platform"
         }
       ],
       "edges": [
@@ -2844,28 +3769,84 @@
           "source": "buyer",
           "target": "checkout",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 362,
+                "y": 519
+              },
+              {
+                "x": 888,
+                "y": 519
+              }
+            ]
+          }
         },
         {
           "id": "merchant-catalog",
           "source": "merchant",
           "target": "catalog",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 362,
+                "y": 774.5
+              },
+              {
+                "x": 842,
+                "y": 774.5
+              }
+            ]
+          }
         },
         {
           "id": "warehouse-pick",
           "source": "warehouse",
           "target": "pick",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 362,
+                "y": 269
+              },
+              {
+                "x": 876,
+                "y": 269
+              }
+            ]
+          }
         },
         {
           "id": "support-refund",
           "source": "support",
           "target": "refund",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 362,
+                "y": 1147
+              },
+              {
+                "x": 1604,
+                "y": 1147
+              },
+              {
+                "x": 1604,
+                "y": 1054
+              },
+              {
+                "x": 1672,
+                "y": 1054
+              }
+            ]
+          }
         },
         {
           "id": "checkout-pay",
@@ -2873,7 +3854,23 @@
           "target": "pay",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1300,
+                "y": 519
+              },
+              {
+                "x": 1672,
+                "y": 519
+              }
+            ],
+            "labelAt": {
+              "x": 1509,
+              "y": 559
+            }
+          }
         },
         {
           "id": "catalog-orders",
@@ -2881,7 +3878,23 @@
           "target": "orders",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1346,
+                "y": 774.5
+              },
+              {
+                "x": 1672,
+                "y": 774.5
+              }
+            ],
+            "labelAt": {
+              "x": 1509,
+              "y": 814.5
+            }
+          }
         },
         {
           "id": "pick-ship",
@@ -2889,7 +3902,23 @@
           "target": "ship",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1312,
+                "y": 269
+              },
+              {
+                "x": 1672,
+                "y": 269
+              }
+            ],
+            "labelAt": {
+              "x": 1509,
+              "y": 309
+            }
+          }
         },
         {
           "id": "return-refund",
@@ -2897,9 +3926,29 @@
           "target": "refund",
           "label": "extend",
           "kind": "extend",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1346,
+                "y": 1030
+              },
+              {
+                "x": 1672,
+                "y": 1030
+              }
+            ],
+            "labelAt": {
+              "x": 1509,
+              "y": 1070
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2916,12 +3965,12 @@
           "label": "Límite de datos de transacción",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 20
+            "x": 870,
+            "y": 100
           },
           "size": {
-            "width": 1330,
-            "height": 570
+            "width": 4069,
+            "height": 596
           }
         },
         {
@@ -2929,12 +3978,12 @@
           "label": "Límite de datos de entrega",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 660
+            "x": 5326,
+            "y": 464
           },
           "size": {
-            "width": 1330,
-            "height": 260
+            "width": 2455,
+            "height": 238
           }
         }
       ],
@@ -2946,12 +3995,12 @@
           "module": "Canales",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 85
+            "x": 32,
+            "y": 325
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 418,
+            "height": 100
           }
         },
         {
@@ -2961,16 +4010,17 @@
           "module": "Compra",
           "kind": "process",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 2023.667,
+            "y": 412
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 460,
+            "height": 100
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "transaction"
         },
         {
           "id": "pricing",
@@ -2979,13 +4029,14 @@
           "module": "Precios",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 85
+            "x": 1209,
+            "y": 424
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 449,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "risk",
@@ -2994,13 +4045,14 @@
           "module": "Riesgo",
           "kind": "dataStore",
           "position": {
-            "x": 1500,
-            "y": 85
+            "x": 2017,
+            "y": 200
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 480,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "decision",
@@ -3009,13 +4061,14 @@
           "module": "Riesgo",
           "kind": "process",
           "position": {
-            "x": 1500,
-            "y": 375
+            "x": 2905,
+            "y": 400
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 480,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "inventory",
@@ -3024,13 +4077,14 @@
           "module": "Inventario",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 375
+            "x": 3766,
+            "y": 400
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 409,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "order",
@@ -3039,13 +4093,14 @@
           "module": "Pedidos",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 4592,
+            "y": 564
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 315,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "payment",
@@ -3054,12 +4109,12 @@
           "module": "Pago",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 375
+            "x": 64,
+            "y": 576
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 386,
+            "height": 100
           }
         },
         {
@@ -3069,13 +4124,14 @@
           "module": "Pedidos",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 715
+            "x": 5629,
+            "y": 564
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 418,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "wms",
@@ -3084,13 +4140,14 @@
           "module": "Entrega",
           "kind": "process",
           "position": {
-            "x": 1010,
-            "y": 715
+            "x": 6455,
+            "y": 564
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 409,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "carrier",
@@ -3099,13 +4156,14 @@
           "module": "Entrega",
           "kind": "external",
           "position": {
-            "x": 1500,
-            "y": 715
+            "x": 7281,
+            "y": 564
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 468,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         }
       ],
       "edges": [
@@ -3117,9 +4175,27 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 462,
+                "y": 375
+              },
+              {
+                "x": 1937,
+                "y": 375
+              },
+              {
+                "x": 1937,
+                "y": 450
+              },
+              {
+                "x": 2011.667,
+                "y": 450
+              }
+            ],
             "labelAt": {
-              "x": 390,
-              "y": 280
+              "x": 654,
+              "y": 323
             }
           }
         },
@@ -3129,7 +4205,23 @@
           "target": "checkout",
           "label": "Reglas de\nprecios y\ndescuentos",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1670,
+                "y": 474
+              },
+              {
+                "x": 2011.667,
+                "y": 474
+              }
+            ],
+            "labelAt": {
+              "x": 1837.5,
+              "y": 538
+            }
+          }
         },
         {
           "id": "d3",
@@ -3137,7 +4229,31 @@
           "target": "decision",
           "label": "Características\nde riesgo",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2509,
+                "y": 250
+              },
+              {
+                "x": 2825,
+                "y": 250
+              },
+              {
+                "x": 2825,
+                "y": 438
+              },
+              {
+                "x": 2893,
+                "y": 438
+              }
+            ],
+            "labelAt": {
+              "x": 2701,
+              "y": 302
+            }
+          }
         },
         {
           "id": "d4",
@@ -3149,25 +4265,17 @@
           "route": {
             "via": [
               {
-                "x": 670,
-                "y": 300
+                "x": 2495.667,
+                "y": 462
               },
               {
-                "x": 1850,
-                "y": 300
-              },
-              {
-                "x": 1850,
-                "y": 620
-              },
-              {
-                "x": 1640,
-                "y": 620
+                "x": 2893,
+                "y": 462
               }
             ],
             "labelAt": {
-              "x": 1250,
-              "y": 275
+              "x": 2701,
+              "y": 514
             }
           }
         },
@@ -3177,7 +4285,23 @@
           "target": "inventory",
           "label": "Solicitud de\nreserva",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 3397,
+                "y": 450
+              },
+              {
+                "x": 3754,
+                "y": 450
+              }
+            ],
+            "labelAt": {
+              "x": 3575.5,
+              "y": 398
+            }
+          }
         },
         {
           "id": "d6",
@@ -3185,7 +4309,31 @@
           "target": "order",
           "label": "Token de reserva",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4187,
+                "y": 450
+              },
+              {
+                "x": 4512,
+                "y": 450
+              },
+              {
+                "x": 4512,
+                "y": 602
+              },
+              {
+                "x": 4580,
+                "y": 602
+              }
+            ],
+            "labelAt": {
+              "x": 4383.5,
+              "y": 410
+            }
+          }
         },
         {
           "id": "d7",
@@ -3195,9 +4343,19 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 462,
+                "y": 626
+              },
+              {
+                "x": 4580,
+                "y": 626
+              }
+            ],
             "labelAt": {
-              "x": 400,
-              "y": 585
+              "x": 654,
+              "y": 666
             }
           }
         },
@@ -3211,21 +4369,17 @@
           "route": {
             "via": [
               {
-                "x": 670,
-                "y": 620
+                "x": 4919,
+                "y": 614
               },
               {
-                "x": 440,
-                "y": 620
-              },
-              {
-                "x": 440,
-                "y": 790
+                "x": 5617,
+                "y": 614
               }
             ],
             "labelAt": {
-              "x": 670,
-              "y": 620
+              "x": 5132.5,
+              "y": 666
             }
           }
         },
@@ -3235,7 +4389,23 @@
           "target": "wms",
           "label": "Pedidos pagados",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 6059,
+                "y": 614
+              },
+              {
+                "x": 6443,
+                "y": 614
+              }
+            ],
+            "labelAt": {
+              "x": 6251,
+              "y": 654
+            }
+          }
         },
         {
           "id": "d10",
@@ -3243,9 +4413,29 @@
           "target": "carrier",
           "label": "Paquetes y guías",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 6876,
+                "y": 614
+              },
+              {
+                "x": 7269,
+                "y": 614
+              }
+            ],
+            "labelAt": {
+              "x": 7072.5,
+              "y": 654
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     }
   ]
 }

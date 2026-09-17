@@ -13,12 +13,14 @@ const anchor = (node, side, offset) => {
   return rectAnchor(node, side, offset);
 };
 
-function flowNode(node, x, y, fill, stroke) {
+const textArea = node => {
   const { width: w, height: h } = node.size;
   const inset = ['input', 'output'].includes(node.kind) ? w * FLOW_SLANT + 12 : ['start', 'end'].includes(node.kind) ? Math.min(h / 2, w / 4) : 18;
-  const textWidth = node.kind === 'decision' ? w / 2 - 8 : w - inset * 2;
-  const textHeight = node.kind === 'decision' ? h / 2 - 8 : h - 12;
-  const label = centeredTitle(x + w / 2, y + h / 2, node.label, textWidth, textHeight, node.subtitle);
+  return { width: node.kind === 'decision' ? w / 2 - 8 : w - inset * 2, height: node.kind === 'decision' ? h / 2 - 8 : h - 12 };
+};
+function flowNode(node, x, y, fill, stroke) {
+  const { width: w, height: h } = node.size, area = textArea(node);
+  const label = centeredTitle(x + w / 2, y + h / 2, node.label, area.width, area.height, node.subtitle);
   const inner = node.kind === 'subprocess' ? `<path d="M ${x + 11} ${y}V ${y + h}M ${x + w - 11} ${y}V ${y + h}" stroke="${stroke}"/>` : '';
   return `<g class="shape-label">${paint(outline(node, x, y), { fill, stroke, 'stroke-width': 1.2 })}${inner}${label}</g>`;
 }
@@ -29,6 +31,6 @@ export default {
   nodeKinds: ["start", "end", "process", "decision", "input", "output", "subprocess"],
   groupKinds: [],
   edgeKinds: ["flow", "yes", "no", "success", "failure"],
-  render: flowNode, outline, anchor,
+  render: flowNode, outline, anchor, textArea,
   edgeLabel: edge => edge.label ?? ({ yes: '是', no: '否' }[edge.kind] ?? ''),
 };

@@ -17,5 +17,11 @@ export function graphLegend(graph, palette, moduleColors) {
   }
   if (graph.edges.some(edge => !isDashed(edge, graph.meta.diagramType))) entries.set('solid', { id: 'solid', label: '实线关系', shape: 'solid', stroke: palette.edge });
   if (graph.edges.some(edge => isDashed(edge, graph.meta.diagramType))) entries.set('dashed', { id: 'dashed', label: '虚线：关系记法 / 框架约定 / 推断', shape: 'dashed', stroke: palette.edge });
+  if (definition.sequence) for (const [kind, label] of [['sync', '同步消息'], ['async', '异步消息'], ['return', '返回消息']]) {
+    if (graph.edges.some(edge => edge.kind === kind)) entries.set(kind, { id: kind, label, shape: kind, stroke: palette.edge });
+  }
+  if (definition.sequence && graph.executions?.length) entries.set('execution', { id: 'execution', label: '激活条：执行区间，错位表示嵌套', shape: 'execution', fill: palette.accentSoft, stroke: palette.accent });
+  if (definition.sequence && graph.edges.some(edge => edge.replyTo)) entries.set('pair', { id: 'pair', label: 'C 编号：调用与返回配对，同组同色', shape: 'solid', stroke: palette.accent });
+  if (definition.sequence && graph.groups?.some(group => group.kind === 'par')) entries.set('parallel', { id: 'parallel', label: 'par：分支并行，上下排列不代表先后', shape: 'dashed', stroke: palette.edge });
   return [...entries.values()].map(entry => ({ ...entry, label: translate(graph.meta.locale, entry.label) }));
 }

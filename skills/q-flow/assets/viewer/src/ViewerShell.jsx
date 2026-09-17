@@ -1,11 +1,11 @@
 import { translate } from './i18n.js';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Background, ControlButton, Controls, MiniMap, ReactFlow } from '@xyflow/react';
+import { Background, ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { nodeTypes, edgeTypes } from './DiagramCanvas.jsx';
 import { renderMiniMapNode } from './node-svg.js';
 import { diagramLabels } from './diagrams/registry.js';
-import { visibleEdgeLabel } from './edge-routing.js';
+import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles } from './diagrams/drawing.js';
 import { kindLabels, nodeAppearance } from './visual-style.js';
 import { graphLegend } from './legend.js';
@@ -14,27 +14,33 @@ import { usePopover } from './features/usePopover.js';
 import { useReveal } from './features/useReveal.js';
 import Icon from './icons.jsx';
 import NodeCard from './NodeCard.jsx';
+import TextEditor, { useTextEditor } from './TextEditor.jsx';
 
 const evidenceLabels = { source: '源码', code: '代码', config: '配置', schema: '数据结构', test: '测试', document: '文档', framework: '框架约定', inference: '推断' };
 
 const APPEARANCES = ['system', 'light', 'dark'];
 const appearanceLabels = { system: '跟随系统', light: '浅色', dark: '深色' };
 
-export default function ViewerShell({ graph, originalGraph, graphForSave, allDiagrams, moduleColors, onDiagramChange, theme, appearance, setAppearance, panels }) {
+export default function ViewerShell({ graph, originalGraph, graphForSave, allDiagrams, moduleColors, onDiagramChange, theme, appearance, setAppearance, panels, flowControl }) {
+  const zoom = useStore(state => state.transform[2]);
+  const { setCenter } = useReactFlow();
   const t = (message, values) => translate(graph.meta.locale, message, values);
   const {
     diagramType, palette, reduceMotion, panelTransition,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
     locked, setLocked, canvasRef, currentGraph, nodes, onNodesChange, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
-    visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus,
+    visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, focusProblem,
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
-  } = useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave);
+  } = useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave, flowControl);
+  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale);
   const { open, toggle, close } = usePopover();
   const reveal = useReveal(canvasRef, nodes, currentGraph, diagramType, reduceMotion);
   const [searchActive, setSearchActive] = useState(false);
   const [toast, setToast] = useState('');
+  const [inspectedPulse, setInspectedPulse] = useState(0);
+  useEffect(() => { if (drawerOpen || selectionPulse === 0) setInspectedPulse(selectionPulse); }, [drawerOpen, selectionPulse]);
   const MiniMapNode = useMemo(() => {
     const byId = new Map(visibleNodes.map(node => [node.id, node]));
     return function SharedMiniMapNode({ id, x, y, width, height, color, strokeColor, strokeWidth, className, selected, shapeRendering, onClick }) {
@@ -53,8 +59,9 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   }, [exportStatus]);
 
   // Initial core emphasis does not open a card; an explicit selection does.
-  const cardNode = selectionPulse > 0 && !drawerOpen ? nodes.find(node => node.id === selectedId && node.type === 'diagram') : null;
-  const cardEdgeView = selectionPulse > 0 && !drawerOpen ? visibleEdges.find(edge => edge.id === selectedEdgeId) : null;
+  const showQuickLook = selectionPulse > 0 && !drawerOpen && (diagramType !== 'sequence' || selectionPulse !== inspectedPulse) && !nodes.some(node => node.dragging);
+  const cardNode = showQuickLook ? nodes.find(node => node.id === selectedId && node.type === 'diagram') : null;
+  const cardEdgeView = showQuickLook ? visibleEdges.find(edge => edge.id === selectedEdgeId) : null;
   const cardEdge = cardEdgeView ? currentGraph.edges.find(edge => edge.id === cardEdgeView.id) : null;
   const cardEdgeAnchor = cardEdgeView ? { position: cardEdgeView.data.route.labelPoint, size: { width: 0, height: 0 } } : null;
   const edgeSource = cardEdge ? currentGraph.nodes.find(node => node.id === cardEdge.source) : null;
@@ -129,8 +136,8 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
       </AnimatePresence>
 
       <figure ref={boardRef} className="board diagram-board">
-        <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, '.node-visual ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="var(--edge)"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--edge)"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="var(--edge)"/></marker></defs></svg>
-        <div ref={canvasRef} className="canvas" data-nav-open={toolbarOpen} data-drawer-open={drawerOpen} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('可交互{type}', { type: t(diagramLabels[diagramType]) })}>
+        <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="var(--edge)"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--edge)"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="var(--edge)"/></marker></defs></svg>
+        <div ref={canvasRef} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={drawerOpen} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('可交互{type}', { type: t(diagramLabels[diagramType]) })}>
           <ReactFlow
             nodes={visibleNodes}
             edges={visibleEdges}
@@ -159,30 +166,34 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
                 <Icon name={isFullscreen ? 'collapse' : 'expand'} />
               </ControlButton>
             </Controls>
-            <MiniMap pannable zoomable nodeComponent={MiniMapNode} nodeStrokeColor={node => node.type === 'boundary' ? palette.rule : nodeAppearance(node.data, palette, moduleColors).moduleColor ?? palette.ink3} nodeStrokeWidth={2} nodeColor={node => node.type === 'boundary' ? palette.surface2 : nodeAppearance(node.data, palette, moduleColors).fill} maskColor={palette.mask} />
+            <MiniMap pannable zoomable onClick={(_, point) => setCenter(point.x, point.y, { zoom })} nodeComponent={MiniMapNode} nodeStrokeColor={node => node.type === 'boundary' ? palette.rule : nodeAppearance(node.data, palette, moduleColors).moduleColor ?? palette.ink3} nodeStrokeWidth={2} nodeColor={node => node.type === 'boundary' ? palette.surface2 : nodeAppearance(node.data, palette, moduleColors).fill} maskColor={palette.mask} />
           </ReactFlow>
 
           <div className="float legend-anchor" data-popover-root="legend">
             <button className="float-btn" onClick={() => toggle('legend')} aria-expanded={open === 'legend'} aria-haspopup="true" title={t('阅读图例')}><Icon name="legend" /><span>{t('图例')}</span></button>
             {open === 'legend' && <div className="popover legend-pop">
               <p className="pop-title">{t('阅读图例')}</p>
-              <div className="legend" role="group" aria-label={t('阅读图例')}>{graphLegend(currentGraph, palette, moduleColors).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}><i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />{entry.label}</span>)}</div>
+              <div className="legend" role="group" aria-label={t('阅读图例')}>{graphLegend(currentGraph, palette, moduleColors).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}>{['sync', 'async', 'return'].includes(entry.shape) ? <svg style={{ color: entry.stroke }} width="28" height="14" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 7H25" stroke="currentColor" strokeDasharray={entry.shape === 'return' ? '4 3' : undefined} /><path d={entry.shape === 'sync' ? 'M19 2L26 7L19 12Z' : 'M19 2L26 7L19 12'} fill={entry.shape === 'sync' ? 'currentColor' : 'none'} stroke="currentColor" /></svg> : <i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />}{entry.label}</span>)}</div>
               {hasFlow && <div className="pop-opt"><span>{t('连线流动')}</span><button className="switch" role="switch" aria-checked={flowRunning} disabled={Boolean(reduceMotion)} onClick={() => setFlowEnabled(value => !value)} aria-label={t('连线流动')}><i /></button></div>}
               {reduceMotion && <p className="pop-note">{t('已遵循系统减少动态效果设置')}</p>}
             </div>}
           </div>
 
 
-          {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} onSaveNode={updateNodeText} onDetails={async () => {
+          {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} editor={editor} graph={currentGraph} isFullscreen={isFullscreen} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;
             openDetails(); reveal(selectedId, selectedEdgeId, toolbarOpen, true);
           }} onClose={() => clearSelectedNode()} />}
-          {cardEdge && <NodeCard node={cardEdgeAnchor} edge={{ ...cardEdge, diagramType }} source={edgeSource} target={edgeTarget} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} onSaveEdge={updateEdgeText} onDetails={async () => {
+          {cardEdge && <NodeCard node={cardEdgeAnchor} edge={{ ...cardEdge, diagramType }} source={edgeSource} target={edgeTarget} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} editor={editor} graph={currentGraph} isFullscreen={isFullscreen} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;
             openDetails();
             reveal(selectedId, selectedEdgeId, toolbarOpen, true);
           }} onClose={() => clearSelectedNode()} />}
 
+          {layoutProblem && <details className="layout-problems"><summary>{t('布局需要调整，仍可保存 JSON 草稿')}</summary>
+            <ul>{layoutProblem.diagnostics.filter(item => item.severity === 'error').map((item, index) => <li key={index}><button onClick={() => focusProblem(item)}>{item.elementIds.join(', ')} · {item.ruleId}</button></li>)}</ul>
+            <pre>{layoutProblem.message}</pre>
+          </details>}
           <div className={`toast ${toast ? 'is-on' : ''}`} role="status" aria-live="polite">{toast}</div>
         </div>
       </figure>
@@ -200,13 +211,14 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
               {inspectedNode.source && <><h3>{t('来源')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
               {inspectedNode.tags?.length > 0 && <div className="tags">{inspectedNode.tags.map(tag => <span key={tag}>{tag}</span>)}</div>}
             </> : inspectedEdge ? <>
-              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: moduleColors?.get(inspectedEdge.module ?? inspectedSource?.module ?? inspectedTarget?.module) ?? palette.edge }} />{t('关系')} · {inspectedEdge.kind}</div>
-              <h2>{visibleEdgeLabel(inspectedEdge, diagramType) || inspectedEdge.kind}</h2>
+              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: visibleEdges.find(edge => edge.id === inspectedEdge.id)?.style.stroke ?? palette.edge }} />{t('关系')} · {inspectedEdge.kind}</div>
+              <h2>{(createEdgeRoutes(currentGraph).get(inspectedEdge.id)?.label ?? visibleEdgeLabel(inspectedEdge, diagramType)) || inspectedEdge.kind}</h2>
               <p className="drawer-subtitle">{inspectedSource?.label} → {inspectedTarget?.label}</p>
               <h3>{t('证据')}</h3><p>{inspectedEdge.evidence}</p>
               {inspectedEdge.facts?.length > 0 && <><h3>{t('证据事实')}</h3><ul>{inspectedEdge.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></>}
             </> : <div className="drawer-empty"><span className="empty-icon"><Icon name="fit" /></span><span>{t('从一个节点开始')}</span><p>{t('点击图中组件或左侧目录，查看职责、字段、方法与来源。')}</p></div>}
           </section>
+          {(inspectedNode || inspectedEdge) && <section className="inspector-card"><div className={editor.editing ? '' : 'card-actions'}><TextEditor editor={editor} relation={Boolean(inspectedEdge)} locked={locked} locale={graph.meta.locale} /></div></section>}
           {inspectedNode?.facts?.length > 0 && <section className="inspector-card inspector-facts" data-node-id={inspectedNode.id}><h3>{inspectedNode.source ? t('证据事实') : t('节点说明')}</h3><ul>{inspectedNode.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></section>}
         </motion.aside>}
       </AnimatePresence>

@@ -217,7 +217,7 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 开发需要 Node.js 22、npm、tar、zip 和 unzip。反馈问题时，请附最小脱敏图数据、客户端和浏览器版本，以及复现步骤。
 
-[证据来源](../references/zh-CN/evidence-sources.md) · [图数据格式](../references/zh-CN/graph-schema.md) · [需求引导](../references/zh-CN/guided-intake.md) · [Viewer 开发与验收](../references/zh-CN/viewer-development.md) · [图形表达约定](../references/zh-CN/visual-contract.md)
+参考文档（英文）：[证据来源](../../skills/q-flow/references/evidence-sources.md) · [图数据格式](../../skills/q-flow/references/graph-schema.md) · [需求引导](../../skills/q-flow/references/guided-intake.md) · [Viewer 开发与验收](../../skills/q-flow/references/viewer-development.md) · [图形表达约定](../../skills/q-flow/references/visual-contract.md)
 
 ## 许可证与归属
 

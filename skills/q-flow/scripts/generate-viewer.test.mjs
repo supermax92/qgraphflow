@@ -13,9 +13,13 @@ import { graphLegend } from '../assets/viewer/src/legend.js';
 import { nudgeGraphLayout } from '../assets/viewer/src/layout-nudge.js';
 import { constrainNodeChanges, currentGraphFromFlow, graphInputWithEdits } from '../assets/viewer/src/session-graph.js';
 import { saveGraphJson } from '../assets/viewer/src/features/download.js';
-import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence } from './validate-graph.mjs';
+import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
-import { readingRect, readingViewport } from '../assets/viewer/src/reading-area.js';
+import { readingRect, readingViewport, locateViewport } from '../assets/viewer/src/reading-area.js';
+import { sequenceFragment, renderFragment } from '../assets/viewer/src/sequence-fragments.js';
+import { compileGraphLayout } from './compile-layout.mjs';
+import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
+import { renderNode } from '../assets/viewer/src/node-svg.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const box = (id, label, kind, x, y, width = 180, height = 100, extra = {}) => ({
@@ -26,6 +30,57 @@ const graph = (diagramType, nodes, edges, groups = []) => ({
   meta: { title: `${diagramType} self test`, diagramType, sourceRef: 'test@local' }, groups, nodes, edges
 });
 const entityForTest = (id, x) => box(id, id, 'entity', x, 0, 240, 150, { fields: [{ name: 'id', type: 'bigint', key: 'PK' }] });
+const semanticModel = value => {
+  const graph = structuredClone(value);
+  for (const item of [...graph.nodes, ...(graph.groups ?? [])]) { delete item.position; delete item.size; }
+  for (const edge of graph.edges) delete edge.route;
+  if (graph.layout) { delete graph.layout.version; delete graph.layout.strategy; if (!Object.keys(graph.layout).length) delete graph.layout; }
+  return graph;
+};
+
+test('type budgets report composition without enforcing ratios or changing geometry', async t => {
+  const row = graph('architecture', Array.from({ length: 8 }, (_, i) => box(`n${i}`, `Service ${i}`, 'service', i * 700, 0)), []);
+  const compact = structuredClone(row);
+  compact.nodes.forEach((node, i) => { node.position = { x: i % 4 * 220, y: Math.floor(i / 4) * 490 }; });
+  assert.deepEqual(validateGraph(row), []);
+  const before = layoutComposition(row), after = layoutComposition(compact);
+  assert.equal(before.singleRow, true);
+  assert.match(before.warnings.join('\n'), /single-row/);
+  const staggered = structuredClone(row);
+  staggered.nodes.forEach((node, i) => { node.position.y = i % 3 * 12; });
+  assert.equal(layoutComposition(staggered).singleRow, true, 'Slight offsets do not hide a single row.');
+  assert.equal(after.singleRow, false);
+  assert.ok(after.fit > before.fit);
+  assert.deepEqual(after.warnings, []);
+  const portrait = structuredClone(compact);
+  portrait.nodes.forEach(node => { node.position.y *= 4; });
+  assert.deepEqual(layoutComposition(portrait).warnings, []);
+  const sequence = graph('sequence', Array.from({ length: 6 }, (_, i) => box(`p${i}`, `P${i}`, 'participant', i * 240, 0, 180, 900)), []);
+  assert.equal(layoutComposition(sequence).singleRow, false, 'Aligned sequence participants retain their notation.');
+  assert.equal(layoutComposition(sequence).canvasBudget, null);
+  assert.equal(layoutComposition(sequence).targetRatio, null);
+  assert.equal(layoutComposition(sequence).fit, null);
+  const semantic = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/semantic-layout.graph.json'), 'utf8'));
+  const input = { diagrams: [] };
+  for (const graph of semantic.diagrams) input.diagrams.push((await compileGraphLayout(graph)).graph);
+  const beforeInput = JSON.stringify(input);
+  const reports = input.diagrams.map(layoutComposition);
+  for (const report of reports) assert.deepEqual(report.canvasBudget, report.diagramType === 'sequence' ? null
+    : ['flowchart', 'state'].includes(report.diagramType) ? { width: 1600, height: 2400 } : { width: 2400, height: 1600 });
+  assert.equal(JSON.stringify(input), beforeInput);
+  const small = graph('architecture', [box('small', 'Small', 'service', 0, 0)], []);
+  const bounds = graphBounds(small);
+  layoutComposition(small);
+  assert.deepEqual(graphBounds(small), bounds, 'A small graph must not be padded to its budget.');
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-budget-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const inputFile = path.join(directory, 'input.json');
+  fs.writeFileSync(inputFile, JSON.stringify(input));
+  const generated = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), inputFile, directory, '--layout', 'preserve'], { encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  assert.deepEqual(JSON.parse(generated.stdout).layoutComposition, reports);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'graph.json'), 'utf8')), input, 'Budget reporting preserves all geometry.');
+});
 
 test('saved JSON retains edits across diagrams, preserves source data and resets only the current graph', () => {
   const input = { title: 'Collection metadata', diagrams: [fixtures.er, fixtures.architecture] };
@@ -83,8 +138,10 @@ test('both CLI paths verify real source anchors and reject invalid evidence befo
   for (const item of input.diagrams) for (const node of item.nodes) node.source = { kind: 'source', file: '目录/source.java', lineStart: 1, lineEnd: 2 };
   const run = (script, args = []) => spawnSync(process.execPath, [path.join(scriptDir, script), inputPath, ...args], { cwd: temp, encoding: 'utf8' });
   fs.writeFileSync(inputPath, JSON.stringify(input));
-  assert.equal(JSON.parse(run('validate-graph.mjs').stdout).sourceEvidence.status, 'skipped');
-  const checked = run('validate-graph.mjs', ['--repo-root', repo]);
+  const skipped = run('validate-graph.mjs', ['--input-only']);
+  assert.equal(skipped.status, 0, skipped.stderr);
+  assert.equal(JSON.parse(skipped.stdout).sourceEvidence.status, 'skipped');
+  const checked = run('validate-graph.mjs', ['--input-only', '--repo-root', repo]);
   assert.equal(checked.status, 0, checked.stderr);
   assert.deepEqual(JSON.parse(checked.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), checked: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), files: 1 });
   const generated = run('generate-viewer.mjs', [output, '--repo-root', repo]);
@@ -100,7 +157,7 @@ test('both CLI paths verify real source anchors and reject invalid evidence befo
   ]) {
     input.diagrams[1].nodes[0].source = { file, lineStart: 1, lineEnd: end };
     fs.writeFileSync(inputPath, JSON.stringify(input));
-    for (const [script, args] of [['validate-graph.mjs', []], ['generate-viewer.mjs', [output, '--force']]]) {
+    for (const [script, args] of [['validate-graph.mjs', ['--input-only']], ['generate-viewer.mjs', [output, '--force']]]) {
       const result = run(script, [...args, '--repo-root', repo]);
       assert.equal(result.status, 1, `${script}: ${file}`); assert.match(result.stderr, expected);
       assert.match(result.stderr, /diagrams\[1\]\.nodes\[0\]\.source/);
@@ -251,7 +308,7 @@ test('exports the same twelve-percent slant and bottom return route as the page'
 });
 
 function exportedEdgePath(svg, label) {
-  const group = svg.split('</g>').find(fragment => fragment.includes(`>${label}</text>`));
+  const group = svg.split('</defs>').at(-1).split('</g>').find(fragment => fragment.includes(`>${label}</text>`));
   assert.ok(group, `missing exported edge label: ${label}`);
   return group.match(/<path d="([^"]+)" fill="none" stroke=/)?.[1];
 }
@@ -288,6 +345,9 @@ export const fixtures = {
   ], [edge('request', 'client', 'verify', 'data', { label: 'payment request' }), edge('entry', 'verify', 'ledger', 'data', { label: 'ledger entry' })])
 };
 
+const compiledFixtures = {};
+for (const [type, fixture] of Object.entries(fixtures)) compiledFixtures[type] = (await compileGraphLayout(fixture)).graph;
+
 test('uses visible sequence heads for interaction without changing authored lifelines', () => {
   const ordinary = box('ordinary', 'Ordinary', 'service', 10, 20, 180, 360);
   const participant = box('participant', 'Participant', 'participant', 10, 20, 180, 960);
@@ -308,17 +368,19 @@ test('reading area clears actual visible bottom controls', () => {
   assert.equal(readingRect(canvas, true, true).bottom, 798, 'hidden controls do not contribute; the visible minimap still does');
 });
 
-test('keeps, pans, shrinks and falls back within the sequence reading area', () => {
+test('reveals without shrinking and locates sequence heads at a readable scale', () => {
   const area = { left: 0, top: 0, right: 500, bottom: 400, width: 500, height: 400 };
   const inside = { x: 100, y: 100, zoom: 1 };
   assert.equal(readingViewport({ x: 0, y: 0, width: 200, height: 100 }, area, inside), inside);
   assert.deepEqual(readingViewport({ x: 0, y: 0, width: 200, height: 100 }, area, { x: 450, y: 100, zoom: 1 }), { x: 300, y: 100, zoom: 1 });
-  assert.deepEqual(readingViewport({ x: 0, y: 0, width: 1000, height: 500 }, area, { x: 0, y: 0, zoom: 1 }), { x: 0, y: 75, zoom: .5 });
-  const priority = { x: 9000, y: 0, width: 100, height: 72 };
-  const fallback = readingViewport({ x: 0, y: 0, width: 10000, height: 10000 }, area, { x: 0, y: 0, zoom: 1 }, priority);
-  assert.equal(fallback.zoom, .08);
-  assert.ok(Math.abs((priority.x + priority.width / 2) * fallback.zoom + fallback.x - 250) < 1e-7);
-  assert.ok(Math.abs((priority.y + priority.height / 2) * fallback.zoom + fallback.y - 200) < 1e-7);
+  assert.deepEqual(readingViewport({ x: 0, y: 0, width: 1000, height: 500 }, area, { x: 0, y: 0, zoom: 1 }), { x: -250, y: 0, zoom: 1 });
+  const priority = { x: 9000, y: 40, width: 100, height: 72 };
+  for (const current of [.2, .75, 1.4]) {
+    const located = locateViewport(priority, area, { zoom: current });
+    assert.equal(located.zoom, Math.max(.75, current));
+    assert.equal((priority.x + priority.width / 2) * located.zoom + located.x, 250);
+    assert.equal(priority.y * located.zoom + located.y, 0);
+  }
 });
 
 test('derives session text and positions without mutating the authored graph, then resets exactly', () => {
@@ -337,33 +399,35 @@ test('derives session text and positions without mutating the authored graph, th
   assert.deepEqual(currentGraphFromFlow(authored, initialNodes, initialEdges), authored);
 });
 
-test('keeps sequence dragging horizontal and recomputes the shared route after movement', () => {
+test('keeps sequence dragging horizontal and blocks export when movement invalidates the route', async () => {
   const sequenceNodes = fixtures.sequence.nodes.map(node => ({ id: node.id, type: 'diagram', position: node.position, data: { ...node } }));
   const constrained = constrainNodeChanges([{ id: 'browser', type: 'position', position: { x: 120, y: 240 }, dragging: true }], sequenceNodes, 'sequence');
   assert.deepEqual(constrained[0].position, { x: 120, y: 0 });
   assert.deepEqual(constrainNodeChanges([{ id: 'decision', type: 'position', position: { x: 300, y: 80 } }], [], 'flowchart')[0].position, { x: 300, y: 80 });
 
-  const moved = structuredClone(fixtures.flowchart);
+  let moved = structuredClone(fixtures.flowchart);
   moved.edges.find(item => item.id === 'to-decision').label = 'moved route';
+  moved = (await compileGraphLayout(moved)).graph;
   const before = createEdgeRoutes(moved).get('to-decision');
   const beforeExport = exportedEdgePath(createDiagramSvg(moved), 'moved route');
-  moved.nodes.find(node => node.id === 'decision').position.x += 80;
+  moved.nodes.find(node => node.id === 'decision').position = { ...moved.nodes.find(node => node.id === 'start').position };
   const after = createEdgeRoutes(moved).get('to-decision');
   assert.notDeepEqual(after.points, before.points);
-  assert.notEqual(exportedEdgePath(createDiagramSvg(moved), 'moved route'), beforeExport, 'export uses the moved route too');
+  assert.ok(beforeExport);
+  assert.throws(() => createDiagramSvg(moved), /Diagram quality failed/, 'invalid dragging does not silently reflow or export');
 });
 
 test('validates and renders every supported diagram type', () => {
   assert.deepEqual(Object.keys(fixtures), DIAGRAM_TYPES);
   for (const [type, fixture] of Object.entries(fixtures)) {
     assert.deepEqual(validateGraph(fixture), [], type);
-    const svg = createDiagramSvg(fixture);
+    const svg = createDiagramSvg(compiledFixtures[type]);
     assert.match(svg, /<svg[\s>]/, type);
     assert.match(svg, new RegExp(`${type} diagram`), type);
   }
 });
 
-test('uses D3 to clear local node collisions for every diagram type', () => {
+test('D3 applies only candidates that satisfy the shared gate for every diagram type', () => {
   for (const [type, fixture] of Object.entries(fixtures)) {
     const crowded = structuredClone(fixture);
     const [first, second] = crowded.nodes;
@@ -378,7 +442,8 @@ test('uses D3 to clear local node collisions for every diagram type', () => {
       movedFirst.position.y - movedSecond.position.y - movedSecond.size.height,
       movedSecond.position.y - movedFirst.position.y - movedFirst.size.height
     );
-    assert.ok(horizontalGap >= 64 || verticalGap >= 64, `${type} must restore 64px clearance`);
+    if (result.rejected) { assert.equal(result.graph, crowded); assert.deepEqual(result.movedNodeIds, []); }
+    else { requireDiagramQuality(result.graph); assert.ok(horizontalGap >= 96 || verticalGap >= 96, `${type} must restore 96px clearance`); }
     if (type === 'sequence') assert.equal(movedSecond.position.y, second.position.y, 'sequence participants must keep their authored row');
   }
 });
@@ -474,7 +539,7 @@ test('validates graph collections and tolerates unused legacy playback metadata'
   assert.match(validateGraphInput({ diagrams: Array(10).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
 });
 
-test('preserves complete export labels and UML composition markers', () => {
+test('preserves complete export labels and UML composition markers', async () => {
   const longLabel = 'Caller with a deliberately long label that must remain complete in downloads';
   const architecture = structuredClone(fixtures.architecture);
   architecture.nodes[0].label = longLabel;
@@ -491,13 +556,13 @@ test('preserves complete export labels and UML composition markers', () => {
 
   const classDiagram = structuredClone(fixtures.class);
   classDiagram.edges[0].kind = 'composition';
-  const classSvg = createDiagramSvg(classDiagram);
+  const classSvg = createDiagramSvg((await compileGraphLayout(classDiagram)).graph);
   assert.match(classSvg, /marker-start="url\(#diamond-filled\)"/);
   assert.doesNotMatch(classSvg, /marker-end="url\(#arrow\)" marker-start="url\(#diamond-filled\)"/);
 });
 
-test('separates parallel transitions and routes self transitions outside the node', () => {
-  const state = graph('state', [
+test('separates parallel transitions and routes self transitions outside the node', async () => {
+  let state = graph('state', [
     box('initial', 'Initial', 'initial', 0, 20, 50, 50),
     box('pending', 'Pending', 'state', 150, 0, 180, 90)
   ], [
@@ -506,6 +571,7 @@ test('separates parallel transitions and routes self transitions outside the nod
     edge('retry', 'pending', 'pending', 'transition', { label: 'retry transition' })
   ]);
 
+  state = (await compileGraphLayout(state)).graph;
   const svg = createDiagramSvg(state);
   assert.notEqual(exportedEdgePath(svg, 'primary transition'), exportedEdgePath(svg, 'fallback transition'));
   const route = createEdgeRoutes(state).get('retry');
@@ -515,7 +581,7 @@ test('separates parallel transitions and routes self transitions outside the nod
 });
 
 test('exports the React Flow UI board in light and dark themes', () => {
-  const light = createDiagramSvg(fixtures.architecture);
+  const light = createDiagramSvg(compiledFixtures.architecture);
   assert.doesNotMatch(light, /product-grid/);
   assert.ok(light.includes(`fill="${PALETTES.light.paper}"`));
   assert.ok(light.includes(`fill="${PALETTES.light.surface}"`));
@@ -525,18 +591,18 @@ test('exports the React Flow UI board in light and dark themes', () => {
   assert.doesNotMatch(light, /linearGradient/);
   assert.doesNotMatch(light, /<path d="[^"]* C /);
 
-  const dark = createDiagramSvg(fixtures.architecture, 'dark');
+  const dark = createDiagramSvg(compiledFixtures.architecture, 'dark');
   assert.ok(dark.includes(`fill="${PALETTES.dark.paper}"`));
   assert.ok(dark.includes(`fill="${PALETTES.dark.surface2}"`));
   assert.ok(dark.includes(`stroke="${PALETTES.dark.rule}"`));
 
-  const semantic = structuredClone(fixtures.architecture);
+  const semantic = structuredClone(compiledFixtures.architecture);
   semantic.edges[0].kind = 'success';
   assert.match(createDiagramSvg(semantic), new RegExp(`stroke="${PALETTES.light.accent}"[^>]+marker-end="url\\(#arrow-ok\\)"`));
 });
 
 test('legend uses only actual semantic appearances and core colors stay light with readable text', () => {
-  const model = graph('dataflow', [box('core', 'Core', 'dataStore', 0, 0, 180, 100, { tags: [' CORE '] }), box('store', 'Store', 'dataStore', 400, 0), box('plain', 'Plain', 'process', 800, 0)], [edge('data', 'core', 'store', 'data')]);
+  const model = graph('dataflow', [box('core', 'Core', 'process', 0, 0, 180, 100, { tags: [' CORE '] }), box('store', 'Store', 'dataStore', 400, 0), box('plain', 'Plain', 'process', 800, 0)], [edge('data', 'core', 'store', 'data')]);
   for (const palette of Object.values(PALETTES)) {
     const legend = graphLegend(model, palette);
     assert.deepEqual(legend.filter(entry => entry.role).map(entry => entry.role), ['core', 'data', 'neutral']);
@@ -573,7 +639,7 @@ test('maps the first eight modules to stable distinct light and dark accent slot
     '价格': '#8b5cf6', '履约': '#b14b7d', '库存': '#0f8f83', '支付': '#2474d2',
     '渠道': '#6b7280', '结算': '#5753d7', '订单': '#348052', '风控': '#c26a17'
   }, 'The ecommerce modules keep the reviewed demo palette.');
-  assert.equal(createDiagramSvg(fixtures.architecture), createDiagramSvg(fixtures.architecture, 'light', new Map()), 'legacy graphs remain visually unchanged');
+  assert.equal(createDiagramSvg(compiledFixtures.architecture), createDiagramSvg(compiledFixtures.architecture, 'light', new Map()), 'legacy graphs remain visually unchanged');
 });
 
 test('shares module accents across nodes, edges, legend, minimap data and light/dark SVG export', () => {
@@ -611,7 +677,7 @@ test('generates only index.html and graph.json', () => {
   const result = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, output], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8')), fixture);
+  assert.deepEqual(semanticModel(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8'))), semanticModel(fixture));
   const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
   assert.match(html, /<title>QGraphFlow<\/title>/);
   assert.doesNotMatch(html, /CODEGRAPH FLOW/);
@@ -638,8 +704,8 @@ test('preserves replacement metacharacters and script delimiters in embedded JSO
   assert.equal(result.status, 0, result.stderr);
   const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
   const embedded = html.match(/<script\b[^>]*id="graph-data"[^>]*>([\s\S]*?)<\/script>/)[1];
-  assert.deepEqual(JSON.parse(embedded), fixture);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8')), fixture);
+  assert.deepEqual(semanticModel(JSON.parse(embedded)), semanticModel(fixture));
+  assert.deepEqual(semanticModel(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8'))), semanticModel(fixture));
 });
 
 test('preserves authored old names and explicit legacy output paths', t => {
@@ -660,12 +726,12 @@ test('preserves authored old names and explicit legacy output paths', t => {
   assert.equal(generated.status, 0, generated.stderr);
   assert.equal(JSON.parse(generated.stdout).outputDir, output);
   assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8')), fixture);
+  assert.deepEqual(semanticModel(JSON.parse(fs.readFileSync(path.join(output, 'graph.json'), 'utf8'))), semanticModel(fixture));
   const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
   assert.match(html, /<title>QGraphFlow<\/title>/);
   const embedded = html.match(/<script\b[^>]*id="graph-data"[^>]*>([\s\S]*?)<\/script>/);
   assert.ok(embedded, 'Generated HTML contains its original graph data.');
-  assert.deepEqual(JSON.parse(embedded[1]), fixture);
+  assert.deepEqual(semanticModel(JSON.parse(embedded[1])), semanticModel(fixture));
   const refused = spawnSync(process.execPath, args, { encoding: 'utf8' });
   assert.notEqual(refused.status, 0);
   assert.match(refused.stderr, /Refusing to overwrite/);
@@ -745,7 +811,10 @@ test('fits routed lines and labels outside node bounds using the same extent as 
   const bounds = graphBounds(routed);
   assert.deepEqual(bounds, { x: 40, y: 40, width: 753.5, height: 580 });
   assert.ok(bounds.x + bounds.width > 700, 'fit includes the label beyond the outer route');
-  assert.match(createDiagramSvg(routed), /<svg[^>]+width="881\.5" height="796"/);
+  const owned = structuredClone(routed);
+  owned.nodes.forEach(node => node.groupId = 'boundary');
+  owned.nodes[0].position.y = 124;
+  assert.match(createDiagramSvg(owned), /<svg[^>]+width="881\.5" height="796"/);
 
   const moved = structuredClone(routed);
   moved.nodes[1].position = { x: 180, y: 660 };
@@ -815,7 +884,7 @@ test('rejects a self-loop route that crosses its own node', () => {
   assert.match(validateGraph(invalidLoop).join('\n'), /layout: self-loop retry crosses node pending/);
 });
 
-test('warns without failing when nodes are less than 64px apart', () => {
+test('strict CLI rejects nodes below the 96px clearance threshold', () => {
   const tight = graph('architecture', [
     box('caller', 'Caller', 'external', 0, 0),
     box('api', 'Order API', 'service', 230, 0)
@@ -825,8 +894,8 @@ test('warns without failing when nodes are less than 64px apart', () => {
   fs.writeFileSync(input, JSON.stringify(tight));
 
   const result = spawnSync(process.execPath, [path.join(scriptDir, 'validate-graph.mjs'), input], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stderr, /Layout warning: nodes caller and api are only 50px apart/);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /spacing.nodes: caller, api/);
 });
 
 test('rejects wrapped sequence labels that cannot fit the fixed message pitch', () => {
@@ -838,12 +907,12 @@ test('rejects wrapped sequence labels that cannot fit the fixed message pitch', 
   assert.match(validateGraph(sequence).join('\n'), /layout: sequence edge request wrapped label needs .*px height/);
 });
 
-test('warns about route crossings and labels with less than 12px clearance', () => {
+test('CLI reports clear point crossings as information and blocks cramped labels', () => {
   const crossing = graph('architecture', [
-    box('left', 'Left', 'service', 0, 200, 100, 60),
-    box('right', 'Right', 'service', 500, 200, 100, 60),
-    box('top', 'Top', 'service', 250, 0, 100, 60),
-    box('bottom', 'Bottom', 'service', 250, 440, 100, 60)
+    box('left', 'Left', 'service', 0, 400, 240, 100),
+    box('right', 'Right', 'service', 800, 400, 240, 100),
+    box('top', 'Top', 'service', 400, 0, 240, 100),
+    box('bottom', 'Bottom', 'service', 400, 800, 240, 100)
   ], [edge('horizontal', 'left', 'right', 'call'), edge('vertical', 'top', 'bottom', 'call')]);
   const tightLabel = graph('architecture', [
     box('caller', 'Caller', 'external', 0, 0),
@@ -851,15 +920,15 @@ test('warns about route crossings and labels with less than 12px clearance', () 
   ], [edge('request', 'caller', 'api', 'request', { label: 'call' })]);
 
   for (const [fixture, expected] of [
-    [crossing, /Layout warning: edges horizontal and vertical cross/],
-    [tightLabel, /Layout warning: edge request label has less than 12px clearance from node/]
+    [crossing, null],
+    [tightLabel, /spacing.label-node/]
   ]) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codegraph-flow-layout-warning-'));
     const input = path.join(root, 'graph.json');
     fs.writeFileSync(input, JSON.stringify(fixture));
     const result = spawnSync(process.execPath, [path.join(scriptDir, 'validate-graph.mjs'), input], { encoding: 'utf8' });
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stderr, expected);
+    if (expected) { assert.notEqual(result.status, 0); assert.match(result.stderr, expected); }
+    else { assert.equal(result.status, 0, result.stderr); assert.ok(JSON.parse(result.stdout).diagnostics.some(item => item.ruleId === 'route.point-crossing' && item.severity === 'info')); }
   }
 });
 
@@ -914,7 +983,7 @@ test('checks ER cardinality geometry against nodes even with no relationship lab
   assert.match(validateGraph(er).join('\n'), /layout: ER edge user-orders .*cardinality overlaps node/);
 });
 
-test('uses only the visible ER label for routing and omits absent labels', () => {
+test('uses only the visible ER label for routing and omits absent labels', async () => {
   const er = graph('er', [entityForTest('users', 0), entityForTest('orders', 340)], [
     edge('user-orders', 'users', 'orders', 'relationship', { sourceCardinality: '1', targetCardinality: '0..*', label: '关联' })
   ]);
@@ -927,7 +996,7 @@ test('uses only the visible ER label for routing and omits absent labels', () =>
   route = createEdgeRoutes(er).get('user-orders');
   assert.deepEqual([route.label, route.labelLines, route.labelBox.width, route.labelBox.height], ['', [], 0, 0]);
   assert.deepEqual(validateGraph(er), []);
-  assert.doesNotMatch(createDiagramSvg(er), />关系<|>0\.\.\*</);
+  assert.doesNotMatch(createDiagramSvg((await compileGraphLayout(er)).graph), />关系<|>0\.\.\*</);
 });
 
 test('reserves ER endpoint segments and rejects incompatible hints without changing graph data', () => {
@@ -1035,12 +1104,12 @@ test('checks all five ER cardinalities in four directions and includes nearby no
   assert.doesNotMatch(errors, /edge user-orders crosses node near-marker/);
 });
 
-test('wraps sequence messages at legacy 210px spacing and preserves the 54px message pitch', () => {
+test('rejects multiline sequence labels that no longer fit the 54px pitch without losing text', () => {
   const sequence = graph('sequence', [box('a', 'A', 'service', 0, 0, 140, 300), box('b', 'B', 'service', 210, 0, 140, 300)], [
     edge('request', 'a', 'b', 'sync', { label: 'Create payment request', order: 1 }),
     edge('response', 'b', 'a', 'return', { label: 'Return payment response', order: 2 })
   ]);
-  assert.deepEqual(validateGraph(sequence), []);
+  assert.ok(validateGraph(sequence).some(error => error.includes('6px clearance')));
   const routes = createEdgeRoutes(sequence);
   for (const message of sequence.edges) {
     const route = routes.get(message.id);
@@ -1048,9 +1117,8 @@ test('wraps sequence messages at legacy 210px spacing and preserves the 54px mes
     assert.equal(route.labelLines.join(''), visibleEdgeLabel(message, 'sequence'));
     assert.ok(route.labelBox.width <= 210 - 32);
     assert.equal(route.labelBox.height, 54);
-    assert.equal(route.labelBox.y + route.labelBox.height, route.points[0].y + 2);
-    const svg = createDiagramSvg(sequence);
-    for (const line of route.labelLines) assert.ok(svg.includes(`>${line}</text>`), 'the export must render the same wrapped lines as the page');
+    assert.equal(route.labelBox.y + route.labelBox.height, route.points[0].y - 6);
+    assert.throws(() => createDiagramSvg(sequence), /Diagram quality failed/, 'the legacy draft remains readable, but overlapping labels cannot be exported');
   }
   assert.equal(routes.get('response').points[0].y - routes.get('request').points[0].y, 54);
 });
@@ -1091,7 +1159,7 @@ test('accounts for wide ASCII glyphs in compact headers and node titles', () => 
   }
 });
 
-test('keeps short-card text and all ER fields inside authored node bounds', () => {
+test('keeps legacy short-card rendering available while blocking strict export', () => {
   const samples = [
     graph('architecture', [box('only', 'Only', 'service', 0, 0, 180, 70, { subtitle: 'subtitle' })], []),
     graph('er', [box('only', 'Only', 'entity', 0, 0, 240, 150, {
@@ -1100,7 +1168,8 @@ test('keeps short-card text and all ER fields inside authored node bounds', () =
   ];
   for (const sample of samples) {
     assert.deepEqual(validateGraph(sample), []);
-    const svg = createDiagramSvg(sample);
+    assert.throws(() => createDiagramSvg(sample), /Diagram quality failed/);
+    const svg = renderNode(sample.nodes[0], sample.meta.diagramType, 64, 152, PALETTES.light);
     const node = sample.nodes[0];
     const card = svg.match(new RegExp(`<rect x="64" y="([\\d.]+)" width="${node.size.width}" height="${node.size.height}"`));
     assert.ok(card);
@@ -1128,13 +1197,13 @@ test('shares theme and semantic colors between page tokens and SVG exports', () 
   assert.equal(isCore({ kind: 'service', tags: ['business'] }), true);
   for (const [theme, palette] of Object.entries(PALETTES)) {
     const tokens = themeVariables(palette);
-    const dataflow = structuredClone(fixtures.dataflow);
+    const dataflow = structuredClone(compiledFixtures.dataflow);
     const target = dataflow.nodes.find(node => node.id === 'ledger');
     const entry = dataflow.edges.find(item => item.id === 'entry');
     const fragment = createDiagramSvg(dataflow, theme).split('</g>').find(item => item.includes('>ledger entry</text>'));
     assert.equal(fragment.match(/<path[^>]+stroke="([^"]+)"/)[1], edgeColor(entry, target, palette));
     assert.equal(edgeColor(entry, target, palette), tokens['--good']);
-    const erSvg = createDiagramSvg(fixtures.er, theme);
+    const erSvg = createDiagramSvg(compiledFixtures.er, theme);
     assert.match(erSvg, new RegExp(`style="fill:${tokens['--good']}"[^>]*>PK</text>`));
     assert.match(erSvg, new RegExp(`style="fill:${tokens['--warm']}"[^>]*>FK</text>`));
   }
@@ -1162,7 +1231,7 @@ test('shares readable typography with label measurement and SVG output', () => {
   const sample = graph('er', [box('entity', 'Readable entity', 'entity', 0, 0, 600, 210, { fields: [{ name: 'partitionId', type: 'Integer', key: 'PK' }] })], []);
   const svg = createDiagramSvg(sample);
   assert.match(svg, /field-name\{font:500 16px/);
-  assert.match(svg, /field-type\{font:400 14px/);
+  assert.match(svg, /field-type\{font:400 16px/);
   assert.ok(!svg.includes('textLength='));
 });
 
@@ -1175,4 +1244,71 @@ test('reports undersized normal cards instead of silently shrinking or truncatin
   const svg = createDiagramSvg(sample);
   assert.ok(!svg.includes('textLength='));
   assert.ok(!svg.includes('…'));
+});
+
+test('six-participant sequence validates explicit branches, legacy warnings and unsafe operands', async () => {
+  const original = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/sequence-pointer.graph.json')));
+  assert.deepEqual(validateGraph(original), []);
+  assert.match(auditGraphLayout(original).warnings.join('\n'), /operands missing/);
+  assert.throws(() => createDiagramSvg(original), /Diagram quality failed/);
+  assert.match(sequenceFragment(original.groups.find(g => g.kind === 'alt'), createEdgeRoutes(original), original.meta.locale).warnings.join(' '), /operands missing/);
+  const sequence = structuredClone(original), group = sequence.groups.find(g => g.kind === 'alt');
+  group.operands = [{ guard: 'SignalR < HTTP & "safe"', edgeIds: ['m10'] }, { guard: 'HTTP', edgeIds: ['m11', 'm12', 'm13', 'm14', 'm15'] }];
+  assert.deepEqual(validateGraph(sequence), []);
+  const fragment = sequenceFragment(group, createEdgeRoutes(sequence), sequence.meta.locale);
+  assert.equal(fragment.guards.length, 2); assert.equal(fragment.separators.length, 1);
+  await assert.rejects(compileGraphLayout(sequence), /needs explicit operands/);
+  const svg = renderFragment(fragment, group, 0, 0, PALETTES.light.ink3, PALETTES.light.surface);
+  assert.match(svg, /SignalR &lt; HTTP &amp; &quot;safe&quot;/);
+  assert.equal((svg.match(/class="operand-separator"/g) ?? []).length, 1);
+  const cases = [
+    [g => g.operands = {}, /at least two/],
+    [g => g.operands = [g.operands[0]], /at least two/],
+    [g => g.operands[0].guard = ' ', /guard/],
+    [g => g.operands[0].guard = 42, /guard/],
+    [g => g.operands[0].edgeIds = 'm10', /array/],
+    [g => g.operands[0].edgeIds = [], /array/],
+    [g => g.operands[0].edgeIds.push('missing'), /unknown edge/],
+    [g => g.operands[0].edgeIds.push('m10'), /duplicate/],
+    [g => g.operands[1].edgeIds.push('m10'), /duplicate/],
+    [g => { g.operands[0].edgeIds.push('m12'); g.operands[1].edgeIds = ['m11','m13','m14','m15']; }, /non-interleaving/],
+    [g => g.operands[1].edgeIds.pop(), /omits enclosed message m15/],
+    [g => g.operands[0].guard = 'Long guard '.repeat(500), /no room for guard/],
+    [g => g.size.height = 40, /cannot contain/]
+  ];
+  for (const [mutate, expected] of cases) {
+    const invalid = structuredClone(sequence); mutate(invalid.groups.find(g => g.kind === 'alt'));
+    assert.match(validateGraph(invalid).join('\n'), expected);
+  }
+  const invalidType = structuredClone(sequence); invalidType.groups.find(g => g.kind === 'alt').kind = 'opt';
+  assert.match(validateGraph(invalidType).join('\n'), /needs exactly one branch/);
+  const flowNodes = sequence.nodes.map(node => ({id:node.id,type:'diagram',position:node.position,data:node}));
+  const roundTrip = graphInputWithEdits(sequence, new Map(), currentGraphFromFlow(sequence, flowNodes, sequence.edges.map(edge => ({id:edge.id,data:edge}))));
+  assert.deepEqual(roundTrip.groups, sequence.groups);
+});
+
+test('sequence labels, subtitles and arrow kinds share page/export geometry', async () => {
+  const sequence = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/sequence-pointer.graph.json')));
+  const routes = createEdgeRoutes(sequence);
+  for (const route of routes.values()) assert.ok(route.points[0].y - route.labelBox.y - route.labelBox.height >= 6);
+  assert.throws(() => createDiagramSvg(sequence), /Diagram quality failed/);
+  const svg = sequence.nodes.map(node => renderNode(node, 'sequence', 0, 0, PALETTES.light, sequence.meta.locale)).join('');
+  assert.match(svg, /class="body"[^>]*>共享缓存真值<\/text>/);
+  assert.match(svg, /class="body"[^>]*>HTTP 推送进程<\/text>/);
+  for (const kind of ['sync','async','return']) assert.equal(edgeMarkers({kind}, 'sequence').end, kind === 'sync' ? 'arrow' : 'arrow-open');
+  assert.ok(isDashed({kind:'return',evidence:'test'}, 'sequence'));
+  assert.ok(isDashed({kind:'async',evidence:'framework'}, 'sequence'));
+  assert.match(createDiagramSvg(compiledFixtures.sequence), /marker-end="url\(#arrow/);
+  const explicit = structuredClone(sequence); explicit.edges[0].route = {labelAt:routes.get('m1').points[0]};
+  assert.deepEqual(createEdgeRoutes(explicit).get('m1').labelPoint, explicit.edges[0].route.labelAt);
+  assert.match(validateGraph(explicit).join('\n'), /6px clearance/);
+  const actor = graph('sequence', [box('a','Actor','actor',0,0,300,500,{subtitle:'Visible actor subtitle'})], [edge('self','a','a','async',{order:1,label:'Self call'})]);
+  assert.equal(occupiedBox(actor.nodes[0], 'sequence').height, 130);
+  assert.deepEqual(validateGraph(actor), []);
+  assert.match(createDiagramSvg(actor), /class="body"[^>]*>Visible actor subtitle<\/text>/);
+  actor.nodes[0].subtitle = 'Long actor subtitle '.repeat(10);
+  assert.throws(() => createDiagramSvg(actor), /Diagram quality failed/);
+  const expanded = (await compileGraphLayout(actor)).graph;
+  assert.ok(createDiagramSvg(expanded).includes(actor.nodes[0].subtitle));
+  assert.doesNotMatch(createDiagramSvg(expanded), /…<\/text>/);
 });

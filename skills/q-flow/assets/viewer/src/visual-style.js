@@ -40,7 +40,10 @@ export function nodeAppearance(node, palette, moduleColors) {
   return moduleColor ? { ...appearance, fill: tint(moduleColor, palette.surface, palette.moduleTint), stroke: moduleColor, moduleColor } : { ...appearance, moduleColor };
 }
 
-export function edgeColor(edge, target, palette, moduleColors, source) {
+export const sequenceGroupColor = (pair, palette) => pair ? palette.moduleAccents[[0, 2, 7, 3, 1, 6, 5, 4][pair.index % 8]] : undefined;
+
+export function edgeColor(edge, target, palette, moduleColors, source, pair) {
+  if (pair) return sequenceGroupColor(pair, palette);
   if (edge.kind === 'failure') return palette.warn;
   if (edge.kind === 'success') return palette.accent;
   const moduleColor = moduleColors?.get(edge.module ?? source?.module ?? target?.module);
@@ -66,5 +69,5 @@ export const kindLabels = {
 export function nodeMetrics(node, type) {
   const erHeaderHeight = Math.min(TYPOGRAPHY.erHeader, node.size.height * .4);
   const erRowHeight = Math.min(TYPOGRAPHY.erRow, (node.size.height - erHeaderHeight) / Math.max(1, node.fields?.length ?? 0));
-  return { compact: ['architecture', 'deployment'].includes(type) && node.size.height < 100, erHeaderHeight, erRowHeight, erFontSize: Math.max(TYPOGRAPHY.small, Math.min(TYPOGRAPHY.body, erRowHeight - 6)), classHeaderHeight: TYPOGRAPHY.classHeader, classRowHeight: TYPOGRAPHY.classRow };
+  return { compact: ['architecture', 'deployment'].includes(type) && node.size.height < 100, erHeaderHeight, erRowHeight, erFontSize: Math.max(TYPOGRAPHY.small, Math.min(TYPOGRAPHY.body, erRowHeight - 6)), classHeaderHeight: TYPOGRAPHY.classHeader + (node.subtitle ? 24 : 0), classRowHeight: TYPOGRAPHY.classRow };
 }

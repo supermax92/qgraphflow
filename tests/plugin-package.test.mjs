@@ -82,27 +82,30 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/SKILL.md', 'skills/q-flow/agents/openai.yaml',
     'skills/q-flow/references/graph-schema.md', 'skills/q-flow/references/guided-intake.md',
     'skills/q-flow/assets/viewer-dist/index.html',
+    'skills/q-flow/assets/layout-dist/worker.mjs', 'skills/q-flow/assets/layout-dist/ELK-LICENSE.md',
+    'skills/q-flow/scripts/compile-layout.mjs', 'skills/q-flow/scripts/compile-sequence.mjs',
+    'skills/q-flow/assets/viewer/src/graph-validation.js', 'skills/q-flow/assets/viewer/src/layout-quality.js',
     'skills/q-flow/scripts/generate-viewer.mjs', 'skills/q-flow/scripts/validate-graph.mjs',
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
     'README.md', ...guides, 'examples/order-flow.graph.json', 'docs/images/order-flow.svg'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
   assert.ok(files.has('examples/showcase/kafka.en.graph.json'));
-  assert.ok(packed.unpackedSize < 2_000_000, `Unexpected install size: ${packed.unpackedSize}`);
+  // Fixed ELK runtime adds about 1.6MB; retain a bounded total install budget.
+  assert.ok(packed.unpackedSize < 4_000_000, `Unexpected install size: ${packed.unpackedSize}`);
   for (const locale of ['zh-CN', 'ja', 'ko', 'de', 'fr', 'es']) {
     assert.ok(!files.has(`examples/showcase/kafka.${locale}.graph.json`));
   }
   for (const locale of ['zh-CN', 'ru', 'pt', 'ja', 'de', 'es']) {
     assert.ok(files.has(`docs/readme/README.${locale}.md`));
-    for (const name of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
-      assert.ok(files.has(`docs/references/${locale}/${name}.md`));
-      assert.ok(!files.has(`skills/q-flow/references/${locale}/${name}.md`));
-    }
   }
+  assert.deepEqual([...files].filter(file => file.startsWith('skills/q-flow/references/')).sort(),
+    ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']
+      .map(name => `skills/q-flow/references/${name}.md`).sort());
   for (const locale of ['ko', 'fr']) assert.ok(!files.has(`docs/readme/README.${locale}.md`));
   for (const file of files) {
     assert.ok(!/(^|\/)(node_modules|\.git|\.idea|\.DS_Store)(\/|$)/.test(file), file);
-    assert.ok(!/^(tests|openspec|docs\/(qa|qgraphflow|superpowers))\//.test(file), file);
+    assert.ok(!/^(tests|openspec|docs\/(qa|qgraphflow|superpowers|references))\//.test(file), file);
     assert.ok(!/\.(tgz|zip)$/.test(file), file);
     assert.ok(!/\.(gif|mp4|test\.mjs|jsx)$/.test(file), file);
     assert.ok(!file.endsWith('browser-interactions.mjs'), file);
@@ -130,7 +133,7 @@ test('the distributed plugin runs independently from its installed location', t 
   const graphPath = path.join(temp, '输入 graph.json');
   fs.copyFileSync(path.join(plugin, 'examples/order-flow.graph.json'), graphPath);
   const scripts = path.join(plugin, 'skills/q-flow/scripts');
-  run(process.execPath, [path.join(scripts, 'validate-graph.mjs'), graphPath], temp);
+  run(process.execPath, [path.join(scripts, 'validate-graph.mjs'), graphPath, '--input-only'], temp);
   const output = path.join(temp, '项目输出');
   const args = [path.join(scripts, 'generate-viewer.mjs'), graphPath, output];
   run(process.execPath, args, temp);

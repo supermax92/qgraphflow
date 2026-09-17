@@ -217,7 +217,7 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 開発には Node.js 22、npm、tar、zip、unzip が必要です。問題報告には、機密情報を除いた最小限の図データ、クライアントとブラウザーのバージョン、再現手順を添えてください。
 
-[証拠の出典](../references/ja/evidence-sources.md) · [図データ形式](../references/ja/graph-schema.md) · [対話による要件確認](../references/ja/guided-intake.md) · [Viewer の開発](../references/ja/viewer-development.md) · [図の構成](../references/ja/visual-contract.md)
+リファレンス（英語）：[証拠の出典](../../skills/q-flow/references/evidence-sources.md) · [図データ形式](../../skills/q-flow/references/graph-schema.md) · [対話による要件確認](../../skills/q-flow/references/guided-intake.md) · [Viewer の開発](../../skills/q-flow/references/viewer-development.md) · [図の構成](../../skills/q-flow/references/visual-contract.md)
 
 ## ライセンスと帰属
 

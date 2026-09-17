@@ -45,16 +45,15 @@
   80% { stroke-width: 11px; opacity: .22; }
   100% { stroke-width: 14px; opacity: .3; }
 }
-.edge-flow { stroke-width: 2.6; filter: drop-shadow(0 0 5px var(--accent)); }
-.flow-edge--sequence .edge-flow { stroke-width: 1.2; filter: none; }
+.edge-flow { stroke-width: 2.8px; filter: drop-shadow(0 0 5px var(--accent)); }
+.flow-edge--sequence .edge-flow { stroke-width: 3.2px; filter: none; }
 .flow-edge--sequence .selection-edge-halo { stroke-width: 9px; opacity: .16; filter: blur(2px); }
 .flow-edge--sequence .selection-feedback.is-animated .selection-edge-halo { animation-name: selection-glow; }
 
 /* ---------- Off switch: the same two preferences styles.css already honours ---------- */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .diagram-node .node-surface, .edge-flow { filter: none !important; }
-  .edge-flow { stroke-width: 2; }
-  .selection-node-halo, .selection-edge-halo { stroke-width: 9px; opacity: .16; filter: blur(2px); }
-  .selection-feedback.is-animated :is(.selection-node-halo, .selection-edge-halo) { animation-name: selection-glow; }
+  .edge-flow { stroke-width: 2px; }
+  .selection-node-halo, .selection-edge-halo { display: none; filter: none; }
   :root[data-theme="dark"] .react-flow, :root[data-theme="dark"] .react-flow.dark { background: var(--canvas); }
 }

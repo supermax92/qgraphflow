@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "title": "Six participants and fifteen messages",
+    "diagramType": "sequence",
+    "locale": "zh-CN",
+    "sourceRef": "Viewer pointer fixture · no business source evidence",
+    "scope": "Synthetic test data preserving the audited geometry only."
+  },
+  "nodes": [
+    {
+      "id": "writer",
+      "label": "写方 A",
+      "subtitle": "Java / .NET",
+      "module": "业务缓存",
+      "kind": "participant",
+      "position": {
+        "x": 62,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    },
+    {
+      "id": "redis",
+      "label": "Redis L2",
+      "subtitle": "共享缓存真值",
+      "module": "Redis",
+      "kind": "database",
+      "position": {
+        "x": 352,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    },
+    {
+      "id": "kafka",
+      "label": "Kafka",
+      "subtitle": "上行 / 下行 Topic",
+      "module": "Kafka",
+      "kind": "database",
+      "position": {
+        "x": 642,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    },
+    {
+      "id": "pigeon",
+      "label": "Pigeon",
+      "subtitle": "去重与分流 · 无回声过滤",
+      "module": "Pigeon",
+      "kind": "service",
+      "position": {
+        "x": 932,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    },
+    {
+      "id": "pusher",
+      "label": "Pusher",
+      "subtitle": "HTTP 推送进程",
+      "module": "Pusher",
+      "kind": "service",
+      "position": {
+        "x": 1222,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    },
+    {
+      "id": "receiver",
+      "label": "收方 B",
+      "subtitle": "Java / .NET · 独立 L1",
+      "module": "业务缓存",
+      "kind": "participant",
+      "position": {
+        "x": 1512,
+        "y": 50
+      },
+      "size": {
+        "width": 226,
+        "height": 970
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "receiver",
+      "target": "pigeon",
+      "label": "SignalR：RegisterAsync",
+      "kind": "async",
+      "module": "业务缓存",
+      "evidence": "test",
+      "order": 1
+    },
+    {
+      "id": "m2",
+      "source": "receiver",
+      "target": "pigeon",
+      "label": "L1 miss：SubscribeAsync",
+      "kind": "async",
+      "module": "业务缓存",
+      "evidence": "test",
+      "order": 2
+    },
+    {
+      "id": "m3",
+      "source": "receiver",
+      "target": "redis",
+      "label": "GET：订阅后回源",
+      "kind": "sync",
+      "module": "Redis",
+      "evidence": "test",
+      "order": 3
+    },
+    {
+      "id": "m4",
+      "source": "redis",
+      "target": "receiver",
+      "label": "返回结果；按需驻留 L1",
+      "kind": "return",
+      "module": "Redis",
+      "evidence": "test",
+      "order": 4
+    },
+    {
+      "id": "m5",
+      "source": "writer",
+      "target": "redis",
+      "label": "SET / REMOVE",
+      "kind": "sync",
+      "module": "Redis",
+      "evidence": "test",
+      "order": 5
+    },
+    {
+      "id": "m6",
+      "source": "redis",
+      "target": "writer",
+      "label": "L2 操作成功",
+      "kind": "return",
+      "module": "Redis",
+      "evidence": "test",
+      "order": 6
+    },
+    {
+      "id": "m7",
+      "source": "writer",
+      "target": "kafka",
+      "label": "发布 CacheChangeItem",
+      "kind": "async",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 7
+    },
+    {
+      "id": "m8",
+      "source": "pigeon",
+      "target": "kafka",
+      "label": "Consume 上行",
+      "kind": "sync",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 8
+    },
+    {
+      "id": "m9",
+      "source": "kafka",
+      "target": "pigeon",
+      "label": "返回变更批次",
+      "kind": "return",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 9
+    },
+    {
+      "id": "m10",
+      "source": "pigeon",
+      "target": "receiver",
+      "label": "SignalR：PublishAsync（默认 .NET）",
+      "kind": "async",
+      "module": "Pigeon",
+      "evidence": "test",
+      "order": 10
+    },
+    {
+      "id": "m11",
+      "source": "pigeon",
+      "target": "kafka",
+      "label": "HTTP 分支：派工通知",
+      "kind": "async",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 11
+    },
+    {
+      "id": "m12",
+      "source": "pusher",
+      "target": "kafka",
+      "label": "Consume 下行",
+      "kind": "sync",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 12
+    },
+    {
+      "id": "m13",
+      "source": "kafka",
+      "target": "pusher",
+      "label": "返回派工批次",
+      "kind": "return",
+      "module": "Kafka",
+      "evidence": "test",
+      "order": 13
+    },
+    {
+      "id": "m14",
+      "source": "pusher",
+      "target": "receiver",
+      "label": "POST：变更通知数组",
+      "kind": "sync",
+      "module": "Pusher",
+      "evidence": "test",
+      "order": 14
+    },
+    {
+      "id": "m15",
+      "source": "receiver",
+      "target": "pusher",
+      "label": "HTTP 响应",
+      "kind": "return",
+      "module": "Pusher",
+      "evidence": "test",
+      "order": 15
+    }
+  ],
+  "groups": [
+    {
+      "id": "read",
+      "label": "L1 miss：先订阅，再回源",
+      "kind": "opt",
+      "position": {
+        "x": 35,
+        "y": 185
+      },
+      "size": {
+        "width": 1740,
+        "height": 169
+      }
+    },
+    {
+      "id": "dispatch",
+      "label": "按最终通道：SignalR 或 HTTP",
+      "kind": "alt",
+      "position": {
+        "x": 35,
+        "y": 617
+      },
+      "size": {
+        "width": 1740,
+        "height": 341
+      }
+    }
+  ]
+}

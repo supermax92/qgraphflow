@@ -16,7 +16,7 @@ export function text(x, y, value, className, extra = '') {
   const fitted = value && typeof value === 'object' && 'width' in value;
   const fontSize = Number(extra.match(/font-size:([\d.]+)px/)?.[1]) || {
     title: TYPOGRAPHY.title, 'shape-title': TYPOGRAPHY.title, 'participant-title': TYPOGRAPHY.title,
-    body: TYPOGRAPHY.body, 'field-name': TYPOGRAPHY.body, 'field-type': TYPOGRAPHY.small,
+    body: TYPOGRAPHY.body, 'field-name': TYPOGRAPHY.body, 'field-type': TYPOGRAPHY.body,
     member: TYPOGRAPHY.body, 'entity-title': TYPOGRAPHY.title, 'compact-title': 14, 'compact-body': 10
   }[className] || TYPOGRAPHY.small;
   let content = fitted ? value.value : value;
@@ -37,7 +37,7 @@ export function centeredTitle(cx, cy, value, width, height = Infinity, subtitle 
   const usedHeight = titleCount * title.lineHeight + (bodyCount ? 5 + bodyCount * body.lineHeight : 0);
   const top = cy - usedHeight / 2;
   const lines = (layout, count, y, className) => layout.lines.slice(0, count).map((line, index) =>
-    text(cx, y + index * layout.lineHeight, fit(line + (index === count - 1 && count < layout.lines.length ? '…' : ''), width), className, ' text-anchor="middle"')).join('');
+    text(cx, y + index * layout.lineHeight, line + (index === count - 1 && count < layout.lines.length ? '…' : ''), className, ' text-anchor="middle"')).join('');
   const markup = lines(title, titleCount, top + 22, 'shape-title')
     + lines(body, bodyCount, top + titleCount * title.lineHeight + 5 + 18, 'body');
   // Legacy tiny symbols may be shorter than one title line; only their text is scaled to the available height.
@@ -153,7 +153,7 @@ ${scope}.core-node .compact-title,${scope}.core-node .compact-body{fill:${palett
 ${scope}.entity-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.data}}
 ${scope}.member{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
-${scope}.field-type{font:400 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3}}
+${scope}.field-type{font:400 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink3}}
 ${scope}.core-node .title,${scope}.core-node .shape-title,${scope}.core-node .participant-title{fill:${palette.heroInk}}
 ${scope}.core-node .body,${scope}.core-node .stereotype{fill:${palette.heroInk};opacity:.76}`;
 }

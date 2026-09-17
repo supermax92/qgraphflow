@@ -217,7 +217,7 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 Erforderlich sind Node.js 22, npm, tar, zip und unzip. Fehlerberichte sollten ein minimales anonymisiertes Diagramm, Client- und Browserversion sowie Reproduktionsschritte enthalten.
 
-[Belegquellen](../references/de/evidence-sources.md) · [Diagrammformat](../references/de/graph-schema.md) · [Geführte Bedarfsklärung](../references/de/guided-intake.md) · [Viewer-Entwicklung](../references/de/viewer-development.md) · [Diagrammgestaltung](../references/de/visual-contract.md)
+Referenzdokumentation (Englisch): [Belegquellen](../../skills/q-flow/references/evidence-sources.md) · [Diagrammformat](../../skills/q-flow/references/graph-schema.md) · [Geführte Bedarfsklärung](../../skills/q-flow/references/guided-intake.md) · [Viewer-Entwicklung](../../skills/q-flow/references/viewer-development.md) · [Diagrammgestaltung](../../skills/q-flow/references/visual-contract.md)
 
 ## Lizenz und Zuordnung
 

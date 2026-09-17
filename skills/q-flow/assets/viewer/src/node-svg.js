@@ -13,7 +13,7 @@ export function renderNode(node, type, offsetX = 0, offsetY = 0, palette, locale
   const stripe = moduleColor && !['actor', 'initial', 'final', 'decision', 'choice', 'usecase'].includes(node.kind)
     ? `<path class="module-accent" d="M${node.position.x + offsetX + 20} ${node.position.y + offsetY + 3}H${node.position.x + offsetX + node.size.width - 20}" fill="none" stroke="${moduleColor}" stroke-width="5" stroke-linecap="round"/>`
     : '';
-  return `<g class="node-drawing${coreNode(node) && !definition.compartments ? ' core-node' : ''}"><title>${escapeXml(description)}</title>${content}${stripe}</g>`;
+  return `<g data-diagram-node-id="${escapeXml(node.id)}" class="node-drawing${coreNode(node) && !definition.compartments ? ' core-node' : ''}"><title>${escapeXml(description)}</title>${content}${stripe}</g>`;
 }
 
 export function renderSelection(node, type) {

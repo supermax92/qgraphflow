@@ -1,0 +1,439 @@
+{
+  "meta": {
+    "title": "时序执行与嵌套片段",
+    "subtitle": "六组调用／返回 · loop 内 alt · opt 内 par",
+    "sourceRef": "conceptual:sequence-execution-demo",
+    "scope": "概念示例：用于验证图示能力，不表示实际业务源码或运行结果。order 是排版槽位，par 分支上下位置不代表串行。",
+    "diagramType": "sequence",
+    "locale": "zh-CN"
+  },
+  "nodes": [
+    {
+      "id": "client",
+      "label": "调用方",
+      "kind": "actor",
+      "module": "调用方",
+      "position": {
+        "x": 897,
+        "y": 48
+      },
+      "size": {
+        "width": 160,
+        "height": 2682
+      },
+      "facts": [
+        "概念参与者，用于展示时序能力。"
+      ]
+    },
+    {
+      "id": "order",
+      "label": "订单预检服务",
+      "kind": "participant",
+      "module": "订单预检服务",
+      "position": {
+        "x": 1596,
+        "y": 48
+      },
+      "size": {
+        "width": 166,
+        "height": 2682
+      },
+      "facts": [
+        "概念参与者，用于展示时序能力。"
+      ]
+    },
+    {
+      "id": "inventory",
+      "label": "库存服务",
+      "kind": "participant",
+      "module": "库存服务",
+      "position": {
+        "x": 1248,
+        "y": 48
+      },
+      "size": {
+        "width": 160,
+        "height": 2682
+      },
+      "facts": [
+        "概念参与者，用于展示时序能力。"
+      ]
+    },
+    {
+      "id": "risk",
+      "label": "风控服务",
+      "kind": "participant",
+      "module": "风控服务",
+      "position": {
+        "x": 1950,
+        "y": 48
+      },
+      "size": {
+        "width": 160,
+        "height": 2682
+      },
+      "facts": [
+        "概念参与者，用于展示时序能力。"
+      ]
+    },
+    {
+      "id": "audit",
+      "label": "审计服务",
+      "kind": "participant",
+      "module": "审计服务",
+      "position": {
+        "x": 546,
+        "y": 48
+      },
+      "size": {
+        "width": 160,
+        "height": 2682
+      },
+      "facts": [
+        "概念参与者，用于展示时序能力。"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "c1",
+      "source": "client",
+      "target": "order",
+      "order": 3,
+      "label": "submitCheck()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 262
+      }
+    },
+    {
+      "id": "c2",
+      "source": "order",
+      "target": "order",
+      "order": 4,
+      "label": "prepare()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 323
+      }
+    },
+    {
+      "id": "c3",
+      "source": "order",
+      "target": "inventory",
+      "order": 6,
+      "label": "readStock()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 425
+      }
+    },
+    {
+      "id": "r3",
+      "source": "inventory",
+      "target": "order",
+      "order": 8,
+      "label": "库存快照",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c3",
+      "route": {
+        "messageY": 497
+      }
+    },
+    {
+      "id": "r2",
+      "source": "order",
+      "target": "order",
+      "order": 9,
+      "label": "准备完成",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c2",
+      "route": {
+        "messageY": 558
+      }
+    },
+    {
+      "id": "c4",
+      "source": "order",
+      "target": "inventory",
+      "order": 13,
+      "label": "tryReserve()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 780
+      }
+    },
+    {
+      "id": "r4",
+      "source": "inventory",
+      "target": "order",
+      "order": 15,
+      "label": "ACQUIRED / BUSY",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c4",
+      "route": {
+        "messageY": 852
+      }
+    },
+    {
+      "id": "c5",
+      "source": "order",
+      "target": "risk",
+      "order": 27,
+      "label": "checkRisk()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 1856
+      }
+    },
+    {
+      "id": "r5",
+      "source": "risk",
+      "target": "order",
+      "order": 29,
+      "label": "风险结果",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c5",
+      "route": {
+        "messageY": 1928
+      }
+    },
+    {
+      "id": "c6",
+      "source": "order",
+      "target": "audit",
+      "order": 32,
+      "label": "recordCheck()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 2124
+      }
+    },
+    {
+      "id": "r6",
+      "source": "audit",
+      "target": "order",
+      "order": 33,
+      "label": "已记录",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c6",
+      "route": {
+        "messageY": 2196
+      }
+    },
+    {
+      "id": "r1",
+      "source": "order",
+      "target": "client",
+      "order": 38,
+      "label": "预检结果",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c1",
+      "route": {
+        "messageY": 2636
+      }
+    }
+  ],
+  "executions": [
+    {
+      "id": "exec-1",
+      "participantId": "order",
+      "start": {
+        "edgeId": "c1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r1",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-2",
+      "participantId": "order",
+      "start": {
+        "edgeId": "c2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r2",
+        "at": "send"
+      },
+      "parentId": "exec-1"
+    },
+    {
+      "id": "exec-3",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "c3",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r3",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-4",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "c4",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r4",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-5",
+      "participantId": "risk",
+      "start": {
+        "edgeId": "c5",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r5",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-6",
+      "participantId": "audit",
+      "start": {
+        "edgeId": "c6",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r6",
+        "at": "send"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "retry",
+      "kind": "loop",
+      "label": "尝试预留库存",
+      "position": {
+        "x": 32,
+        "y": 618
+      },
+      "size": {
+        "width": 2493,
+        "height": 892
+      },
+      "loop": {
+        "min": 1,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "attempt",
+          "guard": "attempt < 3 && !reserved",
+          "edgeIds": [
+            "c4",
+            "r4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outcome",
+      "kind": "alt",
+      "label": "处理本次结果",
+      "position": {
+        "x": 64,
+        "y": 882
+      },
+      "size": {
+        "width": 2429,
+        "height": 444
+      },
+      "parentId": "retry",
+      "parentOperandId": "attempt",
+      "operands": [
+        {
+          "id": "acquired",
+          "guard": "reservation = ACQUIRED",
+          "edgeIds": [],
+          "body": "reserved ← true；下一次检查退出循环"
+        },
+        {
+          "id": "busy",
+          "guard": "else",
+          "edgeIds": [],
+          "body": "attempt ← attempt + 1；最多尝试 3 次"
+        }
+      ]
+    },
+    {
+      "id": "optional",
+      "kind": "opt",
+      "label": "预留成功后执行",
+      "position": {
+        "x": 32,
+        "y": 1574
+      },
+      "size": {
+        "width": 2493,
+        "height": 956
+      },
+      "operands": [
+        {
+          "id": "reserved",
+          "guard": "reserved = true",
+          "edgeIds": []
+        }
+      ]
+    },
+    {
+      "id": "parallel",
+      "kind": "par",
+      "label": "分支并行，末端汇合",
+      "position": {
+        "x": 64,
+        "y": 1694
+      },
+      "size": {
+        "width": 2429,
+        "height": 652
+      },
+      "parentId": "optional",
+      "parentOperandId": "reserved",
+      "operands": [
+        {
+          "id": "risk",
+          "label": "风险检查",
+          "edgeIds": [
+            "c5",
+            "r5"
+          ]
+        },
+        {
+          "id": "audit",
+          "label": "审计记录",
+          "edgeIds": [
+            "c6",
+            "r6"
+          ]
+        }
+      ]
+    }
+  ],
+  "layout": {
+    "version": "strict-v1-elkjs-0.11.0",
+    "strategy": "sequence-0"
+  }
+}

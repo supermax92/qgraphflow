@@ -4,6 +4,17 @@ QGraphFlow includes or derives from the components listed below. Versions are
 those locked for the QGraphFlow viewer. Copyright notices and license terms are
 reproduced below.
 
+## EPL-2.0 layout component
+
+The generation worker bundles `elkjs` 0.11.0 (Eclipse Layout Kernel),
+licensed under the Eclipse Public License 2.0. The complete license is
+included at `skills/q-flow/assets/layout-dist/ELK-LICENSE.md`.
+The Viewer HTML does not include this generation-only worker.
+
+Corresponding source: https://github.com/kieler/elkjs/tree/0.11.0
+and https://github.com/eclipse-elk/elk. QGraphFlow does not modify ELK;
+`skills/q-flow/assets/viewer/build-layout.mjs` bundles the pinned distribution.
+
 ## MIT-licensed components
 
 - `@xyflow/react` 12.11.5 and `@xyflow/system` 0.0.81

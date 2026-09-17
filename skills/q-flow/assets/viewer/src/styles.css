@@ -235,7 +235,7 @@ button:disabled { cursor: not-allowed; }
 .diagram-node:hover .node-surface { filter: drop-shadow(0 0 3px var(--accent)); }
 .react-flow__handle { width: 4px; height: 4px; border: 1px solid var(--canvas); border-radius: 50%; background: var(--line); opacity: 0; }
 .diagram-node:hover .react-flow__handle, .diagram-node.is-selected .react-flow__handle { opacity: .7; }
-.edge-label { position: absolute; padding: 3px 6px; border: 0; border-radius: 2px; color: var(--muted); background: var(--canvas); font-size: var(--font-body); line-height: var(--edge-line-height); pointer-events: none; white-space: nowrap; }
+.edge-label { position: absolute; padding: 3px 6px; border: 0; border-radius: 2px; color: var(--muted); background: var(--canvas); font-size: var(--font-body); line-height: var(--edge-line-height); pointer-events: all; cursor: pointer; font-family: inherit; white-space: nowrap; }
 
 .edge-label > span { display: block; white-space: pre; }
 
@@ -250,10 +250,19 @@ button:disabled { cursor: not-allowed; }
 .boundary > small { right: 16px; font-family: ui-monospace, SFMono-Regular, monospace; }
 .boundary-external, .boundary-alt { background: color-mix(in srgb, var(--warm-soft) 62%, var(--canvas)); border-color: color-mix(in srgb, var(--warm) 23%, var(--line)); }
 .boundary-opt { background: color-mix(in srgb, var(--accent-soft) 52%, var(--canvas)); }
+.boundary-par { border-radius: 5px; }
 .boundary-loop { border-radius: 5px; }
 .flow-edge--dashed .react-flow__edge-path { stroke-dasharray: 5 5; }
-.edge-flow { fill: none; stroke-width: 2; stroke-dasharray: 5 10; stroke-linecap: round; pointer-events: none; animation: edge-flow 1.2s linear infinite; }
-.flow-edge--sequence .edge-flow { stroke-width: 1.2; stroke-dasharray: 2 8; opacity: .78; filter: none; animation: sequence-edge-flow 1s linear infinite; }
+.edge-flow { fill: none; stroke-width: 2; stroke-dasharray: 8px 12px; stroke-linecap: round; pointer-events: none; animation: edge-flow .7s linear infinite; }
+/* A 6 CSS px minimum period leaves whole pixels inside both dashes and gaps at any pixel alignment. */
+.flow-edge--sequence .edge-flow { stroke-width: 3.2px; stroke-dasharray: calc(4 * var(--sequence-flow-unit, 1px)) calc(6 * var(--sequence-flow-unit, 1px)); opacity: 1; filter: none; animation: sequence-edge-flow .35s linear infinite; }
+/* Move the baseline, mask and selection paths together through inherited dashoffset. */
+.flow-edge--sequence.flow-edge--dashed:has(.edge-flow) { animation: sequence-edge-flow .35s linear infinite; }
+.flow-edge--sequence .react-flow__edge-path { stroke-width: 1.6px !important; }
+.flow-edge--sequence.flow-edge--dashed :is(.react-flow__edge-path, .selection-edge-shine, .selection-edge-halo), .flow-edge--sequence mask path { stroke-dasharray: calc(5 * var(--sequence-flow-unit, 1px)) calc(5 * var(--sequence-flow-unit, 1px)); }
+.flow-edge--sequence mask path { stroke-width: 3.2px; }
+.edge-label .pair-label { border-bottom: 2px solid; font-weight: inherit; }
+.legend i.legend-execution { width: 8px; height: 18px; border-radius: 0; }
 .selection-feedback { pointer-events: none; }
 .selection-node-outline { position: absolute; inset: 0; width: 100%; overflow: visible; z-index: 6; fill: none; stroke: var(--accent); }
 .selection-node-halo, .selection-node-shine, .selection-edge-halo, .selection-edge-shine { fill: none; stroke-linejoin: round; stroke-linecap: round; }
@@ -318,7 +327,7 @@ button:disabled { cursor: not-allowed; }
 .react-flow__controls-fullscreen[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
 .react-flow__minimap { width: 112px; height: 78px; opacity: .92; }
 .react-flow__minimap svg { display: block; width: 100%; height: 100%; }
-.react-flow__minimap-node { vector-effect: non-scaling-stroke; }
+.react-flow__minimap-node { }
 
 /* ---------- Inspector ---------- */
 .inspector-card { min-width: 0; max-width: 100%; overflow-wrap: anywhere; position: relative; padding: 12px 0; border: 0; border-top: .5px solid var(--sep); background: transparent; }
@@ -351,8 +360,8 @@ button:disabled { cursor: not-allowed; }
 .legend i.legend-dashed { border-top-style: dashed; }
 .legend i.legend-module { width: 10px; height: 10px; border-radius: 50%; }
 
-@keyframes edge-flow { to { stroke-dashoffset: -15; } }
-@keyframes sequence-edge-flow { to { stroke-dashoffset: -10; } }
+@keyframes edge-flow { to { stroke-dashoffset: -20px; } }
+@keyframes sequence-edge-flow { from { stroke-dashoffset: 0px; } to { stroke-dashoffset: calc(-10 * var(--sequence-flow-unit, 1px)); } }
 
 @media (max-width: 1080px) {
   .tb-title span { display: none; }
@@ -384,3 +393,15 @@ button:disabled { cursor: not-allowed; }
 
 /* Keep the canvas aligned with the exported theme. */
 .react-flow, .react-flow.dark { background: var(--canvas); --xy-background-color: var(--canvas); }
+
+/* Lifelines are drawing extent, not invisible draggable columns. */
+.react-flow__node.sequence-column, .diagram-sequence, .diagram-sequence .node-visual { pointer-events: none; }
+.diagram-sequence .sequence-head { pointer-events: bounding-box; }
+.diagram-sequence .react-flow__handle { pointer-events: none; }
+
+.fragment-visual { color: var(--label-2); overflow: visible; }
+
+.layout-problems { position:absolute; top:calc(var(--tb-h) + 12px); left:50%; transform:translateX(-50%); z-index:21; width:min(420px,calc(100% - 112px)); max-height:35%; overflow:auto; padding:10px 14px; border:1px solid var(--sep); border-radius:10px; background:var(--material-thick); font-size:13px; }
+.layout-problems summary { cursor:pointer; }
+.layout-problems button { text-align:left; overflow-wrap:anywhere; }
+.layout-problems pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }

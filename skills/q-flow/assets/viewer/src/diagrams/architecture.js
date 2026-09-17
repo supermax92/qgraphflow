@@ -45,5 +45,5 @@ export default {
   groupKinds: ["runtime", "security", "ownership", "external"],
   edgeKinds: ["request", "call", "data", "success", "failure", "framework", "optional", "depends"],
   render: (node, ...args) => genericCard(node, ...args, architectureOutline, contentInset(node)), outline: architectureOutline, anchor,
-  cardLayout: true,
+  cardLayout: true, contentInset,
 };

@@ -24,6 +24,8 @@
     "skills/q-flow/assets/viewer/package.json",
     "skills/q-flow/assets/viewer/src/diagrams/",
     "skills/q-flow/assets/viewer/src/edge-routing.js",
+    "skills/q-flow/assets/viewer/src/sequence-fragments.js",
+    "skills/q-flow/assets/viewer/src/sequence-executions.js",
     "skills/q-flow/assets/viewer/src/i18n.js",
     "skills/q-flow/assets/viewer/src/i18n-messages.json",
     "skills/q-flow/assets/viewer/src/radix-colors.js",
@@ -34,10 +36,16 @@
     "README.md",
     "docs/clients*.md",
     "docs/readme/",
-    "docs/references/",
     "examples/order-flow.graph.json",
+    "examples/sequence-execution.graph.json",
     "examples/showcase/kafka.en.graph.json",
-    "docs/images/order-flow.svg"
+    "docs/images/order-flow.svg",
+    "skills/q-flow/scripts/compile-layout.mjs",
+    "skills/q-flow/scripts/compile-sequence.mjs",
+    "skills/q-flow/assets/layout-dist/",
+    "skills/q-flow/assets/viewer/src/graph-validation.js",
+    "skills/q-flow/assets/viewer/src/layout-measure.js",
+    "skills/q-flow/assets/viewer/src/layout-quality.js"
   ],
   "scripts": {
     "package": "node scripts/package.mjs",

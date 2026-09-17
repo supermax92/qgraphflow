@@ -11,7 +11,7 @@ const graph = {
   meta: { title: 'Order system', sourceRef: 'Fictional example', diagramType: 'architecture', locale: 'en' },
   nodes: [
     { id: 'api', label: 'Order API', kind: 'service', tags: ['core'], position: { x: 0, y: 0 }, size: { width: 240, height: 140 } },
-    { id: 'db', label: '订单数据库', kind: 'database', position: { x: 400, y: 0 }, size: { width: 240, height: 140 } }
+    { id: 'db', label: '订单数据库', kind: 'database', position: { x: 520, y: 0 }, size: { width: 240, height: 140 } }
   ],
   edges: [{ id: 'save', source: 'api', target: 'db', kind: 'data', label: 'INSERT orders', evidence: 'document' }]
 };

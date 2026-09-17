@@ -15,12 +15,12 @@
           "label": "同步交易边界",
           "kind": "runtime",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 100
           },
           "size": {
-            "width": 1810,
-            "height": 570
+            "width": 495,
+            "height": 3054
           }
         },
         {
@@ -28,12 +28,12 @@
           "label": "异步履约边界",
           "kind": "ownership",
           "position": {
-            "x": 10,
-            "y": 660
+            "x": 35.5,
+            "y": 3464
           },
           "size": {
-            "width": 1810,
-            "height": 260
+            "width": 497,
+            "height": 1049
           }
         }
       ],
@@ -45,17 +45,18 @@
           "module": "渠道",
           "kind": "external",
           "position": {
-            "x": 40,
-            "y": 85
+            "x": 193,
+            "y": 200
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 302,
+            "height": 115
           },
           "facts": [
             "统一发起结算请求",
             "不直接调用领域服务"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "gateway",
@@ -64,17 +65,18 @@
           "module": "渠道",
           "kind": "security",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 212.5,
+            "y": 601
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 263,
+            "height": 115
           },
           "facts": [
             "校验用户身份",
             "透传 checkoutToken"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "checkout",
@@ -83,12 +85,12 @@
           "module": "结算",
           "kind": "business",
           "position": {
-            "x": 1000,
-            "y": 85
+            "x": 224,
+            "y": 1002
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 240,
+            "height": 115
           },
           "facts": [
             "聚合价格、风控和库存结论",
@@ -97,7 +99,8 @@
           "tags": [
             "core",
             "交易编排"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "pricing",
@@ -106,17 +109,18 @@
           "module": "价格",
           "kind": "service",
           "position": {
-            "x": 1480,
-            "y": 85
+            "x": 222,
+            "y": 1403
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 244,
+            "height": 115
           },
           "facts": [
             "服务端价格为最终依据",
             "返回价格快照"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "risk",
@@ -125,16 +129,17 @@
           "module": "风控",
           "kind": "failure",
           "position": {
-            "x": 1480,
-            "y": 375
+            "x": 203.5,
+            "y": 1804
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 281,
+            "height": 115
           },
           "facts": [
             "输出通过、拒绝或人工复核"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "inventory",
@@ -143,17 +148,18 @@
           "module": "库存",
           "kind": "data",
           "position": {
-            "x": 1000,
-            "y": 375
+            "x": 207.5,
+            "y": 2205
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 273,
+            "height": 115
           },
           "facts": [
             "预占带过期时间",
             "支付失败后释放"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "payment",
@@ -162,17 +168,18 @@
           "module": "支付",
           "kind": "service",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 222,
+            "y": 2606
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 244,
+            "height": 115
           },
           "facts": [
             "支付回调必须幂等",
             "授权成功不等于履约完成"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "order",
@@ -181,17 +188,18 @@
           "module": "订单",
           "kind": "business",
           "position": {
-            "x": 40,
-            "y": 375
+            "x": 203.5,
+            "y": 3007
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 281,
+            "height": 115
           },
           "facts": [
             "订单状态由领域规则推进",
             "写订单与 Outbox 同事务"
-          ]
+          ],
+          "groupId": "transaction-runtime"
         },
         {
           "id": "event-bus",
@@ -200,16 +208,17 @@
           "module": "订单",
           "kind": "framework",
           "position": {
-            "x": 40,
-            "y": 715
+            "x": 187.5,
+            "y": 3564
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 313,
+            "height": 115
           },
           "facts": [
             "消费者按事件 ID 去重"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "fulfillment",
@@ -218,17 +227,18 @@
           "module": "履约",
           "kind": "service",
           "position": {
-            "x": 760,
-            "y": 715
+            "x": 212.5,
+            "y": 3965
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 263,
+            "height": 115
           },
           "facts": [
             "异步消费已支付订单",
             "回写包裹与物流状态"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         },
         {
           "id": "after-sales",
@@ -237,16 +247,17 @@
           "module": "履约",
           "kind": "service",
           "position": {
-            "x": 1520,
-            "y": 715
+            "x": 224,
+            "y": 4366
           },
           "size": {
-            "width": 290,
-            "height": 150
+            "width": 240,
+            "height": 115
           },
           "facts": [
             "按履约进度选择退款或退货路径"
-          ]
+          ],
+          "groupId": "fulfillment-runtime"
         }
       ],
       "edges": [
@@ -256,7 +267,23 @@
           "target": "gateway",
           "label": "提交结算",
           "kind": "request",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 327
+              },
+              {
+                "x": 344,
+                "y": 589
+              }
+            ],
+            "labelAt": {
+              "x": 282,
+              "y": 458
+            }
+          }
         },
         {
           "id": "dispatch",
@@ -264,7 +291,23 @@
           "target": "checkout",
           "label": "幂等结算命令",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 728
+              },
+              {
+                "x": 344,
+                "y": 990
+              }
+            ],
+            "labelAt": {
+              "x": 266,
+              "y": 859
+            }
+          }
         },
         {
           "id": "quote",
@@ -272,7 +315,23 @@
           "target": "pricing",
           "label": "重算应付金额",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 1129
+              },
+              {
+                "x": 344,
+                "y": 1391
+              }
+            ],
+            "labelAt": {
+              "x": 266,
+              "y": 1260
+            }
+          }
         },
         {
           "id": "screen",
@@ -280,7 +339,23 @@
           "target": "risk",
           "label": "价格快照",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 1530
+              },
+              {
+                "x": 344,
+                "y": 1792
+              }
+            ],
+            "labelAt": {
+              "x": 282,
+              "y": 1661
+            }
+          }
         },
         {
           "id": "reserve",
@@ -288,7 +363,23 @@
           "target": "inventory",
           "label": "通过后预占",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 1931
+              },
+              {
+                "x": 344,
+                "y": 2193
+              }
+            ],
+            "labelAt": {
+              "x": 274,
+              "y": 2062
+            }
+          }
         },
         {
           "id": "authorize",
@@ -296,7 +387,23 @@
           "target": "payment",
           "label": "库存令牌 + 金额",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 2332
+              },
+              {
+                "x": 344,
+                "y": 2594
+              }
+            ],
+            "labelAt": {
+              "x": 252,
+              "y": 2463
+            }
+          }
         },
         {
           "id": "create-order",
@@ -304,7 +411,23 @@
           "target": "order",
           "label": "支付确认",
           "kind": "success",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 2733
+              },
+              {
+                "x": 344,
+                "y": 2995
+              }
+            ],
+            "labelAt": {
+              "x": 282,
+              "y": 2864
+            }
+          }
         },
         {
           "id": "publish",
@@ -312,7 +435,23 @@
           "target": "event-bus",
           "label": "OrderPaid",
           "kind": "framework",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 3134
+              },
+              {
+                "x": 344,
+                "y": 3552
+              }
+            ],
+            "labelAt": {
+              "x": 269,
+              "y": 3309
+            }
+          }
         },
         {
           "id": "fulfill",
@@ -320,7 +459,23 @@
           "target": "fulfillment",
           "label": "创建履约单",
           "kind": "call",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 3691
+              },
+              {
+                "x": 344,
+                "y": 3953
+              }
+            ],
+            "labelAt": {
+              "x": 274,
+              "y": 3822
+            }
+          }
         },
         {
           "id": "service",
@@ -328,9 +483,29 @@
           "target": "after-sales",
           "label": "包裹与签收状态",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 344,
+                "y": 4092
+              },
+              {
+                "x": 344,
+                "y": 4354
+              }
+            ],
+            "labelAt": {
+              "x": 258,
+              "y": 4223
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -349,12 +524,12 @@
           "module": "结算",
           "kind": "start",
           "position": {
-            "x": 30,
-            "y": 70
+            "x": 196,
+            "y": 100
           },
           "size": {
-            "width": 270,
-            "height": 130
+            "width": 248,
+            "height": 100
           },
           "facts": [
             "买家确认购物车、地址和优惠券。",
@@ -368,12 +543,12 @@
           "module": "结算",
           "kind": "process",
           "position": {
-            "x": 410,
-            "y": 70
+            "x": 200,
+            "y": 486
           },
           "size": {
-            "width": 280,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "拒绝无效 SKU 和失效地址。",
@@ -387,12 +562,12 @@
           "module": "库存",
           "kind": "decision",
           "position": {
-            "x": 800,
-            "y": 40
+            "x": 200,
+            "y": 872
           },
           "size": {
-            "width": 300,
-            "height": 190
+            "width": 240,
+            "height": 237
           },
           "facts": [
             "同时核对可售量与预占上限。",
@@ -406,12 +581,12 @@
           "module": "价格",
           "kind": "process",
           "position": {
-            "x": 1210,
-            "y": 70
+            "x": 432,
+            "y": 1395
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "重新计算而不是信任客户端金额。",
@@ -425,12 +600,12 @@
           "module": "库存",
           "kind": "end",
           "position": {
-            "x": 810,
-            "y": 350
+            "x": 32,
+            "y": 1395
           },
           "size": {
-            "width": 280,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "向前端返回不可售 SKU。",
@@ -444,12 +619,12 @@
           "module": "风控",
           "kind": "decision",
           "position": {
-            "x": 1210,
-            "y": 320
+            "x": 432,
+            "y": 1781
           },
           "size": {
-            "width": 290,
-            "height": 190
+            "width": 240,
+            "height": 237
           },
           "facts": [
             "低风险进入库存预占。",
@@ -463,12 +638,12 @@
           "module": "风控",
           "kind": "process",
           "position": {
-            "x": 1650,
-            "y": 350
+            "x": 264,
+            "y": 2304
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "审核通过后回到主流程。",
@@ -482,12 +657,12 @@
           "module": "风控",
           "kind": "end",
           "position": {
-            "x": 1655,
-            "y": 620
+            "x": 635.5,
+            "y": 2690
           },
           "size": {
-            "width": 280,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "不发起支付。",
@@ -501,12 +676,12 @@
           "module": "库存",
           "kind": "subprocess",
           "position": {
-            "x": 1230,
-            "y": 600
+            "x": 244.5,
+            "y": 2690
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 279,
+            "height": 100
           },
           "facts": [
             "预占设置 TTL，避免库存永久锁定。",
@@ -520,12 +695,12 @@
           "module": "支付",
           "kind": "process",
           "position": {
-            "x": 730,
-            "y": 605
+            "x": 264,
+            "y": 3076
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "只使用服务端价格快照。",
@@ -539,12 +714,12 @@
           "module": "支付",
           "kind": "decision",
           "position": {
-            "x": 250,
-            "y": 575
+            "x": 264,
+            "y": 3462
           },
           "size": {
-            "width": 300,
-            "height": 190
+            "width": 240,
+            "height": 191
           },
           "facts": [
             "成功才允许写入订单。",
@@ -558,12 +733,12 @@
           "module": "库存",
           "kind": "subprocess",
           "position": {
-            "x": 810,
-            "y": 890
+            "x": 76.5,
+            "y": 3939
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 279,
+            "height": 100
           },
           "facts": [
             "补偿操作必须幂等。",
@@ -577,12 +752,12 @@
           "module": "支付",
           "kind": "end",
           "position": {
-            "x": 1210,
-            "y": 895
+            "x": 96,
+            "y": 4325
           },
           "size": {
-            "width": 290,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "保留支付渠道原因码。",
@@ -596,12 +771,12 @@
           "module": "订单",
           "kind": "subprocess",
           "position": {
-            "x": 250,
-            "y": 890
+            "x": 467.5,
+            "y": 3939
           },
           "size": {
-            "width": 290,
-            "height": 140
+            "width": 250,
+            "height": 100
           },
           "facts": [
             "订单与领域事件原子提交。",
@@ -618,12 +793,12 @@
           "module": "订单",
           "kind": "end",
           "position": {
-            "x": 260,
-            "y": 1160
+            "x": 472.5,
+            "y": 4325
           },
           "size": {
-            "width": 270,
-            "height": 130
+            "width": 240,
+            "height": 100
           },
           "facts": [
             "同步链路到此结束。",
@@ -643,7 +818,23 @@
             "从「提交结算」到「校验购物车」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 320,
+                "y": 212
+              },
+              {
+                "x": 320,
+                "y": 474
+              }
+            ],
+            "labelAt": {
+              "x": 274,
+              "y": 343
+            }
+          }
         },
         {
           "id": "check",
@@ -656,7 +847,23 @@
             "从「校验购物车」到「可售库存足够？」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 320,
+                "y": 598
+              },
+              {
+                "x": 320,
+                "y": 860
+              }
+            ],
+            "labelAt": {
+              "x": 258,
+              "y": 729
+            }
+          }
         },
         {
           "id": "stock-yes",
@@ -669,7 +876,27 @@
             "从「可售库存足够？」到「锁定价格快照」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 452,
+                "y": 990.5
+              },
+              {
+                "x": 552,
+                "y": 990.5
+              },
+              {
+                "x": 552,
+                "y": 1383
+              }
+            ],
+            "labelAt": {
+              "x": 591,
+              "y": 1252
+            }
+          }
         },
         {
           "id": "stock-no",
@@ -682,7 +909,27 @@
             "从「可售库存足够？」到「返回缺货明细」。",
             "异常或补偿路径。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 188,
+                "y": 990.5
+              },
+              {
+                "x": 152,
+                "y": 990.5
+              },
+              {
+                "x": 152,
+                "y": 1383
+              }
+            ],
+            "labelAt": {
+              "x": 114,
+              "y": 1252
+            }
+          }
         },
         {
           "id": "price-ready",
@@ -695,7 +942,23 @@
             "从「锁定价格快照」到「交易风险通过？」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 552,
+                "y": 1507
+              },
+              {
+                "x": 552,
+                "y": 1769
+              }
+            ],
+            "labelAt": {
+              "x": 490,
+              "y": 1638
+            }
+          }
         },
         {
           "id": "risk-yes",
@@ -708,7 +971,35 @@
             "从「交易风险通过？」到「预占库存」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 684,
+                "y": 1899.5
+              },
+              {
+                "x": 804.5,
+                "y": 1899.5
+              },
+              {
+                "x": 804.5,
+                "y": 2610
+              },
+              {
+                "x": 408,
+                "y": 2610
+              },
+              {
+                "x": 408,
+                "y": 2678
+              }
+            ],
+            "labelAt": {
+              "x": 851.5,
+              "y": 2354
+            }
+          }
         },
         {
           "id": "risk-review",
@@ -721,7 +1012,27 @@
             "从「交易风险通过？」到「人工复核」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 420,
+                "y": 1899.5
+              },
+              {
+                "x": 384,
+                "y": 1899.5
+              },
+              {
+                "x": 384,
+                "y": 2292
+              }
+            ],
+            "labelAt": {
+              "x": 330,
+              "y": 2161
+            }
+          }
         },
         {
           "id": "review-approved",
@@ -734,7 +1045,23 @@
             "从「人工复核」到「预占库存」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 2416
+              },
+              {
+                "x": 360,
+                "y": 2678
+              }
+            ],
+            "labelAt": {
+              "x": 314,
+              "y": 2547
+            }
+          }
         },
         {
           "id": "review-rejected",
@@ -747,7 +1074,31 @@
             "从「人工复核」到「拒绝本次交易」。",
             "异常或补偿路径。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 408,
+                "y": 2416
+              },
+              {
+                "x": 408,
+                "y": 2452
+              },
+              {
+                "x": 755.5,
+                "y": 2452
+              },
+              {
+                "x": 755.5,
+                "y": 2678
+              }
+            ],
+            "labelAt": {
+              "x": 709.5,
+              "y": 2547
+            }
+          }
         },
         {
           "id": "request-pay",
@@ -760,7 +1111,23 @@
             "从「预占库存」到「发起支付授权」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 384,
+                "y": 2802
+              },
+              {
+                "x": 384,
+                "y": 3064
+              }
+            ],
+            "labelAt": {
+              "x": 279.5,
+              "y": 2933
+            }
+          }
         },
         {
           "id": "payment-result",
@@ -773,7 +1140,23 @@
             "从「发起支付授权」到「支付授权成功？」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 384,
+                "y": 3188
+              },
+              {
+                "x": 384,
+                "y": 3450
+              }
+            ],
+            "labelAt": {
+              "x": 322,
+              "y": 3319
+            }
+          }
         },
         {
           "id": "pay-yes",
@@ -786,7 +1169,27 @@
             "从「支付授权成功？」到「写订单与 Outbox」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 516,
+                "y": 3557.5
+              },
+              {
+                "x": 592.5,
+                "y": 3557.5
+              },
+              {
+                "x": 592.5,
+                "y": 3927
+              }
+            ],
+            "labelAt": {
+              "x": 639.5,
+              "y": 3796
+            }
+          }
         },
         {
           "id": "pay-no",
@@ -799,7 +1202,27 @@
             "从「支付授权成功？」到「释放库存预占」。",
             "异常或补偿路径。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 252,
+                "y": 3557.5
+              },
+              {
+                "x": 216,
+                "y": 3557.5
+              },
+              {
+                "x": 216,
+                "y": 3927
+              }
+            ],
+            "labelAt": {
+              "x": 170,
+              "y": 3796
+            }
+          }
         },
         {
           "id": "release-complete",
@@ -812,7 +1235,23 @@
             "从「释放库存预占」到「返回支付失败」。",
             "异常或补偿路径。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 216,
+                "y": 4051
+              },
+              {
+                "x": 216,
+                "y": 4313
+              }
+            ],
+            "labelAt": {
+              "x": 154,
+              "y": 4182
+            }
+          }
         },
         {
           "id": "complete",
@@ -825,9 +1264,29 @@
             "从「写订单与 Outbox」到「返回订单号」。",
             "主流程关系。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 592.5,
+                "y": 4051
+              },
+              {
+                "x": 592.5,
+                "y": 4313
+              }
+            ],
+            "labelAt": {
+              "x": 655.5,
+              "y": 4182
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -845,12 +1304,12 @@
           "module": "渠道",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 298,
+            "y": 48
           },
           "size": {
-            "width": 220,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "提交购物车并接收订单号。"
@@ -863,12 +1322,12 @@
           "module": "结算",
           "kind": "service",
           "position": {
-            "x": 390,
-            "y": 40
+            "x": 648,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "编排价格、库存、风控、支付与订单。"
@@ -884,12 +1343,12 @@
           "module": "价格",
           "kind": "participant",
           "position": {
-            "x": 780,
-            "y": 40
+            "x": 2398,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "产生不可变价格快照。"
@@ -902,12 +1361,12 @@
           "module": "库存",
           "kind": "participant",
           "position": {
-            "x": 1170,
-            "y": 40
+            "x": 1348,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "预占 SKU 并返回令牌。"
@@ -920,12 +1379,12 @@
           "module": "风控",
           "kind": "participant",
           "position": {
-            "x": 1560,
-            "y": 40
+            "x": 2748,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "返回 PASS、REVIEW 或 REJECT。"
@@ -938,12 +1397,12 @@
           "module": "支付",
           "kind": "external",
           "position": {
-            "x": 1950,
-            "y": 40
+            "x": 2048,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "对价格快照金额进行授权。"
@@ -956,12 +1415,12 @@
           "module": "订单",
           "kind": "database",
           "position": {
-            "x": 2340,
-            "y": 40
+            "x": 1697,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 162,
+            "height": 1672
           },
           "facts": [
             "原子保存订单与 Outbox。"
@@ -974,12 +1433,12 @@
           "module": "履约",
           "kind": "participant",
           "position": {
-            "x": 2730,
-            "y": 40
+            "x": 998,
+            "y": 48
           },
           "size": {
-            "width": 250,
-            "height": 960
+            "width": 160,
+            "height": 1672
           },
           "facts": [
             "异步消费 OrderPaid。"
@@ -992,13 +1451,27 @@
           "label": "库存结果",
           "kind": "alt",
           "position": {
-            "x": 350,
-            "y": 390
+            "x": 32,
+            "y": 508
           },
           "size": {
-            "width": 1100,
-            "height": 112
-          }
+            "width": 3290,
+            "height": 508
+          },
+          "operands": [
+            {
+              "guard": "reservationToken",
+              "edgeIds": [
+                "s5"
+              ]
+            },
+            {
+              "guard": "OUT_OF_STOCK",
+              "edgeIds": [
+                "s6"
+              ]
+            }
+          ]
         }
       ],
       "edges": [
@@ -1014,7 +1487,10 @@
             "发送：提交结算命令",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 262
+          }
         },
         {
           "id": "s2",
@@ -1028,7 +1504,10 @@
             "发送：重算价格与优惠",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 334
+          }
         },
         {
           "id": "s3",
@@ -1042,7 +1521,10 @@
             "返回：PriceSnapshot",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 406
+          }
         },
         {
           "id": "s4",
@@ -1056,7 +1538,10 @@
             "发送：预占 SKU 数量",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 478
+          }
         },
         {
           "id": "s5",
@@ -1070,7 +1555,10 @@
             "返回：reservationToken",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 670
+          }
         },
         {
           "id": "s6",
@@ -1084,7 +1572,10 @@
             "返回：OUT_OF_STOCK",
             "该消息表示库存不足分支。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 866
+          }
         },
         {
           "id": "s7",
@@ -1098,7 +1589,10 @@
             "发送：校验账户、设备与金额",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1122
+          }
         },
         {
           "id": "s8",
@@ -1112,7 +1606,10 @@
             "返回：PASS",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1194
+          }
         },
         {
           "id": "s9",
@@ -1126,7 +1623,10 @@
             "发送：授权应付金额",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1266
+          }
         },
         {
           "id": "s10",
@@ -1140,7 +1640,10 @@
             "返回：paymentConfirmed",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1338
+          }
         },
         {
           "id": "s11",
@@ -1154,7 +1657,10 @@
             "发送：保存订单 + OrderPaid",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1410
+          }
         },
         {
           "id": "s12",
@@ -1168,7 +1674,10 @@
             "返回：orderId",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1482
+          }
         },
         {
           "id": "s13",
@@ -1182,7 +1691,10 @@
             "发送：异步投递 OrderPaid",
             "异步消息，不阻塞原结算请求。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1554
+          }
         },
         {
           "id": "s14",
@@ -1196,9 +1708,16 @@
             "返回：返回订单号",
             "按编号顺序阅读。"
           ],
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "messageY": 1626
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "sequence-0"
+      }
     },
     {
       "meta": {
@@ -1216,12 +1735,12 @@
           "module": "渠道",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 70
+            "x": 32,
+            "y": 134
           },
           "size": {
-            "width": 360,
-            "height": 230
+            "width": 300,
+            "height": 180
           },
           "fields": [
             {
@@ -1249,12 +1768,12 @@
           "module": "结算",
           "kind": "entity",
           "position": {
-            "x": 560,
-            "y": 70
+            "x": 687.5,
+            "y": 110
           },
           "size": {
-            "width": 390,
-            "height": 230
+            "width": 262,
+            "height": 180
           },
           "fields": [
             {
@@ -1282,12 +1801,12 @@
           "module": "结算",
           "kind": "entity",
           "position": {
-            "x": 1120,
-            "y": 70
+            "x": 1337,
+            "y": 100
           },
           "size": {
-            "width": 420,
-            "height": 260
+            "width": 272,
+            "height": 200
           },
           "fields": [
             {
@@ -1320,12 +1839,12 @@
           "module": "订单",
           "kind": "entity",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 632,
+            "y": 436
           },
           "size": {
-            "width": 430,
-            "height": 290
+            "width": 373,
+            "height": 232
           },
           "fields": [
             {
@@ -1367,12 +1886,12 @@
           "module": "订单",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 500
+            "x": 1343.5,
+            "y": 412
           },
           "size": {
-            "width": 450,
-            "height": 290
+            "width": 323,
+            "height": 232
           },
           "fields": [
             {
@@ -1410,12 +1929,12 @@
           "module": "支付",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 500
+            "x": 1337,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 336,
+            "height": 200
           },
           "fields": [
             {
@@ -1449,12 +1968,12 @@
           "module": "库存",
           "kind": "entity",
           "position": {
-            "x": 620,
-            "y": 980
+            "x": 2021,
+            "y": 412
           },
           "size": {
-            "width": 480,
-            "height": 290
+            "width": 301,
+            "height": 232
           },
           "fields": [
             {
@@ -1492,12 +2011,12 @@
           "module": "履约",
           "kind": "entity",
           "position": {
-            "x": 1230,
-            "y": 980
+            "x": 2021,
+            "y": 756
           },
           "size": {
-            "width": 430,
-            "height": 260
+            "width": 304,
+            "height": 200
           },
           "fields": [
             {
@@ -1535,7 +2054,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..1",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 200
+              },
+              {
+                "x": 659.5,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 482,
+              "y": 160
+            }
+          }
         },
         {
           "id": "cart-items",
@@ -1545,7 +2080,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 977.5,
+                "y": 200
+              },
+              {
+                "x": 1309,
+                "y": 200
+              }
+            ],
+            "labelAt": {
+              "x": 1171,
+              "y": 240
+            }
+          }
         },
         {
           "id": "customer-orders",
@@ -1555,7 +2106,31 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 360,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 248
+              },
+              {
+                "x": 380,
+                "y": 552
+              },
+              {
+                "x": 604,
+                "y": 552
+              }
+            ],
+            "labelAt": {
+              "x": 482,
+              "y": 592
+            }
+          }
         },
         {
           "id": "order-items",
@@ -1565,7 +2140,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "1..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1033,
+                "y": 528
+              },
+              {
+                "x": 1315.5,
+                "y": 528
+              }
+            ],
+            "labelAt": {
+              "x": 1171,
+              "y": 568
+            }
+          }
         },
         {
           "id": "order-payments",
@@ -1579,25 +2170,25 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 850
+                "x": 1033,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 1053,
+                "y": 576
               },
               {
-                "x": 500,
-                "y": 400
+                "x": 1053,
+                "y": 856
               },
               {
-                "x": 1445,
-                "y": 400
+                "x": 1309,
+                "y": 856
               }
             ],
             "labelAt": {
-              "x": 800,
-              "y": 375
+              "x": 1171,
+              "y": 896
             }
           }
         },
@@ -1609,7 +2200,23 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1694.5,
+                "y": 528
+              },
+              {
+                "x": 1993,
+                "y": 528
+              }
+            ],
+            "labelAt": {
+              "x": 1847,
+              "y": 488
+            }
+          }
         },
         {
           "id": "order-shipments",
@@ -1619,9 +2226,29 @@
           "kind": "relationship",
           "sourceCardinality": "1",
           "targetCardinality": "0..*",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1701,
+                "y": 856
+              },
+              {
+                "x": 1993,
+                "y": 856
+              }
+            ],
+            "labelAt": {
+              "x": 1847,
+              "y": 896
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-3"
+      }
     },
     {
       "meta": {
@@ -1638,12 +2265,12 @@
           "label": "公网边缘",
           "kind": "network",
           "position": {
-            "x": 10,
-            "y": 20
+            "x": 32,
+            "y": 220.5
           },
           "size": {
-            "width": 1510,
-            "height": 250
+            "width": 1566,
+            "height": 247
           }
         },
         {
@@ -1651,12 +2278,12 @@
           "label": "主交易区域 · Kubernetes",
           "kind": "cluster",
           "position": {
-            "x": 10,
-            "y": 340
+            "x": 1954,
+            "y": 196.5
           },
           "size": {
-            "width": 1510,
-            "height": 300
+            "width": 1910,
+            "height": 321
           }
         },
         {
@@ -1664,12 +2291,12 @@
           "label": "数据与外部能力",
           "kind": "host",
           "position": {
-            "x": 10,
-            "y": 780
+            "x": 4236,
+            "y": 100
           },
           "size": {
-            "width": 1830,
-            "height": 370
+            "width": 1579,
+            "height": 474
           }
         }
       ],
@@ -1681,13 +2308,14 @@
           "module": "渠道",
           "kind": "device",
           "position": {
-            "x": 40,
-            "y": 75
+            "x": 152,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 254,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "cdn",
@@ -1696,13 +2324,14 @@
           "module": "渠道",
           "kind": "node",
           "position": {
-            "x": 610,
-            "y": 75
+            "x": 738,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "gateway",
@@ -1711,13 +2340,14 @@
           "module": "渠道",
           "kind": "container",
           "position": {
-            "x": 1180,
-            "y": 75
+            "x": 1326,
+            "y": 320.5
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "edge"
         },
         {
           "id": "commerce",
@@ -1726,16 +2356,17 @@
           "module": "结算",
           "kind": "service",
           "position": {
-            "x": 40,
-            "y": 410
+            "x": 2212,
+            "y": 320.5
           },
           "size": {
-            "width": 360,
-            "height": 170
+            "width": 345,
+            "height": 115
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "region"
         },
         {
           "id": "control",
@@ -1744,13 +2375,14 @@
           "module": "库存",
           "kind": "service",
           "position": {
-            "x": 580,
-            "y": 410
+            "x": 2921,
+            "y": 296.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 247,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "fulfillment",
@@ -1759,13 +2391,14 @@
           "module": "履约",
           "kind": "service",
           "position": {
-            "x": 1120,
-            "y": 410
+            "x": 3500,
+            "y": 296.5
           },
           "size": {
-            "width": 360,
-            "height": 170
-          }
+            "width": 332,
+            "height": 115
+          },
+          "groupId": "region"
         },
         {
           "id": "database",
@@ -1774,13 +2407,14 @@
           "module": "订单",
           "kind": "database",
           "position": {
-            "x": 40,
-            "y": 850
+            "x": 4404,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "event-bus",
@@ -1789,13 +2423,14 @@
           "module": "订单",
           "kind": "container",
           "position": {
-            "x": 500,
-            "y": 850
+            "x": 4971,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "payment",
@@ -1804,13 +2439,14 @@
           "module": "支付",
           "kind": "external",
           "position": {
-            "x": 960,
-            "y": 850
+            "x": 4404,
+            "y": 427
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "managed"
         },
         {
           "id": "wms",
@@ -1819,13 +2455,14 @@
           "module": "履约",
           "kind": "external",
           "position": {
-            "x": 1420,
-            "y": 850
+            "x": 5543,
+            "y": 200
           },
           "size": {
-            "width": 330,
-            "height": 160
-          }
+            "width": 240,
+            "height": 115
+          },
+          "groupId": "managed"
         }
       ],
       "edges": [
@@ -1835,7 +2472,23 @@
           "target": "cdn",
           "label": "HTTPS",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 418,
+                "y": 378
+              },
+              {
+                "x": 726,
+                "y": 378
+              }
+            ],
+            "labelAt": {
+              "x": 572,
+              "y": 418
+            }
+          }
         },
         {
           "id": "edge-2",
@@ -1843,7 +2496,23 @@
           "target": "gateway",
           "label": "过滤后请求",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 990,
+                "y": 378
+              },
+              {
+                "x": 1314,
+                "y": 378
+              }
+            ],
+            "labelAt": {
+              "x": 1152,
+              "y": 418
+            }
+          }
         },
         {
           "id": "edge-3",
@@ -1855,21 +2524,17 @@
           "route": {
             "via": [
               {
-                "x": 1900,
-                "y": 150
+                "x": 1578,
+                "y": 378
               },
               {
-                "x": 1900,
-                "y": 680
-              },
-              {
-                "x": 350,
-                "y": 680
+                "x": 2200,
+                "y": 378
               }
             ],
             "labelAt": {
-              "x": 1030,
-              "y": 655
+              "x": 1776,
+              "y": 418
             }
           }
         },
@@ -1879,7 +2544,23 @@
           "target": "control",
           "label": "同步领域调用",
           "kind": "depends",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2569,
+                "y": 354
+              },
+              {
+                "x": 2909,
+                "y": 354
+              }
+            ],
+            "labelAt": {
+              "x": 2739,
+              "y": 314
+            }
+          }
         },
         {
           "id": "edge-5",
@@ -1887,7 +2568,23 @@
           "target": "fulfillment",
           "label": "履约约束",
           "kind": "depends",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 3180,
+                "y": 354
+              },
+              {
+                "x": 3488,
+                "y": 354
+              }
+            ],
+            "labelAt": {
+              "x": 3334,
+              "y": 314
+            }
+          }
         },
         {
           "id": "edge-6",
@@ -1895,7 +2592,39 @@
           "target": "database",
           "label": "事务写入",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2569,
+                "y": 378
+              },
+              {
+                "x": 2629,
+                "y": 378
+              },
+              {
+                "x": 2629,
+                "y": 459.5
+              },
+              {
+                "x": 4144,
+                "y": 459.5
+              },
+              {
+                "x": 4144,
+                "y": 257.5
+              },
+              {
+                "x": 4392,
+                "y": 257.5
+              }
+            ],
+            "labelAt": {
+              "x": 4050,
+              "y": 419.5
+            }
+          }
         },
         {
           "id": "edge-7",
@@ -1903,7 +2632,23 @@
           "target": "event-bus",
           "label": "Outbox",
           "kind": "network",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4656,
+                "y": 257.5
+              },
+              {
+                "x": 4959,
+                "y": 257.5
+              }
+            ],
+            "labelAt": {
+              "x": 4807.5,
+              "y": 297.5
+            }
+          }
         },
         {
           "id": "edge-9",
@@ -1915,21 +2660,25 @@
           "route": {
             "via": [
               {
-                "x": 0,
-                "y": 495
+                "x": 2569,
+                "y": 402
               },
               {
-                "x": 0,
-                "y": 700
+                "x": 2605,
+                "y": 402
               },
               {
-                "x": 1125,
-                "y": 700
+                "x": 2605,
+                "y": 484.5
+              },
+              {
+                "x": 4392,
+                "y": 484.5
               }
             ],
             "labelAt": {
-              "x": 520,
-              "y": 675
+              "x": 4050,
+              "y": 524.5
             }
           }
         },
@@ -1943,21 +2692,25 @@
           "route": {
             "via": [
               {
-                "x": 665,
-                "y": 1100
+                "x": 5223,
+                "y": 257.5
               },
               {
-                "x": 1585,
-                "y": 1100
+                "x": 5531,
+                "y": 257.5
               }
             ],
             "labelAt": {
-              "x": 1120,
-              "y": 1070
+              "x": 5377,
+              "y": 297.5
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -1975,12 +2728,12 @@
           "module": "结算",
           "kind": "class",
           "position": {
-            "x": 30,
-            "y": 40
+            "x": 102,
+            "y": 100
           },
           "size": {
-            "width": 390,
-            "height": 260
+            "width": 316,
+            "height": 206
           },
           "attributes": [
             "customerId: CustomerId",
@@ -1997,12 +2750,12 @@
           "module": "结算",
           "kind": "class",
           "position": {
-            "x": 590,
-            "y": 40
+            "x": 69,
+            "y": 592
           },
           "size": {
-            "width": 440,
-            "height": 230
+            "width": 382,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2019,12 +2772,12 @@
           "module": "订单",
           "kind": "class",
           "position": {
-            "x": 1200,
-            "y": 40
+            "x": 32,
+            "y": 1085
           },
           "size": {
-            "width": 400,
-            "height": 290
+            "width": 360,
+            "height": 262
           },
           "attributes": [
             "id: OrderId",
@@ -2043,12 +2796,12 @@
           "module": "价格",
           "kind": "interface",
           "position": {
-            "x": 30,
-            "y": 500
+            "x": 1368,
+            "y": 1085
           },
           "size": {
-            "width": 390,
-            "height": 220
+            "width": 354,
+            "height": 139
           },
           "attributes": [],
           "methods": [
@@ -2061,12 +2814,12 @@
           "module": "库存",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 500
+            "x": 504,
+            "y": 1085
           },
           "size": {
-            "width": 440,
-            "height": 250
+            "width": 321,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2080,12 +2833,12 @@
           "module": "支付",
           "kind": "interface",
           "position": {
-            "x": 1200,
-            "y": 500
+            "x": 937,
+            "y": 1085
           },
           "size": {
-            "width": 400,
-            "height": 250
+            "width": 319,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2099,12 +2852,12 @@
           "module": "订单",
           "kind": "interface",
           "position": {
-            "x": 590,
-            "y": 950
+            "x": 102,
+            "y": 1633
           },
           "size": {
-            "width": 440,
-            "height": 220
+            "width": 244,
+            "height": 167
           },
           "attributes": [],
           "methods": [
@@ -2120,7 +2873,23 @@
           "target": "service",
           "label": "输入",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 318
+              },
+              {
+                "x": 260,
+                "y": 580
+              }
+            ],
+            "labelAt": {
+              "x": 214,
+              "y": 449
+            }
+          }
         },
         {
           "id": "creates",
@@ -2128,7 +2897,23 @@
           "target": "order",
           "label": "创建",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 212,
+                "y": 771
+              },
+              {
+                "x": 212,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 166,
+              "y": 942
+            }
+          }
         },
         {
           "id": "pricing",
@@ -2136,7 +2921,31 @@
           "target": "pricing-port",
           "label": "依赖",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 284,
+                "y": 771
+              },
+              {
+                "x": 284,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 831
+              },
+              {
+                "x": 1545,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 1499,
+              "y": 942
+            }
+          }
         },
         {
           "id": "inventory",
@@ -2144,7 +2953,31 @@
           "target": "inventory-port",
           "label": "依赖",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 236,
+                "y": 771
+              },
+              {
+                "x": 236,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 879
+              },
+              {
+                "x": 664.5,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 618.5,
+              "y": 942
+            }
+          }
         },
         {
           "id": "payment",
@@ -2152,7 +2985,31 @@
           "target": "payment-port",
           "label": "依赖",
           "kind": "dependency",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 260,
+                "y": 771
+              },
+              {
+                "x": 260,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 855
+              },
+              {
+                "x": 1096.5,
+                "y": 1073
+              }
+            ],
+            "labelAt": {
+              "x": 1050.5,
+              "y": 942
+            }
+          }
         },
         {
           "id": "aggregate",
@@ -2164,21 +3021,17 @@
           "route": {
             "via": [
               {
-                "x": 1700,
-                "y": 185
+                "x": 212,
+                "y": 1359
               },
               {
-                "x": 1700,
-                "y": 1060
-              },
-              {
-                "x": 1100,
-                "y": 1060
+                "x": 212,
+                "y": 1621
               }
             ],
             "labelAt": {
-              "x": 1500,
-              "y": 1035
+              "x": 158,
+              "y": 1490
             }
           }
         },
@@ -2192,25 +3045,41 @@
           "route": {
             "via": [
               {
-                "x": 500,
-                "y": 155
+                "x": 308,
+                "y": 771
               },
               {
-                "x": 500,
-                "y": 850
+                "x": 308,
+                "y": 807
               },
               {
-                "x": 810,
-                "y": 850
+                "x": 1834,
+                "y": 807
+              },
+              {
+                "x": 1834,
+                "y": 1553
+              },
+              {
+                "x": 236,
+                "y": 1553
+              },
+              {
+                "x": 236,
+                "y": 1621
               }
             ],
             "labelAt": {
-              "x": 560,
-              "y": 825
+              "x": 1881,
+              "y": 1216
             }
           }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2228,12 +3097,12 @@
           "module": "订单",
           "kind": "initial",
           "position": {
-            "x": 30,
+            "x": 220,
             "y": 100
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 64,
+            "height": 28
           }
         },
         {
@@ -2243,12 +3112,12 @@
           "module": "支付",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 70
+            "x": 132,
+            "y": 414
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           },
           "tags": [
             "core"
@@ -2261,12 +3130,12 @@
           "module": "订单",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 70
+            "x": 472,
+            "y": 800
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2276,12 +3145,12 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 70
+            "x": 460,
+            "y": 1186
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2291,12 +3160,12 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 1270,
-            "y": 390
+            "x": 460,
+            "y": 1572
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2306,12 +3175,12 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 390
+            "x": 460,
+            "y": 1958
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2321,12 +3190,12 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 390
+            "x": 460,
+            "y": 2344
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2336,12 +3205,12 @@
           "module": "订单",
           "kind": "state",
           "position": {
-            "x": 250,
-            "y": 710
+            "x": 120,
+            "y": 800
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2351,12 +3220,12 @@
           "module": "支付",
           "kind": "state",
           "position": {
-            "x": 760,
-            "y": 710
+            "x": 472,
+            "y": 2730
           },
           "size": {
-            "width": 280,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2365,12 +3234,12 @@
           "module": "订单",
           "kind": "final",
           "position": {
-            "x": 1270,
-            "y": 740
+            "x": 208,
+            "y": 3116
           },
           "size": {
-            "width": 90,
-            "height": 90
+            "width": 88,
+            "height": 28
           }
         }
       ],
@@ -2381,7 +3250,23 @@
           "target": "pending",
           "label": "创建订单",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 252,
+                "y": 140
+              },
+              {
+                "x": 252,
+                "y": 402
+              }
+            ],
+            "labelAt": {
+              "x": 190,
+              "y": 271
+            }
+          }
         },
         {
           "id": "pay",
@@ -2390,7 +3275,31 @@
           "label": "支付确认",
           "guard": "校验通过",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 264,
+                "y": 526
+              },
+              {
+                "x": 264,
+                "y": 562
+              },
+              {
+                "x": 592,
+                "y": 562
+              },
+              {
+                "x": 592,
+                "y": 788
+              }
+            ],
+            "labelAt": {
+              "x": 701,
+              "y": 657
+            }
+          }
         },
         {
           "id": "allocate",
@@ -2398,7 +3307,23 @@
           "target": "allocated",
           "label": "仓库接单",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 912
+              },
+              {
+                "x": 580,
+                "y": 1174
+              }
+            ],
+            "labelAt": {
+              "x": 518,
+              "y": 1043
+            }
+          }
         },
         {
           "id": "pack",
@@ -2406,7 +3331,23 @@
           "target": "packed",
           "label": "完成拣货",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 1298
+              },
+              {
+                "x": 580,
+                "y": 1560
+              }
+            ],
+            "labelAt": {
+              "x": 518,
+              "y": 1429
+            }
+          }
         },
         {
           "id": "ship",
@@ -2414,7 +3355,23 @@
           "target": "shipped",
           "label": "承运商揽收",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 1684
+              },
+              {
+                "x": 580,
+                "y": 1946
+              }
+            ],
+            "labelAt": {
+              "x": 510,
+              "y": 1815
+            }
+          }
         },
         {
           "id": "receive",
@@ -2422,7 +3379,23 @@
           "target": "completed",
           "label": "确认收货",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 2070
+              },
+              {
+                "x": 580,
+                "y": 2332
+              }
+            ],
+            "labelAt": {
+              "x": 518,
+              "y": 2201
+            }
+          }
         },
         {
           "id": "cancel",
@@ -2435,25 +3408,17 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 300
+                "x": 240,
+                "y": 526
               },
               {
-                "x": 180,
-                "y": 300
-              },
-              {
-                "x": 180,
-                "y": 650
-              },
-              {
-                "x": 390,
-                "y": 650
+                "x": 240,
+                "y": 788
               }
             ],
             "labelAt": {
-              "x": 140,
-              "y": 430
+              "x": 124,
+              "y": 657
             }
           }
         },
@@ -2468,25 +3433,33 @@
           "route": {
             "via": [
               {
-                "x": 900,
-                "y": 20
+                "x": 604,
+                "y": 912
               },
               {
-                "x": 1600,
-                "y": 20
+                "x": 604,
+                "y": 948
               },
               {
-                "x": 1600,
-                "y": 650
+                "x": 797,
+                "y": 948
               },
               {
-                "x": 900,
-                "y": 650
+                "x": 797,
+                "y": 2650
+              },
+              {
+                "x": 604,
+                "y": 2650
+              },
+              {
+                "x": 604,
+                "y": 2718
               }
             ],
             "labelAt": {
-              "x": 1690,
-              "y": 430
+              "x": 689,
+              "y": 1815
             }
           }
         },
@@ -2497,7 +3470,23 @@
           "label": "售后退款",
           "guard": "审核通过",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 580,
+                "y": 2456
+              },
+              {
+                "x": 580,
+                "y": 2718
+              }
+            ],
+            "labelAt": {
+              "x": 472,
+              "y": 2587
+            }
+          }
         },
         {
           "id": "cancel-close",
@@ -2509,17 +3498,17 @@
           "route": {
             "via": [
               {
-                "x": 390,
-                "y": 930
+                "x": 240,
+                "y": 912
               },
               {
-                "x": 1315,
-                "y": 930
+                "x": 240,
+                "y": 3104
               }
             ],
             "labelAt": {
-              "x": 560,
-              "y": 905
+              "x": 162,
+              "y": 2008
             }
           }
         },
@@ -2529,9 +3518,37 @@
           "target": "closed",
           "label": "退款到账",
           "kind": "transition",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 592,
+                "y": 2842
+              },
+              {
+                "x": 592,
+                "y": 3036
+              },
+              {
+                "x": 264,
+                "y": 3036
+              },
+              {
+                "x": 264,
+                "y": 3104
+              }
+            ],
+            "labelAt": {
+              "x": 655,
+              "y": 2973
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2548,12 +3565,12 @@
           "label": "电商交易与履约平台",
           "kind": "system",
           "position": {
-            "x": 500,
-            "y": 20
+            "x": 332,
+            "y": 100
           },
           "size": {
-            "width": 1050,
-            "height": 970
+            "width": 1062,
+            "height": 923
           }
         }
       ],
@@ -2564,12 +3581,12 @@
           "module": "渠道",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 80
+            "x": 32,
+            "y": 410
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 160,
+            "height": 104
           }
         },
         {
@@ -2578,12 +3595,12 @@
           "module": "价格",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 310
+            "x": 32,
+            "y": 626
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 160,
+            "height": 104
           }
         },
         {
@@ -2592,12 +3609,12 @@
           "module": "履约",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 540
+            "x": 32,
+            "y": 194
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 160,
+            "height": 104
           }
         },
         {
@@ -2606,12 +3623,12 @@
           "module": "履约",
           "kind": "actor",
           "position": {
-            "x": 30,
-            "y": 770
+            "x": 32,
+            "y": 938
           },
           "size": {
-            "width": 260,
-            "height": 150
+            "width": 160,
+            "height": 104
           }
         },
         {
@@ -2621,16 +3638,17 @@
           "module": "结算",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 80
+            "x": 532,
+            "y": 412
           },
           "size": {
-            "width": 360,
-            "height": 150
+            "width": 240,
+            "height": 100
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "platform"
         },
         {
           "id": "pay",
@@ -2639,13 +3657,14 @@
           "module": "支付",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 80
+            "x": 1122,
+            "y": 412
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "catalog",
@@ -2654,13 +3673,14 @@
           "module": "价格",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 310
+            "x": 532,
+            "y": 624
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "orders",
@@ -2669,13 +3689,14 @@
           "module": "订单",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 310
+            "x": 1122,
+            "y": 624
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "pick",
@@ -2684,13 +3705,14 @@
           "module": "履约",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 540
+            "x": 532,
+            "y": 200
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "ship",
@@ -2699,13 +3721,14 @@
           "module": "履约",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 540
+            "x": 1122,
+            "y": 200
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "refund",
@@ -2714,13 +3737,14 @@
           "module": "支付",
           "kind": "usecase",
           "position": {
-            "x": 590,
-            "y": 770
+            "x": 1122,
+            "y": 848
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         },
         {
           "id": "return",
@@ -2729,13 +3753,14 @@
           "module": "履约",
           "kind": "usecase",
           "position": {
-            "x": 1090,
-            "y": 770
+            "x": 532,
+            "y": 836
           },
           "size": {
-            "width": 360,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "platform"
         }
       ],
       "edges": [
@@ -2744,28 +3769,100 @@
           "source": "buyer",
           "target": "checkout",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 462
+              },
+              {
+                "x": 520,
+                "y": 462
+              }
+            ]
+          }
         },
         {
           "id": "merchant-catalog",
           "source": "merchant",
           "target": "catalog",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 678
+              },
+              {
+                "x": 240,
+                "y": 678
+              },
+              {
+                "x": 240,
+                "y": 674
+              },
+              {
+                "x": 520,
+                "y": 674
+              }
+            ]
+          }
         },
         {
           "id": "warehouse-pick",
           "source": "warehouse",
           "target": "pick",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 246
+              },
+              {
+                "x": 240,
+                "y": 246
+              },
+              {
+                "x": 240,
+                "y": 250
+              },
+              {
+                "x": 520,
+                "y": 250
+              }
+            ]
+          }
         },
         {
           "id": "support-refund",
           "source": "support",
           "target": "refund",
           "kind": "association",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 204,
+                "y": 990
+              },
+              {
+                "x": 1042,
+                "y": 990
+              },
+              {
+                "x": 1042,
+                "y": 910
+              },
+              {
+                "x": 1110,
+                "y": 910
+              }
+            ]
+          }
         },
         {
           "id": "checkout-pay",
@@ -2773,7 +3870,23 @@
           "target": "pay",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 784,
+                "y": 462
+              },
+              {
+                "x": 1110,
+                "y": 462
+              }
+            ],
+            "labelAt": {
+              "x": 947,
+              "y": 502
+            }
+          }
         },
         {
           "id": "catalog-orders",
@@ -2781,7 +3894,23 @@
           "target": "orders",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 784,
+                "y": 674
+              },
+              {
+                "x": 1110,
+                "y": 674
+              }
+            ],
+            "labelAt": {
+              "x": 947,
+              "y": 714
+            }
+          }
         },
         {
           "id": "pick-ship",
@@ -2789,7 +3918,23 @@
           "target": "ship",
           "label": "include",
           "kind": "include",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 784,
+                "y": 250
+              },
+              {
+                "x": 1110,
+                "y": 250
+              }
+            ],
+            "labelAt": {
+              "x": 947,
+              "y": 290
+            }
+          }
         },
         {
           "id": "return-refund",
@@ -2797,9 +3942,29 @@
           "target": "refund",
           "label": "extend",
           "kind": "extend",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 784,
+                "y": 886
+              },
+              {
+                "x": 1110,
+                "y": 886
+              }
+            ],
+            "labelAt": {
+              "x": 947,
+              "y": 926
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     },
     {
       "meta": {
@@ -2816,12 +3981,12 @@
           "label": "交易数据边界",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 20
+            "x": 645,
+            "y": 100
           },
           "size": {
-            "width": 1330,
-            "height": 570
+            "width": 2796,
+            "height": 548
           }
         },
         {
@@ -2829,12 +3994,12 @@
           "label": "履约数据边界",
           "kind": "ownership",
           "position": {
-            "x": 480,
-            "y": 660
+            "x": 3797,
+            "y": 416
           },
           "size": {
-            "width": 1330,
-            "height": 260
+            "width": 1732,
+            "height": 238
           }
         }
       ],
@@ -2846,12 +4011,12 @@
           "module": "渠道",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 85
+            "x": 32,
+            "y": 325
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 253,
+            "height": 100
           }
         },
         {
@@ -2861,16 +4026,17 @@
           "module": "结算",
           "kind": "process",
           "position": {
-            "x": 520,
-            "y": 85
+            "x": 1440,
+            "y": 412
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 244,
+            "height": 100
           },
           "tags": [
             "core"
-          ]
+          ],
+          "groupId": "transaction"
         },
         {
           "id": "pricing",
@@ -2879,13 +4045,14 @@
           "module": "价格",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 85
+            "x": 797,
+            "y": 424
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 263,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "risk",
@@ -2894,13 +4061,14 @@
           "module": "风控",
           "kind": "dataStore",
           "position": {
-            "x": 1500,
-            "y": 85
+            "x": 1440,
+            "y": 200
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 244,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "decision",
@@ -2909,13 +4077,14 @@
           "module": "风控",
           "kind": "process",
           "position": {
-            "x": 1500,
-            "y": 375
+            "x": 2016,
+            "y": 400
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "inventory",
@@ -2924,13 +4093,14 @@
           "module": "库存",
           "kind": "dataStore",
           "position": {
-            "x": 1010,
-            "y": 375
+            "x": 2588,
+            "y": 400
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "order",
@@ -2939,13 +4109,14 @@
           "module": "订单",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 375
+            "x": 3160,
+            "y": 516
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 249,
+            "height": 100
+          },
+          "groupId": "transaction"
         },
         {
           "id": "payment",
@@ -2954,12 +4125,12 @@
           "module": "支付",
           "kind": "external",
           "position": {
-            "x": 30,
-            "y": 375
+            "x": 45,
+            "y": 537
           },
           "size": {
-            "width": 300,
-            "height": 150
+            "width": 240,
+            "height": 100
           }
         },
         {
@@ -2969,13 +4140,14 @@
           "module": "订单",
           "kind": "dataStore",
           "position": {
-            "x": 520,
-            "y": 715
+            "x": 3949,
+            "y": 516
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 349,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "wms",
@@ -2984,13 +4156,14 @@
           "module": "履约",
           "kind": "process",
           "position": {
-            "x": 1010,
-            "y": 715
+            "x": 4646,
+            "y": 516
           },
           "size": {
-            "width": 300,
-            "height": 150
-          }
+            "width": 263,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         },
         {
           "id": "carrier",
@@ -2999,13 +4172,14 @@
           "module": "履约",
           "kind": "external",
           "position": {
-            "x": 1500,
-            "y": 715
+            "x": 5257,
+            "y": 516
           },
           "size": {
-            "width": 280,
-            "height": 150
-          }
+            "width": 240,
+            "height": 100
+          },
+          "groupId": "fulfillment"
         }
       ],
       "edges": [
@@ -3017,9 +4191,27 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 297,
+                "y": 375
+              },
+              {
+                "x": 1360,
+                "y": 375
+              },
+              {
+                "x": 1360,
+                "y": 450
+              },
+              {
+                "x": 1428,
+                "y": 450
+              }
+            ],
             "labelAt": {
-              "x": 410,
-              "y": 60
+              "x": 459,
+              "y": 335
             }
           }
         },
@@ -3029,7 +4221,23 @@
           "target": "checkout",
           "label": "价格与优惠规则",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1072,
+                "y": 474
+              },
+              {
+                "x": 1428,
+                "y": 474
+              }
+            ],
+            "labelAt": {
+              "x": 1250,
+              "y": 514
+            }
+          }
         },
         {
           "id": "d3",
@@ -3037,7 +4245,31 @@
           "target": "decision",
           "label": "风险特征",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 1696,
+                "y": 250
+              },
+              {
+                "x": 1936,
+                "y": 250
+              },
+              {
+                "x": 1936,
+                "y": 438
+              },
+              {
+                "x": 2004,
+                "y": 438
+              }
+            ],
+            "labelAt": {
+              "x": 1850,
+              "y": 290
+            }
+          }
         },
         {
           "id": "d4",
@@ -3049,25 +4281,17 @@
           "route": {
             "via": [
               {
-                "x": 670,
-                "y": 300
+                "x": 1696,
+                "y": 462
               },
               {
-                "x": 1850,
-                "y": 300
-              },
-              {
-                "x": 1850,
-                "y": 620
-              },
-              {
-                "x": 1640,
-                "y": 620
+                "x": 2004,
+                "y": 462
               }
             ],
             "labelAt": {
-              "x": 1250,
-              "y": 275
+              "x": 1850,
+              "y": 502
             }
           }
         },
@@ -3077,7 +4301,23 @@
           "target": "inventory",
           "label": "预占请求",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2268,
+                "y": 450
+              },
+              {
+                "x": 2576,
+                "y": 450
+              }
+            ],
+            "labelAt": {
+              "x": 2422,
+              "y": 410
+            }
+          }
         },
         {
           "id": "d6",
@@ -3085,7 +4325,31 @@
           "target": "order",
           "label": "预占令牌",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 2840,
+                "y": 450
+              },
+              {
+                "x": 3080,
+                "y": 450
+              },
+              {
+                "x": 3080,
+                "y": 554
+              },
+              {
+                "x": 3148,
+                "y": 554
+              }
+            ],
+            "labelAt": {
+              "x": 2994,
+              "y": 410
+            }
+          }
         },
         {
           "id": "d7",
@@ -3095,9 +4359,27 @@
           "kind": "data",
           "evidence": "inference",
           "route": {
+            "via": [
+              {
+                "x": 297,
+                "y": 587
+              },
+              {
+                "x": 553,
+                "y": 587
+              },
+              {
+                "x": 553,
+                "y": 578
+              },
+              {
+                "x": 3148,
+                "y": 578
+              }
+            ],
             "labelAt": {
-              "x": 410,
-              "y": 350
+              "x": 459,
+              "y": 627
             }
           }
         },
@@ -3107,7 +4389,23 @@
           "target": "event",
           "label": "领域事件",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 3421,
+                "y": 566
+              },
+              {
+                "x": 3937,
+                "y": 566
+              }
+            ],
+            "labelAt": {
+              "x": 3619,
+              "y": 606
+            }
+          }
         },
         {
           "id": "d9",
@@ -3115,7 +4413,23 @@
           "target": "wms",
           "label": "已支付订单",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4310,
+                "y": 566
+              },
+              {
+                "x": 4634,
+                "y": 566
+              }
+            ],
+            "labelAt": {
+              "x": 4472,
+              "y": 606
+            }
+          }
         },
         {
           "id": "d10",
@@ -3123,9 +4437,29 @@
           "target": "carrier",
           "label": "包裹与运单",
           "kind": "data",
-          "evidence": "inference"
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 4921,
+                "y": 566
+              },
+              {
+                "x": 5245,
+                "y": 566
+              }
+            ],
+            "labelAt": {
+              "x": 5083,
+              "y": 606
+            }
+          }
         }
-      ]
+      ],
+      "layout": {
+        "version": "strict-v1-elkjs-0.11.0",
+        "strategy": "layered-0"
+      }
     }
   ]
 }

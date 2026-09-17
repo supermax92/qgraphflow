@@ -217,7 +217,7 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 Нужны Node.js 22, npm, tar, zip и unzip. В сообщении о проблеме приложите минимальный граф без конфиденциальных данных, версии клиента и браузера и шаги воспроизведения.
 
-[Источники оснований](../references/ru/evidence-sources.md) · [Формат графов](../references/ru/graph-schema.md) · [Уточнение запроса](../references/ru/guided-intake.md) · [Разработка Viewer](../references/ru/viewer-development.md) · [Композиция диаграмм](../references/ru/visual-contract.md)
+Справочная документация (на английском): [Источники оснований](../../skills/q-flow/references/evidence-sources.md) · [Формат графов](../../skills/q-flow/references/graph-schema.md) · [Уточнение запроса](../../skills/q-flow/references/guided-intake.md) · [Разработка Viewer](../../skills/q-flow/references/viewer-development.md) · [Композиция диаграмм](../../skills/q-flow/references/visual-contract.md)
 
 ## Лицензия и принадлежность
 
