@@ -47,6 +47,8 @@ La vista general muestra cada uno de los tres diagramas durante 0,8 segundos: 2,
 
 Se necesitan Node.js 22 y un cliente compatible con complementos que tenga configurado el acceso al modelo.
 
+En [Qoder IDE](#qoder-ide), puedes instalar desde el Marketplace y omitir el paso 1.
+
 ### 1. Descargar el complemento
 
 Descargar [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
@@ -94,7 +96,9 @@ Iniciar una sesión nueva y seleccionar `q-flow`.
 
 #### Qoder IDE
 
-Abrir **Settings → Plugins → Custom → Import**, importar el directorio raíz completo del complemento y seleccionar `q-flow`.
+**Recomendado:** Abre **Settings → Plugins → Marketplace**, busca **代码图谱可视化** o **qgraphflow** e instala el complemento. Inicia una sesión nueva y selecciona `q-flow`. No necesitas descargar un ZIP ni compilar el código fuente.
+
+Para una instalación local, completa primero el paso 1. Después abre **Settings → Plugins → Custom → Import** e importa el directorio raíz completo del complemento extraído. Inicia una sesión nueva y selecciona `q-flow`.
 
 #### Cursor
 

@@ -47,6 +47,8 @@ QGraphFlow はソースコード、データ構造、設定、要件から対話
 
 Node.js 22 と、プラグインに対応しモデルへのアクセスを設定済みのクライアントを用意してください。
 
+[Qoder IDE](#qoder-ide) ではマーケットプレイスから直接インストールできるため、手順 1 は不要です。
+
 ### 1. プラグインをダウンロード
 
 [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
@@ -94,7 +96,9 @@ qodercli plugins install .
 
 #### Qoder IDE
 
-**Settings → Plugins → Custom → Import** を開き、プラグインのルートディレクトリ全体をインポートして `q-flow` を選択します。
+**推奨：** **Settings → Plugins → Marketplace** を開き、**代码图谱可视化** または **qgraphflow** を検索してインストールします。新しいセッションを開始し、`q-flow` を選択します。ZIP のダウンロードやソースのビルドは不要です。
+
+ローカルインストールの場合は手順 1 を完了し、**Settings → Plugins → Custom → Import** を開いて、展開したプラグインのルートディレクトリ全体をインポートします。新しいセッションで `q-flow` を選択します。
 
 #### Cursor
 

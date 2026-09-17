@@ -41,6 +41,12 @@ The seven READMEs reference verified public assets in [showcase-v1](https://gith
 
 Local-directory clients may copy ignored files too. Install from an extracted runtime archive, not the development checkout. Passing package tests is not proof of all four clients' installation or official marketplace approval; verify each client separately before claiming support has been accepted there.
 
+## Qoder IDE marketplace
+
+QGraphFlow is available in the Qoder IDE marketplace. Search for **代码图谱可视化** or **qgraphflow** and install it; see the [client installation guide](clients.md#qoder-ide) and [Qoder's marketplace documentation](https://docs.qoder.com/extensions/plugins).
+
+Track marketplace releases separately from GitHub Releases and npm packages. For each marketplace update, record the version actually published in Qoder and its corresponding source commit or release archive.
+
 ## GitHub npm package
 
 The manual **Publish GitHub npm** Actions workflow accepts an existing stable software Release version, such as `0.0.4`. Only `supermax92` may trigger it from `main`. It verifies the Release archives against `SHA256SUMS`, adapts the extracted runtime to `@supermax92/qgraphflow`, and uses the repository's short-lived `GITHUB_TOKEN` with `packages: write`. No personal token is stored in the repository, and ordinary pushes do not publish packages.

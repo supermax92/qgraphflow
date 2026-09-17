@@ -47,6 +47,8 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 
 准备 Node.js 22，以及已配置好模型访问、支持插件功能的客户端。
 
+[Qoder IDE](#qoder-ide) 可直接从插件商城安装，跳过第 1 步。
+
 ### 1. 下载插件
 
 下载 [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip)，解压到独立目录，保留隐藏文件。
@@ -94,7 +96,9 @@ qodercli plugins install .
 
 #### Qoder IDE
 
-打开 **Settings → Plugins → Custom → Import**，导入完整的插件根目录，再选择 `q-flow`。
+**推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **代码图谱可视化** 或 **qgraphflow**，安装插件。新建会话，选择 `q-flow`。无需下载 ZIP 或构建源码。
+
+如需本地安装，先完成第 1 步，再打开 **Settings → Plugins → Custom → Import**，导入解压后的完整插件根目录。新建会话，选择 `q-flow`。
 
 #### Cursor
 

@@ -47,6 +47,8 @@ The top animation shows each of three views for 0.8 seconds (2.4 seconds per loo
 
 You need Node.js 22 and a plugin-capable client with model access configured.
 
+[Qoder IDE](#qoder-ide) users can install from the marketplace and skip step 1.
+
 ### 1. Download the plugin
 
 Download [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) and extract it into a separate directory, keeping hidden files.
@@ -94,7 +96,9 @@ Start a new session and select `q-flow`.
 
 #### Qoder IDE
 
-Open **Settings → Plugins → Custom → Import**, import the complete plugin root directory, and select `q-flow`.
+**Recommended:** Open **Settings → Plugins → Marketplace**, search for **代码图谱可视化** or **qgraphflow**, and install the plugin. Start a new session and select `q-flow`. No ZIP download or source build is required.
+
+For local installation, complete step 1, then open **Settings → Plugins → Custom → Import** and import the complete extracted plugin root directory. Start a new session and select `q-flow`.
 
 #### Cursor
 

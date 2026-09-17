@@ -47,6 +47,8 @@ Die Übersicht zeigt jede der drei Ansichten 0,8 Sekunden lang; eine Schleife da
 
 Benötigt werden Node.js 22 und ein Client mit Plugin-Unterstützung und eingerichtetem Modellzugriff.
 
+[Qoder IDE](#qoder-ide) kann das Plugin direkt aus dem Marketplace installieren; Schritt 1 entfällt.
+
 ### 1. Plugin herunterladen
 
 [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
@@ -94,7 +96,9 @@ Eine neue Sitzung starten und `q-flow` auswählen.
 
 #### Qoder IDE
 
-**Settings → Plugins → Custom → Import** öffnen, das vollständige Plugin-Stammverzeichnis importieren und `q-flow` auswählen.
+**Empfohlen:** Öffne **Settings → Plugins → Marketplace**, suche nach **代码图谱可视化** oder **qgraphflow** und installiere das Plugin. Starte eine neue Sitzung und wähle `q-flow`. Ein ZIP-Download oder ein Build aus dem Quellcode ist nicht erforderlich.
+
+Für eine lokale Installation führe zuerst Schritt 1 aus. Öffne dann **Settings → Plugins → Custom → Import** und importiere das vollständige entpackte Plugin-Stammverzeichnis. Starte eine neue Sitzung und wähle `q-flow`.
 
 #### Cursor
 
