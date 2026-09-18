@@ -1,6 +1,6 @@
 // Selected Radix Colors scales, copied verbatim from @radix-ui/colors@3.0.0: https://github.com/radix-ui/colors
 // neutral = slate, accent = iris, data = cyan, warn = orange (light and dark variants; index 0 is a placeholder, steps 1–12).
-// Module accents follow the reviewed ecommerce demo in the stable sorted slot order.
+// Module accent tones retain the reviewed palette; visual-style.js assigns stable identity slots.
 // MIT notice is retained in generated HTML and SVG.
 export const RADIX = {
   light: {

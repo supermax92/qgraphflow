@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, occupiedBox, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
-import { edgeColor, isCore, moduleColorMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
+import { edgeColor, isCore, moduleColorMap, groupAppearanceMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
 import { RADIX } from '../assets/viewer/src/radix-colors.js';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { nudgeGraphLayout } from '../assets/viewer/src/layout-nudge.js';
@@ -443,7 +443,7 @@ test('D3 applies only candidates that satisfy the shared gate for every diagram 
       movedSecond.position.y - movedFirst.position.y - movedFirst.size.height
     );
     if (result.rejected) { assert.equal(result.graph, crowded); assert.deepEqual(result.movedNodeIds, []); }
-    else { requireDiagramQuality(result.graph); assert.ok(horizontalGap >= 96 || verticalGap >= 96, `${type} must restore 96px clearance`); }
+    else { requireDiagramQuality(result.graph); assert.ok(horizontalGap >= 48 || verticalGap >= 48, `${type} must restore 48px clearance`); }
     if (type === 'sequence') assert.equal(movedSecond.position.y, second.position.y, 'sequence participants must keep their authored row');
   }
 });
@@ -601,7 +601,7 @@ test('exports the React Flow UI board in light and dark themes', () => {
   assert.match(createDiagramSvg(semantic), new RegExp(`stroke="${PALETTES.light.accent}"[^>]+marker-end="url\\(#arrow-ok\\)"`));
 });
 
-test('legend uses only actual semantic appearances and core colors stay light with readable text', () => {
+test('legend uses actual semantic appearances and soft core surfaces with readable text', () => {
   const model = graph('dataflow', [box('core', 'Core', 'process', 0, 0, 180, 100, { tags: [' CORE '] }), box('store', 'Store', 'dataStore', 400, 0), box('plain', 'Plain', 'process', 800, 0)], [edge('data', 'core', 'store', 'data')]);
   for (const palette of Object.values(PALETTES)) {
     const legend = graphLegend(model, palette);
@@ -611,7 +611,7 @@ test('legend uses only actual semantic appearances and core colors stay light wi
       assert.equal(entry.fill, appearance.fill); assert.equal(entry.stroke, appearance.stroke);
     }
     const svg = createDiagramSvg(model, palette === PALETTES.light ? 'light' : 'dark');
-    assert.ok(svg.includes(`fill="${palette.hero}"`)); assert.ok(svg.includes(`stroke="${palette.heroBorder}"`));
+    assert.ok(svg.includes(`fill="${palette.surface2}"`)); assert.ok(svg.includes(`stroke="${palette.accent}"`));
     assert.match(svg, /MIT License/); assert.match(svg, /WorkOS/);
   }
   assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], [RADIX.light.accent[3], RADIX.light.accent[8], RADIX.light.accent[12]]);
@@ -623,23 +623,21 @@ test('legend uses only actual semantic appearances and core colors stay light wi
   }
 });
 
-test('maps the first eight modules to stable distinct light and dark accent slots', () => {
+test('module identity survives reordering, additions, removals, themes and standalone export', () => {
   const modules = ['渠道', '结算', '价格', '库存', '风控', '支付', '订单', '履约'];
   const collection = modules.map((module, index) => graph('architecture', [box(`n${index}`, module, 'service', index * 240, 0, 180, 100, { module })], []));
-  const reversed = [...collection].reverse();
-  for (const theme of ['light', 'dark']) {
-    const map = moduleColorMap(collection, PALETTES[theme]);
-    assert.equal(new Set(map.values()).size, 8);
-    assert.deepEqual([...map], [...moduleColorMap(reversed, PALETTES[theme])], 'view order must not change module slots');
-    assert.deepEqual([...map.keys()], [...map.keys()].sort());
+  for (const [theme, palette] of Object.entries(PALETTES)) {
+    const colors = moduleColorMap(collection, palette);
+    assert.deepEqual([...colors], [...moduleColorMap([...collection].reverse(), palette)]);
+    const expanded = moduleColorMap([...collection, graph('architecture', [box('new', 'New', 'service', 0, 0, 180, 100, { module: 'AAA新增模块' })], [])], palette);
+    for (const model of collection) {
+      const name = model.nodes[0].module;
+      assert.equal(colors.get(name), expanded.get(name));
+      assert.equal(colors.get(name), moduleColorMap([model], palette).get(name));
+      assert.equal(createDiagramSvg(model, theme), createDiagramSvg(model, theme, colors));
+    }
   }
-  const light = moduleColorMap(collection, PALETTES.light), dark = moduleColorMap(collection, PALETTES.dark);
-  assert.deepEqual([...light.keys()], [...dark.keys()], 'theme changes tones, not module slots');
-  assert.deepEqual(Object.fromEntries(light), {
-    '价格': '#8b5cf6', '履约': '#b14b7d', '库存': '#0f8f83', '支付': '#2474d2',
-    '渠道': '#6b7280', '结算': '#5753d7', '订单': '#348052', '风控': '#c26a17'
-  }, 'The ecommerce modules keep the reviewed demo palette.');
-  assert.equal(createDiagramSvg(compiledFixtures.architecture), createDiagramSvg(compiledFixtures.architecture, 'light', new Map()), 'legacy graphs remain visually unchanged');
+  for (const module of modules) assert.equal(PALETTES.light.moduleAccents.indexOf(moduleColorMap(collection, PALETTES.light).get(module)), PALETTES.dark.moduleAccents.indexOf(moduleColorMap(collection, PALETTES.dark).get(module)));
 });
 
 test('shares module accents across nodes, edges, legend, minimap data and light/dark SVG export', () => {
@@ -656,7 +654,9 @@ test('shares module accents across nodes, edges, legend, minimap data and light/
     const checkoutAppearance = nodeAppearance(model.nodes[0], palette, colors);
     assert.equal(checkoutAppearance.moduleColor, checkoutColor);
     assert.equal(checkoutAppearance.stroke, checkoutColor, 'Module color owns the full node outline.');
-    assert.notEqual(checkoutAppearance.fill, palette.hero, 'Module color owns the full node tint instead of a restrained dot.');
+    assert.notEqual(checkoutAppearance.fill, palette.surface2, 'Ordinary cards retain a visible module tint.');
+    assert.notEqual(checkoutAppearance.fill, checkoutColor, 'Card fills stay softer than the identity accent.');
+    assert.notEqual(checkoutAppearance.fill, nodeAppearance(model.nodes[1], palette, colors).fill, 'Different module colors have distinct card fills.');
     assert.equal(edgeColor(model.edges[0], model.nodes[1], palette, colors, model.nodes[0]), checkoutColor);
     assert.equal(edgeColor(model.edges[1], model.nodes[0], palette, colors, model.nodes[1]), palette.warn, 'failure semantics win over modules');
     assert.equal(graphLegend(model, palette, colors).filter(item => item.role === 'module').length, 2);
@@ -884,10 +884,10 @@ test('rejects a self-loop route that crosses its own node', () => {
   assert.match(validateGraph(invalidLoop).join('\n'), /layout: self-loop retry crosses node pending/);
 });
 
-test('strict CLI rejects nodes below the 96px clearance threshold', () => {
+test('strict CLI rejects nodes below the 48px clearance threshold', () => {
   const tight = graph('architecture', [
     box('caller', 'Caller', 'external', 0, 0),
-    box('api', 'Order API', 'service', 230, 0)
+    box('api', 'Order API', 'service', 227, 0)
   ], []);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codegraph-flow-layout-warning-'));
   const input = path.join(root, 'graph.json');
@@ -1205,7 +1205,7 @@ test('shares theme and semantic colors between page tokens and SVG exports', () 
     assert.equal(edgeColor(entry, target, palette), tokens['--good']);
     const erSvg = createDiagramSvg(compiledFixtures.er, theme);
     assert.match(erSvg, new RegExp(`style="fill:${tokens['--good']}"[^>]*>PK</text>`));
-    assert.match(erSvg, new RegExp(`style="fill:${tokens['--warm']}"[^>]*>FK</text>`));
+    assert.match(erSvg, new RegExp(`style="fill:${tokens['--accent']}"[^>]*>FK</text>`));
   }
 });
 
@@ -1248,6 +1248,11 @@ test('reports undersized normal cards instead of silently shrinking or truncatin
 
 test('six-participant sequence validates explicit branches, legacy warnings and unsafe operands', async () => {
   const original = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/sequence-pointer.graph.json')));
+  assert.match(validateGraph(original).join('\n'), /edge m10 label overlaps group dispatch boundary/);
+  // The legacy fixed pitch left no room for this now-wrapped message above its frame.
+  const routes = createEdgeRoutes(original);
+  for (const edge of original.edges.filter(edge => edge.order >= 10)) edge.route = { ...edge.route, messageY: routes.get(edge.id).points[0].y + 24 };
+  original.groups.find(group => group.id === 'dispatch').size.height += 24;
   assert.deepEqual(validateGraph(original), []);
   assert.match(auditGraphLayout(original).warnings.join('\n'), /operands missing/);
   assert.throws(() => createDiagramSvg(original), /Diagram quality failed/);
@@ -1311,4 +1316,55 @@ test('sequence labels, subtitles and arrow kinds share page/export geometry', as
   const expanded = (await compileGraphLayout(actor)).graph;
   assert.ok(createDiagramSvg(expanded).includes(actor.nodes[0].subtitle));
   assert.doesNotMatch(createDiagramSvg(expanded), /…<\/text>/);
+});
+
+
+test('nine-type color contract tints cards, uses borderless gauze groups, and preserves readable notation', () => {
+  const luminance = hex => hex.slice(1).match(/../g).map(v => parseInt(v, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+  const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05) / (Math.min(luminance(a), luminance(b)) + .05);
+  const groups = Array.from({ length: 20 }, (_, index) => box(`frame${index}`, 'Branch', 'alt', 0, index * 100));
+  groups.push(box('child', 'Nested', 'par', 10, 10, 100, 100, { parentId: groups[0].id }));
+  for (const [theme, palette] of Object.entries(PALETTES)) {
+    for (const surface of [palette.surface, palette.surface2]) {
+      for (const key of ['ink', 'ink2', 'ink3', 'heroInk', 'accent', 'data', 'warn']) assert.ok(contrast(palette[key], surface) >= 4.5, `${theme} ${key} text contrast`);
+      for (const color of [...palette.moduleAccents, palette.edge, palette.accent, palette.data, palette.warn]) assert.ok(contrast(color, surface) >= 3, `${theme} outline contrast ${color}`);
+    }
+    const colors = groupAppearanceMap(groups, palette);
+    assert.deepEqual(colors, groupAppearanceMap([...groups].reverse(), palette));
+    for (let index = 1; index < 20; index++) assert.notEqual(colors.get(groups[index].id), colors.get(groups[index - 1].id));
+    assert.notEqual(colors.get('child'), colors.get(groups[0].id));
+    assert.equal(new Set([...colors.values()].slice(0, 9).map(value => value.fill)).size, 9);
+    for (const { fill, accent } of palette.groupTones) {
+      assert.ok(contrast(palette.ink, fill) >= 4.5, `${theme} group heading contrast`);
+      assert.ok(contrast(accent, fill) >= 3, `${theme} group accent contrast`);
+      assert.ok(!palette.moduleAccents.includes(accent), 'Regions have an independent accent palette.');
+      for (const edge of [...palette.moduleAccents, palette.edge, palette.warn, palette.accent, palette.data]) assert.ok(contrast(edge, fill) >= 3, `${theme} edge on group fill`);
+    }
+    assert.equal(nodeAppearance({ kind: 'decision' }, palette).stroke, palette.edge);
+    assert.equal(nodeAppearance({ kind: 'choice' }, palette).stroke, palette.edge);
+    const failure = nodeAppearance({ kind: 'failure', module: 'module', tags: ['core'] }, palette, new Map([['module', palette.moduleAccents[0]]]));
+    assert.equal(failure.stroke, palette.warn); assert.equal(failure.moduleColor, palette.moduleAccents[0]);
+    for (const model of Object.values(compiledFixtures)) {
+      const moduleColors = moduleColorMap([model], palette);
+      for (const node of model.nodes) if (!['initial', 'final'].includes(node.kind)) {
+        const appearance = nodeAppearance(node, palette, moduleColors);
+        for (const key of ['ink', 'ink2', 'heroInk', 'accent']) assert.ok(contrast(palette[key], appearance.fill) >= 4.5, `${theme} ${node.id} text on card fill`);
+        assert.ok(contrast(appearance.stroke, appearance.fill) >= 3, `${theme} ${node.id} outline on card fill`);
+      }
+      const svg = createDiagramSvg(model, theme);
+      for (const frame of svg.matchAll(/<rect class="boundary-frame"[^>]*>/g)) {
+        assert.match(frame[0], /stroke="none"/);
+        assert.ok(palette.groupTones.some(tone => frame[0].includes(`fill="${tone.fill}"`)));
+        assert.doesNotMatch(frame[0], /fill-opacity|stroke-dasharray/, 'No nested tint accumulation or outline.');
+      }
+    }
+    for (const color of palette.moduleAccents) {
+      const appearance = nodeAppearance({ kind: 'component', module: 'module' }, palette, new Map([['module', color]]));
+      assert.notEqual(appearance.fill, palette.surface2);
+      assert.ok(contrast(palette.ink2, appearance.fill) >= 4.5, `${theme} secondary text on ${color} tint`);
+      assert.ok(contrast(color, appearance.fill) >= 3, `${theme} outline on ${color} tint`);
+    }
+    assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.accent);
+    assert.equal(nodeAppearance({ kind: 'final' }, palette).fill, palette.surface);
+  }
 });

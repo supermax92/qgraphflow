@@ -4,11 +4,13 @@ import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
 import { getDiagram, canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
 import { stateSymbolX } from '../assets/viewer/src/diagrams/state.js';
 import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
-import { graphBounds, visibleEdgeLabel, estimateLabelSize } from '../assets/viewer/src/edge-routing.js';
+import { graphBounds, occupiedBox, visibleEdgeLabel, estimateLabelSize, groupHeadingBoxes, segmentCrossesBox } from '../assets/viewer/src/edge-routing.js';
+import { groupHeadingLayout } from '../assets/viewer/src/text-layout.js';
+import { LAYOUT_LIMITS, LAYOUT_TARGETS } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
 
-export const LAYOUT_VERSION = 'strict-v1-elkjs-0.11.0';
+export const LAYOUT_VERSION = 'adaptive-v2-elkjs-0.11.0';
 export const CANDIDATE_COUNT = 6;
 export const LAYOUT_TIMEOUT_MS = 30_000;
 const stable = items => [...items].sort((a, b) => (a.layout?.rank ?? 0) - (b.layout?.rank ?? 0) || (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -51,7 +53,7 @@ export function migrateOwnership(graph) {
 
 function elkInput(graph, candidate) {
   const type = diagramTypeOf(graph), diagram = getDiagram(type), down = !['er', 'deployment', 'dataflow', 'usecase'].includes(type);
-  const spacing = 128 + (candidate % 3) * 64;
+  const spacing = LAYOUT_TARGETS.layerGap + [0, 16, 48][candidate % 3];
   const portGap = candidate < 3 ? 24 : 48;
   const feedback = new Set();
   if (['flowchart', 'state'].includes(type)) {
@@ -73,15 +75,20 @@ function elkInput(graph, candidate) {
     'elk.edgeRouting': 'ORTHOGONAL', 'elk.hierarchyHandling': !graph.edges.length && !graph.groups?.length && !graph.nodes.some(node => node.layout?.rank !== undefined || type === 'state' && ['initial', 'final'].includes(node.kind)) ? 'SEPARATE_CHILDREN' : 'INCLUDE_CHILDREN',
     'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP', 'elk.layered.mergeEdges': 'false',
     'elk.layered.feedbackEdges': String(['flowchart', 'state'].includes(type)),
-    'elk.spacing.nodeNode': '112', 'elk.spacing.componentComponent': '112', 'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing),
+    'elk.spacing.nodeNode': String(LAYOUT_TARGETS.nodeGap), 'elk.spacing.componentComponent': String(LAYOUT_TARGETS.nodeGap), 'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing),
     'elk.spacing.portPort': '24',
     'elk.spacing.edgeEdge': String(portGap), 'elk.layered.spacing.edgeEdgeBetweenLayers': String(portGap),
-    'elk.spacing.edgeNode': '48', 'elk.layered.spacing.edgeNodeBetweenLayers': '48', 'elk.spacing.edgeLabel': '24', 'elk.spacing.labelNode': '24',
-    'elk.padding': '[top=100,left=32,bottom=32,right=32]',
+    'elk.spacing.edgeNode': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? 12)), 'elk.layered.spacing.edgeNodeBetweenLayers': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? 12)), 'elk.spacing.edgeLabel': String(LAYOUT_LIMITS.labelGap), 'elk.spacing.labelNode': String(LAYOUT_LIMITS.labelGap),
+    'elk.padding': '[top=32,left=32,bottom=32,right=32]',
     ...(graph.nodes.some(node => node.layout?.rank !== undefined) ? { 'elk.partitioning.activate': 'true' } : {})
   };
   const root = { id: '$root', layoutOptions: options, children: [], edges: [] };
-  const groups = new Map(stable(graph.groups ?? []).map(group => [group.id, { id: `g:${group.id}`, children: [], layoutOptions: { ...options, 'elk.padding': `[top=100,left=${Math.ceil(estimateLabelSize(group.label).width + 44)},bottom=32,right=32]` } }]));
+  const groups = new Map(stable(graph.groups ?? []).map(group => {
+    const heading = groupHeadingLayout({ ...group, size: undefined });
+    return [group.id, { id: `g:${group.id}`, children: [], layoutOptions: { ...options,
+      'elk.padding': `[top=${heading.height + LAYOUT_LIMITS.groupHeadingGap},left=32,bottom=32,right=32]`,
+      'elk.nodeSize.constraints': 'MINIMUM_SIZE', 'elk.nodeSize.minimum': `(${heading.width + 64},0)` } }];
+  }));
   const nodes = new Map(stable(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...minimumNodeSize(node, type, graph.meta.locale), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
   if (type === 'state') for (const node of graph.nodes) {
     if (node.kind === 'initial' || node.kind === 'final') nodes.get(node.id).layoutOptions['elk.layered.layering.layerConstraint'] = node.kind === 'initial' ? 'FIRST_SEPARATE' : 'LAST_SEPARATE';
@@ -133,7 +140,7 @@ function elkInput(graph, candidate) {
   }
   for (const group of stable(graph.groups ?? [])) (groups.get(group.parentId) ?? root).children.push(groups.get(group.id));
   for (const node of stable(graph.nodes)) (groups.get(node.groupId) ?? root).children.push(nodes.get(node.id));
-  return { root, reversed, stub: diagram.endpointStub ?? 12 };
+  return { root, reversed, stub: diagram.endpointStub ?? 12, portGap };
 }
 
 function applyElk(graph, result, prepared) {
@@ -160,6 +167,23 @@ function applyElk(graph, result, prepared) {
     target.route = { via, ...(label ? { labelAt: { x: round(origin.x + label.x + label.width / 2), y: round(origin.y + label.y + label.height / 2) } } : {}) };
   }
   if (edges.length !== output.edges.length) throw new Error('ELK did not return every semantic edge');
+  // Compound ELK routes can enter through a title. Bypass only that local title band;
+  // leave all nodes and ownership boundaries in place and run the full route audit below.
+  for (const group of stable(output.groups ?? [])) {
+    const heading = groupHeadingBoxes(group)[0]; let channel = 0;
+    for (const edge of stable(output.edges)) {
+      const points = edge.route.via, via = [];
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i], b = points[i + 1]; via.push(a);
+        if (!b || a.x !== b.x || !segmentCrossesBox(a, b, heading)) continue;
+        const margin = LAYOUT_LIMITS.labelGap, x = heading.x + heading.width + margin + channel++ * prepared.portGap;
+        const top = Math.max(Math.min(a.y, b.y), heading.y - margin), bottom = Math.min(Math.max(a.y, b.y), heading.y + heading.height + margin);
+        const [enter, leave] = a.y < b.y ? [top, bottom] : [bottom, top];
+        via.push({ x: a.x, y: enter }, { x, y: enter }, { x, y: leave }, { x: a.x, y: leave });
+      }
+      edge.route.via = via;
+    }
+  }
   return output;
 }
 
@@ -167,7 +191,13 @@ function candidateScore(graph, audit, index) {
   const bounds = graphBounds(graph, audit.routes), budget = canvasBudgetFor(diagramTypeOf(graph));
   const routes = [...audit.routes.values()];
   const length = routes.reduce((sum, route) => sum + route.points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point.x - route.points[i].x, point.y - route.points[i].y), 0), 0);
-  return [audit.errors.length, audit.crossings.reduce((sum, item) => sum + item.repeated, 0), audit.crossings.reduce((sum, item) => sum + item.measured, 0), routes.reduce((sum, route) => sum + route.points.length - 2, 0), round(length), round(bounds.width * bounds.height), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
+  const area = graph.nodes.reduce((sum, node) => { const box = occupiedBox(node, diagramTypeOf(graph)); return sum + box.width * box.height; }, 0);
+  const count = Math.max(1, routes.length), unit = Math.sqrt(area / graph.nodes.length);
+  const crossings = audit.crossings.reduce((sum, item) => sum + item.measured + 2 * item.repeated, 0);
+  const bends = routes.reduce((sum, route) => sum + route.points.length - 2, 0);
+  // Normalize by content, so a small routing improvement cannot justify unlimited whitespace.
+  const cost = bounds.width * bounds.height / area + length / (count * unit) + .25 * bends / count + 4 * crossings / count;
+  return [audit.errors.length, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 

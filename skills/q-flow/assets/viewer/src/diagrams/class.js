@@ -42,7 +42,7 @@ export default {
     return ['source', 'target'].flatMap(role => {
       const label = edge[`${role}Multiplicity`];
       if (label === undefined) return [];
-      const point = role === 'source' ? points[0] : points.at(-1), neighbor = role === 'source' ? points[1] : points.at(-2), size = estimateLabelSize(label);
+      const point = role === 'source' ? points[0] : points.at(-1), neighbor = role === 'source' ? points[1] : points.at(-2), size = estimateLabelSize(label, Infinity);
       const horizontal = point.y === neighbor.y, direction = Math.sign(horizontal ? neighbor.x - point.x : neighbor.y - point.y);
       const center = horizontal ? { x: point.x + direction * (24 + size.width / 2), y: point.y - 6 - size.height / 2 }
         : { x: point.x + 6 + size.width / 2, y: point.y + direction * (24 + size.height / 2) };

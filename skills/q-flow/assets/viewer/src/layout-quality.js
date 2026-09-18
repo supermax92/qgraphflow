@@ -1,10 +1,11 @@
 import { auditGraphLayout, boxDistance, occupiedBox, graphBounds, segmentCrossesBox } from './edge-routing.js';
 import { getDiagram } from './diagrams/registry.js';
-import { cardTextLayout, layoutText } from './text-layout.js';
+import { cardTextLayout, layoutText, groupHeadingLayout } from './text-layout.js';
+import { LAYOUT_LIMITS } from './layout-spacing.js';
 import { minimumNodeSize } from './layout-measure.js';
 import { validateGraph } from './graph-validation.js';
 
-export const LAYOUT_LIMITS = Object.freeze({ nodeGap: 96, labelGap: 24, labelEdgeGap: 6, groupHeadingGap: 48, groupInset: 32, groupGap: 64, endpoint: 12, erEndpoint: 28, parallelGap: 24, messageGap: 6 });
+export { LAYOUT_LIMITS } from './layout-spacing.js';
 const bounds = item => ({ ...item.position, ...item.size });
 const contains = (a, b) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.width && b.y + b.height <= a.y + a.height;
 const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -66,7 +67,7 @@ export function auditLayoutQuality(graph) {
       const distance = second.position[coordinate] - first.position[coordinate] - first.size[dimension];
       if (distance + .001 < limits.nodeGap) issue('semantic.rank', [first.id, second.id], distance, limits.nodeGap, [nodeBoxes.get(first.id), nodeBoxes.get(second.id)], 'Keep declared ranks in separate layers along the reading direction.');
     }
-    if (graph.nodes.length > 5 && Math.max(...graph.nodes.map(node => node.position.y)) < Math.min(...graph.nodes.map(node => node.position.y + node.size.height))) issue('semantic.single-row', graph.nodes.map(node => node.id), 1, 'multiple rows', [...nodeBoxes.values()], 'Arrange responsibility layers or wrap peer nodes; tiny y offsets do not create another row.');
+    if (vertical && graph.nodes.length > 5 && Math.max(...graph.nodes.map(node => node.position.y)) < Math.min(...graph.nodes.map(node => node.position.y + node.size.height))) issue('semantic.single-row', graph.nodes.map(node => node.id), 1, 'multiple rows', [...nodeBoxes.values()], 'Arrange responsibility layers or wrap peer nodes; tiny y offsets do not create another row.');
     if (type === 'class') for (const edge of graph.edges.filter(edge => ['inheritance', 'implementation'].includes(edge.kind))) {
       const child = nodeById.get(edge.source), parent = nodeById.get(edge.target), distance = child.position.y - parent.position.y - parent.size.height;
       if (distance + .001 < limits.nodeGap) issue('semantic.class-hierarchy', [edge.id, parent.id, child.id], distance, limits.nodeGap, [nodeBoxes.get(parent.id), nodeBoxes.get(child.id)], 'Place the parent class or interface above its child or implementation.');
@@ -146,7 +147,7 @@ export function auditLayoutQuality(graph) {
     const groups = graph.groups ?? [], byId = new Map(groups.map(group => [group.id, group]));
     const belongs = (node, group) => { let id = node.groupId; const seen = new Set(); while (id && !seen.has(id)) { if (id === group.id) return true; seen.add(id); id = byId.get(id)?.parentId; } return false; };
     for (let i = 0; i < groups.length; i++) {
-      const group = groups[i], rect = bounds(group), inset = limits.groupInset, top = 36 + limits.groupHeadingGap;
+      const group = groups[i], rect = bounds(group), inset = limits.groupInset, top = groupHeadingLayout(group).height + limits.groupHeadingGap;
       const inner = { x: rect.x + inset, y: rect.y + top, width: rect.width - 2 * inset, height: rect.height - top - inset };
       const members = [...graph.nodes.filter(node => node.groupId === group.id), ...groups.filter(child => child.parentId === group.id)];
       for (const member of members) if (!contains(inner, bounds(member))) issue('group.member-inset', [group.id, member.id], bounds(member), inner, [rect, bounds(member)], 'Expand the owning boundary to preserve heading and side clearance.');

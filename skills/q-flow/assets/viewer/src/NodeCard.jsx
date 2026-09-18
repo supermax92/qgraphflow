@@ -7,7 +7,7 @@ import { sequenceExecutions, sequencePairs } from './sequence-executions.js';
 import { sequenceFragment, segmentBoxes } from './sequence-fragments.js';
 import { createEdgeRoutes, occupiedBox, visibleEdgeLabel } from './edge-routing.js';
 import { readingRect } from './reading-area.js';
-import { kindLabels, nodeAppearance, sequenceGroupColor } from './visual-style.js';
+import { kindLabels, nodeAppearance, edgeColor } from './visual-style.js';
 
 const CARD_WIDTH = 292, CARD_HEIGHT = 232, GAP = 14;
 
@@ -77,7 +77,7 @@ export default function NodeCard({ node, edge, source, target, others = [], canv
   const x = Math.min(Math.max(pick.x, area.left), Math.max(area.left, area.right - CARD_WIDTH));
   const y = Math.min(Math.max(pick.y, area.top), Math.max(area.top, area.bottom - cardHeight));
   const sourceAnchor = !relation && node.source ? `${node.source.file}:${node.source.lineStart}${node.source.lineEnd ? `-${node.source.lineEnd}` : ''}` : null;
-  const color = relation ? sequenceGroupColor(sequencePairs(graph).get(edge.id), palette) ?? moduleColors?.get(edge.module ?? source?.module ?? target?.module) ?? palette.edge : nodeAppearance(node, palette, moduleColors).moduleColor ?? nodeAppearance(node, palette).stroke;
+  const color = relation ? edgeColor(edge, target, palette, moduleColors, source, sequencePairs(graph).get(edge.id)) : nodeAppearance(node, palette, moduleColors).stroke;
   return <aside ref={ref} className={`node-card ${relation ? 'relation-card' : ''} ${pick.side === 'left' ? 'is-flipped' : pick.side === 'below' ? 'is-below' : pick.side === 'above' ? 'is-above' : ''}`} style={{ left: x, top: y, width: CARD_WIDTH, visibility: shouldFallback ? 'hidden' : undefined }} role="dialog" aria-label={label} data-node-id={relation ? undefined : node.id} data-edge-id={relation ? edge.id : undefined}>
     <button className="card-close" onClick={onClose} aria-label={t('关闭')}><Icon name="close" /></button>
     {editor.editing ? <TextEditor editor={editor} relation={relation} locked={locked} locale={locale} /> : <>

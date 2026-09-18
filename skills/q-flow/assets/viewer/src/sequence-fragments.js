@@ -1,4 +1,5 @@
 import { layoutText } from './text-layout.js';
+import { LAYOUT_TARGETS } from './layout-spacing.js';
 import { translate } from './i18n.js';
 import { text, escapeXml } from './diagrams/drawing.js';
 
@@ -99,11 +100,13 @@ export function fragmentDepth(group, groups) {
   return depth;
 }
 
-export const fragmentHeadingWidth = group => layoutText(group.label, Infinity, 14).width + group.label.length * 1.12 + 16;
+export const fragmentHeadingLayout = group => layoutText(group.label, Math.min(LAYOUT_TARGETS.headingWidth, Math.max(1, (group.size?.width ?? Infinity) - 88)), 15.12, 22);
+export const fragmentHeadingWidth = group => fragmentHeadingLayout(group).width + 16;
 
 function fragmentHeading(group, executions) {
   const frame = { ...group.position, ...group.size };
-  const size = { width: Math.min(fragmentHeadingWidth(group), frame.width - 88), height: 24 };
+  const layout = fragmentHeadingLayout(group);
+  const size = { width: Math.min(layout.width + 16, frame.width - 88), height: Math.max(24, layout.height + 8), lines: layout.lines };
   return [frame.x + 16, ...executions.map(item => item.x + item.width + 12)].map(x => ({ x, y: frame.y + 6, ...size })).find(box => box.x >= frame.x + 16 && box.x + box.width <= frame.x + frame.width - 64 && !executions.some(item => intersects(box, item, 4)));
 }
 
@@ -179,7 +182,7 @@ export function sequenceFragment(group, routes, locale, groups = [], executions 
     return { ...fragment, heading, errors: [...errors, ...fragment.errors] };
   }
   if (!group.operands) return { errors, warnings, guards, bodies, separators };
-  const headingBottom = frame.y + 36;
+  const headingBottom = Math.max(frame.y + 36, heading ? heading.y + heading.height + 6 : 0);
   const sections = group.operands.map((operand, i) => {
     const childFrames = children.filter(child => child.parentOperandId === operandId(operand, i)).map(child => ({ ...child.position, ...child.size, id: child.id }));
     const selected = operandEdges(group, operand, i, groups).map(id => routes.get(id)).filter(Boolean);
@@ -203,7 +206,7 @@ export function sequenceFragment(group, routes, locale, groups = [], executions 
     const obstacles = [...allObstacles, ...childFrames, ...guards, ...bodies];
     const place = (value, kind, after) => {
       const fontSize = kind === 'body' ? 16 : 14, lineHeight = kind === 'body' ? 24 : 20;
-      const layout = layoutText(value, Math.max(1, frame.width - 40), fontSize, lineHeight);
+      const layout = layoutText(value, Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, frame.width - 40)), fontSize, lineHeight);
       const size = { width: layout.width + 8, height: layout.height + 4 };
       const xs = [frame.x + 16, ...obstacles.map(box => box.x + box.width + 8), frame.x + frame.width - size.width - 16];
       const ys = [after, ...obstacles.map(box => box.y + box.height + 8), top - size.height - 8].filter(Number.isFinite).sort((a, b) => a - b);

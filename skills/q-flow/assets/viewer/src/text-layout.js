@@ -1,4 +1,5 @@
 import { TYPOGRAPHY } from './visual-style.js';
+import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 
 // Conservative system-font widths keep server-rendered SVG and browser labels in the same bounds.
 const textWidth = (value, fontSize) => [...value].reduce((width, character) => width + fontSize * (/[^\u0000-\u00ff]|[MWmw@%&]/.test(character) ? 1 : /[A-Z]/.test(character) ? .8 : 6.8 / 12), 0);
@@ -41,7 +42,19 @@ export function cardTextLayout(node) {
   return { title, subtitle, minHeight: 65 + title.height + subtitle.height };
 }
 
-export function estimateLabelSize(value) {
-  const layout = layoutText(value, Infinity);
-  return layout.lines.length ? { width: Math.max(24, layout.width + 12), height: layout.height + 6 } : { width: 0, height: 0 };
+export function edgeLabelLayout(value, maxWidth = LAYOUT_TARGETS.labelWidth) {
+  const layout = layoutText(value, maxWidth);
+  return { ...layout, width: layout.lines.length ? Math.max(24, layout.width + 12) : 0, height: layout.lines.length ? layout.height + 6 : 0 };
+}
+
+export function estimateLabelSize(value, maxWidth) {
+  const { width, height } = edgeLabelLayout(value, maxWidth);
+  return { width, height };
+}
+
+export function groupHeadingLayout(group) {
+  const width = Math.min(LAYOUT_TARGETS.headingWidth, Math.max(1, (group.size?.width ?? Infinity) - 2 * LAYOUT_LIMITS.groupInset));
+  // Reserve the same letter spacing as the SVG group heading, plus a font margin.
+  const layout = layoutText(group.label, width, TYPOGRAPHY.small + 1.12, 22);
+  return { ...layout, height: 12 + layout.height };
 }

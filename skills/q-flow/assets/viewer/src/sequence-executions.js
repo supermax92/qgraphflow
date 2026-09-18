@@ -11,6 +11,12 @@ export function sequencePairs(graph) {
   }));
 }
 
+export function sequenceMessageLabel(graph, edge, pairs = sequencePairs(graph), scopes = operandScopes(graph)) {
+  const pair = pairs.get(edge.id);
+  const parallel = (graph.groups ?? []).some(group => group.kind === 'par' && (scopes.get(edge.id) ?? '').split('/').some(segment => segment.startsWith(encodeURIComponent(group.id) + ':')));
+  return pair ? `${pair.label} · ${edge.label ?? ''}` : parallel ? edge.label ?? '' : `${String(edge.order).padStart(2, '0')} · ${edge.label ?? ''}`;
+}
+
 export function sequenceEndpointY(graph, edge, at) {
   const source = graph.nodes.find(node => node.id === edge.source);
   const target = graph.nodes.find(node => node.id === edge.target);

@@ -1,10 +1,10 @@
 import { getDiagram } from './diagrams/registry.js';
 import { forceSimulation, forceX, forceY } from 'd3-force';
 import { LAYOUT_LIMITS, requireDiagramQuality } from './layout-quality.js';
+import { groupHeadingLayout } from './text-layout.js';
 
 const CLEARANCE = LAYOUT_LIMITS.nodeGap + 1;
 const MAX_SHIFT = 156;
-const GROUP_HEADER = LAYOUT_LIMITS.groupHeadingGap;
 const GROUP_PADDING = LAYOUT_LIMITS.groupInset;
 const TICKS = 160;
 
@@ -36,7 +36,7 @@ function groupBounds(node, group, sequence) {
   const anchorX = node.position.x + halfWidth, anchorY = node.position.y + halfHeight;
   const minimumX = Math.max(group.position.x + GROUP_PADDING + halfWidth, anchorX - MAX_SHIFT);
   const maximumX = Math.min(group.position.x + group.size.width - GROUP_PADDING - halfWidth, anchorX + MAX_SHIFT);
-  const minimumY = Math.max(group.position.y + Math.min(GROUP_HEADER, group.size.height) + GROUP_PADDING + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
+  const minimumY = Math.max(group.position.y + groupHeadingLayout(group).height + LAYOUT_LIMITS.groupHeadingGap + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
   const maximumY = Math.min(group.position.y + group.size.height - GROUP_PADDING - halfHeight, anchorY + (sequence ? 0 : MAX_SHIFT));
   return { minimumX, maximumX, minimumY, maximumY };
 }

@@ -1,12 +1,13 @@
 import { TYPOGRAPHY } from './visual-style.js';
-import { layoutText, cardTextLayout, estimateLabelSize } from './text-layout.js';
+import { layoutText, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout } from './text-layout.js';
+import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 export { layoutText, cardTextLayout, estimateLabelSize } from './text-layout.js';
 import { getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { actorTop } from './diagrams/usecase.js';
 import { stateSymbolX } from './diagrams/state.js';
-import { sequencePairs, sequenceExecutions, sequenceEndpointY, executionAt } from './sequence-executions.js';
-import { sequenceFragment, intersects, segmentBoxes, operandScopes } from './sequence-fragments.js';
+import { sequencePairs, sequenceExecutions, sequenceEndpointY, executionAt, sequenceMessageLabel } from './sequence-executions.js';
+import { sequenceFragment, fragmentHeadingLayout, intersects, segmentBoxes, operandScopes } from './sequence-fragments.js';
 
 export const ENDPOINT_STUB = 12;
 export const ER_ENDPOINT_STUB = 28;
@@ -203,12 +204,10 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const forward = source.id === target.id || center(source).x <= center(target).x;
   const sourceX = sourceExecution ? sourceExecution.x + (forward ? sourceExecution.width : 0) : center(source).x;
   const targetX = targetExecution ? targetExecution.x + (source.id === target.id || !forward ? targetExecution.width : 0) : center(target).x;
-  const pair = pairs.get(edge.id);
-  const inParallel = (graph.groups ?? []).some(group => group.kind === 'par' && (scopes.get(edge.id) ?? '').split('/').some(segment => segment.startsWith(encodeURIComponent(group.id) + ':')));
-  const label = pair ? `${pair.label} · ${edge.label ?? ''}` : inParallel ? edge.label ?? '' : visibleEdgeLabel(edge, 'sequence');
-  const available = source.id === target.id ? Infinity : Math.max(1, Math.abs(targetX - sourceX) - 32 - 12);
-  const layout = layoutText(label, available);
-  const labelSize = { width: Math.max(24, layout.width + 12), height: layout.height + 6 };
+  const label = sequenceMessageLabel(graph, edge, pairs, scopes);
+  const available = source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, Math.abs(targetX - sourceX) - 32 - 12));
+  const layout = edgeLabelLayout(label, available);
+  const labelSize = { width: layout.width, height: layout.height };
   if (source.id === target.id) {
     const extent = 48 + selfIndex * LANE_GAP;
     const start = { x: sourceX, y };
@@ -304,7 +303,7 @@ export function createEdgeRoutes(graph) {
       route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target, type === 'usecase' && ['include', 'extend'].includes(item.edge.kind)), sourceSide, targetSide };
     }
     const labelSize = route.labelSize ?? estimateLabelSize(route.label);
-    routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines: route.labelLines ?? layoutText(route.label, Infinity).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
+    routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines: route.labelLines ?? edgeLabelLayout(route.label).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
   }
   return routes;
 }
@@ -400,9 +399,11 @@ function groupBorders(group) {
   ];
 }
 
-function groupHeadingBoxes(group) {
-  const height = Math.min(36, group.size.height);
-  const labelWidth = Math.min(group.size.width, estimateLabelSize(group.label).width + 20);
+export function groupHeadingBoxes(group) {
+  const fragment = ['alt', 'opt', 'loop', 'par'].includes(group.kind), heading = groupHeadingLayout(group);
+  const fragmentHeading = fragment ? fragmentHeadingLayout(group) : null;
+  const height = Math.min(fragment ? Math.max(36, fragmentHeading.height + 20) : heading.height, group.size.height);
+  const labelWidth = Math.min(group.size.width, (fragment ? fragmentHeading.width : heading.width) + 32);
   const boxes = [{ x: group.position.x, y: group.position.y, width: labelWidth, height }];
   if (['alt', 'opt', 'loop'].includes(group.kind)) boxes.push({ x: group.position.x + group.size.width - 52, y: group.position.y, width: 52, height });
   return boxes;
@@ -485,7 +486,7 @@ export function auditGraphLayout(graph) {
       if (boxesIntersect(firstBox, secondBox)) fail('shape.node-overlap', [first.id, second.id], `layout: nodes ${first.id} and ${second.id} overlap`);
       else {
         const distance = boxDistance(firstBox, secondBox);
-        if (distance < 64) warnings.push(`nodes ${first.id} and ${second.id} are only ${Math.round(distance)}px apart`);
+        if (distance < LAYOUT_LIMITS.nodeGap) warnings.push(`nodes ${first.id} and ${second.id} are only ${Math.round(distance)}px apart`);
       }
     }
   }

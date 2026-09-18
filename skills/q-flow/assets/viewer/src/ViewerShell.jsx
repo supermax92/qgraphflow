@@ -6,7 +6,7 @@ import { nodeTypes, edgeTypes } from './DiagramCanvas.jsx';
 import { renderMiniMapNode } from './node-svg.js';
 import { diagramLabels } from './diagrams/registry.js';
 import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
-import { svgStyles } from './diagrams/drawing.js';
+import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { kindLabels, nodeAppearance } from './visual-style.js';
 import { graphLegend } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
@@ -46,7 +46,8 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     return function SharedMiniMapNode({ id, x, y, width, height, color, strokeColor, strokeWidth, className, selected, shapeRendering, onClick }) {
       const node = byId.get(id);
       const classes = `react-flow__minimap-node${className ? ` ${className}` : ''}${selected ? ' selected' : ''}`;
-      if (!node || node.type === 'boundary') return <rect className={classes} x={x} y={y} width={width} height={height} rx="14" fill={color} stroke={strokeColor} strokeWidth={strokeWidth} shapeRendering={shapeRendering} onClick={onClick ? event => onClick(event, id) : undefined} />;
+      if (node?.type === 'boundary') return <g className={classes} data-group-id={id} shapeRendering={shapeRendering} onClick={onClick ? event => onClick(event, id) : undefined} dangerouslySetInnerHTML={{ __html: groupFrameSvg({ ...node.data, size: { width, height } }, node.data.appearance, x, y) }} />;
+      if (!node) return <rect className={classes} x={x} y={y} width={width} height={height} rx="14" fill={color} stroke={strokeColor} strokeWidth={strokeWidth} shapeRendering={shapeRendering} onClick={onClick ? event => onClick(event, id) : undefined} />;
       const markup = renderMiniMapNode(node.data, diagramType, x, y, width, height, color, strokeColor, strokeWidth);
       return <g className={classes} data-node-id={id} shapeRendering={shapeRendering} onClick={onClick ? event => onClick(event, id) : undefined} dangerouslySetInnerHTML={{ __html: markup }} />;
     };
@@ -136,7 +137,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
       </AnimatePresence>
 
       <figure ref={boardRef} className="board diagram-board">
-        <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="var(--edge)"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--edge)"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="var(--edge)"/></marker></defs></svg>
+        <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
         <div ref={canvasRef} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={drawerOpen} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('可交互{type}', { type: t(diagramLabels[diagramType]) })}>
           <ReactFlow
             nodes={visibleNodes}
@@ -166,7 +167,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
                 <Icon name={isFullscreen ? 'collapse' : 'expand'} />
               </ControlButton>
             </Controls>
-            <MiniMap pannable zoomable onClick={(_, point) => setCenter(point.x, point.y, { zoom })} nodeComponent={MiniMapNode} nodeStrokeColor={node => node.type === 'boundary' ? palette.rule : nodeAppearance(node.data, palette, moduleColors).moduleColor ?? palette.ink3} nodeStrokeWidth={2} nodeColor={node => node.type === 'boundary' ? palette.surface2 : nodeAppearance(node.data, palette, moduleColors).fill} maskColor={palette.mask} />
+            <MiniMap pannable zoomable onClick={(_, point) => setCenter(point.x, point.y, { zoom })} nodeComponent={MiniMapNode} nodeStrokeColor={node => node.type === 'boundary' ? 'none' : nodeAppearance(node.data, palette, moduleColors).stroke} nodeStrokeWidth={2} nodeColor={node => node.type === 'boundary' ? node.data.appearance.fill : nodeAppearance(node.data, palette, moduleColors).fill} maskColor={palette.mask} />
           </ReactFlow>
 
           <div className="float legend-anchor" data-popover-root="legend">
@@ -202,7 +203,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         {drawerOpen && <motion.aside key="drawer" id="node-inspector" ref={inspectorRef} tabIndex={-1} className={`sidebar drawer inspector ${inspectedNode || inspectedEdge ? 'is-open' : ''}`} aria-label={t('详情')} initial={slideFrom('115%')} animate={{ x: 0 }} exit={{ x: '115%' }} transition={panelTransition}>
           <div className="side-head"><p className="panel-title">{t('详情')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('关闭详情')} title={t('关闭详情')}><Icon name="close" /></button></div>
           <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
-              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).moduleColor ?? nodeAppearance(inspectedNode, palette).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
+              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
               <h2>{inspectedNode.label}</h2>
               <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
               {inspectedNode.fields?.length > 0 && <><h3>{t('字段')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}

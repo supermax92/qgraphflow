@@ -5,6 +5,7 @@ import { createEdgeRoutes, occupiedBox, cardinalityMarks } from '../edge-routing
 import { sequenceFragment } from '../sequence-fragments.js';
 import { sequenceExecutions } from '../sequence-executions.js';
 import { qualityFailure } from '../layout-quality.js';
+import { groupHeadingLayout } from '../text-layout.js';
 
 function fileStem(title) {
   return title.trim().replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '') || 'diagram';
@@ -103,7 +104,7 @@ export async function verifyRenderedSvg(svg, graph) {
       elementIds = [group.id];
       const element = groupElements.get(group.id);
       const fragment = type === 'sequence' ? sequenceFragment(group, routes, graph.meta.locale, graph.groups, executions) : null;
-      const heading = fragment?.heading ?? { x: group.position.x + 16, y: group.position.y + 6, width: group.size.width - 32, height: 30 };
+      const heading = fragment?.heading ?? { x: group.position.x + 16, y: group.position.y + 6, width: group.size.width - 32, height: groupHeadingLayout(group).height };
       checkLabel([...(element?.querySelectorAll(':scope > text.group') ?? [])], group.label, shifted(heading), group.id, '分组');
       if (['alt', 'opt', 'loop', 'par'].includes(group.kind)) checkLabel([...(element?.querySelectorAll(':scope > text.group-kind') ?? [])], group.kind,
         shifted({ x: group.position.x + group.size.width - 60, y: group.position.y + 6, width: 48, height: 30 }), group.id);

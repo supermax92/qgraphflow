@@ -1,6 +1,15 @@
-import { cardTextLayout, layoutText } from '../text-layout.js';
+import { cardTextLayout, layoutText, groupHeadingLayout } from '../text-layout.js';
 import { TYPOGRAPHY, isCore as coreNode, dataKinds, kindLabels, nodeMetrics } from '../visual-style.js';
 export { cardTextLayout, layoutText, TYPOGRAPHY, coreNode, dataKinds, kindLabels, nodeMetrics };
+
+export function groupHeadingSvg(group, x = 0, y = 0) {
+  return groupHeadingLayout(group).lines.map((line, i) => text(x + 16, y + 26 + i * 22, line, 'group')).join('');
+}
+
+export function groupFrameSvg(group, appearance, x = 0, y = 0) {
+  const radius = ['loop', 'par'].includes(group.kind) ? 5 : 14;
+  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="none"/><path class="boundary-accent" d="M${x + 16} ${y + 3}h${Math.min(32, group.size.width - 32)}" fill="none" stroke="${appearance.accent}" stroke-width="4" stroke-linecap="round"/>`;
+}
 
 export function escapeXml(value = '') {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -139,7 +148,9 @@ export function svgStyles(palette, scope = '') {
   return `${scope}.heading{font:650 24px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink};letter-spacing:-.5px}
 ${scope}.meta{font:400 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink3}}
 ${scope}.group{font:650 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2};letter-spacing:.4px}
-${scope}.group-kind,${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3};letter-spacing:.7px}
+${scope}[data-diagram-group-id]>.group{fill:${palette.ink}}
+${scope}.group-kind{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink};letter-spacing:.7px}
+${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3};letter-spacing:.7px}
 ${scope}.title,${scope}.participant-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.shape-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.body{font:400 ${TYPOGRAPHY.body}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}

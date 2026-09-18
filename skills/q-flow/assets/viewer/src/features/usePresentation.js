@@ -3,7 +3,7 @@ import { MarkerType } from '@xyflow/react';
 import { createEdgeRoutes } from '../edge-routing.js';
 import { getDiagram, isDashed } from '../diagrams/registry.js';
 import { sequencePairs, sequenceExecutions } from '../sequence-executions.js';
-import { edgeColor, sequenceGroupColor } from '../visual-style.js';
+import { edgeColor, sequenceGroupColor, groupAppearanceMap } from '../visual-style.js';
 import { searchRank } from '../search.js';
 import { sequenceFragment } from '../sequence-fragments.js';
 
@@ -14,7 +14,8 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
   const routes = useMemo(() => createEdgeRoutes(currentGraph), [currentGraph]);
   const pairs = useMemo(() => sequencePairs(currentGraph), [currentGraph]);
   const executions = useMemo(() => sequenceExecutions(currentGraph), [currentGraph]);
-  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'boundary' ? diagramType === 'sequence' ? { ...node, data: { ...node.data, fragment: sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) } } : node : ({
+  const groupAppearances = useMemo(() => groupAppearanceMap(currentGraph.groups ?? [], palette), [currentGraph, palette]);
+  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'boundary' ? { ...node, data: { ...node.data, appearance: groupAppearances.get(node.id), fragment: diagramType === 'sequence' ? sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) : null } } : ({
     ...node,
     selected: node.id === selectedId,
     draggable: !locked,
@@ -26,7 +27,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
       moduleColors,
       dimmed: Boolean(normalizedQuery) && searchRank(node.data, normalizedQuery) === 0
     }
-  })), [locked, nodes, normalizedQuery, selectedId, selectionPulse, palette, moduleColors, routes, diagramType, graph.meta.locale, currentGraph, executions, pairs]);
+  })), [locked, nodes, normalizedQuery, selectedId, selectionPulse, palette, moduleColors, routes, diagramType, graph.meta.locale, currentGraph, executions, pairs, groupAppearances]);
 
   const visibleEdges = useMemo(() => {
     const sequence = getDiagram(diagramType).sequence;
@@ -49,7 +50,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
         ariaLabel: route.label || `${source.label} → ${target.label}`,
         markerEnd: edge.markerEnd ? { type: MarkerType.ArrowClosed, color } : undefined,
         selected: edge.id === selectedEdgeId,
-        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: pair ? palette.ink3 : selectionLinked ? selectionColor : failure ? color : palette.ink3, onSelect: () => selectEdge(edge.data) }
+        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: palette.ink3, onSelect: () => selectEdge(edge.data) }
       };
     });
   }, [diagramType, edges, graph, currentGraph, palette, moduleColors, flowRunning, selectEdge, selectedEdgeId, selectedId, selectionPulse, routes, pairs]);

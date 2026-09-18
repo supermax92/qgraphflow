@@ -10,7 +10,7 @@ import { minimumNodeSize, measureFragmentText } from '../assets/viewer/src/layou
 import { getDiagram, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
 import { PALETTES } from '../assets/viewer/src/visual-style.js';
 import { layoutText } from '../assets/viewer/src/text-layout.js';
-import { routeCrossings, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
+import { routeCrossings, createEdgeRoutes, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { sequenceEndpointY, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { auditLayoutQuality, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileGraphLayout, migrateOwnership, LAYOUT_VERSION } from './compile-layout.mjs';
@@ -21,6 +21,82 @@ const inputPath = path.resolve(import.meta.dirname, '../../../tests/fixtures/sem
 const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
 const fixture = type => structuredClone(input.diagrams.find(graph => graph.meta.diagramType === type));
 const semanticErrors = graph => validateGraph(graph, { inputOnly: true });
+
+test('adaptive spacing: long group headings keep a fixed side inset', async () => {
+  for (const label of ['app', '业务服务与缓存协调及配置变更事件处理运行边界'.repeat(4)]) {
+    const input = fixture('architecture'); input.groups[0].label = label;
+    const { graph } = await compileGraphLayout(input), group = graph.groups[0];
+    const inset = Math.min(...graph.nodes.filter(node => node.groupId === group.id).map(node => node.position.x - group.position.x));
+    assert.ok(inset <= 40, `A heading must occupy the top, not a ${inset}px side column`);
+    assert.deepEqual(auditLayoutQuality(graph).errors, []);
+    assert.doesNotMatch(createDiagramSvg(graph), /…/);
+  }
+});
+
+test('adaptive spacing: one long sequence message leaves unrelated gaps unchanged', async () => {
+  const input = { meta: { title: 'Local spacing', diagramType: 'sequence', sourceRef: 'conceptual:spacing' },
+    nodes: Array.from({ length: 5 }, (_, i) => ({ id: `n${i}`, label: `Service ${i}`, kind: 'participant' })),
+    edges: Array.from({ length: 4 }, (_, i) => ({ id: `e${i}`, source: `n${i}`, target: `n${i + 1}`, label: 'Request', kind: 'sync', order: i + 1, evidence: 'inference' })) };
+  const short = (await compileGraphLayout(input)).graph;
+  input.edges[0].label = '完整请求内容 LongRequestDescription '.repeat(6);
+  const long = (await compileGraphLayout(input)).graph;
+  const gaps = graph => graph.nodes.slice(1).map((node, i) => node.position.x - graph.nodes[i].position.x - graph.nodes[i].size.width);
+  assert.deepEqual(gaps(long).slice(1), gaps(short).slice(1), 'Only the constrained message span may grow');
+  assert.ok(createEdgeRoutes(long).get('e0').labelLines.length > 1);
+  assert.deepEqual(auditLayoutQuality(long).errors, []);
+  assert.deepEqual((await compileGraphLayout(long)).graph, long);
+});
+
+test('adaptive spacing: nine types retain facts and regenerate at three scales', async t => {
+  for (const type of DIAGRAM_TYPES) {
+    const medium = fixture(type), simple = structuredClone(medium), edge = simple.edges[0];
+    simple.nodes = simple.nodes.filter(node => [edge.source, edge.target].includes(node.id));
+    simple.nodes.forEach(node => { delete node.groupId; delete node.layout; });
+    simple.edges = [edge]; delete simple.groups; delete simple.executions; delete simple.layout;
+    if (type === 'sequence') {
+      edge.order = 1;
+      const reply = medium.edges.find(item => item.replyTo === edge.id);
+      simple.edges.push({ ...reply, order: 2 });
+      simple.executions = [{ id: 'work', participantId: edge.target, start: { edgeId: edge.id, at: 'receive' }, end: { edgeId: reply.id, at: 'send' } }];
+    }
+    const complex = structuredClone(medium);
+    for (let index = 1; index <= 2; index++) {
+      const copy = structuredClone(medium), rename = id => `${index}:${id}`;
+      if (type !== 'sequence') for (const node of copy.nodes) {
+        node.id = rename(node.id); if (node.groupId) node.groupId = rename(node.groupId);
+      }
+      for (const edge of copy.edges) {
+        edge.id = rename(edge.id);
+        if (type === 'sequence') edge.order += index * Math.max(...medium.edges.map(edge => edge.order));
+        else { edge.source = rename(edge.source); edge.target = rename(edge.target); }
+        if (edge.replyTo) edge.replyTo = rename(edge.replyTo);
+      }
+      for (const group of copy.groups ?? []) {
+        group.id = rename(group.id); if (group.parentId) group.parentId = rename(group.parentId);
+        for (const operand of group.operands ?? []) operand.edgeIds = operand.edgeIds.map(rename);
+      }
+      for (const execution of copy.executions ?? []) {
+        execution.id = rename(execution.id); if (execution.parentId) execution.parentId = rename(execution.parentId);
+        execution.start.edgeId = rename(execution.start.edgeId); execution.end.edgeId = rename(execution.end.edgeId);
+      }
+      if (type !== 'sequence') {
+        complex.nodes.push(...copy.nodes);
+        const bridge = medium.edges.find(edge => !['initial', 'final'].includes(medium.nodes.find(node => node.id === edge.source).kind));
+        complex.edges.push({ ...bridge, id: `bridge-${index}`, target: rename(bridge.target) });
+      }
+      complex.edges.push(...copy.edges); complex.groups = [...(complex.groups ?? []), ...(copy.groups ?? [])];
+      if (copy.executions) complex.executions.push(...copy.executions);
+    }
+    for (const [scale, graph] of Object.entries({ simple, medium, complex })) {
+      const compiled = await compileGraphLayout(graph);
+      assert.ok(compiled.report.semantics.preserved, `${type}/${scale}: facts retained`);
+      assert.deepEqual(auditLayoutQuality(compiled.graph).errors, [], `${type}/${scale}: safety`);
+      assert.deepEqual((await compileGraphLayout(JSON.parse(JSON.stringify(compiled.graph)))).graph, compiled.graph, `${type}/${scale}: JSON regeneration`);
+      const bounds = graphBounds(compiled.graph);
+      t.diagnostic(`${type}/${scale}: ${graph.nodes.length} nodes, ${graph.edges.length} edges, ${bounds.width} × ${bounds.height}`);
+    }
+  }
+});
 
 test('all nine coordinate-free semantic inputs pass before any geometry is evaluated', () => {
   const before = JSON.stringify(input);
@@ -42,6 +118,20 @@ test('all nine coordinate-free semantic inputs pass before any geometry is evalu
   const imported = spawnSync(process.execPath, ['--input-type=module', '-'], { input: `await import(${JSON.stringify(new URL('./validate-graph.mjs', import.meta.url).href)}); process.stdout.write('imported');`, encoding: 'utf8' });
   assert.equal(imported.status, 0, imported.stderr); assert.equal(imported.stdout, 'imported', 'Importing from stdin must not execute the CLI or resolve a file named dash.');
   assert.equal(report.layoutComposition, null);
+});
+
+test('horizontal diagram types allow a compact six-node chain', async () => {
+  for (const type of ['er', 'deployment', 'usecase', 'dataflow']) {
+    const model = fixture(type), kind = { er: 'entity', deployment: 'service', usecase: 'usecase', dataflow: 'process' }[type];
+    const template = model.nodes.find(node => node.kind === kind), edge = model.edges.find(edge => type === 'usecase' ? edge.kind === 'include' : true);
+    model.nodes = Array.from({ length: 6 }, (_, i) => ({ ...template, id: `n${i}`, label: `N${i}`, groupId: undefined, layout: undefined }));
+    model.edges = Array.from({ length: 5 }, (_, i) => ({ ...edge, id: `e${i}`, source: `n${i}`, target: `n${i + 1}` }));
+    delete model.groups; delete model.layout;
+    const { graph } = await compileGraphLayout(model);
+    assert.deepEqual(auditLayoutQuality(graph).errors, []);
+    assert.equal(new Set(graph.nodes.map(node => node.position.y)).size, 1, type);
+    assert.ok(graph.nodes.every((node, i) => !i || node.position.x > graph.nodes[i - 1].position.x));
+  }
 });
 
 test('ownership, path, order and notation errors are rejected without entering routing', () => {
@@ -188,7 +278,7 @@ test('state endpoint descriptions remain visible beside solid symbols and clear 
   assert.ok(auditLayoutQuality(compiled).diagnostics.some(item => item.ruleId === 'semantic.state-endpoint'));
 });
 
-test('strict layout permits clear crossings and enforces 96px nodes and 24px parallel channels', () => {
+test('strict layout permits clear crossings and enforces 48px nodes and 24px parallel channels', () => {
   const node = (id, x, y) => ({ id, label: id, kind: 'service', position: { x, y }, size: { width: 240, height: 100 } });
   const edge = (id, source, target, via) => ({ id, source, target, kind: 'call', evidence: 'inference', ...(via ? { route: { via } } : {}) });
   const graph = { meta: { title: 'Crossing', sourceRef: 'conceptual:crossing', diagramType: 'architecture' }, nodes: [node('l', 0, 400), node('r', 800, 400), node('t', 400, 0), node('b', 400, 800)], edges: [edge('horizontal', 'l', 'r'), edge('vertical', 't', 'b')] };
@@ -196,10 +286,10 @@ test('strict layout permits clear crossings and enforces 96px nodes and 24px par
   assert.deepEqual(audit.errors, []);
   assert.equal(audit.crossings.length, 1);
   assert.equal(audit.crossings[0].severity, 'info');
-  const pair = { ...graph, nodes: [node('a', 0, 0), node('b', 336, 0)], edges: [] };
+  const pair = { ...graph, nodes: [node('a', 0, 0), node('b', 288, 0)], edges: [] };
   assert.deepEqual(auditLayoutQuality(pair).errors, []);
   pair.nodes[1].position.x--;
-  assert.ok(auditLayoutQuality(pair).diagnostics.some(item => item.ruleId === 'spacing.nodes' && item.measured === 95));
+  assert.ok(auditLayoutQuality(pair).diagnostics.some(item => item.ruleId === 'spacing.nodes' && item.measured === 47));
   const row = { ...graph, nodes: Array.from({ length: 8 }, (_, i) => node(`service-${i}`, i * 400, i % 3 * 12)), edges: [] };
   assert.ok(auditLayoutQuality(row).diagnostics.some(item => item.ruleId === 'semantic.single-row'), 'Small y offsets retain the legacy row degeneration.');
   const parallel = { ...graph, nodes: [node('a', 0, 0), node('b', 0, 400), node('c', 800, 0), node('d', 800, 400)], edges: [edge('upper', 'a', 'c', [{ x: 260, y: 50 }, { x: 300, y: 50 }, { x: 300, y: 200 }, { x: 740, y: 200 }, { x: 760, y: 50 }]), edge('lower', 'b', 'd', [{ x: 260, y: 450 }, { x: 300, y: 450 }, { x: 300, y: 224 }, { x: 740, y: 224 }, { x: 760, y: 450 }])] };
@@ -233,12 +323,12 @@ test('label and ownership clearances accept their boundary and reject one pixel 
   graph.edges[0].route.labelAt.y++;
   assert.equal(has(graph, 'spacing.label-edge'), true);
 
-  const owned = { ...graph, edges: [], nodes: [{ ...node('a', 32, 84), groupId: 'left' }, { ...node('b', 696, 84), groupId: 'right' }],
-    groups: [{ id: 'left', label: 'Left', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 600, height: 400 } }, { id: 'right', label: 'Right', kind: 'runtime', position: { x: 664, y: 0 }, size: { width: 400, height: 400 } }] };
+  const owned = { ...graph, edges: [], nodes: [{ ...node('a', 32, 58), groupId: 'left' }, { ...node('b', 680, 58), groupId: 'right' }],
+    groups: [{ id: 'left', label: 'Left', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 600, height: 400 } }, { id: 'right', label: 'Right', kind: 'runtime', position: { x: 648, y: 0 }, size: { width: 400, height: 400 } }] };
   assert.deepEqual(auditLayoutQuality(owned).errors, []);
   for (const axis of ['x', 'y']) {
     const invalid = structuredClone(owned); invalid.nodes[0].position[axis]--;
-    assert.equal(has(invalid, 'group.member-inset'), true, `${axis}: preserve 32px side inset and 48px below the 36px heading`);
+    assert.equal(has(invalid, 'group.member-inset'), true, `${axis}: preserve 32px side inset and 24px below the measured heading`);
   }
   owned.groups[1].position.x--;
   assert.equal(has(owned, 'group.sibling-gap'), true);

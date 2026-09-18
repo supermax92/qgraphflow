@@ -6,6 +6,7 @@ import { getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
 import { cardinalityMarks } from './edge-routing.js';
 import { renderFragment, fragmentDepth } from './sequence-fragments.js';
 import { isCore, nodeMetrics, TYPOGRAPHY } from './visual-style.js';
+import { groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
 
 function NodeHandles({ sequence = false }) {
   if (sequence) return <>
@@ -37,8 +38,8 @@ function DiagramNode({ data, selected }) {
 
 function BoundaryNode({ data }) {
   const fragment = data.fragment;
-  const headingStyle = fragment?.heading ? { left: fragment.heading.x - data.position.x, maxWidth: fragment.heading.width } : undefined;
-  return <><section className={`boundary boundary-${data.kind}`} aria-label={data.label}><span style={headingStyle}>{data.label}</span>{['alt', 'opt', 'loop', 'par'].includes(data.kind) && <small>{data.kind}</small>}{fragment && <svg className="fragment-visual" width="100%" height="100%" dangerouslySetInnerHTML={{ __html: renderFragment({ ...fragment, guards: [], bodies: [] }, data, -data.position.x, -data.position.y) }} />}</section>
+  const headingStyle = fragment?.heading ? { left: fragment.heading.x - data.position.x, top: fragment.heading.y - data.position.y, maxWidth: fragment.heading.width } : undefined;
+  return <><section className={`boundary boundary-${data.kind}`} aria-label={data.label}><svg className="boundary-visual" width="100%" height="100%" dangerouslySetInnerHTML={{ __html: groupFrameSvg(data, data.appearance) }} />{fragment ? <span style={headingStyle}>{fragment.heading?.lines?.join('\n') ?? data.label}</span> : <svg className="boundary-heading" width="100%" height="100%" dangerouslySetInnerHTML={{ __html: groupHeadingSvg(data) }} />}{['alt', 'opt', 'loop', 'par'].includes(data.kind) && <small>{data.kind}</small>}{fragment && <svg className="fragment-visual" width="100%" height="100%" dangerouslySetInnerHTML={{ __html: renderFragment({ ...fragment, guards: [], bodies: [] }, data, -data.position.x, -data.position.y) }} />}</section>
     {fragment && <EdgeLabelRenderer><svg className="fragment-text" width={data.size.width} height={data.size.height} style={{ position: 'absolute', pointerEvents: 'none', transform: `translate(${data.position.x}px, ${data.position.y}px)` }} dangerouslySetInnerHTML={{ __html: renderFragment({ ...fragment, separators: [] }, data, -data.position.x, -data.position.y) }} /></EdgeLabelRenderer>}
   </>;
 }
@@ -67,8 +68,8 @@ function RoutedEdge({ id, markerEnd, style, data }) {
       <path className="selection-edge-halo" d={route.path} />
       <path className="selection-edge-shine" d={route.path} />
     </g>}
-    <BaseEdge id={id} path={route.path} markerEnd={end} markerStart={start} style={{ ...style, strokeOpacity: sequence ? 1 : flowing ? 0.35 : data.selectionLinked ? 1 : data.directed ? 0.55 : 1 }} />
-    {data.directed && (!sequence || flowing) && <path className={`edge-flow ${sequence ? 'sequence-edge-flow' : ''}`} d={route.path} mask={sequence && data.dashed ? `url(#${maskId})` : undefined} style={{ stroke: sequence ? data.selectionColor : style.stroke, animationPlayState: data.flowRunning ? 'running' : 'paused' }} />}
+    <BaseEdge id={id} path={route.path} markerEnd={end} markerStart={start} style={{ ...style, strokeOpacity: 1 }} />
+    {data.directed && (!sequence || flowing) && <path className={`edge-flow ${sequence ? 'sequence-edge-flow' : ''}`} d={route.path} mask={sequence && data.dashed ? `url(#${maskId})` : undefined} style={{ stroke: style.stroke, animationPlayState: data.flowRunning ? 'running' : 'paused' }} />}
     {er && <><Cardinality value={data.sourceCardinality} point={route.points[0]} neighbor={route.points[1]} color={data.relationColor} /><Cardinality value={data.targetCardinality} point={route.points.at(-1)} neighbor={route.points.at(-2)} color={data.relationColor} /></>}
     {(route.endpointLabels ?? []).map(label => <g key={label.role} className="edge-multiplicity" data-endpoint={label.role}>
       <rect {...label.labelBox} rx="4" fill="var(--canvas)" />
@@ -82,16 +83,16 @@ export const nodeTypes = { diagram: DiagramNode, boundary: BoundaryNode };
 export const edgeTypes = { routed: RoutedEdge };
 
 export function initialNodes(graph, diagramType) {
-  const boundaries = (graph.groups ?? []).map(group => ({
+  const boundaries = [...(graph.groups ?? [])].sort((a, b) => fragmentDepth(a, graph.groups ?? []) - fragmentDepth(b, graph.groups ?? [])).map(group => ({
     id: group.id,
     type: 'boundary',
     position: group.position,
     data: { ...group },
-    style: { width: group.size.width, height: group.size.height },
+    style: { width: group.size.width, height: group.size.height, pointerEvents: 'none' },
     selectable: false,
     draggable: false,
     connectable: false,
-    zIndex: diagramType === 'sequence' ? -100 + fragmentDepth(group, graph.groups ?? []) : -1
+    zIndex: -(graph.groups?.length ?? 0) + fragmentDepth(group, graph.groups ?? [])
   }));
   return [...boundaries, ...graph.nodes.map(node => ({
     id: node.id,

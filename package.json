@@ -45,6 +45,7 @@
     "skills/q-flow/assets/layout-dist/",
     "skills/q-flow/assets/viewer/src/graph-validation.js",
     "skills/q-flow/assets/viewer/src/layout-measure.js",
+    "skills/q-flow/assets/viewer/src/layout-spacing.js",
     "skills/q-flow/assets/viewer/src/layout-quality.js"
   ],
   "scripts": {

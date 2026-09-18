@@ -17,7 +17,7 @@
   --hero: #f0f1fe;
   --hero-ink: #272962;
   --good: #107d98;
-  --warm: #cc4e00;
+  --warm: #c44b00;
   --warm-soft: #ffefd6;
   --edge: #8b8d98;
   --button: #f9f9fb;
@@ -243,15 +243,14 @@ button:disabled { cursor: not-allowed; }
 .node-dot { width: 5px; height: 5px; flex: 0 0 auto; border-radius: 50%; background: var(--accent); }
 
 .react-flow__node-boundary { pointer-events: none; }
-.boundary { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 14px; background: var(--group); }
-.boundary > span, .boundary > small { position: absolute; top: 14px; color: var(--muted); font-size: var(--font-small); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
-.boundary > span { left: 16px; max-width: calc(100% - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.boundary { width: 100%; height: 100%; background: transparent; }
+.boundary-visual { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: visible; }
+.boundary > span, .boundary > small { position: absolute; top: 14px; color: var(--ink); font-size: var(--font-small); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.boundary > span { left: 16px; max-width: calc(100% - 32px); white-space: pre; line-height: 22px; text-transform: none; }
 .boundary:has(> small) > span { max-width: calc(100% - 88px); }
 .boundary > small { right: 16px; font-family: ui-monospace, SFMono-Regular, monospace; }
-.boundary-external, .boundary-alt { background: color-mix(in srgb, var(--warm-soft) 62%, var(--canvas)); border-color: color-mix(in srgb, var(--warm) 23%, var(--line)); }
-.boundary-opt { background: color-mix(in srgb, var(--accent-soft) 52%, var(--canvas)); }
-.boundary-par { border-radius: 5px; }
-.boundary-loop { border-radius: 5px; }
+.boundary-heading { pointer-events: none; }
+.boundary-heading .group { font: 650 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; fill: var(--ink); letter-spacing: .4px; }
 .flow-edge--dashed .react-flow__edge-path { stroke-dasharray: 5 5; }
 .edge-flow { fill: none; stroke-width: 2; stroke-dasharray: 8px 12px; stroke-linecap: round; pointer-events: none; animation: edge-flow .7s linear infinite; }
 /* A 6 CSS px minimum period leaves whole pixels inside both dashes and gaps at any pixel alignment. */

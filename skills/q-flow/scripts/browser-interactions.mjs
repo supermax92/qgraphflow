@@ -20,7 +20,7 @@ import { renderNode } from '../assets/viewer/src/node-svg.js';
 import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js';
 import { sequencePairs, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
-import { moduleColorMap, PALETTES, TYPOGRAPHY, isCore, sequenceGroupColor } from '../assets/viewer/src/visual-style.js';
+import { moduleColorMap, groupAppearanceMap, nodeAppearance, nodeMetrics, PALETTES, TYPOGRAPHY, isCore, sequenceGroupColor } from '../assets/viewer/src/visual-style.js';
 import { diagramLabels as labels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
 import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
@@ -375,8 +375,42 @@ async function assertShape(page, graph, selected) {
   }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No page overflow.');
 }
+function colorContrast(a, b) {
+  const luminance = channels => channels.map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+  const values = [luminance(a), luminance(b)].sort((a, b) => a - b);
+  return (values[1] + .05) / (values[0] + .05);
+}
+const colorChannels = color => color.startsWith('#') ? color.slice(1).match(/../g).map(value => parseInt(value, 16)) : color.match(/[\d.]+/g).slice(0, 3).map(Number);
 async function assertNodeDrawing(page, graph, colorTheme) {
   const palette = PALETTES[colorTheme], moduleColors = moduleColorMap(graphs, palette);
+  const groupAppearances = groupAppearanceMap(graph.groups ?? [], palette);
+  const frames = await page.locator('.react-flow__node-boundary').evaluateAll(elements => elements.map(element => {
+    const boundary = element.querySelector('.boundary'), frame = boundary.querySelector('.boundary-frame');
+    return { id: element.dataset.id, fill: getComputedStyle(frame).fill, stroke: getComputedStyle(frame).stroke, accent: getComputedStyle(boundary.querySelector('.boundary-accent')).stroke, opacity: getComputedStyle(frame).fillOpacity, zIndex: Number(getComputedStyle(element).zIndex), pointerEvents: getComputedStyle(element).pointerEvents, background: getComputedStyle(boundary).backgroundColor };
+  }));
+  assert.equal(frames.length, graph.groups?.length ?? 0);
+  for (const frame of frames) {
+    const appearance = groupAppearances.get(frame.id);
+    assert.equal(frame.stroke, 'none'); assert.equal(frame.background, 'rgba(0, 0, 0, 0)');
+    assert.equal(Number(frame.opacity), 1, 'Nested group fills do not accumulate.');
+    assert.deepEqual(colorChannels(frame.fill), colorChannels(appearance.fill));
+    assert.deepEqual(colorChannels(frame.accent), colorChannels(appearance.accent));
+    assert.ok(colorContrast(colorChannels(frame.accent), colorChannels(frame.fill)) >= 3, `Group accent contrast: ${frame.id}`);
+    assert.ok(colorContrast(colorChannels(palette.ink), colorChannels(frame.fill)) >= 4.5, `Group heading contrast: ${frame.id}`);
+    assert.ok(frame.zIndex < 0, 'Groups stay behind edges and cards.');
+    assert.equal(frame.pointerEvents, 'none', 'Group surfaces never intercept pan, selection or edge clicks.');
+    const parentId = graph.groups.find(group => group.id === frame.id).parentId;
+    if (parentId) assert.ok(frame.zIndex > frames.find(item => item.id === parentId).zIndex, 'Child fill is above its parent.');
+  }
+  const miniFrames = await page.locator('.react-flow__minimap [data-group-id]').evaluateAll(elements => elements.map(element => ({ id: element.dataset.groupId, fill: element.querySelector('.boundary-frame').getAttribute('fill'), stroke: element.querySelector('.boundary-frame').getAttribute('stroke'), accent: element.querySelector('.boundary-accent').getAttribute('stroke') })));
+  for (const frame of miniFrames) {
+    assert.equal(frame.stroke, 'none'); assert.equal(frame.fill, groupAppearances.get(frame.id).fill); assert.equal(frame.accent, groupAppearances.get(frame.id).accent);
+  }
+  const strokes = await page.locator('.react-flow__edge-path').evaluateAll(elements => elements.map(element => { const style = getComputedStyle(element); return { id: element.id, color: style.stroke, opacity: style.strokeOpacity }; }));
+  for (const stroke of strokes) {
+    assert.equal(Number(stroke.opacity), 1, `Opaque semantic edge: ${stroke.id}`);
+    for (const surface of [palette.surface, ...frames.map(frame => frame.fill)]) assert.ok(colorContrast(colorChannels(stroke.color), colorChannels(surface)) >= 3, `Edge contrast: ${stroke.id}`);
+  }
   const fragmentTexts = await page.locator('.fragment-text text').evaluateAll(elements => elements.map(element => ({
     text: element.textContent, body: Boolean(element.closest('.operand-body')), fill: getComputedStyle(element).fill, font: parseFloat(getComputedStyle(element).fontSize)
   })));
@@ -421,10 +455,15 @@ async function assertNodeDrawing(page, graph, colorTheme) {
     assert.deepEqual(minimapTags, getDiagram(graph.meta.diagramType).outline(node, 0, 0).map(([tag]) => tag), `MiniMap node ${node.id} uses the diagram outline.`);
     const texts = await nodeElement(page, node.id).locator('.node-visual text').evaluateAll(elements => elements.map(element => {
       const b = element.getBBox(), style = getComputedStyle(element);
-      return { text: element.textContent, cls: element.getAttribute('class'), font: parseFloat(style.fontSize), fill: style.fill, x: b.x, y: b.y, width: b.width, height: b.height };
+      return { text: element.textContent, cls: element.getAttribute('class'), font: parseFloat(style.fontSize), fill: style.fill, opacity: Number(style.opacity), x: b.x, y: b.y, width: b.width, height: b.height };
     }));
     const compact = getDiagram(graph.meta.diagramType).cardLayout && node.size.height < 100;
     for (const text of texts) {
+      const metrics = nodeMetrics(node, graph.meta.diagramType);
+      const neutralRow = (graph.meta.diagramType === 'er' && text.y >= metrics.erHeaderHeight) || (graph.meta.diagramType === 'class' && text.y >= metrics.classHeaderHeight);
+      const background = colorChannels(neutralRow ? palette.surface2 : ['actor', 'initial', 'final'].includes(node.kind) ? palette.surface : nodeAppearance(node, palette, moduleColors).fill);
+      const color = colorChannels(text.fill).map((value, index) => value * text.opacity + background[index] * (1 - text.opacity));
+      assert.ok(colorContrast(color, background) >= 4.5, `Rendered text contrast: ${node.id} ${text.text}`);
       if (!compact) assert.ok(text.font >= TYPOGRAPHY.small, `Readable shared typography: ${node.id} ${text.cls}`);
       assert.ok(text.x >= -1 && text.y >= -1 && text.x + text.width <= node.size.width + 1 && text.y + text.height <= node.size.height + 1, `Node text stays inside its authored bounds: ${node.id} ${text.text}`);
       if (['title', 'shape-title', 'participant-title', 'entity-title'].includes(text.cls)) {
@@ -472,8 +511,12 @@ async function exportsMatch(page, graph, name) {
     const lifelines = [...root.querySelectorAll('.lifeline')].map(element => element.getAttribute('d'));
     const image = new Image(); image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml); await image.decode();
     const executions = [...root.querySelectorAll('.sequence-execution')].map(element => ({ id: element.dataset.executionId, x: +element.getAttribute('x'), y: +element.getAttribute('y'), width: +element.getAttribute('width'), height: +element.getAttribute('height'), color: element.getAttribute('stroke') }));
-    return { title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths, notation, lifelines, executions, colors: edges.map(element => element.firstElementChild.getAttribute('stroke')) };
+    return { frames: [...root.querySelectorAll('[data-diagram-group-id] .boundary-frame')].map(frame => ({ id: frame.parentElement.dataset.diagramGroupId, fill: frame.getAttribute('fill'), stroke: frame.getAttribute('stroke'), accent: frame.parentElement.querySelector('.boundary-accent').getAttribute('stroke') })), title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths, notation, lifelines, executions, colors: edges.map(element => element.firstElementChild.getAttribute('stroke')) };
   }, svg);
+  const exportedTheme = await page.locator('html').getAttribute('data-theme');
+  const frameColors = groupAppearanceMap(graph.groups ?? [], PALETTES[exportedTheme]);
+  assert.equal(parsed.frames.length, graph.groups?.length ?? 0);
+  for (const frame of parsed.frames) { assert.equal(frame.fill, frameColors.get(frame.id).fill); assert.equal(frame.stroke, 'none'); assert.equal(frame.accent, frameColors.get(frame.id).accent); }
   assert.equal(parsed.title, graph.meta.title); assert.equal(parsed.paths.length, graph.edges.length);
   const pageNotation = await page.locator('.react-flow__edge').evaluateAll(elements => elements.map(element => {
     const path = element.querySelector('.react-flow__edge-path');
@@ -2139,7 +2182,7 @@ async function sequencePersistenceChecks(browser, url, graph) {
       await hidePanels(page);
       await page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(editedEdge.id)}]`)).focus(); await page.keyboard.press('Enter');
       await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill('配对标签 QA'); await button(page, '保存').click();
-      assert.ok((await page.locator(`.edge-label[data-edge-id=${JSON.stringify(editedEdge.id)}]`).innerText()).includes('配对标签 QA'));
+      assert.ok((await page.locator(`.edge-label[data-edge-id=${JSON.stringify(editedEdge.id)}]`).innerText()).replace(/\s+/g, ' ').includes('配对标签 QA'));
       assert.equal(await page.locator(`[data-edge-id=${JSON.stringify(editedEdge.id)}] .pair-label`).innerText(), sequencePairs(graph).get(editedEdge.id).label);
       await ensureInspector(page); await nodeElement(page, selected.id).focus(); await page.keyboard.press('Enter');
       await page.locator('.drawer-body').and(page.locator(`[data-node-id=${JSON.stringify(selected.id)}]`)).waitFor();
@@ -2253,11 +2296,11 @@ async function assertTextBounds(page) {
   }));
   assert.deepEqual(result.hidden, [], 'Zoom scales the complete node without hiding authored text.');
   assert.deepEqual(result.failures, [], 'Visible text stays inside its node and actual shape.');
-  assert.ok(await page.locator('.boundary > span').evaluateAll(labels => labels.every(label => {
-    const box = label.getBoundingClientRect(), boundary = label.parentElement.getBoundingClientRect();
-    return box.left >= boundary.left && box.right <= boundary.right && box.bottom <= boundary.bottom
-      && getComputedStyle(label).textOverflow === 'ellipsis' && getComputedStyle(label).overflow === 'hidden';
-  })), 'Long boundary titles stay inside their group.');
+  assert.ok(await page.locator('.boundary > span,.boundary-heading text').evaluateAll(labels => labels.every(label => {
+    const box = label.getBoundingClientRect(), boundary = label.closest('.boundary').getBoundingClientRect();
+    return box.left >= boundary.left - 1 && box.right <= boundary.right + 1 && box.bottom <= boundary.bottom + 1
+      && (label instanceof SVGElement || label.scrollWidth <= label.clientWidth + 1 && label.scrollHeight <= label.clientHeight + 1);
+  })), 'Complete wrapped boundary titles stay inside their group without clipping.');
 }
 
 async function textBoundsChecks(browser, url, graph) {

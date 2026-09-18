@@ -6,7 +6,9 @@ export function graphLegend(graph, palette, moduleColors) {
   const definition = getDiagram(graph.meta.diagramType);
   const entries = new Map();
   for (const node of graph.nodes) {
-    const appearance = nodeAppearance(node, palette);
+    const appearance = nodeAppearance(node, palette, moduleColors);
+    // Module entries describe identity; do not advertise an unused role-colored outline.
+    if (moduleColors?.has(node.module) && appearance.role !== 'warning' && !['actor', 'initial', 'final'].includes(node.kind)) continue;
     const shape = node.kind === 'actor' ? 'actor' : ['initial', 'final'].includes(node.kind) ? node.kind : definition.compartments ? 'compartment' : 'box';
     const id = `${appearance.role}-${shape}`;
     entries.set(id, { id, ...appearance, shape });
