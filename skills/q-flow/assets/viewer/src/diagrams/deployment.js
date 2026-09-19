@@ -19,7 +19,7 @@ export function deploymentOutline(node, x, y) {
     ['ellipse', { cx: x + w / 2, cy: y + 18, rx: w / 2 - 12, ry: 16, fill: 'none' }]
   ];
   if (node.kind === 'external') return polygon(node, x, y, HEXAGON);
-  if (node.kind === 'service') return [...rectangle(node, x, y, 16), ['path', { d: `M${x} ${y + 36}h12M${x + w - 12} ${y + h - 36}h12`, fill: 'none' }]];
+  if (node.kind === 'service') return rectangle(node, x, y, 16);
   return rectangle(node, x, y, 10);
 }
 

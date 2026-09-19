@@ -136,8 +136,10 @@
     "保存": "Save",
     "编辑文字": "Edit text",
     "证据": "Evidence",
-    "保存 Graph JSON": "Save Graph JSON",
+    "保存修改": "Save changes",
     "Graph JSON 已保存": "Graph JSON saved",
+    "已保存到当前页面和同级 graph.json": "Saved into this page and its sibling graph.json",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Choose the folder containing this page ({page}); edits remain in this page",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON downloaded; keep the file to preserve edits",
     "已取消保存，修改仍保留在当前页面": "Save cancelled; edits remain in this page",
     "保存失败，修改仍保留在当前页面": "Save failed; edits remain in this page",
@@ -149,7 +151,8 @@
     "激活条：执行区间，错位表示嵌套": "Activation: execution interval; offset means nesting",
     "C 编号：调用与返回配对，同组同色": "C ID: paired call and return share a color",
     "par：分支并行，上下排列不代表先后": "par: concurrent branches; vertical position is not order",
-    "布局需要调整，仍可保存 JSON 草稿": "Layout needs adjustment; JSON drafts can still be saved"
+    "布局需要调整，仍可保存 JSON 草稿": "Layout needs adjustment; JSON drafts can still be saved",
+    "卡片微底色": "Card wash"
   },
   "ja": {
     "架构图": "アーキテクチャ",
@@ -288,8 +291,10 @@
     "保存": "保存",
     "编辑文字": "テキストを編集",
     "证据": "根拠",
-    "保存 Graph JSON": "Graph JSON を保存",
+    "保存修改": "変更を保存",
     "Graph JSON 已保存": "Graph JSON を保存しました",
+    "已保存到当前页面和同级 graph.json": "このページと同じ階層の graph.json に保存しました",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "このページ（{page}）があるフォルダーを選択してください。編集内容はこのページに残っています",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON をダウンロードしました。編集内容を残すにはファイルを保管してください",
     "已取消保存，修改仍保留在当前页面": "保存をキャンセルしました。編集内容はこのページに残っています",
     "保存失败，修改仍保留在当前页面": "保存に失敗しました。編集内容はこのページに残っています",
@@ -301,7 +306,8 @@
     "激活条：执行区间，错位表示嵌套": "実行区間：横のずれは入れ子を示す",
     "C 编号：调用与返回配对，同组同色": "C 番号：呼び出しと戻りは同じ色",
     "par：分支并行，上下排列不代表先后": "par：並行分岐。上下の位置は実行順ではない",
-    "布局需要调整，仍可保存 JSON 草稿": "レイアウトの調整が必要です。JSON の下書きは保存できます"
+    "布局需要调整，仍可保存 JSON 草稿": "レイアウトの調整が必要です。JSON の下書きは保存できます",
+    "卡片微底色": "カードの淡い下地"
   },
   "ko": {
     "架构图": "아키텍처",
@@ -440,8 +446,10 @@
     "保存": "저장",
     "编辑文字": "텍스트 편집",
     "证据": "근거",
-    "保存 Graph JSON": "Graph JSON 저장",
+    "保存修改": "변경 사항 저장",
     "Graph JSON 已保存": "Graph JSON을 저장했습니다",
+    "已保存到当前页面和同级 graph.json": "현재 페이지와 같은 폴더의 graph.json에 저장했습니다",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "현재 페이지({page})가 있는 폴더를 선택하세요. 수정 사항은 현재 페이지에 남아 있습니다",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON을 다운로드했습니다. 수정 사항을 보관하려면 파일을 저장하세요",
     "已取消保存，修改仍保留在当前页面": "저장을 취소했습니다. 수정 사항은 현재 페이지에 남아 있습니다",
     "保存失败，修改仍保留在当前页面": "저장에 실패했습니다. 수정 사항은 현재 페이지에 남아 있습니다",
@@ -453,7 +461,8 @@
     "激活条：执行区间，错位表示嵌套": "激活条：执行区间，错位表示嵌套",
     "C 编号：调用与返回配对，同组同色": "C 编号：调用与返回配对，同组同色",
     "par：分支并行，上下排列不代表先后": "par：分支并行，上下排列不代表先后",
-    "布局需要调整，仍可保存 JSON 草稿": "레이아웃을 조정해야 합니다. JSON 초안은 저장할 수 있습니다"
+    "布局需要调整，仍可保存 JSON 草稿": "레이아웃을 조정해야 합니다. JSON 초안은 저장할 수 있습니다",
+    "卡片微底色": "카드 연한 배경"
   },
   "de": {
     "架构图": "Architektur",
@@ -592,8 +601,10 @@
     "保存": "Speichern",
     "编辑文字": "Text bearbeiten",
     "证据": "Nachweis",
-    "保存 Graph JSON": "Graph JSON speichern",
+    "保存修改": "Änderungen speichern",
     "Graph JSON 已保存": "Graph JSON gespeichert",
+    "已保存到当前页面和同级 graph.json": "In diese Seite und die benachbarte graph.json gespeichert",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Bitte den Ordner dieser Seite ({page}) wählen; die Änderungen bleiben auf dieser Seite",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON heruntergeladen; Datei zum Erhalten der Änderungen aufbewahren",
     "已取消保存，修改仍保留在当前页面": "Speichern abgebrochen; Änderungen bleiben auf dieser Seite",
     "保存失败，修改仍保留在当前页面": "Speichern fehlgeschlagen; Änderungen bleiben auf dieser Seite",
@@ -605,7 +616,8 @@
     "激活条：执行区间，错位表示嵌套": "Aktivierung: Ausführungsdauer; Versatz zeigt Verschachtelung",
     "C 编号：调用与返回配对，同组同色": "C-ID: Aufruf und Rückgabe haben dieselbe Farbe",
     "par：分支并行，上下排列不代表先后": "par: parallele Zweige; vertikale Lage ist keine Reihenfolge",
-    "布局需要调整，仍可保存 JSON 草稿": "Layout anpassen; JSON-Entwürfe können gespeichert werden"
+    "布局需要调整，仍可保存 JSON 草稿": "Layout anpassen; JSON-Entwürfe können gespeichert werden",
+    "卡片微底色": "Karten-Grundton"
   },
   "fr": {
     "架构图": "Architecture",
@@ -744,8 +756,10 @@
     "保存": "Enregistrer",
     "编辑文字": "Modifier le texte",
     "证据": "Preuve",
-    "保存 Graph JSON": "Enregistrer Graph JSON",
+    "保存修改": "Enregistrer les modifications",
     "Graph JSON 已保存": "Graph JSON enregistré",
+    "已保存到当前页面和同级 graph.json": "Enregistré dans cette page et dans le graph.json voisin",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Choisissez le dossier contenant cette page ({page}) ; les modifications restent sur cette page",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON téléchargé ; conservez le fichier pour garder les modifications",
     "已取消保存，修改仍保留在当前页面": "Enregistrement annulé ; les modifications restent sur cette page",
     "保存失败，修改仍保留在当前页面": "Échec de l’enregistrement ; les modifications restent sur cette page",
@@ -757,7 +771,8 @@
     "激活条：执行区间，错位表示嵌套": "激活条：执行区间，错位表示嵌套",
     "C 编号：调用与返回配对，同组同色": "C 编号：调用与返回配对，同组同色",
     "par：分支并行，上下排列不代表先后": "par：分支并行，上下排列不代表先后",
-    "布局需要调整，仍可保存 JSON 草稿": "La disposition doit être ajustée ; le brouillon JSON peut être enregistré"
+    "布局需要调整，仍可保存 JSON 草稿": "La disposition doit être ajustée ; le brouillon JSON peut être enregistré",
+    "卡片微底色": "Fond léger des cartes"
   },
   "es": {
     "架构图": "Arquitectura",
@@ -896,8 +911,10 @@
     "保存": "Guardar",
     "编辑文字": "Editar texto",
     "证据": "Evidencia",
-    "保存 Graph JSON": "Guardar Graph JSON",
+    "保存修改": "Guardar cambios",
     "Graph JSON 已保存": "Graph JSON guardado",
+    "已保存到当前页面和同级 graph.json": "Guardado en esta página y en el graph.json contiguo",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Elija la carpeta que contiene esta página ({page}); los cambios permanecen en esta página",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON descargado; conserva el archivo para guardar los cambios",
     "已取消保存，修改仍保留在当前页面": "Guardado cancelado; los cambios permanecen en esta página",
     "保存失败，修改仍保留在当前页面": "Error al guardar; los cambios permanecen en esta página",
@@ -909,7 +926,8 @@
     "激活条：执行区间，错位表示嵌套": "Activación: intervalo de ejecución; el desplazamiento indica anidación",
     "C 编号：调用与返回配对，同组同色": "ID C: llamada y retorno comparten color",
     "par：分支并行，上下排列不代表先后": "par: ramas paralelas; la posición vertical no indica orden",
-    "布局需要调整，仍可保存 JSON 草稿": "Ajusta el diseño; puedes guardar el borrador JSON"
+    "布局需要调整，仍可保存 JSON 草稿": "Ajusta el diseño; puedes guardar el borrador JSON",
+    "卡片微底色": "Tinte suave de tarjetas"
   },
   "ru": {
     "架构图": "Архитектура",
@@ -1048,8 +1066,10 @@
     "保存": "Сохранить",
     "编辑文字": "Изменить текст",
     "证据": "Основание",
-    "保存 Graph JSON": "Сохранить Graph JSON",
+    "保存修改": "Сохранить изменения",
     "Graph JSON 已保存": "Graph JSON сохранён",
+    "已保存到当前页面和同级 graph.json": "Сохранено в эту страницу и соседний graph.json",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Выберите папку с этой страницей ({page}); изменения остаются на этой странице",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON скачан; сохраните файл, чтобы не потерять изменения",
     "已取消保存，修改仍保留在当前页面": "Сохранение отменено; изменения остались на странице",
     "保存失败，修改仍保留在当前页面": "Не удалось сохранить; изменения остались на странице",
@@ -1061,7 +1081,8 @@
     "激活条：执行区间，错位表示嵌套": "Активация: интервал выполнения; смещение означает вложенность",
     "C 编号：调用与返回配对，同组同色": "Номер C: вызов и возврат одного цвета",
     "par：分支并行，上下排列不代表先后": "par: параллельные ветви; положение по вертикали не задаёт порядок",
-    "布局需要调整，仍可保存 JSON 草稿": "Исправьте расположение; черновик JSON можно сохранить"
+    "布局需要调整，仍可保存 JSON 草稿": "Исправьте расположение; черновик JSON можно сохранить",
+    "卡片微底色": "Лёгкая заливка карточек"
   },
   "pt": {
     "架构图": "Arquitetura",
@@ -1200,8 +1221,10 @@
     "保存": "Salvar",
     "编辑文字": "Editar texto",
     "证据": "Evidência",
-    "保存 Graph JSON": "Salvar Graph JSON",
+    "保存修改": "Salvar alterações",
     "Graph JSON 已保存": "Graph JSON salvo",
+    "已保存到当前页面和同级 graph.json": "Salvo nesta página e no graph.json ao lado",
+    "请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面": "Escolha a pasta desta página ({page}); as alterações permanecem nesta página",
     "Graph JSON 已下载，请保留文件以保存修改": "Graph JSON baixado; guarde o arquivo para preservar as alterações",
     "已取消保存，修改仍保留在当前页面": "Salvamento cancelado; as alterações permanecem nesta página",
     "保存失败，修改仍保留在当前页面": "Falha ao salvar; as alterações permanecem nesta página",
@@ -1213,6 +1236,7 @@
     "激活条：执行区间，错位表示嵌套": "Ativação: intervalo de execução; deslocamento indica aninhamento",
     "C 编号：调用与返回配对，同组同色": "ID C: chamada e retorno têm a mesma cor",
     "par：分支并行，上下排列不代表先后": "par: ramos paralelos; posição vertical não indica ordem",
-    "布局需要调整，仍可保存 JSON 草稿": "Ajuste o layout; o rascunho JSON pode ser salvo"
+    "布局需要调整，仍可保存 JSON 草稿": "Ajuste o layout; o rascunho JSON pode ser salvo",
+    "卡片微底色": "Tom suave dos cartões"
   }
 }

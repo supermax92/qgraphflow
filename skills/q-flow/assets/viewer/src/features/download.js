@@ -6,6 +6,7 @@ import { sequenceFragment } from '../sequence-fragments.js';
 import { sequenceExecutions } from '../sequence-executions.js';
 import { qualityFailure } from '../layout-quality.js';
 import { groupHeadingLayout } from '../text-layout.js';
+import { pageWithGraph } from '../session-graph.js';
 
 function fileStem(title) {
   return title.trim().replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '') || 'diagram';
@@ -20,16 +21,31 @@ function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export async function saveGraphJson(input, locale, setStatus) {
+// Rewrite the open page and its sibling graph.json in place. Chromium browsers can write both files after the user picks
+// the page's own folder once; the page on disk is re-read there, so only its embedded data changes. Other browsers
+// download graph.json so edits survive a regeneration.
+export async function saveGraphJson(input, locale, setStatus, pageName = decodeURIComponent(window.location?.pathname?.split('/').pop() || 'index.html')) {
   const t = (message, values) => translate(locale, message, values);
+  const contents = `${JSON.stringify(input, null, 2)}\n`;
   let writable;
   try {
-    const contents = `${JSON.stringify(input, null, 2)}\n`;
-    if (typeof window.showSaveFilePicker === 'function') {
+    if (typeof window.showDirectoryPicker === 'function') {
+      const directory = await window.showDirectoryPicker({ id: 'qgraphflow-page', mode: 'readwrite' });
+      const existing = await directory.getFileHandle(pageName, { create: false }).catch(() => null);
+      if (!existing) throw Object.assign(new Error('wrong directory'), { name: 'NotFoundError' });
+      const page = pageWithGraph(await (await existing.getFile()).text(), input);
+      // Write graph.json first: it is the regeneration input, so it must never lag behind the page.
+      for (const [name, text] of [['graph.json', contents], [pageName, page]]) {
+        const handle = await directory.getFileHandle(name, { create: true });
+        writable = await handle.createWritable();
+        await writable.write(text); await writable.close(); writable = null;
+      }
+      setStatus(t('已保存到当前页面和同级 graph.json'));
+    } else if (typeof window.showSaveFilePicker === 'function') {
       const handle = await window.showSaveFilePicker({ suggestedName: 'graph.json', types: [{ description: 'Graph JSON', accept: { 'application/json': ['.json'] } }] });
       writable = await handle.createWritable();
       await writable.write(contents);
-      await writable.close();
+      await writable.close(); writable = null;
       setStatus(t('Graph JSON 已保存'));
     } else {
       downloadBlob(new Blob([contents], { type: 'application/json;charset=utf-8' }), 'graph.json');
@@ -37,7 +53,9 @@ export async function saveGraphJson(input, locale, setStatus) {
     }
   } catch (error) {
     if (writable) await writable.abort().catch(() => {});
-    setStatus(t(error.name === 'AbortError' ? '已取消保存，修改仍保留在当前页面' : '保存失败，修改仍保留在当前页面'));
+    setStatus(t(error.name === 'AbortError' ? '已取消保存，修改仍保留在当前页面'
+      : error.name === 'NotFoundError' ? '请选择当前页面 {page} 所在的文件夹，修改仍保留在当前页面'
+      : '保存失败，修改仍保留在当前页面', { page: pageName }));
   }
 }
 

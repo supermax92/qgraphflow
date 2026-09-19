@@ -41,7 +41,14 @@ function Viewer() {
     setActiveType(type);
   };
   const graphForSave = currentGraph => graphInputWithEdits(input, drafts.current, currentGraph);
-  const moduleColors = useMemo(() => moduleColorMap(diagrams, PALETTES[theme]), [theme]);
+  // Card wash is on by default and for every page: the module chip and frame stay, the faint surface tint can be switched
+  // off for the current session only.
+  const [wash, setWash] = useState(true);
+  const moduleColors = useMemo(() => {
+    const colors = moduleColorMap(diagrams, PALETTES[theme]);
+    if (!wash) for (const [name, tone] of colors) colors.set(name, { ...tone, wash: PALETTES[theme].card, header: PALETTES[theme].surface2 });
+    return colors;
+  }, [theme, wash]);
   useEffect(() => { document.documentElement.lang = graph.meta.locale ?? 'zh-CN'; }, [graph.meta.locale]);
   useEffect(() => { document.title = `${graph.meta.title} · QGraphFlow`; }, [graph.meta.title]);
   useEffect(() => {
@@ -49,7 +56,7 @@ function Viewer() {
     document.documentElement.dataset.appearance = preference;
     for (const [name, value] of Object.entries(themeVariables(PALETTES[theme]))) document.documentElement.style.setProperty(name, value);
   }, [theme, preference]);
-  return <ReactFlowProvider><ViewerShell flowControl={flowControl} key={activeType} graph={graph} originalGraph={originalGraph} graphForSave={graphForSave} allDiagrams={diagrams} moduleColors={moduleColors} onDiagramChange={switchDiagram} theme={theme} appearance={preference} setAppearance={setPreference} panels={panels} /></ReactFlowProvider>;
+  return <ReactFlowProvider><ViewerShell flowControl={flowControl} key={activeType} graph={graph} originalGraph={originalGraph} graphForSave={graphForSave} allDiagrams={diagrams} moduleColors={moduleColors} wash={wash} setWash={setWash} onDiagramChange={switchDiagram} theme={theme} appearance={preference} setAppearance={setPreference} panels={panels} /></ReactFlowProvider>;
 }
 
 createRoot(document.getElementById('root')).render(<Viewer />);

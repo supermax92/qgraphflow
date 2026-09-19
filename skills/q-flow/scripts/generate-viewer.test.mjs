@@ -8,16 +8,17 @@ import { fileURLToPath } from 'node:url';
 import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, occupiedBox, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
 import { edgeColor, isCore, moduleColorMap, groupAppearanceMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
-import { RADIX } from '../assets/viewer/src/radix-colors.js';
+import { IDENTITY, IDENTITY_SCALES, RADIX } from '../assets/viewer/src/radix-colors.js';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { nudgeGraphLayout } from '../assets/viewer/src/layout-nudge.js';
 import { constrainNodeChanges, currentGraphFromFlow, graphInputWithEdits } from '../assets/viewer/src/session-graph.js';
 import { saveGraphJson } from '../assets/viewer/src/features/download.js';
+import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
 import { readingRect, readingViewport, locateViewport } from '../assets/viewer/src/reading-area.js';
 import { sequenceFragment, renderFragment } from '../assets/viewer/src/sequence-fragments.js';
-import { compileGraphLayout } from './compile-layout.mjs';
+import { compileGraphLayout, ASPECT_BAND } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { renderNode } from '../assets/viewer/src/node-svg.js';
 
@@ -60,6 +61,12 @@ test('type budgets report composition without enforcing ratios or changing geome
   assert.equal(layoutComposition(sequence).canvasBudget, null);
   assert.equal(layoutComposition(sequence).targetRatio, null);
   assert.equal(layoutComposition(sequence).fit, null);
+  assert.equal(layoutComposition(sequence).aspectBand, null);
+  assert.equal(layoutComposition(sequence).withinBand, null);
+  assert.equal(layoutComposition(sequence).bandSlack, null);
+  assert.equal(before.bandSlack, 1.1);
+  assert.equal(before.aspectBand, ASPECT_BAND); assert.equal(before.withinBand, false, 'a single row of eight boxes leaves the band');
+  assert.equal(after.withinBand, true, 'the compact arrangement sits inside it');
   const semantic = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/semantic-layout.graph.json'), 'utf8'));
   const input = { diagrams: [] };
   for (const graph of semantic.diagrams) input.diagrams.push((await compileGraphLayout(graph)).graph);
@@ -121,6 +128,52 @@ test('native JSON saving commits all graph data and preserves edits on cancellat
       else assert.match(statuses.at(-1), /修改仍保留/);
     }
   } finally { if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow; }
+});
+
+test('saving into the page folder rewrites the open page and its sibling graph.json, and refuses a wrong folder', async () => {
+  const originalWindow = globalThis.window, input = { diagrams: [fixtures.architecture, fixtures.er] };
+  const shell = fs.readFileSync(path.resolve(scriptDir, '../assets/viewer-dist/index.html'), 'utf8');
+  const original = { diagrams: [fixtures.er, fixtures.architecture] };
+  const disk = new Map([['查看器.html', pageWithGraph(shell, original)], ['graph.json', 'stale']]);
+  try {
+    for (const scenario of ['ok', 'wrong-folder', 'cancel', 'write']) {
+      const statuses = [], written = new Map(); let aborted = false;
+      const files = scenario === 'wrong-folder' ? new Map() : disk;
+      globalThis.window = { location: { pathname: '/tmp/%E6%9F%A5%E7%9C%8B%E5%99%A8.html' }, showDirectoryPicker: async options => {
+        assert.equal(options.mode, 'readwrite');
+        if (scenario === 'cancel') throw new DOMException('Cancelled', 'AbortError');
+        return { getFileHandle: async (name, { create } = {}) => {
+          if (!files.has(name) && !create) throw new DOMException('missing', 'NotFoundError');
+          return { getFile: async () => ({ text: async () => files.get(name) }), createWritable: async () => ({
+            write: async value => { if (scenario === 'write') throw new Error('Disk full'); written.set(name, value); },
+            close: async () => {}, abort: async () => { aborted = true; }
+          }) };
+        } };
+      } };
+      await saveGraphJson(input, 'zh-CN', value => statuses.push(value));
+      if (scenario === 'ok') {
+        assert.equal(statuses.at(-1), '已保存到当前页面和同级 graph.json');
+        assert.deepEqual([...written.keys()], ['graph.json', '查看器.html'], 'graph.json is committed before the page');
+        assert.deepEqual(JSON.parse(written.get('graph.json')), input);
+        const page = written.get('查看器.html');
+        assert.equal(page.length - shell.length, pageWithGraph(shell, input).length - shell.length, 'only the embedded data changed');
+        assert.deepEqual(JSON.parse(page.match(/<script id="graph-data" type="application\/json">([\s\S]*?)<\/script>/)[1]), input);
+        assert.equal(page.match(/id="graph-data"/g).length, shell.match(/id="graph-data"/g).length, 'the data element is replaced, not duplicated');
+      } else {
+        assert.equal(written.size, 0);
+        assert.equal(aborted, scenario === 'write');
+        assert.match(statuses.at(-1), scenario === 'wrong-folder' ? /请选择当前页面 查看器\.html 所在的文件夹/ : /修改仍保留/);
+      }
+    }
+  } finally { if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow; }
+});
+
+test('the generator and the page embed graph data identically, escaping HTML-sensitive characters', () => {
+  const graph = { ...fixtures.architecture, meta: { ...fixtures.architecture.meta, title: '</script><b>& ' } };
+  const page = pageWithGraph('<html><script id="graph-data" type="application/json">__CODEGRAPH_FLOW_DATA__</script></html>', graph);
+  assert.ok(!page.includes('</script><b>'), 'a title cannot close the data element');
+  assert.deepEqual(JSON.parse(page.match(/<script id="graph-data" type="application\/json">([\s\S]*?)<\/script>/)[1]), graph);
+  assert.throws(() => pageWithGraph('<html></html>', graph), /graph-data/);
 });
 
 test('both CLI paths verify real source anchors and reject invalid evidence before replacing outputs', t => {
@@ -593,7 +646,7 @@ test('exports the React Flow UI board in light and dark themes', () => {
 
   const dark = createDiagramSvg(compiledFixtures.architecture, 'dark');
   assert.ok(dark.includes(`fill="${PALETTES.dark.paper}"`));
-  assert.ok(dark.includes(`fill="${PALETTES.dark.surface2}"`));
+  assert.ok(dark.includes(`fill="${PALETTES.dark.surface}"`));
   assert.ok(dark.includes(`stroke="${PALETTES.dark.rule}"`));
 
   const semantic = structuredClone(compiledFixtures.architecture);
@@ -601,7 +654,7 @@ test('exports the React Flow UI board in light and dark themes', () => {
   assert.match(createDiagramSvg(semantic), new RegExp(`stroke="${PALETTES.light.accent}"[^>]+marker-end="url\\(#arrow-ok\\)"`));
 });
 
-test('legend uses actual semantic appearances and soft core surfaces with readable text', () => {
+test('legend uses actual semantic appearances and a core ring with readable ink text', () => {
   const model = graph('dataflow', [box('core', 'Core', 'process', 0, 0, 180, 100, { tags: [' CORE '] }), box('store', 'Store', 'dataStore', 400, 0), box('plain', 'Plain', 'process', 800, 0)], [edge('data', 'core', 'store', 'data')]);
   for (const palette of Object.values(PALETTES)) {
     const legend = graphLegend(model, palette);
@@ -611,16 +664,14 @@ test('legend uses actual semantic appearances and soft core surfaces with readab
       assert.equal(entry.fill, appearance.fill); assert.equal(entry.stroke, appearance.stroke);
     }
     const svg = createDiagramSvg(model, palette === PALETTES.light ? 'light' : 'dark');
-    assert.ok(svg.includes(`fill="${palette.surface2}"`)); assert.ok(svg.includes(`stroke="${palette.accent}"`));
+    assert.ok(svg.includes(`fill="${palette.surface}"`)); assert.ok(svg.includes(`stroke="${palette.accent}"`));
+    assert.match(svg, new RegExp(`class="role-ring"[^>]+stroke="${palette.ringCore}"[^>]+stroke-width="5"`), 'The business center carries a soft Iris ring.');
+    assert.doesNotMatch(svg, /\.core-node \.title/, 'Titles never take the role color.');
+    assert.doesNotMatch(svg, /class="module-accent"/);
     assert.match(svg, /MIT License/); assert.match(svg, /WorkOS/);
   }
-  assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], [RADIX.light.accent[3], RADIX.light.accent[8], RADIX.light.accent[12]]);
-  assert.deepEqual([PALETTES.light.hero, PALETTES.light.heroBorder, PALETTES.light.heroInk], ['#f0f1fe', '#9b9ef0', '#272962']);
-  const luminance = hex => hex.slice(1).match(/../g).map(v => parseInt(v, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
-  for (const palette of Object.values(PALETTES)) {
-    const values = [luminance(palette.hero), luminance(palette.heroInk)].sort((a, b) => a - b);
-    assert.ok((values[1] + .05) / (values[0] + .05) >= 4.5, 'Core text has readable contrast in both themes.');
-  }
+  assert.deepEqual([PALETTES.light.ringCore, PALETTES.light.ringWarn, PALETTES.light.warn], [RADIX.light.accent[5], RADIX.light.warn[5], RADIX.light.warn[11]]);
+  assert.deepEqual([PALETTES.light.ringCore, PALETTES.light.ringWarn, PALETTES.light.warn], ['#dadcff', '#ffcdce', '#ce2c31']);
 });
 
 test('module identity survives reordering, additions, removals, themes and standalone export', () => {
@@ -637,10 +688,10 @@ test('module identity survives reordering, additions, removals, themes and stand
       assert.equal(createDiagramSvg(model, theme), createDiagramSvg(model, theme, colors));
     }
   }
-  for (const module of modules) assert.equal(PALETTES.light.moduleAccents.indexOf(moduleColorMap(collection, PALETTES.light).get(module)), PALETTES.dark.moduleAccents.indexOf(moduleColorMap(collection, PALETTES.dark).get(module)));
+  for (const module of modules) assert.equal(moduleColorMap(collection, PALETTES.light).get(module).name, moduleColorMap(collection, PALETTES.dark).get(module).name);
 });
 
-test('shares module accents across nodes, edges, legend, minimap data and light/dark SVG export', () => {
+test('shares module identity across chip, frame, wash, edges, legend and light/dark SVG export', () => {
   const model = graph('architecture', [
     box('checkout', 'Checkout', 'business', 0, 0, 220, 120, { module: '结算', tags: ['core'] }),
     box('order', 'Order', 'data', 420, 0, 220, 120, { module: '订单' })
@@ -650,21 +701,27 @@ test('shares module accents across nodes, edges, legend, minimap data and light/
   ]);
   for (const theme of ['light', 'dark']) {
     const palette = PALETTES[theme], colors = moduleColorMap([model], palette);
-    const checkoutColor = colors.get('结算');
+    const checkoutTone = colors.get('结算'), checkoutColor = checkoutTone.accent;
     const checkoutAppearance = nodeAppearance(model.nodes[0], palette, colors);
     assert.equal(checkoutAppearance.moduleColor, checkoutColor);
-    assert.equal(checkoutAppearance.stroke, checkoutColor, 'Module color owns the full node outline.');
-    assert.notEqual(checkoutAppearance.fill, palette.surface2, 'Ordinary cards retain a visible module tint.');
-    assert.notEqual(checkoutAppearance.fill, checkoutColor, 'Card fills stay softer than the identity accent.');
-    assert.notEqual(checkoutAppearance.fill, nodeAppearance(model.nodes[1], palette, colors).fill, 'Different module colors have distinct card fills.');
+    assert.equal(checkoutAppearance.stroke, checkoutColor, 'The frame wears the module color.');
+    assert.equal(checkoutAppearance.chip, checkoutTone.chip, 'The icon plate becomes the identity chip.');
+    assert.equal(checkoutAppearance.ring, palette.ringCore, 'The business center keeps its ring over any module.');
+    assert.equal(checkoutAppearance.fill, checkoutTone.wash, 'The card takes a faint wash of its chip color.');
+    assert.notEqual(checkoutAppearance.fill, palette.card); assert.notEqual(checkoutAppearance.fill, checkoutColor);
+    const orderAppearance = nodeAppearance(model.nodes[1], palette, colors);
+    assert.notEqual(checkoutAppearance.fill, orderAppearance.fill, 'Different modules have distinct washes.');
+    assert.equal(orderAppearance.stroke, colors.get('订单').accent, 'A data node in a module wears the module frame; the glyph keeps the role.');
+    assert.equal(orderAppearance.ring, undefined);
+    assert.equal(nodeAppearance({ kind: 'failure', module: '订单' }, palette, colors).stroke, palette.warn, 'Explicit failure keeps its red frame over the module.');
     assert.equal(edgeColor(model.edges[0], model.nodes[1], palette, colors, model.nodes[0]), checkoutColor);
     assert.equal(edgeColor(model.edges[1], model.nodes[0], palette, colors, model.nodes[1]), palette.warn, 'failure semantics win over modules');
     assert.equal(graphLegend(model, palette, colors).filter(item => item.role === 'module').length, 2);
     const svg = createDiagramSvg(model, theme, colors);
-    assert.ok(svg.includes(`class="module-accent"`));
+    assert.doesNotMatch(svg, /class="module-accent"/, 'No stripe: the frame and chip carry identity.');
     assert.ok(svg.includes(`fill="${checkoutAppearance.fill}"`));
-    assert.match(svg, new RegExp(`class="module-accent"[^>]+stroke="${checkoutColor}"`));
-    assert.match(svg, new RegExp(`stroke="${checkoutColor}"[^>]+marker-end="url\\(#arrow-module\\)"`));
+    assert.match(svg, new RegExp(`<rect[^>]+rx="7" fill="${checkoutTone.chip}"/><svg[^>]+stroke="#ffffff"`), 'Chip with a white glyph.');
+    assert.match(svg, new RegExp(`stroke="${checkoutColor}"[^>]+marker-end="url\\(#arrow-module\\)"`), 'The call leaving checkout wears its color.');
   }
 });
 
@@ -1319,50 +1376,64 @@ test('sequence labels, subtitles and arrow kinds share page/export geometry', as
 });
 
 
-test('nine-type color contract tints cards, uses borderless gauze groups, and preserves readable notation', () => {
+const lab = hex => {
+  const [r, g, b] = hex.slice(1).match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+  const x = (r * .4124 + g * .3576 + b * .1805) / .95047, y = r * .2126 + g * .7152 + b * .0722, z = (r * .0193 + g * .1192 + b * .9505) / 1.08883;
+  const f = value => value > .008856 ? Math.cbrt(value) : 7.787 * value + 16 / 116;
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+};
+const colorDistance = (a, b) => Math.hypot(...lab(a).map((value, index) => value - lab(b)[index]));
+
+test('nine-type color contract: neutral structure, identity chips and frames, rings for roles, readable notation', () => {
   const luminance = hex => hex.slice(1).match(/../g).map(v => parseInt(v, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
   const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05) / (Math.min(luminance(a), luminance(b)) + .05);
-  const groups = Array.from({ length: 20 }, (_, index) => box(`frame${index}`, 'Branch', 'alt', 0, index * 100));
+  const groups = Array.from({ length: 6 }, (_, index) => box(`frame${index}`, 'Branch', 'alt', 0, index * 100));
   groups.push(box('child', 'Nested', 'par', 10, 10, 100, 100, { parentId: groups[0].id }));
+  groups.push(box('grandchild', 'Deeper', 'loop', 20, 20, 50, 50, { parentId: 'child' }));
   for (const [theme, palette] of Object.entries(PALETTES)) {
-    for (const surface of [palette.surface, palette.surface2]) {
-      for (const key of ['ink', 'ink2', 'ink3', 'heroInk', 'accent', 'data', 'warn']) assert.ok(contrast(palette[key], surface) >= 4.5, `${theme} ${key} text contrast`);
-      for (const color of [...palette.moduleAccents, palette.edge, palette.accent, palette.data, palette.warn]) assert.ok(contrast(color, surface) >= 3, `${theme} outline contrast ${color}`);
+    for (const surface of [palette.surface, palette.surface2, palette.groupFill, palette.groupFillNested]) {
+      for (const key of ['ink', 'ink2', 'ink3', 'accent', 'data', 'warn']) assert.ok(contrast(palette[key], surface) >= 4.5, `${theme} ${key} text contrast`);
+      for (const color of [...palette.moduleTones.map(tone => tone.accent), palette.edge, palette.outline, palette.accent, palette.data, palette.warn]) assert.ok(contrast(color, surface) >= 3, `${theme} stroke contrast ${color} on ${surface}`);
     }
+    // Boundaries are containers: one neutral surface, a hairline, nested one step apart, no accent dash.
     const colors = groupAppearanceMap(groups, palette);
     assert.deepEqual(colors, groupAppearanceMap([...groups].reverse(), palette));
-    for (let index = 1; index < 20; index++) assert.notEqual(colors.get(groups[index].id), colors.get(groups[index - 1].id));
-    assert.notEqual(colors.get('child'), colors.get(groups[0].id));
-    assert.equal(new Set([...colors.values()].slice(0, 9).map(value => value.fill)).size, 9);
-    for (const { fill, accent } of palette.groupTones) {
-      assert.ok(contrast(palette.ink, fill) >= 4.5, `${theme} group heading contrast`);
-      assert.ok(contrast(accent, fill) >= 3, `${theme} group accent contrast`);
-      assert.ok(!palette.moduleAccents.includes(accent), 'Regions have an independent accent palette.');
-      for (const edge of [...palette.moduleAccents, palette.edge, palette.warn, palette.accent, palette.data]) assert.ok(contrast(edge, fill) >= 3, `${theme} edge on group fill`);
-    }
-    assert.equal(nodeAppearance({ kind: 'decision' }, palette).stroke, palette.edge);
-    assert.equal(nodeAppearance({ kind: 'choice' }, palette).stroke, palette.edge);
-    const failure = nodeAppearance({ kind: 'failure', module: 'module', tags: ['core'] }, palette, new Map([['module', palette.moduleAccents[0]]]));
-    assert.equal(failure.stroke, palette.warn); assert.equal(failure.moduleColor, palette.moduleAccents[0]);
+    for (let index = 1; index < 6; index++) assert.deepEqual(colors.get(groups[index].id), colors.get(groups[0].id), 'Sibling boundaries share one surface.');
+    assert.deepEqual(colors.get(groups[0].id), { fill: palette.groupFill, stroke: palette.groupLine });
+    assert.deepEqual(colors.get('child'), { fill: palette.groupFillNested, stroke: palette.groupLine });
+    assert.deepEqual(colors.get('grandchild'), { fill: palette.groupFill, stroke: palette.groupLine });
+    for (const fill of [palette.groupFill, palette.groupFillNested]) assert.ok(contrast(palette.ink2, fill) >= 4.5, `${theme} group heading contrast`);
+    assert.equal(nodeAppearance({ kind: 'decision' }, palette).stroke, palette.outline);
+    assert.equal(nodeAppearance({ kind: 'choice' }, palette).stroke, palette.outline);
+    const failure = nodeAppearance({ kind: 'failure', module: 'module', tags: ['core'] }, palette, new Map([['module', palette.moduleTones[0]]]));
+    assert.equal(failure.stroke, palette.warn); assert.equal(failure.ring, palette.ringWarn); assert.equal(failure.fill, palette.card, 'Explicit failure keeps a plain card surface and a red frame over module identity.');
+    assert.equal(failure.chip, palette.moduleTones[0].chip, 'The chip may still identify ownership.');
     for (const model of Object.values(compiledFixtures)) {
       const moduleColors = moduleColorMap([model], palette);
       for (const node of model.nodes) if (!['initial', 'final'].includes(node.kind)) {
         const appearance = nodeAppearance(node, palette, moduleColors);
-        for (const key of ['ink', 'ink2', 'heroInk', 'accent']) assert.ok(contrast(palette[key], appearance.fill) >= 4.5, `${theme} ${node.id} text on card fill`);
-        assert.ok(contrast(appearance.stroke, appearance.fill) >= 3, `${theme} ${node.id} outline on card fill`);
+        for (const key of ['ink', 'ink2', 'accent']) assert.ok(contrast(palette[key], appearance.fill) >= 4.5, `${theme} ${node.id} text on card fill`);
+        assert.ok(contrast(appearance.stroke, appearance.fill) >= 3, `${theme} ${node.id} frame on card fill`);
+        if (appearance.header) for (const key of ['ink', 'ink2']) assert.ok(contrast(palette[key], appearance.header) >= 4.5, `${theme} ${node.id} header text`);
       }
       const svg = createDiagramSvg(model, theme);
       for (const frame of svg.matchAll(/<rect class="boundary-frame"[^>]*>/g)) {
-        assert.match(frame[0], /stroke="none"/);
-        assert.ok(palette.groupTones.some(tone => frame[0].includes(`fill="${tone.fill}"`)));
-        assert.doesNotMatch(frame[0], /fill-opacity|stroke-dasharray/, 'No nested tint accumulation or outline.');
+        assert.match(frame[0], new RegExp(`stroke="${palette.groupLine}" stroke-width="1"`));
+        assert.ok([palette.groupFill, palette.groupFillNested].some(fill => frame[0].includes(`fill="${fill}"`)));
+        assert.doesNotMatch(frame[0], /fill-opacity|stroke-dasharray/, 'No nested tint accumulation.');
       }
+      assert.doesNotMatch(svg, /boundary-accent|module-accent/);
     }
-    for (const color of palette.moduleAccents) {
-      const appearance = nodeAppearance({ kind: 'component', module: 'module' }, palette, new Map([['module', color]]));
-      assert.notEqual(appearance.fill, palette.surface2);
-      assert.ok(contrast(palette.ink2, appearance.fill) >= 4.5, `${theme} secondary text on ${color} tint`);
-      assert.ok(contrast(color, appearance.fill) >= 3, `${theme} outline on ${color} tint`);
+    assert.deepEqual(palette.moduleTones.map(tone => tone.name), IDENTITY_SCALES);
+    for (const tone of palette.moduleTones) {
+      assert.deepEqual([tone.chip, tone.accent], [IDENTITY[theme][tone.name][9], IDENTITY[theme][tone.name][10]], 'Chip and frame come from one Radix scale.');
+      const appearance = nodeAppearance({ kind: 'component', module: 'module' }, palette, new Map([['module', tone]]));
+      assert.equal(appearance.fill, tone.wash); assert.equal(appearance.stroke, tone.accent); assert.equal(appearance.chip, tone.chip);
+      assert.ok(contrast(palette.ink2, appearance.fill) >= 4.5, `${theme} secondary text on ${tone.name} wash`);
+      for (const stroke of [tone.accent, palette.edge, palette.accent, palette.data, palette.warn]) assert.ok(contrast(stroke, appearance.fill) >= 3, `${theme} ${stroke} on ${tone.name} wash`);
+      // Roles that still speak through a stroke (data, failure) stay clearly apart from every identity frame.
+      for (const role of ['data', 'warn']) assert.ok(colorDistance(tone.accent, palette[role]) >= 20, `${theme} ${tone.name} stays clear of the ${role} stroke`);
+      for (const other of palette.moduleTones) if (other !== tone) assert.ok(colorDistance(tone.accent, other.accent) >= 12, `${theme} ${tone.name} and ${other.name} frames stay distinct`);
     }
     assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.accent);
     assert.equal(nodeAppearance({ kind: 'final' }, palette).fill, palette.surface);

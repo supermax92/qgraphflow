@@ -21,7 +21,7 @@ const evidenceLabels = { source: '源码', code: '代码', config: '配置', sch
 const APPEARANCES = ['system', 'light', 'dark'];
 const appearanceLabels = { system: '跟随系统', light: '浅色', dark: '深色' };
 
-export default function ViewerShell({ graph, originalGraph, graphForSave, allDiagrams, moduleColors, onDiagramChange, theme, appearance, setAppearance, panels, flowControl }) {
+export default function ViewerShell({ graph, originalGraph, graphForSave, allDiagrams, moduleColors, wash, setWash, onDiagramChange, theme, appearance, setAppearance, panels, flowControl }) {
   const zoom = useStore(state => state.transform[2]);
   const { setCenter } = useReactFlow();
   const t = (message, values) => translate(graph.meta.locale, message, values);
@@ -103,12 +103,13 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
       </div>
 
       <div className="tb-group tb-right">
+        <button className="tb tb-wash" role="switch" aria-checked={wash} onClick={() => setWash(value => !value)} title={t('卡片微底色')} aria-label={t('卡片微底色')}><Icon name="wash" /></button>
         <div className="menu-anchor" data-popover-root="more">
           <button id="more-menu-button" className="tb" onClick={() => toggle('more')} aria-haspopup="menu" aria-expanded={open === 'more'} title={t('更多')} aria-label={t('更多')}><Icon name="more" /></button>
           {open === 'more' && <div className="popover menu is-right" role="menu" aria-labelledby="more-menu-button">
             <button role="menuitem" onClick={() => { exportDiagram('svg'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('导出 SVG')}</button>
             <button role="menuitem" onClick={() => { exportDiagram('png'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('导出 PNG')}</button>
-            <button role="menuitem" onClick={() => { saveGraph(); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('保存 Graph JSON')}</button>
+            <button role="menuitem" onClick={() => { saveGraph(); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('保存修改')}</button>
             <div className="menu-sep" />
             <button role="menuitem" onClick={() => { reset(); close(); }} title={t('恢复原始位置和阅读视角，清除搜索与选择')}><span className="menu-mark"><Icon name="reset" /></span>{t('重置')}</button>
             <div className="menu-row"><span className="menu-lead"><span className="menu-mark"><Icon name={locked ? 'lock' : 'unlock'} /></span>{t('布局锁定')}</span><button className="switch" role="switch" aria-checked={locked} aria-label={locked ? t('布局锁定') : t('可拖动')} onClick={() => setLocked(value => !value)}><i /></button></div>

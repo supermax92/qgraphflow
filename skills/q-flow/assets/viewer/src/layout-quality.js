@@ -63,6 +63,9 @@ export function auditLayoutQuality(graph) {
     }).filter(item => item.branches.length >= 2) : [];
     const vertical = !['er', 'deployment', 'dataflow', 'usecase'].includes(type);
     const coordinate = vertical ? 'y' : 'x', dimension = vertical ? 'height' : 'width';
+    // A layout folded into top-down columns continues at the top of the next column: a successor that sits entirely to the
+    // right of its predecessor keeps the notation's reading direction; a path or hierarchy step must also start higher.
+    const continues = (earlier, later, higher) => later.position.x - earlier.position.x - earlier.size.width + .001 >= limits.nodeGap && (!higher || later.position.y < earlier.position.y);
     for (const [first, second] of ranked) {
       const distance = second.position[coordinate] - first.position[coordinate] - first.size[dimension];
       if (distance + .001 < limits.nodeGap) issue('semantic.rank', [first.id, second.id], distance, limits.nodeGap, [nodeBoxes.get(first.id), nodeBoxes.get(second.id)], 'Keep declared ranks in separate layers along the reading direction.');
@@ -70,17 +73,18 @@ export function auditLayoutQuality(graph) {
     if (vertical && graph.nodes.length > 5 && Math.max(...graph.nodes.map(node => node.position.y)) < Math.min(...graph.nodes.map(node => node.position.y + node.size.height))) issue('semantic.single-row', graph.nodes.map(node => node.id), 1, 'multiple rows', [...nodeBoxes.values()], 'Arrange responsibility layers or wrap peer nodes; tiny y offsets do not create another row.');
     if (type === 'class') for (const edge of graph.edges.filter(edge => ['inheritance', 'implementation'].includes(edge.kind))) {
       const child = nodeById.get(edge.source), parent = nodeById.get(edge.target), distance = child.position.y - parent.position.y - parent.size.height;
-      if (distance + .001 < limits.nodeGap) issue('semantic.class-hierarchy', [edge.id, parent.id, child.id], distance, limits.nodeGap, [nodeBoxes.get(parent.id), nodeBoxes.get(child.id)], 'Place the parent class or interface above its child or implementation.');
+      if (distance + .001 < limits.nodeGap && !continues(parent, child, true)) issue('semantic.class-hierarchy', [edge.id, parent.id, child.id], distance, limits.nodeGap, [nodeBoxes.get(parent.id), nodeBoxes.get(child.id)], 'Place the parent class or interface above its child or implementation, or continue the hierarchy at the top of the next column.');
     }
     if (type === 'state') for (const symbol of graph.nodes.filter(node => ['initial', 'final'].includes(node.kind))) {
       for (const state of graph.nodes.filter(node => !['initial', 'final'].includes(node.kind))) {
         const distance = symbol.kind === 'initial' ? state.position.y - symbol.position.y - symbol.size.height : symbol.position.y - state.position.y - state.size.height;
-        if (distance + .001 < limits.nodeGap) issue('semantic.state-endpoint', [symbol.id, state.id], distance, limits.nodeGap, [nodeBoxes.get(symbol.id), nodeBoxes.get(state.id)], 'Keep initial symbols above the lifecycle and final symbols below it.');
+        const continued = symbol.kind === 'initial' ? continues(symbol, state, false) : continues(state, symbol, false);
+        if (distance + .001 < limits.nodeGap && !continued) issue('semantic.state-endpoint', [symbol.id, state.id], distance, limits.nodeGap, [nodeBoxes.get(symbol.id), nodeBoxes.get(state.id)], 'Keep initial symbols above the lifecycle and final symbols below it; a column fold continues the lifecycle at the top of the next column.');
       }
     }
     for (const [source, target] of primary) {
       const distance = target.position[coordinate] - source.position[coordinate] - source.size[dimension];
-      if (distance + .001 < limits.nodeGap) issue('semantic.primary-path', [source.id, target.id], distance, limits.nodeGap, [nodeBoxes.get(source.id), nodeBoxes.get(target.id)], 'Keep the declared or unambiguous main path directed downwards.');
+      if (distance + .001 < limits.nodeGap && !continues(source, target, true)) issue('semantic.primary-path', [source.id, target.id], distance, limits.nodeGap, [nodeBoxes.get(source.id), nodeBoxes.get(target.id)], 'Keep the declared or unambiguous main path directed downwards; a column fold continues it at the top of the next column.');
     }
     for (const { node, branches, sides } of decisions) {
       if (!['left', 'right'].every(side => sides.has(side))) issue('semantic.branch-sides', [node.id, ...branches.map(edge => edge.id)], [...sides], ['left', 'right'], [nodeBoxes.get(node.id)], 'Give alternatives separate left and right corridors while retaining their real targets and merges.');

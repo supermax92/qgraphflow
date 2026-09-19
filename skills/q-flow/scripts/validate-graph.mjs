@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { auditGraphLayout, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
+import { ASPECT_BAND, ASPECT_SLACK, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { diagramTypeOf, graphsOf, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 export { DIAGRAM_TYPES, diagramTypeOf, graphsOf, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
@@ -40,7 +41,9 @@ export function layoutComposition(graph) {
     && Math.max(...graph.nodes.map(node => node.position.y)) < Math.min(...graph.nodes.map(node => node.position.y + node.size.height));
   const warnings = [];
   if (singleRow) warnings.push('single-row layout: arrange semantic layers, branches or groups across multiple rows');
-  return { diagramType: diagramTypeOf(graph), canvasBudget, aspectRatio: Number(aspectRatio.toFixed(2)), targetRatio: targetRatio === null ? null : Number(targetRatio.toFixed(2)), fit: fit === null ? null : Number(fit.toFixed(2)), singleRow, warnings };
+  // The band is informational here: a small graph may legitimately sit outside it, so it never warns.
+  return { diagramType: diagramTypeOf(graph), canvasBudget, aspectRatio: Number(aspectRatio.toFixed(2)), targetRatio: targetRatio === null ? null : Number(targetRatio.toFixed(2)), fit: fit === null ? null : Number(fit.toFixed(2)),
+    aspectBand: targetRatio === null ? null : ASPECT_BAND, bandSlack: targetRatio === null ? null : ASPECT_SLACK, withinBand: targetRatio === null ? null : +ratioExcess(aspectRatio).toFixed(2) <= ASPECT_SLACK, singleRow, warnings };
 }
 
 // Checks the explicitly selected working tree, not the revision named in sourceRef or the meaning of a claim.

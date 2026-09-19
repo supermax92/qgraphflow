@@ -90,7 +90,10 @@ button:disabled { cursor: not-allowed; }
 .tb { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: var(--r-control); color: var(--label-2); background: transparent; cursor: pointer; white-space: nowrap; transition: background var(--fast) var(--ease), color var(--fast) var(--ease), transform 100ms ease-out; }
 .tb:hover { color: var(--label); background: var(--fill); }
 .tb:active { transform: scale(.96); background: var(--fill-2); }
-.tb[aria-expanded="true"], .tb[aria-pressed="true"] { color: var(--label); background: var(--fill-2); }
+.tb[aria-expanded="true"], .tb[aria-pressed="true"], .tb[role="switch"][aria-checked="true"] { color: var(--label); background: var(--fill-2); }
+/* The wash switch is a droplet: outlined when off, filled with the first identity blue when on. */
+.tb.tb-wash[role="switch"][aria-checked="true"] { color: #0090ff; }
+.tb-wash[aria-checked="true"] .ic { fill: currentColor; }
 .tb[aria-disabled="true"] { opacity: .4; }
 .tb-wide { padding-inline: 9px; font-size: 13px; }
 .tb-wide .ic:last-child { width: 12px; height: 12px; color: var(--label-3); }
@@ -245,10 +248,10 @@ button:disabled { cursor: not-allowed; }
 .react-flow__node-boundary { pointer-events: none; }
 .boundary { width: 100%; height: 100%; background: transparent; }
 .boundary-visual { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: visible; }
-.boundary > span, .boundary > small { position: absolute; top: 14px; color: var(--ink); font-size: var(--font-small); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.boundary > span, .boundary > small, .fragment-overlay > small { position: absolute; top: 14px; color: var(--ink); font-size: var(--font-small); font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
 .boundary > span { left: 16px; max-width: calc(100% - 32px); white-space: pre; line-height: 22px; text-transform: none; }
 .boundary:has(> small) > span { max-width: calc(100% - 88px); }
-.boundary > small { right: 16px; font-family: ui-monospace, SFMono-Regular, monospace; }
+.boundary > small, .fragment-overlay > small { right: 16px; font-family: ui-monospace, SFMono-Regular, monospace; }
 .boundary-heading { pointer-events: none; }
 .boundary-heading .group { font: 650 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; fill: var(--ink); letter-spacing: .4px; }
 .flow-edge--dashed .react-flow__edge-path { stroke-dasharray: 5 5; }

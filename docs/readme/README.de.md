@@ -12,8 +12,6 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 
 </div>
 
-![E-Commerce als Architektur, Ablauf und Sequenz: 0,8 Sekunden je Ansicht, 2,4 Sekunden je Schleife, mit bewegten Verbindungslinien](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.core-three.gif)
-
 *Neun Diagrammarten: Architektur, Flussdiagramm, Sequenz, ER, Bereitstellung, Klasse, Zustand, Anwendungsfall und Datenfluss.*
 
 QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen, Konfiguration und Anforderungen. Beziehungen bleiben überprüfbar; das Ergebnis lässt sich als Offline-HTML teilen.
@@ -22,26 +20,6 @@ QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen,
 - **Prüfen:** Dateien, Zeilen, Symbole und ausdrücklich gekennzeichnete Unsicherheiten an Knoten und Kanten untersuchen.
 - **Bearbeiten:** Layout entsperren, Texte ändern und Elemente verschieben; bei Bedarf zurücksetzen.
 - **Teilen:** Offline-HTML öffnen oder das vollständige Diagramm als SVG / PNG exportieren.
-
-*Erkunden: Navigation öffnen, den Kaufkoordinator suchen und lokalisieren. Ein Klick auf einen Knoten öffnet die Kurzansicht und hebt ein- und ausgehende Kanten hervor. Danach zoomen und den Ausschnitt verschieben.*
-
-![Navigation, Suche, Knotenkurzansicht, hervorgehobene Beziehungen, Zoom und Verschieben](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.explore.gif)
-
-*Prüfen: Aus der Kurzansicht die Detailleiste öffnen und Pfade, Zeilennummern und Symbole lesen. Anschließend eine Kante auswählen und ihre Erklärung samt Ableitungskennzeichnung prüfen.*
-
-Pfade, Zeilennummern und Symbole in dieser Interaktionsdemo sind erfunden. Sie zeigen die Beleganzeige und stehen nicht für Repository-Quellcode; Seite und Detailansicht kennzeichnen das ebenfalls. Bei echten Analysen reale Quellen verwenden und unbestätigte Beziehungen als Ableitung markieren.
-
-![Details mit ausdrücklich fiktiven Quellpfaden, Zeilen, Symbolen und abgeleiteten Beziehungen](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.verify.gif)
-
-*Bearbeiten: Im Menü **Mehr** das Layout entsperren, Namen und Beschreibung ändern, einen Knoten mit seinen Kanten verschieben und anschließend ursprüngliche Texte und Positionen wiederherstellen.*
-
-![Entsperren, Text bearbeiten, Knoten mit Kanten verschieben und zurücksetzen](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.edit.gif)
-
-*Teilen: HTML offline öffnen, über **Mehr** SVG und PNG exportieren und die PNG-Datei zur Prüfung des vollständigen Diagramms öffnen.*
-
-![Offline-HTML, SVG- und PNG-Export sowie die exportierte PNG-Datei](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.share.gif)
-
-Die Übersicht zeigt jede der drei Ansichten 0,8 Sekunden lang; eine Schleife dauert 2,4 Sekunden. Die vier Interaktionsanimationen lassen Zeit zum Lesen. Alle Medien verwenden den aus dem Quellcode gebauten Viewer mit deutschen Diagramm- und Oberflächentexten. Die fünf GIFs und neun PNGs liegen als separate [Dateien im Release showcase-v1](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1) vor; öffentliche Downloads und SHA-256-Prüfsummen wurden geprüft. Sie gehören weder zur Git-Historie noch zum Plugin-Paket; ihre Anzeige benötigt Internetzugang. Die erzeugte Diagramm-HTML selbst funktioniert offline.
 
 ## Installationsanleitung
 
@@ -199,15 +177,15 @@ Der vorgebaute Viewer benötigt weder zusätzliche Abhängigkeiten noch API-Schl
 
 | Ansicht · PNG | Hauptfrage | Umfang des Beispiels |
 | --- | --- | --- |
-| [Architektur](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.architecture.png) | Welche Verantwortlichkeiten arbeiten zusammen? | Kanäle, Kaufabschluss, Preise, Risiko, Bestand, Zahlung, Bestellung, Ereignisse und Versand |
-| [Flussdiagramm](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.flowchart.png) | Wo verzweigt und vereinigt sich der Ablauf? | Fehlbestand, Risikoablehnung, Zahlungskompensation und erfolgreicher Commit |
-| [Sequenz](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.sequence.png) | In welcher Reihenfolge erfolgen Aufrufe und Antworten? | Erfolgreicher Kauf und asynchrones OrderPaid |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.er.png) | Wie hängen die Kerndaten zusammen? | Warenkorb, Bestellungen, Positionen, Zahlungen, Reservierungen und Pakete |
-| [Bereitstellung](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.deployment.png) | Wo laufen Einheiten und wie sind sie verbunden? | Randnetz, Kubernetes, Datendienste, Zahlung und Logistiknetz |
-| [Klasse](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.class.png) | Wie hängen Domänenobjekte und Schnittstellen ab? | Kaufdienst, Order und vier Ports |
-| [Zustand](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.state.png) | Welche Ereignisse und Bedingungen steuern eine Bestellung? | Zahlung, Versand, Stornierung, Erstattung und Abschluss |
-| [Anwendungsfall](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.usecase.png) | Was kann jeder Akteur tun? | Käufer, Händler, Lager und Betreuung |
-| [Datenfluss](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.dataflow.png) | Wie werden Daten umgewandelt und gespeichert? | Warenkorb, Transaktionsentscheidungen, Ereignisse, Lager und Empfangsbelege |
+| Architektur | Welche Verantwortlichkeiten arbeiten zusammen? | Kanäle, Kaufabschluss, Preise, Risiko, Bestand, Zahlung, Bestellung, Ereignisse und Versand |
+| Flussdiagramm | Wo verzweigt und vereinigt sich der Ablauf? | Fehlbestand, Risikoablehnung, Zahlungskompensation und erfolgreicher Commit |
+| Sequenz | In welcher Reihenfolge erfolgen Aufrufe und Antworten? | Erfolgreicher Kauf und asynchrones OrderPaid |
+| ER | Wie hängen die Kerndaten zusammen? | Warenkorb, Bestellungen, Positionen, Zahlungen, Reservierungen und Pakete |
+| Bereitstellung | Wo laufen Einheiten und wie sind sie verbunden? | Randnetz, Kubernetes, Datendienste, Zahlung und Logistiknetz |
+| Klasse | Wie hängen Domänenobjekte und Schnittstellen ab? | Kaufdienst, Order und vier Ports |
+| Zustand | Welche Ereignisse und Bedingungen steuern eine Bestellung? | Zahlung, Versand, Stornierung, Erstattung und Abschluss |
+| Anwendungsfall | Was kann jeder Akteur tun? | Käufer, Händler, Lager und Betreuung |
+| Datenfluss | Wie werden Daten umgewandelt und gespeichert? | Warenkorb, Transaktionsentscheidungen, Ereignisse, Lager und Empfangsbelege |
 
 Dies ist ein Konzeptmodell zur Demonstration von QGraphFlow, kein konkretes E-Commerce-Repository. Die Beispieldatei `graph.json` erfindet keine Quellpfade und kennzeichnet Beziehungen mit `inference`. Echte Projektdiagramme benötigen nachvollziehbaren Quellcode, DDL, Konfiguration, Tests und akzeptierte Anforderungen.
 

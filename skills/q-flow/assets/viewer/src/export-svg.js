@@ -5,7 +5,7 @@ import { text, fit, escapeXml, svgStyles, groupHeadingSvg, groupFrameSvg } from 
 import { PALETTES, dataKinds, edgeColor, sequenceGroupColor, moduleColorMap, groupAppearanceMap, TYPOGRAPHY } from './visual-style.js';
 import { RADIX_COLORS_NOTICE } from './radix-colors.js';
 import { sequencePairs, sequenceExecutions } from './sequence-executions.js';
-import { sequenceFragment, renderFragment, fragmentDepth } from './sequence-fragments.js';
+import { sequenceFragment, renderFragment, fragmentDepth, fragmentSurfaceAt } from './sequence-fragments.js';
 import { requireDiagramQuality } from './layout-quality.js';
 export { cardinalityMarks } from './edge-routing.js';
 
@@ -33,7 +33,7 @@ function renderGroup(group, offsetX, offsetY, fragment, appearance) {
   return `<g data-diagram-group-id="${escapeXml(group.id)}"><title>${escapeXml(group.label)}</title>${groupFrameSvg(group, appearance, x, y)}${fragment ? (fragment.heading?.lines ?? [label]).map((line, i) => text(fragment.heading ? fragment.heading.x + offsetX : x + 16, y + 23 + i * 22, line, 'group')).join('') : groupHeadingSvg(group, x, y)}${['alt', 'opt', 'loop', 'par'].includes(group.kind) ? text(x + group.size.width - 16, y + 25, group.kind, 'group-kind', ' text-anchor="end"') : ''}</g>`;
 }
 
-function renderEdge(edge, route, type, offsetX, offsetY, palette, target, moduleColors, source, pair) {
+function renderEdge(edge, route, type, offsetX, offsetY, palette, target, moduleColors, source, pair, labelSurface) {
   const stroke = edgeColor(edge, target, palette, moduleColors, source, pair);
   const dash = isDashed(edge, type) ? ' stroke-dasharray="7 6"' : '';
   const label = route.label;
@@ -41,7 +41,7 @@ function renderEdge(edge, route, type, offsetX, offsetY, palette, target, module
   const labelY = route.labelPoint.y + offsetY;
   const labelSize = route.labelBox;
   const pairLine = pair ? `<path d="M${labelX - layoutText(route.labelLines[0], Infinity).width / 2} ${labelY - labelSize.height / 2 + 3 + TYPOGRAPHY.body + 3}h${layoutText(pair.label, Infinity).width}" stroke="${stroke}" stroke-width="2"/>` : '';
-  const background = label ? `<rect x="${labelX - labelSize.width / 2}" y="${labelY - labelSize.height / 2}" width="${labelSize.width}" height="${labelSize.height}" rx="4" class="edge-bg"/>` : '';
+  const background = label ? `<rect x="${labelX - labelSize.width / 2}" y="${labelY - labelSize.height / 2}" width="${labelSize.width}" height="${labelSize.height}" rx="4" class="edge-bg"${labelSurface ? ` style="fill:${labelSurface}"` : ''}/>` : '';
   const cardinalities = getDiagram(type).cardinalities ? [
     cardinalityMarks(edge.sourceCardinality, route.points[0], route.points[1]),
     cardinalityMarks(edge.targetCardinality, route.points.at(-1), route.points.at(-2))
@@ -70,10 +70,10 @@ export function createDiagramSvg(graph, theme = 'light', moduleColors) {
   const offsetX = margin - bounds.x;
   const offsetY = margin + header - bounds.y;
   const fragments = new Map((graph.groups ?? []).map(group => [group.id, type === 'sequence' ? sequenceFragment(group, routes, graph.meta.locale, graph.groups ?? [], executions) : null]));
-  const groups = [...(graph.groups ?? [])].sort((a, b) => fragmentDepth(a, graph.groups ?? []) - fragmentDepth(b, graph.groups ?? [])).map(group => renderGroup(group, offsetX, offsetY, fragments.get(group.id), groupAppearances.get(group.id)) + (type === 'sequence' ? renderFragment({ ...fragments.get(group.id), guards: [], bodies: [] }, group, offsetX, offsetY, palette.ink3, palette.surface) : '')).join('');
-  const fragmentText = type === 'sequence' ? (graph.groups ?? []).map(group => renderFragment({ ...fragments.get(group.id), separators: [] }, group, offsetX, offsetY, palette.ink3, palette.surface)).join('') : '';
+  const groups = [...(graph.groups ?? [])].sort((a, b) => fragmentDepth(a, graph.groups ?? []) - fragmentDepth(b, graph.groups ?? [])).map(group => renderGroup(group, offsetX, offsetY, fragments.get(group.id), groupAppearances.get(group.id)) + (type === 'sequence' ? renderFragment({ ...fragments.get(group.id), guards: [], bodies: [] }, group, offsetX, offsetY, palette.ink3, groupAppearances.get(group.id).fill) : '')).join('');
+  const fragmentText = type === 'sequence' ? (graph.groups ?? []).map(group => renderFragment({ ...fragments.get(group.id), separators: [] }, group, offsetX, offsetY, palette.ink3, groupAppearances.get(group.id).fill)).join('') : '';
 
-  const edges = graph.edges.map(edge => renderEdge(edge, routes.get(edge.id), type, offsetX, offsetY, palette, nodeById.get(edge.target), moduleColors, nodeById.get(edge.source), pairs.get(edge.id))).join('');
+  const edges = graph.edges.map(edge => renderEdge(edge, routes.get(edge.id), type, offsetX, offsetY, palette, nodeById.get(edge.target), moduleColors, nodeById.get(edge.source), pairs.get(edge.id), type === 'sequence' && routes.get(edge.id).label ? fragmentSurfaceAt(routes.get(edge.id).labelBox, graph.groups ?? [], groupAppearances) : undefined)).join('');
   const nodes = graph.nodes.map(node => renderNode({ ...node, executionRects: executions.filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(pairs.get(item.start.edgeId), palette) ?? palette.edge })) }, type, offsetX, offsetY, palette, graph.meta.locale, moduleColors)).join('');
   const boardX = 24;
   const boardY = header;

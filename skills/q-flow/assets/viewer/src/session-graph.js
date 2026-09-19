@@ -1,3 +1,13 @@
+// The generator embeds the graph as escaped JSON inside this script element; saving from the page rewrites the same
+// element, so the saved page reopens with its edits and the generator and the page never disagree about the encoding.
+const DATA_ELEMENT = /(<script\b[^>]*\bid="graph-data"[^>]*>)([\s\S]*?)(<\/script>)/;
+export const safeJson = graph => JSON.stringify(graph).replaceAll('&', '\\u0026').replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
+
+export function pageWithGraph(html, graph) {
+  if (!DATA_ELEMENT.test(html)) throw new Error('page has no graph-data element');
+  return html.replace(DATA_ELEMENT, (match, open, data, close) => `${open}${safeJson(graph)}${close}`);
+}
+
 export function graphInputWithEdits(input, drafts, currentGraph) {
   const typeOf = graph => graph.meta.diagramType ?? 'architecture';
   const edited = graph => typeOf(graph) === typeOf(currentGraph) ? currentGraph : drafts.get(typeOf(graph)) ?? graph;

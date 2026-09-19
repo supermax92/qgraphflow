@@ -12,8 +12,6 @@
 
 </div>
 
-![EC のアーキテクチャ図・フロー図・シーケンス図。各0.8秒、1周2.4秒。接続線のアニメーション付き](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.core-three.gif)
-
 *9種類の図に対応：アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
 
 QGraphFlow はソースコード、データ構造、設定、要件から対話型のソフトウェア図を生成します。関係の根拠を確認し、共有可能なオフライン HTML として届けます。
@@ -22,26 +20,6 @@ QGraphFlow はソースコード、データ構造、設定、要件から対話
 - **検証：** ノードや接続線からファイル、行番号、シンボル、明示された不確実性を確認。
 - **編集：** ロック解除後に文字や位置を変更。必要に応じてリセット。
 - **共有：** オフライン HTML を開くか、図全体を SVG / PNG に出力。
-
-*探索：ナビゲーションを開き、決済オーケストレーターを検索して移動。ノードをクリックして概要カードを開き、入出力の接続線を強調表示した後、拡大縮小とパンを操作します。*
-
-![ナビゲーション・検索・ノード概要・関係の強調・拡大縮小とパン](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.explore.gif)
-
-*検証：概要カードから詳細パネルを開いてパス・行番号・シンボルを確認。続いて接続線を選び、関係の説明と推論の印を確認します。*
-
-この操作デモのコードパス、行番号、シンボルは架空です。証拠パネルの操作例であり、リポジトリのソースを表していません。画面と詳細にも明記しています。実際の分析では本当の出典を使い、未確認の関係は推論と記してください。
-
-![架空と明示されたパス・行番号・シンボルと関係の推論を示す詳細](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.verify.gif)
-
-*編集：「その他」で配置のロックを解除し、名前と説明を編集。ノードをドラッグすると接続線も追従します。リセットで元の文字と位置に戻します。*
-
-![ロック解除・文字編集・ノードと接続線の移動・リセット](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.edit.gif)
-
-*共有：HTML をオフラインで開き、「その他」から SVG と PNG を出力。PNG を開き、図全体を確認します。*
-
-![オフライン HTML・SVG / PNG 出力・出力した PNG の確認](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.share.gif)
-
-上の総覧は各図0.8秒、1周2.4秒です。下の4つの操作動画には読む時間を確保しています。ソースからビルドした Viewer を使い、図と画面の文字を日本語に揃えています。5つの GIF と9つの PNG は [showcase-v1 Release の独立した添付ファイル](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1)として公開し、ダウンロードと SHA-256 を検証済みです。Git 履歴やプラグインパッケージには含まれず、表示にはインターネット接続が必要です。生成した図の HTML 自体はオフラインで使用できます。
 
 ## インストールガイド
 
@@ -199,15 +177,15 @@ node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.ja.gr
 
 | 図 · PNG | 主な問い | サンプルの範囲 |
 | --- | --- | --- |
-| [アーキテクチャ](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.architecture.png) | どの責務が協調するか？ | チャネル、決済、価格、リスク、在庫、支払い、注文、イベント、出荷 |
-| [フローチャート](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.flowchart.png) | 判断はどこで分岐・合流するか？ | 欠品、リスク拒否、支払い補償、正常コミット |
-| [シーケンス](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.sequence.png) | 呼び出しと戻りの順序は？ | 決済成功経路と非同期 OrderPaid |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.er.png) | 主要データはどう関連するか？ | カート、注文、明細、支払い、引当、荷物 |
-| [配置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.deployment.png) | 実行単位をどこに置き、どう接続するか？ | エッジ、Kubernetes、データサービス、支払い、倉庫配送ネットワーク |
-| [クラス](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.class.png) | ドメインオブジェクトと契約はどう依存するか？ | 決済サービス、Order、4つのポート |
-| [状態](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.state.png) | どのイベントとガードが注文を進めるか？ | 支払い、出荷、取消、返金、終了 |
-| [ユースケース](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.usecase.png) | 各利用者に何ができるか？ | 購入者、店舗、倉庫、サポート |
-| [データフロー](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.ja.dataflow.png) | データをどう変換・保存するか？ | カート、取引判断、注文イベント、倉庫、配送受領記録 |
+| アーキテクチャ | どの責務が協調するか？ | チャネル、決済、価格、リスク、在庫、支払い、注文、イベント、出荷 |
+| フローチャート | 判断はどこで分岐・合流するか？ | 欠品、リスク拒否、支払い補償、正常コミット |
+| シーケンス | 呼び出しと戻りの順序は？ | 決済成功経路と非同期 OrderPaid |
+| ER | 主要データはどう関連するか？ | カート、注文、明細、支払い、引当、荷物 |
+| 配置 | 実行単位をどこに置き、どう接続するか？ | エッジ、Kubernetes、データサービス、支払い、倉庫配送ネットワーク |
+| クラス | ドメインオブジェクトと契約はどう依存するか？ | 決済サービス、Order、4つのポート |
+| 状態 | どのイベントとガードが注文を進めるか？ | 支払い、出荷、取消、返金、終了 |
+| ユースケース | 各利用者に何ができるか？ | 購入者、店舗、倉庫、サポート |
+| データフロー | データをどう変換・保存するか？ | カート、取引判断、注文イベント、倉庫、配送受領記録 |
 
 これは QGraphFlow の機能を示す概念モデルで、特定の EC リポジトリに対応しません。サンプルの `graph.json` に架空のソースパスは入れず、関係の証拠を `inference` に統一しています。実際のプロジェクトでは、追跡可能なソース、DDL、設定、テスト、合意済み要件を使ってください。
 

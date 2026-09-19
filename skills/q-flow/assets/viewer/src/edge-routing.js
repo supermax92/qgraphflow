@@ -111,16 +111,13 @@ function longestSegmentMidpoint(points) {
   return longest.point;
 }
 
-function bestLabelPoint(points, labelSize, source, target, beside = false) {
+// Every label sits on its own line, centred on the segment with the most clearance from both endpoints.
+function bestLabelPoint(points, labelSize, source, target) {
   let best = { clearance: -1, length: -1, point: longestSegmentMidpoint(points) };
   for (let index = 1; index < points.length; index += 1) {
     const start = points[index - 1];
     const end = points[index];
     const point = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-    if (beside) {
-      if (start.y === end.y) point.y -= labelSize.height / 2 + 6;
-      else point.x += labelSize.width / 2 + 6;
-    }
     const box = { x: point.x - labelSize.width / 2, y: point.y - labelSize.height / 2, ...labelSize };
     const clearance = Math.min(boxDistance(box, { ...source.position, ...source.size }), boxDistance(box, { ...target.position, ...target.size }));
     const length = Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
@@ -300,7 +297,7 @@ export function createEdgeRoutes(graph) {
         ? routePointsWithWaypoints(sourceEndpoint.point, targetEndpoint.point, sourceSide, targetSide, routedWaypoints, stub)
         : routeBetween(item.source, item.target, item, offsets.get(`${item.edge.id}:source`) ?? 0, offsets.get(`${item.edge.id}:target`) ?? 0, stub, type);
       const label = visibleEdgeLabel(item.edge, type);
-      route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target, type === 'usecase' && ['include', 'extend'].includes(item.edge.kind)), sourceSide, targetSide };
+      route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target), sourceSide, targetSide };
     }
     const labelSize = route.labelSize ?? estimateLabelSize(route.label);
     routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines: route.labelLines ?? edgeLabelLayout(route.label).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });

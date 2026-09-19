@@ -12,8 +12,6 @@
 
 </div>
 
-![复杂电商架构图、流程图与时序图动态总览，每类图展示 0.8 秒，完整循环 2.4 秒，保留连线流动](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.core-three.gif)
-
 *支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
@@ -22,26 +20,6 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 - **核验：** 从节点或连线查看详情，核对源码文件、行号、符号和明确标注的不确定性。
 - **编辑：** 解锁后修改文字、移动元素；不满意时一键重置。
 - **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
-
-*探索：展开左侧导航，搜索结算编排器并定位；点击节点弹出快速查看卡片，高亮上下游连线，再缩放和平移画布。*
-
-![QGraphFlow 探索能力：左侧导航、搜索定位、节点快速查看、上下游高亮与画布缩放平移](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.explore.gif)
-
-*核验：从快速查看卡片进入右侧详情栏，查看文件路径、行号与符号；再选择连线，查看关系说明与推断标记。*
-
-本段中的代码路径、行号与符号均为虚构，仅演示证据栏交互，不代表仓库源码；页面和详情中也已标明。实际分析时应填写真实来源，无法确认的关系应标注为推断。
-
-![QGraphFlow 核验能力：右侧详情展示虚构源码路径、行号、符号以及关系推断](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.verify.gif)
-
-*编辑：在「更多」菜单解除布局锁定，修改节点名称与说明，拖动节点并让连线跟随；最后重置，恢复原始文字和位置。*
-
-![QGraphFlow 编辑能力：解锁、修改文字、拖动节点与连线跟随、一键重置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.edit.gif)
-
-*分享：离线打开完整 HTML，展开下载菜单，实际导出 SVG 和 PNG，再打开 PNG 检查完整图形。*
-
-![QGraphFlow 分享能力：离线 HTML、下载菜单、SVG 和 PNG 导出及完整 PNG 预览](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.share.gif)
-
-顶部三图总览每类展示 0.8 秒，完整循环 2.4 秒；下方四张能力动图留出操作与阅读时间，保留模块配色、完整文字和连线流动。全部 GIF 与 PNG 使用源码构建的 Viewer 生成，图中文字和界面均为中文。这五张 GIF 和九张 PNG 作为独立附件托管在 [showcase-v1 Release](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1)，已核验公开下载与 SHA-256；不进入 Git 历史或插件包，查看这些媒体需要联网。生成的图形 HTML 本身支持离线使用。
 
 ## 安装指南
 
@@ -199,15 +177,15 @@ node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN
 
 | 视图 · PNG | 主要问题 | 本示例范围 |
 | --- | --- | --- |
-| [架构图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.architecture.png) | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
-| [流程图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.flowchart.png) | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
-| [时序图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.sequence.png) | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
-| [ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.er.png) | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
-| [部署图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.deployment.png) | 运行单元放在哪里、怎样连接？ | 边缘、Kubernetes、数据服务、支付和仓配网络 |
-| [类图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.class.png) | 领域对象和代码契约怎样依赖？ | Checkout 应用服务、Order 与四个端口 |
-| [状态图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.state.png) | 订单受哪些事件和守卫条件推进？ | 支付、履约、取消、退款和关闭 |
-| [用例图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.usecase.png) | 每类参与者拥有哪些能力？ | 买家、商家、仓库与客服 |
-| [数据流图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.dataflow.png) | 数据资产经过哪些变换和存储？ | 购物车、交易决策、订单事件、仓配和物流回执 |
+| 架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
+| 流程图 | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
+| 时序图 | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
+| ER 图 | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
+| 部署图 | 运行单元放在哪里、怎样连接？ | 边缘、Kubernetes、数据服务、支付和仓配网络 |
+| 类图 | 领域对象和代码契约怎样依赖？ | Checkout 应用服务、Order 与四个端口 |
+| 状态图 | 订单受哪些事件和守卫条件推进？ | 支付、履约、取消、退款和关闭 |
+| 用例图 | 每类参与者拥有哪些能力？ | 买家、商家、仓库与客服 |
+| 数据流图 | 数据资产经过哪些变换和存储？ | 购物车、交易决策、订单事件、仓配和物流回执 |
 
 这是用于展示 QGraphFlow 能力的概念模型，不对应某个电商仓库。`graph.json` 不伪造源码路径，关系证据统一标记为 `inference`；对真实项目绘图时，应改用源码、DDL、配置、测试和已接受需求中的可追溯证据。
 

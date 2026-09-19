@@ -12,8 +12,6 @@ Siga o caminho. Confira as evidências. Compartilhe um arquivo offline.
 
 </div>
 
-![Arquitetura, fluxo e sequência de comércio eletrônico: 0,8 segundo por vista, 2,4 segundos por ciclo, com conexões animadas](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.core-three.gif)
-
 *Nove tipos: arquitetura, fluxograma, sequência, ER, implantação, classes, estados, casos de uso e fluxo de dados.*
 
 QGraphFlow gera diagramas de software interativos a partir de código, esquemas, configuração e requisitos. As relações podem ser verificadas e o resultado é um HTML offline compartilhável.
@@ -22,26 +20,6 @@ QGraphFlow gera diagramas de software interativos a partir de código, esquemas,
 - **Verificar:** inspecionar nós e conexões para conferir arquivos, linhas, símbolos e incertezas explícitas.
 - **Editar:** desbloquear o layout, alterar textos e mover elementos; redefinir quando necessário.
 - **Compartilhar:** abrir o HTML offline ou exportar o diagrama completo em SVG / PNG.
-
-*Explorar: abrir a navegação, buscar o orquestrador da compra e localizá-lo. Selecionar um nó abre seu cartão e destaca conexões de entrada e saída; depois, ampliar e deslocar a tela.*
-
-![Navegação, busca, cartão do nó, destaque das relações, zoom e deslocamento](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.explore.gif)
-
-*Verificar: abrir os detalhes pelo cartão para consultar caminhos, linhas e símbolos. Em seguida, selecionar uma conexão para ler a explicação e a marca de inferência.*
-
-Os caminhos, números de linha e símbolos desta demonstração são fictícios. Ilustram o painel de evidências e não representam o código do repositório; a página e os detalhes também deixam isso explícito. Em análises reais, usar fontes reais e marcar relações não confirmadas como inferência.
-
-![Detalhes com caminhos, linhas e símbolos explicitamente fictícios e inferências das relações](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.verify.gif)
-
-*Editar: desbloquear o layout em **Mais**, alterar nome e descrição, arrastar o nó com suas conexões e redefinir para restaurar texto e posição originais.*
-
-![Desbloqueio, edição de texto, movimento do nó com as conexões e redefinição](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.edit.gif)
-
-*Compartilhar: abrir o HTML offline, exportar SVG e PNG por **Mais** e abrir o PNG para conferir o desenho completo.*
-
-![HTML offline, exportação SVG e PNG e abertura do PNG exportado](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.share.gif)
-
-A visão geral mostra cada um dos três diagramas por 0,8 segundo: 2,4 segundos por ciclo. As quatro animações de interação reservam tempo para leitura. Toda a mídia usa o Viewer compilado do código-fonte, com textos dos diagramas e da interface em português. Os cinco GIFs e nove PNGs estão disponíveis como [arquivos independentes do Release showcase-v1](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), com downloads públicos e somas SHA-256 verificados. Não fazem parte do histórico Git nem dos pacotes do plugin; sua visualização requer internet. O HTML gerado para o diagrama funciona offline.
 
 ## Guia de instalação
 
@@ -199,15 +177,15 @@ O Viewer pré-compilado não exige instalar dependências, chave de API ou backe
 
 | Vista · PNG | Pergunta principal | Escopo do exemplo |
 | --- | --- | --- |
-| [Arquitetura](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.architecture.png) | Quais responsabilidades colaboram? | Canais, compra, preços, risco, estoque, pagamento, pedidos, eventos e entrega |
-| [Fluxograma](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.flowchart.png) | Onde o processo se ramifica e converge? | Falta de estoque, recusa de risco, compensação de pagamento e confirmação bem-sucedida |
-| [Sequência](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.sequence.png) | Em que ordem ocorrem chamadas e retornos? | Compra bem-sucedida e OrderPaid assíncrono |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.er.png) | Como os dados centrais se relacionam? | Carrinho, pedidos, itens, pagamentos, reservas e pacotes |
-| [Implantação](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.deployment.png) | Onde as unidades executam e se conectam? | Borda, Kubernetes, serviços de dados, pagamentos e redes logísticas |
-| [Classes](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.class.png) | Como objetos de domínio e contratos dependem entre si? | Serviço de compra, Order e quatro portas |
-| [Estados](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.state.png) | Quais eventos e condições avançam um pedido? | Pagamento, entrega, cancelamento, reembolso e encerramento |
-| [Casos de uso](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.usecase.png) | O que cada ator pode fazer? | Comprador, lojista, depósito e atendimento |
-| [Fluxo de dados](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.pt.dataflow.png) | Como os dados são transformados e armazenados? | Carrinho, decisões, eventos, depósito e comprovantes de entrega |
+| Arquitetura | Quais responsabilidades colaboram? | Canais, compra, preços, risco, estoque, pagamento, pedidos, eventos e entrega |
+| Fluxograma | Onde o processo se ramifica e converge? | Falta de estoque, recusa de risco, compensação de pagamento e confirmação bem-sucedida |
+| Sequência | Em que ordem ocorrem chamadas e retornos? | Compra bem-sucedida e OrderPaid assíncrono |
+| ER | Como os dados centrais se relacionam? | Carrinho, pedidos, itens, pagamentos, reservas e pacotes |
+| Implantação | Onde as unidades executam e se conectam? | Borda, Kubernetes, serviços de dados, pagamentos e redes logísticas |
+| Classes | Como objetos de domínio e contratos dependem entre si? | Serviço de compra, Order e quatro portas |
+| Estados | Quais eventos e condições avançam um pedido? | Pagamento, entrega, cancelamento, reembolso e encerramento |
+| Casos de uso | O que cada ator pode fazer? | Comprador, lojista, depósito e atendimento |
+| Fluxo de dados | Como os dados são transformados e armazenados? | Carrinho, decisões, eventos, depósito e comprovantes de entrega |
 
 Este modelo conceitual demonstra o QGraphFlow e não corresponde a um repositório de comércio específico. O exemplo `graph.json` não inventa caminhos de código e marca as evidências das relações como `inference`. Diagramas reais precisam de código, DDL, configuração, testes e requisitos aceitos rastreáveis.
 

@@ -1,23 +1,24 @@
-import { MODULE_ACCENTS, RADIX } from './radix-colors.js';
+import { IDENTITY, IDENTITY_SCALES, RADIX } from './radix-colors.js';
 
-// Approved demo hues: 44, 8, 94, 208, 330, 66, 150, 120, 24 degrees.
-// Fill = HSL(hue, 42%, 76%) at 20% over light canvas (dark: 24%, 76% at 24%).
-// Precomposed opaque fills preserve the gauze appearance without nested tint accumulation.
-// Accent = the same hue at 78% saturation, 30% lightness (dark: 68%).
-const GROUP_TONES = {
-  light: [['#f6f3ec', '#886811'], ['#f6edec', '#882111'], ['#f0f6ec', '#458811'], ['#ebf1f6', '#115088'], ['#f6ebf1', '#88114d'], ['#f4f6ec', '#7c8811'], ['#ebf6f1', '#11884d'], ['#ebf6ec', '#118811'], ['#f6efec', '#884111']],
-  dark: [['#3f3d39', '#edcb6e'], ['#3f3939', '#ed7f6e'], ['#3b3f39', '#a5ed6e'], ['#383c40', '#6eb2ed'], ['#3f383d', '#ed6ead'], ['#3e3f39', '#e0ed6e'], ['#383f3d', '#6eedad'], ['#383f39', '#6eed6e'], ['#3f3b39', '#eda16e']]
-};
+// Mix a color over a background: identity washes and headers stay tied to their chip color.
+export function mix(color, background, amount) {
+  const channel = index => Math.round(parseInt(color.slice(index, index + 2), 16) * amount + parseInt(background.slice(index, index + 2), 16) * (1 - amount)).toString(16).padStart(2, '0');
+  return `#${channel(1)}${channel(3)}${channel(5)}`;
+}
 
-// Light Orange 11 is darkened slightly so small failure text also clears 4.5:1 on Slate 2.
+// Structure stays cool and neutral (Slate); identity is a saturated chip, a matching frame and a faint wash;
+// roles speak through a soft ring (core, failure) and the icon glyph, never through the text.
 export const PALETTES = Object.fromEntries(Object.entries(RADIX).map(([theme, { neutral: n, accent: t, data: b, warn: a }]) => [theme, {
   paper: n[1], surface: n[1], surface2: n[2],
   ink: n[12], ink2: n[11], ink3: n[11], rule: n[6], ruleSoft: n[4],
-  accent: t[11], accentSoft: t[2], accentBorder: t[7], hero: t[3], heroBorder: t[8], heroInk: t[12],
-  data: b[11], dataSoft: b[3], dataBorder: b[8], warn: theme === 'light' ? '#c44b00' : a[11], warnSoft: a[3], warnBorder: a[8],
-  groupTones: GROUP_TONES[theme].map(([fill, accent]) => ({ fill, accent })),
-  moduleAccents: MODULE_ACCENTS[theme], nodeTint: theme === 'dark' ? .18 : .12,
-  edge: n[11],
+  accent: t[11], accentSoft: t[2], accentBorder: t[7], hero: t[3], heroBorder: t[8], heroInk: t[12], ringCore: t[5],
+  data: b[11], dataSoft: b[3], dataBorder: b[8], warn: a[11], warnSoft: a[3], warnBorder: a[8], ringWarn: a[5],
+  badge: n[3], outline: theme === 'dark' ? n[10] : n[9],
+  // Dark cards lift one step above the canvas so a plain card still reads as a surface.
+  card: theme === 'dark' ? n[3] : n[1],
+  groupFill: n[2], groupFillNested: theme === 'dark' ? mix(n[2], n[3], .5) : n[1], groupLine: n[5],
+  moduleTones: IDENTITY_SCALES.map(name => { const scale = IDENTITY[theme][name]; return { name, chip: scale[9], accent: scale[10], wash: mix(scale[9], theme === 'dark' ? n[3] : n[1], theme === 'dark' ? .09 : .05), header: mix(scale[9], n[2], theme === 'dark' ? .16 : .1) }; }),
+  edge: theme === 'dark' ? n[10] : n[9],
   mask: theme === 'dark' ? 'rgba(17,17,19,.75)' : 'rgba(252,252,253,.75)',
   group: n[2], button: n[2]
 }]));
@@ -26,11 +27,6 @@ export const warningKinds = new Set(['failure']);
 export const dataKinds = new Set(['data', 'database', 'dataStore', 'entity']);
 export const TYPOGRAPHY = { title: 20, body: 16, small: 14, edgeLineHeight: 24, sequenceHeader: 72, sequenceActorHeader: 108, erHeader: 72, erRow: 32, classHeader: 68, classRow: 28 };
 export const isCore = node => node.kind === 'business' || (node.tags ?? []).some(tag => ['core', 'business'].includes(String(tag).trim().toLowerCase()));
-
-function tint(color, background, amount) {
-  const channel = index => Math.round(parseInt(color.slice(index, index + 2), 16) * amount + parseInt(background.slice(index, index + 2), 16) * (1 - amount)).toString(16).padStart(2, '0');
-  return `#${channel(1)}${channel(3)}${channel(5)}`;
-}
 
 function colorSlot(value, count) {
   let hash = 2166136261;
@@ -43,52 +39,41 @@ export function moduleColorMap(diagrams, palette) {
     ...graph.nodes.map(node => node.module), ...graph.edges.map(edge => edge.module)
   ]).filter(Boolean))].sort();
   // ponytail: bounded categorical slots can collide; module labels remain authoritative.
-  return new Map(modules.map(module => [module, palette.moduleAccents[colorSlot(module, palette.moduleAccents.length)]]));
+  return new Map(modules.map(module => [module, palette.moduleTones[colorSlot(module, palette.moduleTones.length)]]));
 }
 
+// Boundaries are containers, not information: a hairline fence on a barely-there surface, nested one step apart.
 export function groupAppearanceMap(groups, palette) {
-  const appearances = new Map(), tones = palette.groupTones;
-  let next = 0;
-  const visit = parentId => {
-    let previous;
-    const siblings = groups.filter(group => (group.parentId ?? null) === parentId)
-      .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x || a.id.localeCompare(b.id));
-    for (const group of siblings) {
-      // ponytail: nine local region tones repeat in larger graphs; labels carry meaning.
-      while (tones[next % tones.length] === previous || tones[next % tones.length] === appearances.get(parentId)) next++;
-      const appearance = tones[next++ % tones.length];
-      appearances.set(group.id, appearance);
-      previous = appearance;
-      visit(group.id);
-    }
-  };
-  visit(null);
+  const appearances = new Map();
+  const depth = group => { let level = 0, parent = groups.find(item => item.id === group.parentId); while (parent && level < groups.length) { level++; parent = groups.find(item => item.id === parent.parentId); } return level; };
+  for (const group of groups) appearances.set(group.id, { fill: depth(group) % 2 ? palette.groupFillNested : palette.groupFill, stroke: palette.groupLine });
   return appearances;
 }
 
+// The frame, chip and wash say whose a node is (module); a ring says it is the business center or an explicit failure.
+// Text never follows either: titles stay ink. A failure keeps its red frame over any module.
 export function nodeAppearance(node, palette, moduleColors) {
-  const moduleColor = moduleColors?.get(node.module);
+  const tone = moduleColors?.get(node.module);
   let appearance;
   if (['initial', 'final'].includes(node.kind)) appearance = { role: node.kind, label: node.kind === 'initial' ? '初始状态' : '结束状态', fill: node.kind === 'initial' ? palette.accent : palette.surface, stroke: palette.accent };
-  else if (warningKinds.has(node.kind)) appearance = { role: 'warning', label: '失败', fill: palette.surface2, stroke: palette.warn };
-  else if (isCore(node)) appearance = { role: 'core', label: '核心组件', fill: palette.surface2, stroke: palette.accent };
-  else if (dataKinds.has(node.kind) || ['input', 'output'].includes(node.kind)) appearance = { role: 'data', label: '数据与存储', fill: palette.surface2, stroke: palette.data };
-  else if (['start', 'end', 'usecase'].includes(node.kind)) appearance = { role: 'accent', label: node.kind === 'usecase' ? '用例' : '起止节点', fill: palette.surface2, stroke: palette.accent };
-  else appearance = { role: 'neutral', label: '普通组件 / 角色', fill: palette.surface2, stroke: palette.edge };
-  const stroke = warningKinds.has(node.kind) ? palette.warn : moduleColor ?? appearance.stroke;
-  const fill = !['initial', 'final'].includes(node.kind) && (moduleColor || appearance.role !== 'neutral')
-    ? tint(stroke, palette.surface, palette.nodeTint) : appearance.fill;
-  return { ...appearance, fill, stroke, moduleColor };
+  else if (warningKinds.has(node.kind)) appearance = { role: 'warning', label: '失败', fill: palette.card, stroke: palette.warn, ring: palette.ringWarn };
+  else if (isCore(node)) appearance = { role: 'core', label: '核心组件', fill: palette.card, stroke: palette.accent, ring: palette.ringCore };
+  else if (dataKinds.has(node.kind) || ['input', 'output'].includes(node.kind)) appearance = { role: 'data', label: '数据与存储', fill: palette.card, stroke: palette.data };
+  else if (['start', 'end', 'usecase'].includes(node.kind)) appearance = { role: 'accent', label: node.kind === 'usecase' ? '用例' : '起止节点', fill: palette.card, stroke: palette.accent };
+  else appearance = { role: 'neutral', label: '普通组件 / 角色', fill: palette.card, stroke: palette.outline };
+  const framed = tone && !['initial', 'final', 'failure'].includes(node.kind);
+  return { ...appearance, fill: framed ? tone.wash : appearance.fill, stroke: framed ? tone.accent : appearance.stroke, moduleColor: tone?.accent, chip: tone?.chip, header: tone?.header };
 }
 
-export const sequenceGroupColor = (pair, palette) => pair ? palette.moduleAccents[[0, 2, 7, 3, 1, 6, 5, 4][pair.index % 8]] : undefined;
+// Pairs walk the identity scales in order; the order itself keeps neighbouring pair numbers far apart in hue.
+export const sequenceGroupColor = (pair, palette) => pair ? palette.moduleTones[pair.index % palette.moduleTones.length].accent : undefined;
 
 export function edgeColor(edge, target, palette, moduleColors, source, pair) {
   if (pair) return sequenceGroupColor(pair, palette);
   if (edge.kind === 'failure') return palette.warn;
   if (edge.kind === 'success') return palette.accent;
-  const moduleColor = moduleColors?.get(edge.module ?? source?.module ?? target?.module);
-  if (moduleColor) return moduleColor;
+  const tone = moduleColors?.get(edge.module ?? source?.module ?? target?.module);
+  if (tone) return tone.accent;
   return dataKinds.has(target?.kind) ? palette.data : palette.edge;
 }
 

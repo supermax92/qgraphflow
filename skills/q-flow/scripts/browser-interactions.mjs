@@ -386,25 +386,24 @@ async function assertNodeDrawing(page, graph, colorTheme) {
   const groupAppearances = groupAppearanceMap(graph.groups ?? [], palette);
   const frames = await page.locator('.react-flow__node-boundary').evaluateAll(elements => elements.map(element => {
     const boundary = element.querySelector('.boundary'), frame = boundary.querySelector('.boundary-frame');
-    return { id: element.dataset.id, fill: getComputedStyle(frame).fill, stroke: getComputedStyle(frame).stroke, accent: getComputedStyle(boundary.querySelector('.boundary-accent')).stroke, opacity: getComputedStyle(frame).fillOpacity, zIndex: Number(getComputedStyle(element).zIndex), pointerEvents: getComputedStyle(element).pointerEvents, background: getComputedStyle(boundary).backgroundColor };
+    return { id: element.dataset.id, fill: getComputedStyle(frame).fill, stroke: getComputedStyle(frame).stroke, accents: boundary.querySelectorAll('.boundary-accent').length, opacity: getComputedStyle(frame).fillOpacity, zIndex: Number(getComputedStyle(element).zIndex), pointerEvents: getComputedStyle(element).pointerEvents, background: getComputedStyle(boundary).backgroundColor };
   }));
   assert.equal(frames.length, graph.groups?.length ?? 0);
   for (const frame of frames) {
     const appearance = groupAppearances.get(frame.id);
-    assert.equal(frame.stroke, 'none'); assert.equal(frame.background, 'rgba(0, 0, 0, 0)');
+    assert.deepEqual(colorChannels(frame.stroke), colorChannels(appearance.stroke), 'Boundaries wear a hairline fence.'); assert.equal(frame.background, 'rgba(0, 0, 0, 0)');
     assert.equal(Number(frame.opacity), 1, 'Nested group fills do not accumulate.');
     assert.deepEqual(colorChannels(frame.fill), colorChannels(appearance.fill));
-    assert.deepEqual(colorChannels(frame.accent), colorChannels(appearance.accent));
-    assert.ok(colorContrast(colorChannels(frame.accent), colorChannels(frame.fill)) >= 3, `Group accent contrast: ${frame.id}`);
-    assert.ok(colorContrast(colorChannels(palette.ink), colorChannels(frame.fill)) >= 4.5, `Group heading contrast: ${frame.id}`);
+    assert.equal(frame.accents, 0, 'Boundaries are containers: no colored accent dash.');
+    assert.ok(colorContrast(colorChannels(palette.ink2), colorChannels(frame.fill)) >= 4.5, `Group heading contrast: ${frame.id}`);
     assert.ok(frame.zIndex < 0, 'Groups stay behind edges and cards.');
     assert.equal(frame.pointerEvents, 'none', 'Group surfaces never intercept pan, selection or edge clicks.');
     const parentId = graph.groups.find(group => group.id === frame.id).parentId;
     if (parentId) assert.ok(frame.zIndex > frames.find(item => item.id === parentId).zIndex, 'Child fill is above its parent.');
   }
-  const miniFrames = await page.locator('.react-flow__minimap [data-group-id]').evaluateAll(elements => elements.map(element => ({ id: element.dataset.groupId, fill: element.querySelector('.boundary-frame').getAttribute('fill'), stroke: element.querySelector('.boundary-frame').getAttribute('stroke'), accent: element.querySelector('.boundary-accent').getAttribute('stroke') })));
+  const miniFrames = await page.locator('.react-flow__minimap [data-group-id]').evaluateAll(elements => elements.map(element => ({ id: element.dataset.groupId, fill: element.querySelector('.boundary-frame').getAttribute('fill'), stroke: element.querySelector('.boundary-frame').getAttribute('stroke'), accents: element.querySelectorAll('.boundary-accent').length })));
   for (const frame of miniFrames) {
-    assert.equal(frame.stroke, 'none'); assert.equal(frame.fill, groupAppearances.get(frame.id).fill); assert.equal(frame.accent, groupAppearances.get(frame.id).accent);
+    assert.equal(frame.stroke, groupAppearances.get(frame.id).stroke); assert.equal(frame.fill, groupAppearances.get(frame.id).fill); assert.equal(frame.accents, 0);
   }
   const strokes = await page.locator('.react-flow__edge-path').evaluateAll(elements => elements.map(element => { const style = getComputedStyle(element); return { id: element.id, color: style.stroke, opacity: style.strokeOpacity }; }));
   for (const stroke of strokes) {
@@ -467,7 +466,7 @@ async function assertNodeDrawing(page, graph, colorTheme) {
       if (!compact) assert.ok(text.font >= TYPOGRAPHY.small, `Readable shared typography: ${node.id} ${text.cls}`);
       assert.ok(text.x >= -1 && text.y >= -1 && text.x + text.width <= node.size.width + 1 && text.y + text.height <= node.size.height + 1, `Node text stays inside its authored bounds: ${node.id} ${text.text}`);
       if (['title', 'shape-title', 'participant-title', 'entity-title'].includes(text.cls)) {
-        const color = isCore(node) && node.kind !== 'actor' ? palette.heroInk : palette.ink;
+        const color = palette.ink;
         const rgb = `rgb(${color.slice(1).match(/../g).map(value => parseInt(value, 16)).join(', ')})`;
         assert.equal(text.fill, rgb, `Title preserves its semantic contrast: ${node.id}`);
       }
@@ -511,12 +510,12 @@ async function exportsMatch(page, graph, name) {
     const lifelines = [...root.querySelectorAll('.lifeline')].map(element => element.getAttribute('d'));
     const image = new Image(); image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml); await image.decode();
     const executions = [...root.querySelectorAll('.sequence-execution')].map(element => ({ id: element.dataset.executionId, x: +element.getAttribute('x'), y: +element.getAttribute('y'), width: +element.getAttribute('width'), height: +element.getAttribute('height'), color: element.getAttribute('stroke') }));
-    return { frames: [...root.querySelectorAll('[data-diagram-group-id] .boundary-frame')].map(frame => ({ id: frame.parentElement.dataset.diagramGroupId, fill: frame.getAttribute('fill'), stroke: frame.getAttribute('stroke'), accent: frame.parentElement.querySelector('.boundary-accent').getAttribute('stroke') })), title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths, notation, lifelines, executions, colors: edges.map(element => element.firstElementChild.getAttribute('stroke')) };
+    return { frames: [...root.querySelectorAll('[data-diagram-group-id] .boundary-frame')].map(frame => ({ id: frame.parentElement.dataset.diagramGroupId, fill: frame.getAttribute('fill'), stroke: frame.getAttribute('stroke'), accents: frame.parentElement.querySelectorAll('.boundary-accent').length })), title: document.querySelector('title')?.textContent, width: image.naturalWidth, height: image.naturalHeight, paths, notation, lifelines, executions, colors: edges.map(element => element.firstElementChild.getAttribute('stroke')) };
   }, svg);
   const exportedTheme = await page.locator('html').getAttribute('data-theme');
   const frameColors = groupAppearanceMap(graph.groups ?? [], PALETTES[exportedTheme]);
   assert.equal(parsed.frames.length, graph.groups?.length ?? 0);
-  for (const frame of parsed.frames) { assert.equal(frame.fill, frameColors.get(frame.id).fill); assert.equal(frame.stroke, 'none'); assert.equal(frame.accent, frameColors.get(frame.id).accent); }
+  for (const frame of parsed.frames) { assert.equal(frame.fill, frameColors.get(frame.id).fill); assert.equal(frame.stroke, frameColors.get(frame.id).stroke); assert.equal(frame.accents, 0); }
   assert.equal(parsed.title, graph.meta.title); assert.equal(parsed.paths.length, graph.edges.length);
   const pageNotation = await page.locator('.react-flow__edge').evaluateAll(elements => elements.map(element => {
     const path = element.querySelector('.react-flow__edge-path');

@@ -1,7 +1,7 @@
 /* Keep permanent surfaces quiet; selection and moving strokes supply local emphasis. */
 .edge-flow { stroke-width: 2.8px; filter: none; }
 .flow-edge--sequence .edge-flow { stroke-width: 3.2px; }
-.selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .2; }
+.selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .12; }
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .diagram-node .node-surface, .edge-flow { filter: none !important; }

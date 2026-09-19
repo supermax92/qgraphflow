@@ -2,13 +2,16 @@ import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js';
 import { operandId, operandEdges, fragmentDepth, fragmentHeadingLayout } from '../assets/viewer/src/sequence-fragments.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
-import { sequenceMessageLabel } from '../assets/viewer/src/sequence-executions.js';
+import { sequenceMessageLabel, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { edgeLabelLayout, layoutText } from '../assets/viewer/src/text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from '../assets/viewer/src/layout-spacing.js';
 
 export function compileSequence(input, candidate) {
   const graph = structuredClone(input), groups = graph.groups ?? [], edges = new Map(graph.edges.map(edge => [edge.id, edge]));
-  const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (a.id < b.id ? -1 : 1)).map(node => node.id);
+  // Without declared order, participants stand in the order the messages first reach them, initiator leftmost.
+  const firstSeen = new Map();
+  for (const edge of [...graph.edges].sort((a, b) => a.order - b.order)) for (const id of [edge.source, edge.target]) if (!firstSeen.has(id)) firstSeen.set(id, firstSeen.size);
+  const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (firstSeen.get(a.id) ?? Infinity) - (firstSeen.get(b.id) ?? Infinity) || (a.id < b.id ? -1 : 1)).map(node => node.id);
   const nodes = ordered.map(id => graph.nodes.find(node => node.id === id));
   const spacing = LAYOUT_TARGETS.nodeGap + candidate * 8, gap = LAYOUT_LIMITS.labelGap + candidate * 4;
   const guardText = (group, operand) => group.kind === 'par' ? operand.label : `${group.kind === 'loop' ? `${group.loop.min}..${group.loop.max} ` : ''}[${operand.guard}]`;
@@ -40,22 +43,40 @@ export function compileSequence(input, candidate) {
   // Provisional order-preserving times let the shared router measure actual
   // prefixes, activation offsets, wrapped labels and self calls.
   for (const edge of graph.edges) edge.route = { messageY: 200 + edge.order * 100 };
-  const routes = createEdgeRoutes(graph);
+  const routes = createEdgeRoutes(graph), executions = sequenceExecutions(graph);
   const owned = new Set(groups.flatMap(group => (group.operands ?? []).flatMap(operand => operand.edgeIds)));
   const range = group => (group.operands ?? []).flatMap((operand, i) => operandEdges(group, operand, i, groups)).map(id => edges.get(id).order);
   const eventOrder = event => event.edge ? event.edge.order : Math.min(Infinity, ...range(event.group));
   const sorted = events => events.sort((a, b) => eventOrder(a) - eventOrder(b) || ((a.edge ?? a.group).id < (b.edge ?? b.group).id ? -1 : 1));
   // Fragments enclose only their messages and children. A bounded local gutter
   // lets active lifelines continue beside complete, wrapped conditions.
+  const spanPoints = group => (group.operands ?? []).flatMap((operand, i) => operandEdges(group, operand, i, groups)).map(id => routes.get(id)).flatMap(route => [...route.points, { x: route.labelBox.x }, { x: route.labelBox.x + route.labelBox.width }]);
+  // A fragment without messages of its own stays under the span it comments on: the
+  // nearest ancestor's messages, or the whole conversation at top level.
+  const anchorPoints = group => {
+    const seen = new Set();
+    for (let item = group; item && !seen.has(item.id); item = groups.find(other => other.id === item.parentId)) {
+      seen.add(item.id);
+      const points = spanPoints(item);
+      if (points.length) return points;
+    }
+    return [...routes.values()].flatMap(route => route.points);
+  };
+  const tagRoom = 56; // kind tag plus its inset, kept clear of activation bars
   for (const group of [...groups].sort((a, b) => fragmentDepth(b, groups) - fragmentDepth(a, groups) || a.id.localeCompare(b.id))) {
     if (!group.operands) throw new Error(`Sequence group ${group.id} needs explicit operands before automatic layout`);
-    const selected = group.operands.flatMap((operand, i) => operandEdges(group, operand, i, groups)).map(id => routes.get(id));
-    const points = selected.flatMap(route => [...route.points, { x: route.labelBox.x }, { x: route.labelBox.x + route.labelBox.width }]);
+    const points = anchorPoints(group);
     const children = groups.filter(child => child.parentId === group.id);
     const textWidth = Math.max(fragmentHeadingLayout({ ...group, size: undefined }).width + 16, ...group.operands.flatMap(operand => [guardLayout(group, operand).width, bodyLayout(operand).width]));
-    const localLeft = (points.length ? Math.min(...points.map(point => point.x)) : nodes[0].position.x) - textWidth - 40;
+    const ys = group.operands.flatMap((operand, i) => operandEdges(group, operand, i, groups)).map(id => edges.get(id).route.messageY);
+    const top = Math.min(...ys), bottom = Math.max(...ys);
+    const bars = executions.filter(bar => !ys.length || (bar.y <= bottom && bar.y + bar.height >= top)).sort((a, b) => a.x - b.x);
+    // Messages leave an activation at its edge; the gutter starts at the bar itself.
+    const anchorLeft = points.length ? Math.min(...points.map(point => point.x)) : nodes[0].position.x;
+    const localLeft = Math.min(anchorLeft, ...bars.filter(bar => bar.x < anchorLeft && bar.x + bar.width >= anchorLeft - 8).map(bar => bar.x)) - textWidth - 40;
     const frameLeft = Math.min(localLeft, ...children.map(child => child.position.x - 32));
-    const right = Math.max(frameLeft + textWidth + 120, ...points.map(point => point.x + 32), ...children.map(child => child.position.x + child.size.width + 32));
+    let right = Math.max(frameLeft + textWidth + 120, ...points.map(point => point.x + 32), ...children.map(child => child.position.x + child.size.width + 32));
+    for (const bar of bars) if (bar.x < right + 8 && bar.x + bar.width > right - tagRoom - 16) right = Math.max(right, bar.x + bar.width + tagRoom);
     group.position = { x: frameLeft, y: 0 }; group.size = { width: Math.ceil(right - frameLeft), height: 0 };
   }
   function message(edge, cursor) {

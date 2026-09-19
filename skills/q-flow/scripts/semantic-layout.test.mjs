@@ -13,7 +13,7 @@ import { layoutText } from '../assets/viewer/src/text-layout.js';
 import { routeCrossings, createEdgeRoutes, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { sequenceEndpointY, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { auditLayoutQuality, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
-import { compileGraphLayout, migrateOwnership, LAYOUT_VERSION } from './compile-layout.mjs';
+import { compileGraphLayout, migrateOwnership, aspectExcess, LAYOUT_VERSION, ASPECT_SLACK } from './compile-layout.mjs';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
 import { writeOutputPair } from './generate-viewer.mjs';
 
@@ -45,6 +45,33 @@ test('adaptive spacing: one long sequence message leaves unrelated gaps unchange
   assert.ok(createEdgeRoutes(long).get('e0').labelLines.length > 1);
   assert.deepEqual(auditLayoutQuality(long).errors, []);
   assert.deepEqual((await compileGraphLayout(long)).graph, long);
+});
+
+test('sequence: undeclared participants stand in first-appearance order, initiator leftmost', async () => {
+  const input = fixture('sequence');
+  delete input.layout;
+  const { graph } = await compileGraphLayout(input);
+  const byX = [...graph.nodes].sort((a, b) => a.position.x - b.position.x).map(node => node.id);
+  assert.deepEqual(byX, ['client', 'order', 'inventory', 'risk', 'audit'], 'ids sort alphabetically as audit, client, …; messages reach them in this order');
+  const declared = fixture('sequence'); declared.layout.participantOrder = ['audit', 'risk', 'inventory', 'order', 'client'];
+  assert.deepEqual([...(await compileGraphLayout(declared)).graph.nodes].sort((a, b) => a.position.x - b.position.x).map(node => node.id), declared.layout.participantOrder);
+});
+
+test('sequence: fragment tags clear activation bars and message-less fragments stay under their parent span', async () => {
+  const { graph } = await compileGraphLayout(fixture('sequence'));
+  const executions = sequenceExecutions(graph), routes = createEdgeRoutes(graph);
+  const box = (x, y, width, height) => ({ x, y, width, height });
+  const hits = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  for (const group of graph.groups) {
+    const tag = box(group.position.x + group.size.width - 72, group.position.y, 56, 36);
+    assert.ok(!executions.some(bar => hits(tag, bar)), `${group.id}: the kind tag must not sit on an activation`);
+  }
+  const outcome = graph.groups.find(group => group.id === 'outcome');
+  const span = ['c4', 'r4'].flatMap(id => routes.get(id).points.map(point => point.x));
+  assert.ok(outcome.position.x < Math.min(...span) && outcome.position.x + outcome.size.width > Math.max(...span), 'the alt without messages is anchored under the loop\'s call/return span');
+  const lifelines = graph.nodes.map(node => node.position.x + node.size.width / 2);
+  for (const group of graph.groups) assert.ok(lifelines.some(x => x > group.position.x && x < group.position.x + group.size.width), `${group.id}: a fragment must cover at least one lifeline`);
+  assert.deepEqual(auditLayoutQuality(graph).errors, []);
 });
 
 test('adaptive spacing: nine types retain facts and regenerate at three scales', async t => {
@@ -120,18 +147,98 @@ test('all nine coordinate-free semantic inputs pass before any geometry is evalu
   assert.equal(report.layoutComposition, null);
 });
 
-test('horizontal diagram types allow a compact six-node chain', async () => {
+const chainOf = (type, length, kind, decorate = () => ({})) => {
+  const model = fixture(type);
+  const template = model.nodes.find(node => node.kind === kind), edge = model.edges.find(edge => type === 'usecase' ? edge.kind === 'include' : type === 'architecture' ? edge.kind === 'call' : true);
+  model.nodes = Array.from({ length }, (_, i) => ({ ...template, id: `n${i}`, label: `N${i}`, groupId: undefined, layout: undefined, ...decorate(i) }));
+  model.edges = Array.from({ length: length - 1 }, (_, i) => ({ ...edge, id: `e${i}`, source: `n${i}`, target: `n${i + 1}` }));
+  delete model.groups; delete model.layout;
+  return model;
+};
+// Consecutive chain members keep reading along the layout direction inside a segment; the next segment starts further
+// across and restarts at the top (columns) or at the left (rows).
+const reads = (graph, down) => graph.nodes.every((node, i) => {
+  if (!i) return true;
+  const previous = graph.nodes[i - 1], [m, c, extent] = down ? ['y', 'x', 'width'] : ['x', 'y', 'height'];
+  const sameSegment = node.position[c] < previous.position[c] + previous.size[extent] && previous.position[c] < node.position[c] + node.size[extent];
+  return sameSegment ? node.position[m] > previous.position[m] : node.position[c] > previous.position[c] && node.position[m] <= previous.position[m];
+});
+
+test('horizontal diagram types keep a short chain on one row and fold a long one into rows', async () => {
   for (const type of ['er', 'deployment', 'usecase', 'dataflow']) {
-    const model = fixture(type), kind = { er: 'entity', deployment: 'service', usecase: 'usecase', dataflow: 'process' }[type];
-    const template = model.nodes.find(node => node.kind === kind), edge = model.edges.find(edge => type === 'usecase' ? edge.kind === 'include' : true);
-    model.nodes = Array.from({ length: 6 }, (_, i) => ({ ...template, id: `n${i}`, label: `N${i}`, groupId: undefined, layout: undefined }));
-    model.edges = Array.from({ length: 5 }, (_, i) => ({ ...edge, id: `e${i}`, source: `n${i}`, target: `n${i + 1}` }));
-    delete model.groups; delete model.layout;
-    const { graph } = await compileGraphLayout(model);
+    const kind = { er: 'entity', deployment: 'service', usecase: 'usecase', dataflow: 'process' }[type];
+    const short = (await compileGraphLayout(chainOf(type, 2, kind))).graph;
+    assert.deepEqual(auditLayoutQuality(short).errors, []);
+    assert.equal(new Set(short.nodes.map(node => node.position.y)).size, 1, `${type}: two nodes stay on one row`);
+    assert.doesNotMatch(short.layout.strategy, /fold/);
+    const { graph, report } = await compileGraphLayout(chainOf(type, 6, kind));
     assert.deepEqual(auditLayoutQuality(graph).errors, []);
-    assert.equal(new Set(graph.nodes.map(node => node.position.y)).size, 1, type);
-    assert.ok(graph.nodes.every((node, i) => !i || node.position.x > graph.nodes[i - 1].position.x));
+    assert.match(graph.layout.strategy, /^layered-\d-fold[2-5]$/, `${type}: a six-node strip folds into rows`);
+    assert.ok(new Set(graph.nodes.map(node => node.position.y)).size >= 2, type);
+    assert.ok(aspectExcess(graph) <= ASPECT_SLACK, `${type}: the folded shape comes within the slack of the band`);
+    assert.ok(reads(graph, false), `${type}: every row reads rightward and the chain continues at the start of the next`);
+    const selected = report.candidates.find(item => item.index === report.selected);
+    assert.equal(selected.axis, 'rows');
+    assert.ok(selected.folds.length >= 1 && selected.folds.every(item => item.axis === 'rows' && item.count >= 2 && typeof item.excess === 'number'));
+    assert.equal(selected.folds.find(item => item.count === selected.fold).excess, selected.excess);
+    assert.deepEqual((await compileGraphLayout(graph, { layout: 'preserve' })).graph.nodes.map(node => node.position), graph.nodes.map(node => node.position));
   }
+});
+
+test('a long architecture chain folds into columns that keep reading downward with their boundaries intact', async () => {
+  const model = chainOf('architecture', 11, 'service', i => ({ groupId: i < 8 ? 'sync' : 'async' }));
+  model.groups = [{ id: 'sync', label: 'Synchronous boundary', kind: 'runtime' }, { id: 'async', label: 'Asynchronous boundary', kind: 'runtime' }];
+  const { graph, report } = await compileGraphLayout(model);
+  assert.deepEqual(auditLayoutQuality(graph).errors, []);
+  assert.equal(graph.layout.strategy, 'layered-0-fold3c');
+  const selected = report.candidates.find(item => item.index === report.selected);
+  assert.equal(selected.axis, 'columns'); assert.equal(selected.fold, 3);
+  const columns = [...new Set(graph.nodes.map(node => node.position.x))].sort((a, b) => a - b);
+  assert.equal(columns.length, 3);
+  const columnOf = node => columns.indexOf(node.position.x);
+  assert.deepEqual(graph.nodes.map(columnOf), [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2], 'the second cut lands on the boundary change');
+  assert.ok(reads(graph, true), 'every column reads downward and the chain continues at the top of the next');
+  assert.equal(aspectExcess(graph), 1);
+  const box = item => ({ ...item.position, ...item.size });
+  const inside = (outer, inner) => inner.x >= outer.x && inner.y >= outer.y && inner.x + inner.width <= outer.x + outer.width && inner.y + inner.height <= outer.y + outer.height;
+  for (const group of graph.groups) for (const node of graph.nodes) {
+    if (node.groupId === group.id) assert.ok(inside(box(group), box(node)), `${node.id} inside ${group.id}`);
+    else assert.ok(!(box(node).x < box(group).x + box(group).width && box(group).x < box(node).x + box(node).width && box(node).y < box(group).y + box(group).height && box(group).y < box(node).y + box(node).height), `${node.id} outside ${group.id}`);
+  }
+  // The boundary spread over two columns is rebuilt around both; inner edges keep their ELK routes and the cut edges get channel routes.
+  assert.ok(box(graph.groups[0]).width > box(graph.groups[1]).width);
+  assert.ok(graph.edges.every(edge => edge.route.via.length >= 2));
+  assert.doesNotMatch(createDiagramSvg(graph), /…/);
+  const preserved = await compileGraphLayout(graph, { layout: 'preserve' });
+  assert.deepEqual(preserved.graph.nodes.map(node => node.position), graph.nodes.map(node => node.position));
+  const permuted = structuredClone(model); permuted.nodes.reverse(); permuted.edges.reverse(); permuted.groups.reverse();
+  assert.deepEqual((await compileGraphLayout(permuted)).graph.nodes.map(({ id, position }) => ({ id, position })).sort((a, b) => a.id.localeCompare(b.id)), graph.nodes.map(({ id, position }) => ({ id, position })).sort((a, b) => a.id.localeCompare(b.id)));
+});
+
+test('folding never overrides declared ranks; tall flowcharts and state chains fold into columns that keep reading downward', async () => {
+  const ranked = (await compileGraphLayout(chainOf('architecture', 11, 'service', i => ({ layout: { rank: i } })))).graph;
+  assert.doesNotMatch(ranked.layout.strategy, /fold/);
+  assert.ok(aspectExcess(ranked) > 1, 'the declared column stays a column');
+  assert.deepEqual(auditLayoutQuality(ranked).errors, []);
+  const flow = (await compileGraphLayout(chainOf('flowchart', 11, 'process'))).graph;
+  assert.match(flow.layout.strategy, /^layered-\d-fold[2-5]c$/, 'a tall flowchart folds into columns');
+  assert.equal(aspectExcess(flow), 1);
+  assert.deepEqual(auditLayoutQuality(flow).errors, []);
+  assert.ok(reads(flow, true), 'the main path keeps running downward inside every column and continues at the top of the next');
+  assert.deepEqual((await compileGraphLayout(flow, { layout: 'preserve' })).graph.nodes.map(node => node.position), flow.nodes.map(node => node.position));
+  const sideways = structuredClone(flow);
+  for (const node of sideways.nodes) node.position = { x: node.position.y * 2, y: node.position.x };
+  for (const edge of sideways.edges) delete edge.route;
+  assert.ok(auditLayoutQuality(sideways).diagnostics.some(item => item.ruleId === 'semantic.primary-path'), 'a sideways main path is still rejected');
+  const chain = { meta: { ...fixture('state').meta }, nodes: [{ id: 'initial', label: 'Initial', kind: 'initial' }, ...Array.from({ length: 7 }, (_, i) => ({ id: `s${i}`, label: `State ${i}`, kind: 'state' })), { id: 'final', label: 'Final', kind: 'final' }] };
+  chain.edges = chain.nodes.slice(1).map((node, i) => ({ id: `t${i}`, source: chain.nodes[i].id, target: node.id, kind: 'transition', evidence: 'inference' }));
+  const states = (await compileGraphLayout(chain)).graph;
+  assert.match(states.layout.strategy, /^layered-\d-fold[2-5]c$/, 'a plain state chain folds into columns');
+  assert.deepEqual(auditLayoutQuality(states).errors, []);
+  assert.ok(reads(states, true));
+  const looping = structuredClone(chain);
+  looping.edges.push({ id: 'back', source: 's6', target: 's1', kind: 'transition', evidence: 'inference' });
+  assert.doesNotMatch((await compileGraphLayout(looping)).graph.layout.strategy, /fold/, 'a state chart with a loop keeps its single column');
 });
 
 test('ownership, path, order and notation errors are rejected without entering routing', () => {

@@ -46,10 +46,10 @@
     "skills/q-flow/assets/viewer/src/graph-validation.js",
     "skills/q-flow/assets/viewer/src/layout-measure.js",
     "skills/q-flow/assets/viewer/src/layout-spacing.js",
+    "skills/q-flow/assets/viewer/src/session-graph.js",
     "skills/q-flow/assets/viewer/src/layout-quality.js"
   ],
   "scripts": {
-    "package": "node scripts/package.mjs",
-    "package:media": "node scripts/package-media.mjs"
+    "package": "node scripts/package.mjs"
   }
 }

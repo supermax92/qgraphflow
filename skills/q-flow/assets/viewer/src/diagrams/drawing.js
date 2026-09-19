@@ -8,7 +8,7 @@ export function groupHeadingSvg(group, x = 0, y = 0) {
 
 export function groupFrameSvg(group, appearance, x = 0, y = 0) {
   const radius = ['loop', 'par'].includes(group.kind) ? 5 : 14;
-  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="none"/><path class="boundary-accent" d="M${x + 16} ${y + 3}h${Math.min(32, group.size.width - 32)}" fill="none" stroke="${appearance.accent}" stroke-width="4" stroke-linecap="round"/>`;
+  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="${appearance.stroke}" stroke-width="1"/>`;
 }
 
 export function escapeXml(value = '') {
@@ -148,9 +148,9 @@ export function svgStyles(palette, scope = '') {
   return `${scope}.heading{font:650 24px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink};letter-spacing:-.5px}
 ${scope}.meta{font:400 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink3}}
 ${scope}.group{font:650 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2};letter-spacing:.4px}
-${scope}[data-diagram-group-id]>.group{fill:${palette.ink}}
-${scope}.group-kind{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink};letter-spacing:.7px}
-${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3};letter-spacing:.7px}
+${scope}[data-diagram-group-id]>.group{fill:${palette.ink2}}
+${scope}.group-kind{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink2};letter-spacing:.7px}
+${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink3};letter-spacing:.6px}
 ${scope}.title,${scope}.participant-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.shape-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.body{font:400 ${TYPOGRAPHY.body}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
@@ -160,11 +160,9 @@ ${scope}.field-key{font:700 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${
 ${scope}.field-name{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
 ${scope}.compact-title{font:650 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.compact-body{font:400 10px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
-${scope}.core-node .compact-title,${scope}.core-node .compact-body{fill:${palette.heroInk}}
 ${scope}.entity-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
-${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.data}}
+${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
 ${scope}.member{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
 ${scope}.field-type{font:400 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink3}}
-${scope}.core-node .title,${scope}.core-node .shape-title,${scope}.core-node .participant-title{fill:${palette.heroInk}}
-${scope}.core-node .body,${scope}.core-node .stereotype{fill:${palette.heroInk};opacity:.76}`;
+`;
 }

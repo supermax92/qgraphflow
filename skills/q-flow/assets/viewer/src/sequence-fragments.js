@@ -100,6 +100,14 @@ export function fragmentDepth(group, groups) {
   return depth;
 }
 
+// Text masks inside a fragment borrow the innermost frame's surface, so they blend in both themes.
+export function fragmentSurfaceAt(box, groups = [], appearances) {
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const inside = groups.filter(group => group.position && group.size && cx >= group.position.x && cx <= group.position.x + group.size.width && cy >= group.position.y && cy <= group.position.y + group.size.height);
+  const innermost = inside.sort((a, b) => fragmentDepth(b, groups) - fragmentDepth(a, groups))[0];
+  return innermost ? appearances?.get(innermost.id)?.fill : undefined;
+}
+
 export const fragmentHeadingLayout = group => layoutText(group.label, Math.min(LAYOUT_TARGETS.headingWidth, Math.max(1, (group.size?.width ?? Infinity) - 88)), 15.12, 22);
 export const fragmentHeadingWidth = group => fragmentHeadingLayout(group).width + 16;
 

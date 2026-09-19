@@ -12,8 +12,6 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 </div>
 
-![E-commerce architecture, flowchart and sequence: 0.8 seconds per view, 2.4 seconds per loop, with animated edges](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.core-three.gif)
-
 *Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
@@ -22,26 +20,6 @@ QGraphFlow turns source code, schemas, configuration and requirements into inter
 - **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
 - **Edit:** unlock the layout, change text and move elements; reset when needed.
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
-
-*Explore: open navigation, search for the checkout orchestrator and locate it; select a node to open its quick-look card and highlight incoming/outgoing edges, then zoom and pan.*
-
-![Navigation, search, node quick look, relationship highlighting, zoom and pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.explore.gif)
-
-*Verify: open the details panel from the quick-look card to inspect paths, line numbers and symbols; then select an edge to inspect its explanation and inference marker.*
-
-The paths, line numbers and symbols in this interaction demo are fictional. They demonstrate the evidence panel and do not represent repository source; the page and details say so too. Use real sources for actual analysis and mark unconfirmed relationships as inference.
-
-![Details with explicitly fictional source paths, lines, symbols and relationship inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.verify.gif)
-
-*Edit: unlock the layout in **More**, edit a node's name and description, drag it with its connected edges, then reset to restore the original text and position.*
-
-![Unlock, edit text, drag a node with its edges, and reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.edit.gif)
-
-*Share: open the HTML offline, export SVG and PNG through **More**, and open the PNG to inspect the complete drawing.*
-
-![Offline HTML, SVG and PNG export, and the exported PNG](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.share.gif)
-
-The top animation shows each of three views for 0.8 seconds (2.4 seconds per loop). The four interaction animations allow time to read. All media use the source-built Viewer and English graph and interface text. The five GIFs and nine PNGs are hosted as independent [showcase-v1 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), with public downloads and SHA-256 checksums verified. They are excluded from Git history and plugin packages; viewing them requires network access. The generated diagram HTML itself works offline.
 
 ## Installation guide
 
@@ -199,15 +177,15 @@ The prebuilt Viewer needs no dependency installation, API key or backend service
 
 | View · PNG | Main question | Example scope |
 | --- | --- | --- |
-| [Architecture](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.architecture.png) | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
-| [Flowchart](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.flowchart.png) | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
-| [Sequence](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.sequence.png) | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.er.png) | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
-| [Deployment](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.deployment.png) | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
-| [Class](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.class.png) | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
-| [State](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.state.png) | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
-| [Use case](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.usecase.png) | What can each actor do? | Buyer, merchant, warehouse and support |
-| [Data flow](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.dataflow.png) | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
+| Architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
+| Flowchart | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
+| Sequence | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
+| ER | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
+| Deployment | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
+| Class | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
+| State | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
+| Use case | What can each actor do? | Buyer, merchant, warehouse and support |
+| Data flow | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
 
 This is a concept model demonstrating QGraphFlow, not a particular e-commerce repository. The example `graph.json` invents no source paths and marks relationship evidence as `inference`. Real project diagrams need traceable source, DDL, configuration, tests and accepted requirements.
 

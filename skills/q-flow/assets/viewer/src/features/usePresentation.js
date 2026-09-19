@@ -5,7 +5,7 @@ import { getDiagram, isDashed } from '../diagrams/registry.js';
 import { sequencePairs, sequenceExecutions } from '../sequence-executions.js';
 import { edgeColor, sequenceGroupColor, groupAppearanceMap } from '../visual-style.js';
 import { searchRank } from '../search.js';
-import { sequenceFragment } from '../sequence-fragments.js';
+import { sequenceFragment, fragmentSurfaceAt } from '../sequence-fragments.js';
 
 export function usePresentation(graph, layout, selection, flowRunning, palette, moduleColors) {
   const diagramType = graph.meta.diagramType ?? 'architecture';
@@ -50,10 +50,10 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
         ariaLabel: route.label || `${source.label} → ${target.label}`,
         markerEnd: edge.markerEnd ? { type: MarkerType.ArrowClosed, color } : undefined,
         selected: edge.id === selectedEdgeId,
-        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: palette.ink3, onSelect: () => selectEdge(edge.data) }
+        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: palette.ink3, labelSurface: sequence && route.label ? fragmentSurfaceAt(route.labelBox, currentGraph.groups ?? [], groupAppearances) : undefined, onSelect: () => selectEdge(edge.data) }
       };
     });
-  }, [diagramType, edges, graph, currentGraph, palette, moduleColors, flowRunning, selectEdge, selectedEdgeId, selectedId, selectionPulse, routes, pairs]);
+  }, [diagramType, edges, graph, currentGraph, palette, moduleColors, flowRunning, selectEdge, selectedEdgeId, selectedId, selectionPulse, routes, pairs, groupAppearances]);
 
   return { visibleNodes, visibleEdges };
 }

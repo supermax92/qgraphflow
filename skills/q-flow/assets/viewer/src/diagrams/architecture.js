@@ -20,9 +20,6 @@ export function architectureOutline(node, x, y) {
     ['ellipse', { cx: x + w / 2, cy: y + 18, rx: w / 2 - 12, ry: 16, fill: 'none' }]
   ];
   if (node.kind === 'framework') return [...base, ['path', { d: `M${x + 16} ${y + 24}H${x + w - 16}M${x + 16} ${y + h - 24}H${x + w - 16}`, fill: 'none', 'stroke-dasharray': '7 5' }]];
-  if (node.kind === 'component') return [...base, ['rect', { x: x + 7, y: y + 32, width: 15, height: 12, rx: 2 }], ['rect', { x: x + 7, y: y + 50, width: 15, height: 12, rx: 2 }]];
-  if (node.kind === 'system') return [...base, ['rect', { x: x + 7, y: y + 7, width: w - 14, height: h - 14, rx: 7, fill: 'none' }]];
-  if (node.kind === 'service') return [...base, ['path', { d: `M${x} ${y + 36}h12M${x + w - 12} ${y + h - 36}h12`, fill: 'none' }]];
   return base;
 }
 

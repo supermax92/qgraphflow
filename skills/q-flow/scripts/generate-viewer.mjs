@@ -8,15 +8,12 @@ import { parseArgs } from 'node:util';
 import { diagramTypeOf, graphsOf, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
+import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const shellPath = path.resolve(scriptDir, '../assets/viewer-dist/index.html');
 const OUTPUTS = ['index.html', 'graph.json'];
 const LEGACY_OUTPUT = 'snapshot.svg';
-
-function safeJson(graph) {
-  return JSON.stringify(graph).replaceAll('&', '\\u0026').replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
-}
 
 export function writeOutputPair(outputDir, contents) {
   fs.mkdirSync(outputDir, { recursive: true });
@@ -66,7 +63,7 @@ async function main() {
   for (const item of graphsOf(input)) compiled.push(await compileGraphLayout(item, { layout: values.layout }));
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
-  writeOutputPair(outputDir, { 'index.html': shell.replace('__CODEGRAPH_FLOW_DATA__', () => safeJson(graph)), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` });
+  writeOutputPair(outputDir, { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` });
   const graphs = graphsOf(graph);
   const totals = {
     nodes: graphs.reduce((sum, item) => sum + item.nodes.length, 0),
