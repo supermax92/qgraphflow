@@ -21,7 +21,7 @@ function classNode(node, x, y, fill, stroke, palette) {
 
 export default {
   dashedKinds: ['implementation', 'dependency'],
-  id: 'class', label: '类图',
+  id: 'class', label: 'Class diagram',
   nodeKinds: ["class", "interface", "abstract"],
   groupKinds: [],
   edgeKinds: ["association", "inheritance", "implementation", "composition", "aggregation", "dependency"],

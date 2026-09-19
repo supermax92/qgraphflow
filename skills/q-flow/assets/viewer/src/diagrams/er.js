@@ -6,7 +6,7 @@ const outline = (node, x, y) => rectangle(node, x, y, 9);
 function erNode(node, x, y, fill, stroke, palette, locale) {
   const { erHeaderHeight: header, erRowHeight: rowHeight, erFontSize: fontSize } = nodeMetrics(node, 'er');
   const core = coreNode(node);
-  const subtitle = fit(node.subtitle ?? translate(locale, '实体'), node.size.width - 60);
+  const subtitle = fit(node.subtitle ?? translate(locale, 'Entity'), node.size.width - 60);
   const subtitleFont = node.subtitle ? TYPOGRAPHY.body : TYPOGRAPHY.small;
   const rows = node.fields.map((field, index) => {
     const rowY = y + header + index * rowHeight;
@@ -19,7 +19,7 @@ function erNode(node, x, y, fill, stroke, palette, locale) {
 
 
 export default {
-  id: 'er', label: 'ER 图',
+  id: 'er', label: 'ER diagram',
   nodeKinds: ["entity"],
   groupKinds: [],
   edgeKinds: ["relationship"],

@@ -27,10 +27,10 @@ function flowNode(node, x, y, fill, stroke) {
 
 
 export default {
-  id: 'flowchart', label: '流程图',
+  id: 'flowchart', label: 'Flowchart',
   nodeKinds: ["start", "end", "process", "decision", "input", "output", "subprocess"],
   groupKinds: [],
   edgeKinds: ["flow", "yes", "no", "success", "failure"],
   render: flowNode, outline, anchor, textArea,
-  edgeLabel: edge => edge.label ?? ({ yes: '是', no: '否' }[edge.kind] ?? ''),
+  edgeLabel: edge => edge.label ?? ({ yes: 'yes', no: 'no' }[edge.kind] ?? ''),
 };

@@ -28,7 +28,8 @@ export const dataKinds = new Set(['data', 'database', 'dataStore', 'entity']);
 export const TYPOGRAPHY = { title: 20, body: 16, small: 14, edgeLineHeight: 24, sequenceHeader: 72, sequenceActorHeader: 108, erHeader: 72, erRow: 32, classHeader: 68, classRow: 28 };
 export const isCore = node => node.kind === 'business' || (node.tags ?? []).some(tag => ['core', 'business'].includes(String(tag).trim().toLowerCase()));
 
-function colorSlot(value, count) {
+// FNV-1a over the module name, bounded to the identity palette; validators reuse it to predict collisions.
+export function colorSlot(value, count) {
   let hash = 2166136261;
   for (const character of value) hash = Math.imul(hash ^ character.codePointAt(0), 16777619);
   return (hash >>> 0) % count;
@@ -55,12 +56,12 @@ export function groupAppearanceMap(groups, palette) {
 export function nodeAppearance(node, palette, moduleColors) {
   const tone = moduleColors?.get(node.module);
   let appearance;
-  if (['initial', 'final'].includes(node.kind)) appearance = { role: node.kind, label: node.kind === 'initial' ? '初始状态' : '结束状态', fill: node.kind === 'initial' ? palette.accent : palette.surface, stroke: palette.accent };
-  else if (warningKinds.has(node.kind)) appearance = { role: 'warning', label: '失败', fill: palette.card, stroke: palette.warn, ring: palette.ringWarn };
-  else if (isCore(node)) appearance = { role: 'core', label: '核心组件', fill: palette.card, stroke: palette.accent, ring: palette.ringCore };
-  else if (dataKinds.has(node.kind) || ['input', 'output'].includes(node.kind)) appearance = { role: 'data', label: '数据与存储', fill: palette.card, stroke: palette.data };
-  else if (['start', 'end', 'usecase'].includes(node.kind)) appearance = { role: 'accent', label: node.kind === 'usecase' ? '用例' : '起止节点', fill: palette.card, stroke: palette.accent };
-  else appearance = { role: 'neutral', label: '普通组件 / 角色', fill: palette.card, stroke: palette.outline };
+  if (['initial', 'final'].includes(node.kind)) appearance = { role: node.kind, label: node.kind === 'initial' ? 'Initial state' : 'Final state', fill: node.kind === 'initial' ? palette.accent : palette.surface, stroke: palette.accent };
+  else if (warningKinds.has(node.kind)) appearance = { role: 'warning', label: 'Failure', fill: palette.card, stroke: palette.warn, ring: palette.ringWarn };
+  else if (isCore(node)) appearance = { role: 'core', label: 'Core component', fill: palette.card, stroke: palette.accent, ring: palette.ringCore };
+  else if (dataKinds.has(node.kind) || ['input', 'output'].includes(node.kind)) appearance = { role: 'data', label: 'Data / storage', fill: palette.card, stroke: palette.data };
+  else if (['start', 'end', 'usecase'].includes(node.kind)) appearance = { role: 'accent', label: node.kind === 'usecase' ? 'Use case' : 'Start / end', fill: palette.card, stroke: palette.accent };
+  else appearance = { role: 'neutral', label: 'Components / actors', fill: palette.card, stroke: palette.outline };
   const framed = tone && !['initial', 'final', 'failure'].includes(node.kind);
   return { ...appearance, fill: framed ? tone.wash : appearance.fill, stroke: framed ? tone.accent : appearance.stroke, moduleColor: tone?.accent, chip: tone?.chip, header: tone?.header };
 }
@@ -84,12 +85,12 @@ export function themeVariables(palette) {
 }
 
 export const kindLabels = {
-  external: '外部', config: '配置', framework: '框架', security: '安全', service: '服务', business: '业务',
-  data: '数据', failure: '失败', system: '系统', component: '组件', database: '数据库', start: '开始', end: '结束',
-  process: '处理', decision: '判断', input: '输入', output: '输出', subprocess: '子流程', actor: '角色',
-  participant: '参与者', entity: '实体', device: '设备', node: '节点', container: '容器', artifact: '制品',
-  class: '类', interface: '接口', abstract: '抽象类', state: '状态', initial: '初始', final: '结束', choice: '选择',
-  usecase: '用例', dataStore: '数据存储'
+  external: 'External', config: 'Configuration', framework: 'Framework', security: 'Security', service: 'Service', business: 'Business',
+  data: 'Data', failure: 'Failure', system: 'System', component: 'Component', database: 'Database', start: 'Start', end: 'End',
+  process: 'Process', decision: 'Decision', input: 'Input', output: 'Output', subprocess: 'Subprocess', actor: 'Actor',
+  participant: 'Participant', entity: 'Entity', device: 'Device', node: 'Nodes', container: 'Container', artifact: 'Artifact',
+  class: 'Class', interface: 'Interface', abstract: 'Abstract class', state: 'State', initial: 'Initial', final: 'End', choice: 'Choice',
+  usecase: 'Use case', dataStore: 'Data store'
 };
 
 export function nodeMetrics(node, type) {

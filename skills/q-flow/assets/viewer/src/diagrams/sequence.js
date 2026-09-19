@@ -20,7 +20,7 @@ function sequenceNode(node, x, y, fill, stroke, palette, locale) {
 export default {
   dashedKinds: ['return'],
   markers: { async: { end: 'arrow-open' }, return: { end: 'arrow-open' } },
-  id: 'sequence', label: '时序图',
+  id: 'sequence', label: 'Sequence',
   nodeKinds: ["actor", "participant", "external", "service", "database"],
   groupKinds: ["alt", "opt", "loop", "par"],
   edgeKinds: ["sync", "async", "return"],

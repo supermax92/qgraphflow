@@ -10,7 +10,7 @@ function dataflowNode(node, x, y, fill, stroke) {
 }
 
 export default {
-  id: 'dataflow', label: '数据流图',
+  id: 'dataflow', label: 'Data flow',
   nodeKinds: ["external", "process", "dataStore"],
   groupKinds: ["ownership", "external"],
   edgeKinds: ["data"],

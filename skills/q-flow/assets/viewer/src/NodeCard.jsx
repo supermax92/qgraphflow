@@ -79,15 +79,15 @@ export default function NodeCard({ node, edge, source, target, others = [], canv
   const sourceAnchor = !relation && node.source ? `${node.source.file}:${node.source.lineStart}${node.source.lineEnd ? `-${node.source.lineEnd}` : ''}` : null;
   const color = relation ? edgeColor(edge, target, palette, moduleColors, source, sequencePairs(graph).get(edge.id)) : nodeAppearance(node, palette, moduleColors).stroke;
   return <aside ref={ref} className={`node-card ${relation ? 'relation-card' : ''} ${pick.side === 'left' ? 'is-flipped' : pick.side === 'below' ? 'is-below' : pick.side === 'above' ? 'is-above' : ''}`} style={{ left: x, top: y, width: CARD_WIDTH, visibility: shouldFallback ? 'hidden' : undefined }} role="dialog" aria-label={label} data-node-id={relation ? undefined : node.id} data-edge-id={relation ? edge.id : undefined}>
-    <button className="card-close" onClick={onClose} aria-label={t('关闭')}><Icon name="close" /></button>
+    <button className="card-close" onClick={onClose} aria-label={t('Close')}><Icon name="close" /></button>
     {editor.editing ? <TextEditor editor={editor} relation={relation} locked={locked} locale={locale} /> : <>
-      <p className="card-kicker"><span className="node-dot" style={{ backgroundColor: color }} />{relation ? `${t('关系')} · ${edge.kind}` : `${t(kindLabels[node.kind] ?? node.kind)}${node.module ? ` · ${node.module}` : ''}`}</p>
+      <p className="card-kicker"><span className="node-dot" style={{ backgroundColor: color }} />{relation ? `${t('Edges')} · ${edge.kind}` : `${t(kindLabels[node.kind] ?? node.kind)}${node.module ? ` · ${node.module}` : ''}`}</p>
       <h4>{label}</h4>
       {relation ? <p className="card-subtitle">{source?.label} → {target?.label}</p> : node.subtitle && <p className="card-subtitle">{node.subtitle}</p>}
       {sourceAnchor && <p className="card-source" title={sourceAnchor}><Icon name="source" /><code>{sourceAnchor}</code></p>}
-      {relation && edge.evidence && <p className="card-source">{t('证据')} · {edge.evidence}</p>}
+      {relation && edge.evidence && <p className="card-source">{t('Evidence')} · {edge.evidence}</p>}
       {!relation && node.tags?.length > 0 && <div className="card-tags">{node.tags.slice(0, 4).map(tag => <span key={tag}>{tag}</span>)}</div>}
-      <div className="card-actions"><TextEditor editor={editor} relation={relation} locked={locked} locale={locale} /><button className="card-action" onClick={onDetails}>{t('查看详情')}<Icon name="arrowRight" /></button></div>
+      <div className="card-actions"><TextEditor editor={editor} relation={relation} locked={locked} locale={locale} /><button className="card-action" onClick={onDetails}>{t('View details')}<Icon name="arrowRight" /></button></div>
     </>}
   </aside>;
 }

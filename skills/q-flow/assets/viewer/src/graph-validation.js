@@ -4,6 +4,8 @@ import { validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
 import { DIAGRAM_TYPES, getDiagram } from './diagrams/registry.js';
 export { DIAGRAM_TYPES };
+import { IDENTITY_SCALES } from './radix-colors.js';
+import { colorSlot } from './visual-style.js';
 
 const EVIDENCE_KINDS = new Set(['source', 'code', 'config', 'schema', 'test', 'document', 'framework', 'inference']);
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -232,4 +234,71 @@ export function validateGraphInput(input, options = {}) {
     errors.push(...validateGraph(graph, options).map(error => `diagrams[${index}].${error}`));
   });
   return errors;
+}
+
+// Advisory review of an authored graph or collection: warnings, never errors, so every graph that validated before
+// still validates. It reads the card-identity contract back to the author: a node without `module` renders on the
+// plain surface, one module for a whole flow deserves a second look, two module names can hash to one colour slot
+// (informational: slots repeat by design), and only a decision branches in a flowchart. The Viewer's own slot hash predicts collisions exactly. Outsiders
+// (`external`, `actor`, `device`) may stay plain; what is flagged for them is inconsistency across views.
+const PLAIN_KINDS = new Set(['initial', 'final']);
+const OUTSIDER_KINDS = new Set(['external', 'actor', 'device']);
+const moduleOf = item => (typeof item?.module === 'string' && item.module.trim() ? item.module : undefined);
+
+export function reviewComposition(input) {
+  if (validateGraphInput(input, { inputOnly: true }).length) return [];
+  const graphs = graphsOf(input), warnings = [];
+  const members = graph => [...graph.nodes, ...graph.edges];
+  const modules = new Set(graphs.flatMap(graph => members(graph).map(moduleOf).filter(Boolean)));
+  const slotOf = module => colorSlot(module, IDENTITY_SCALES.length);
+  const taken = new Set([...modules].map(slotOf));
+  const free = IDENTITY_SCALES.filter((name, index) => !taken.has(index));
+  // The same label across views is the same component: its module must be present everywhere and be the same one.
+  const byLabel = new Map();
+  for (const graph of graphs) for (const node of graph.nodes) if (typeof node.label === 'string' && !PLAIN_KINDS.has(node.kind)) {
+    byLabel.set(node.label, [...(byLabel.get(node.label) ?? []), { diagramType: diagramTypeOf(graph), id: node.id, module: moduleOf(node) }]);
+  }
+  for (const graph of graphs) {
+    const diagramType = diagramTypeOf(graph);
+    const warn = (ruleId, elementIds, message, remediation) => warnings.push({ ruleId, severity: 'warning', diagramType, elementIds, message, remediation });
+    if (modules.size) {
+      const plain = graph.nodes.filter(node => !PLAIN_KINDS.has(node.kind) && !OUTSIDER_KINDS.has(node.kind) && !moduleOf(node));
+      if (plain.length) warn('module.missing', plain.map(node => node.id),
+        `${plain.length === 1 ? 'node' : 'nodes'} ${plain.map(node => node.id).join(', ')} ${plain.length === 1 ? 'has' : 'have'} no module and render${plain.length === 1 ? 's' : ''} on the plain surface without identity`,
+        'Give every ordinary node the module of the subsystem whose work it performs (a step: the subsystem that does the work; an external hub or broker: its channel); leave only true outsiders plain.');
+      for (const node of graph.nodes) {
+        const elsewhere = (byLabel.get(node.label) ?? []).filter(item => item.diagramType !== diagramType && item.module && item.module !== moduleOf(node));
+        if (!elsewhere.length || PLAIN_KINDS.has(node.kind)) continue;
+        const other = elsewhere[0];
+        warn('module.inconsistent', [node.id], `node ${node.id} "${node.label}" ${moduleOf(node) ? `carries module "${moduleOf(node)}"` : 'has no module'} here but "${other.module}" in ${other.diagramType}`,
+          'The same component keeps the same module in every view of a collection; copy the module name or make the labels differ when they are different things.');
+      }
+    }
+    const washed = graph.nodes.filter(moduleOf);
+    if (['flowchart', 'dataflow'].includes(diagramType) && washed.length >= 6 && new Set(washed.map(moduleOf)).size === 1) {
+      warn('module.single-tone', washed.map(node => node.id),
+        `${diagramType} gives all ${washed.length} nodes the module "${moduleOf(washed[0])}", so the wash tells the reader nothing`,
+        'Check whether the steps really are one subsystem\'s work: a step performed by another subsystem (a store, a cache layer, a queue) takes that subsystem\'s module, start and end take the caller. If everything truly belongs to one subsystem, leave it.');
+    }
+    const bySlot = new Map();
+    for (const module of new Set(members(graph).map(moduleOf).filter(Boolean))) bySlot.set(slotOf(module), [...(bySlot.get(slotOf(module)) ?? []), module]);
+    for (const [slot, names] of bySlot) if (names.length > 1) {
+      warn('module.slot-collision', graph.nodes.filter(node => names.includes(moduleOf(node))).map(node => node.id),
+        `modules ${names.map(name => `"${name}"`).join(' and ')} share colour slot ${IDENTITY_SCALES[slot]} in this view`,
+        `Informational: eight slots repeat by design and the module label stays authoritative — never rename a module for colour. Merge the two only if they are the same subsystem; for a module you are introducing now, --module-slot shows its slot${free.length ? ` (free: ${free.join(', ')})` : ''}.`);
+    }
+    if (diagramType === 'flowchart') {
+      const outgoing = new Map();
+      for (const edge of graph.edges) outgoing.set(edge.source, (outgoing.get(edge.source) ?? 0) + 1);
+      for (const node of graph.nodes) if (node.kind !== 'decision' && (outgoing.get(node.id) ?? 0) > 1) {
+        warn('flowchart.process-branch', [node.id], `node ${node.id} (${node.kind}) has ${outgoing.get(node.id)} outgoing edges; only a decision branches`,
+          'Insert a decision that asks the actual condition, or merge the paths into one.');
+      }
+    }
+  }
+  return warnings;
+}
+
+export function moduleSlotName(module) {
+  return IDENTITY_SCALES[colorSlot(module, IDENTITY_SCALES.length)];
 }

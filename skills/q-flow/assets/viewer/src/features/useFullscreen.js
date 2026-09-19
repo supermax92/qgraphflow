@@ -12,7 +12,7 @@ export function useFullscreen(setStatus, fitCanvas) {
     if (!board || pending.current) return;
     const exiting = document.fullscreenElement === board;
     if (!exiting && !fullscreenSupported) {
-      setStatus('当前浏览器或页面不支持全屏');
+      setStatus('Fullscreen is not available in this browser or page');
       return;
     }
     pending.current = true; setPending(true); setStatus('');
@@ -21,7 +21,7 @@ export function useFullscreen(setStatus, fitCanvas) {
       else await board.requestFullscreen();
       return true;
     } catch {
-      if (board.isConnected) setStatus(exiting ? '无法退出全屏，请按 Esc 重试' : '无法进入全屏，请检查浏览器或页面权限后重试');
+      if (board.isConnected) setStatus(exiting ? 'Could not exit fullscreen. Press Esc to try again.' : 'Could not enter fullscreen. Check browser or page permissions and try again.');
     } finally {
       pending.current = false;
       if (board.isConnected) setPending(false);

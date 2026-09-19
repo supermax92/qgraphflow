@@ -14,7 +14,7 @@ function usecaseNode(node, x, y, fill, stroke, palette) {
 
 export default {
   dashedKinds: ['include', 'extend'],
-  id: 'usecase', label: '用例图',
+  id: 'usecase', label: 'Use cases',
   nodeKinds: ["actor", "usecase"],
   groupKinds: ["system"],
   edgeKinds: ["association", "include", "extend"],

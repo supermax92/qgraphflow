@@ -10,7 +10,7 @@ export function useTextEditor(node, edge, onSaveNode, onSaveEdge, locale) {
   return { ...draft, set, cancel: () => reset(true), begin: () => set({ editing: true, returnFocus: false }), save: event => {
     event.preventDefault();
     const label = draft.label.trim();
-    if (!label) { set({ error: translate(locale, '名称不能为空') }); return; }
+    if (!label) { set({ error: translate(locale, 'Name is required') }); return; }
     if (edge) onSaveEdge(edge.id, label); else onSaveNode(node.id, label, draft.subtitle.trim());
     set({ editing: false, error: '' });
   } };
@@ -26,9 +26,9 @@ export default function TextEditor({ editor, relation, locked, locale }) {
     if (event.nativeEvent.isComposing || event.keyCode === 229) { if (event.key === 'Enter') event.preventDefault(); return; }
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); editor.cancel(); }
   }}>
-    <label>{t('名称')}<input ref={input} autoFocus required value={editor.label} onChange={event => editor.set({ label: event.target.value, error: '' })} aria-invalid={Boolean(editor.error)} /></label>
-    {!relation && <label>{t('说明')}<textarea value={editor.subtitle} onChange={event => editor.set({ subtitle: event.target.value, error: '' })} /></label>}
+    <label>{t('Name')}<input ref={input} autoFocus required value={editor.label} onChange={event => editor.set({ label: event.target.value, error: '' })} aria-invalid={Boolean(editor.error)} /></label>
+    {!relation && <label>{t('Description')}<textarea value={editor.subtitle} onChange={event => editor.set({ subtitle: event.target.value, error: '' })} /></label>}
     {editor.error && <p className="card-error" role="alert">{editor.error}</p>}
-    <div className="card-actions"><button type="button" onClick={editor.cancel}>{t('取消')}</button><button type="submit">{t('保存')}</button></div>
-  </form> : <button ref={button} disabled={locked} title={locked ? t('请先解除布局锁定') : ''} onClick={editor.begin}>{t('编辑文字')}</button>;
+    <div className="card-actions"><button type="button" onClick={editor.cancel}>{t('Cancel')}</button><button type="submit">{t('Save')}</button></div>
+  </form> : <button ref={button} disabled={locked} title={locked ? t('Unlock the layout first') : ''} onClick={editor.begin}>{t('Edit text')}</button>;
 }

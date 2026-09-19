@@ -88,9 +88,11 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/scripts/generate-viewer.mjs', 'skills/q-flow/scripts/validate-graph.mjs',
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
-    'README.md', ...guides, 'examples/order-flow.graph.json', 'docs/images/order-flow.svg'
+    'README.md', ...guides, 'examples/order-flow.graph.json'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
-  assert.ok(files.has('examples/showcase/kafka.en.graph.json'));
+  assert.ok(!files.has('examples/showcase/kafka.en.graph.json'), 'sample collections stay in the repository; the package ships one smoke example');
+  assert.ok(!files.has('examples/sequence-execution.graph.json'));
+  assert.ok(!files.has('docs/images/order-flow.svg'));
   // Fixed ELK runtime adds about 1.6MB; retain a bounded total install budget.
   assert.ok(packed.unpackedSize < 4_000_000, `Unexpected install size: ${packed.unpackedSize}`);
   for (const locale of ['zh-CN', 'ja', 'ko', 'de', 'fr', 'es']) {
@@ -100,7 +102,7 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.ok(files.has(`docs/readme/README.${locale}.md`));
   }
   assert.deepEqual([...files].filter(file => file.startsWith('skills/q-flow/references/')).sort(),
-    ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']
+    [...['acceptance', 'evidence-sources', 'graph-common', 'graph-schema', 'guided-intake'], ...['architecture', 'class', 'dataflow', 'deployment', 'er', 'flowchart', 'sequence', 'state', 'usecase'].map(type => `types/${type}`), 'viewer-development', 'visual-contract']
       .map(name => `skills/q-flow/references/${name}.md`).sort());
   for (const locale of ['ko', 'fr']) assert.ok(!files.has(`docs/readme/README.${locale}.md`));
   for (const file of files) {
@@ -138,7 +140,7 @@ test('the distributed plugin runs independently from its installed location', t 
   const args = [path.join(scripts, 'generate-viewer.mjs'), graphPath, output];
   run(process.execPath, args, temp);
   assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
-  run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(plugin, 'examples/showcase/kafka.en.graph.json'), path.join(temp, 'kafka')], temp);
+  run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(root, 'examples/showcase/kafka.en.graph.json'), path.join(temp, 'kafka')], temp);
   assert.equal(readJson(path.join(temp, 'kafka/graph.json')).diagrams.length, 9);
   const before = fs.readdirSync(output).map(file => fs.readFileSync(path.join(output, file)));
   const again = spawnSync(process.execPath, args, { cwd: temp, encoding: 'utf8', timeout: 30_000 });

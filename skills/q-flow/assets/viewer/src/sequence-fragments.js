@@ -127,7 +127,7 @@ function legacyFragment(group, routes, locale, executions, heading) {
   const inside = route => route.points.some(p => p.x >= frame.x && p.x <= frame.x + frame.width && p.y > frame.y && p.y < frame.y + frame.height);
   const enclosed = all.filter(([, route]) => inside(route));
   const legacy = group.operands === undefined;
-  const operands = legacy ? [{ guard: translate(locale, '分支条件未标注'), edgeIds: enclosed.map(([id]) => id) }] : group.operands;
+  const operands = legacy ? [{ guard: translate(locale, 'Branch conditions unspecified'), edgeIds: enclosed.map(([id]) => id) }] : group.operands;
   if (legacy) warnings.push(`group ${group.id}: alt branch conditions are unspecified (operands missing)`);
   if (!Array.isArray(operands) || !operands.length) return { errors, warnings, guards, separators };
   const members = new Set(operands.flatMap(operand => operand.edgeIds ?? []));

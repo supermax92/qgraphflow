@@ -28,7 +28,7 @@ function stateNode(node, x, y, fill, stroke, palette) {
 }
 
 export default {
-  id: 'state', label: '状态图',
+  id: 'state', label: 'State diagram',
   nodeKinds: ["initial", "state", "final", "choice"],
   groupKinds: [],
   edgeKinds: ["transition"],

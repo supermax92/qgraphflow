@@ -1,5 +1,5 @@
 interface:
   display_name: "Q flow"
-  short_description: "基于源码、配置和文档生成九类交互式软件图"
+  short_description: "Nine kinds of interactive software diagrams from source, configuration and documents"
   brand_color: "#203f35"
-  default_prompt: "使用 $q-flow 从当前证据生成合适类型的交互式软件图。"
+  default_prompt: "Use $q-flow to generate the right kind of interactive software diagram from the current evidence."

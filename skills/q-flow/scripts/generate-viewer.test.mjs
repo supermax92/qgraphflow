@@ -83,7 +83,7 @@ test('type budgets report composition without enforcing ratios or changing geome
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const inputFile = path.join(directory, 'input.json');
   fs.writeFileSync(inputFile, JSON.stringify(input));
-  const generated = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), inputFile, directory, '--layout', 'preserve'], { encoding: 'utf8' });
+  const generated = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), inputFile, directory, '--layout', 'preserve', '--verbose'], { encoding: 'utf8' });
   assert.equal(generated.status, 0, generated.stderr);
   assert.deepEqual(JSON.parse(generated.stdout).layoutComposition, reports);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'graph.json'), 'utf8')), input, 'Budget reporting preserves all geometry.');
@@ -983,7 +983,7 @@ test('CLI reports clear point crossings as information and blocks cramped labels
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codegraph-flow-layout-warning-'));
     const input = path.join(root, 'graph.json');
     fs.writeFileSync(input, JSON.stringify(fixture));
-    const result = spawnSync(process.execPath, [path.join(scriptDir, 'validate-graph.mjs'), input], { encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [path.join(scriptDir, 'validate-graph.mjs'), input, '--verbose'], { encoding: 'utf8' });
     if (expected) { assert.notEqual(result.status, 0); assert.match(result.stderr, expected); }
     else { assert.equal(result.status, 0, result.stderr); assert.ok(JSON.parse(result.stdout).diagnostics.some(item => item.ruleId === 'route.point-crossing' && item.severity === 'info')); }
   }
@@ -1438,4 +1438,28 @@ test('nine-type color contract: neutral structure, identity chips and frames, ri
     assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.accent);
     assert.equal(nodeAppearance({ kind: 'final' }, palette).fill, palette.surface);
   }
+});
+
+test('receipts are one short line on success and keep the full detail behind --verbose', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-receipt-'));
+  const input = path.join(import.meta.dirname, '../../../examples/order-flow.graph.json');
+  const generated = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, directory, '--force'], { encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  assert.equal(generated.stdout.trim().split('\n').length, 1);
+  const receipt = JSON.parse(generated.stdout);
+  for (const key of ['layout', 'layoutComposition', 'quality', 'candidates', 'diagnostics']) assert.equal(receipt[key], undefined, `${key} stays out of the default receipt`);
+  assert.deepEqual([receipt.semantic.status, receipt.geometry.status, receipt.rendering.status], ['passed', 'passed', 'not-checked']);
+  assert.ok(generated.stdout.trim().length - directory.length <= 400, `receipt is ${generated.stdout.trim().length} bytes with a ${directory.length}-byte path`);
+  const verbose = spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), input, directory, '--force', '--verbose'], { encoding: 'utf8' });
+  const full = JSON.parse(verbose.stdout);
+  assert.ok(Array.isArray(full.layout) && Array.isArray(full.layoutComposition) && Array.isArray(full.quality));
+  const validated = spawnSync(process.execPath, [path.join(scriptDir, 'validate-graph.mjs'), path.join(directory, 'graph.json')], { encoding: 'utf8' });
+  assert.equal(validated.status, 0, validated.stderr);
+  assert.equal(JSON.parse(validated.stdout).diagnostics, undefined);
+  assert.ok(validated.stdout.trim().length <= 400);
+  for (const script of ['generate-viewer.mjs', 'validate-graph.mjs']) {
+    const help = spawnSync(process.execPath, [path.join(scriptDir, script), '--help'], { encoding: 'utf8' });
+    assert.equal(help.status, 0); assert.match(help.stdout, /--verbose/); assert.match(help.stdout, /--repo-root/);
+  }
+  fs.rmSync(directory, { recursive: true, force: true });
 });

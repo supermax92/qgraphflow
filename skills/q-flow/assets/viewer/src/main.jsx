@@ -9,6 +9,7 @@ import { DIAGRAM_TYPES } from './diagrams/registry.js';
 import { moduleColorMap, PALETTES, themeVariables } from './visual-style.js';
 import { usePanels } from './features/usePanels.js';
 import { graphInputWithEdits } from './session-graph.js';
+import { DEFAULT_LOCALE } from './i18n.js';
 
 const input = JSON.parse(document.querySelector('#graph-data').textContent);
 const diagrams = [...(Array.isArray(input.diagrams) ? input.diagrams : [input])]
@@ -49,7 +50,7 @@ function Viewer() {
     if (!wash) for (const [name, tone] of colors) colors.set(name, { ...tone, wash: PALETTES[theme].card, header: PALETTES[theme].surface2 });
     return colors;
   }, [theme, wash]);
-  useEffect(() => { document.documentElement.lang = graph.meta.locale ?? 'zh-CN'; }, [graph.meta.locale]);
+  useEffect(() => { document.documentElement.lang = graph.meta.locale ?? DEFAULT_LOCALE; }, [graph.meta.locale]);
   useEffect(() => { document.title = `${graph.meta.title} · QGraphFlow`; }, [graph.meta.title]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

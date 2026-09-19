@@ -35,7 +35,7 @@ const anchor = (node, side, offset) => {
 const contentInset = node => node.kind === 'external' ? Math.min(28, node.size.width * .08) : node.kind === 'device' ? 12 : 0;
 
 export default {
-  id: 'deployment', label: '部署图',
+  id: 'deployment', label: 'Deployment',
   nodeKinds: ["device", "node", "container", "artifact", "service", "database", "external"],
   groupKinds: ["host", "network", "cluster", "namespace"],
   edgeKinds: ["deploy", "network", "depends"],

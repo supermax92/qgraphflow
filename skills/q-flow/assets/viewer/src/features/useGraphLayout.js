@@ -59,13 +59,13 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
   }, [currentGraph, diagramType, getViewport, reduceMotion, setCenter, setViewport]);
   const resetLayout = () => { setNodes(initialNodes(originalGraph, diagramType)); setEdges(initialEdges(originalGraph, diagramType)); requestAnimationFrame(() => readGraph(originalGraph)); };
   const nudgeLayout = selectedId => {
-    if (locked) { setStatus('请先解除布局锁定，再整理间距'); return; }
+    if (locked) { setStatus('Unlock the layout before arranging nodes'); return; }
     const result = nudgeGraphLayout(currentGraph, selectedId);
-    if (result.rejected) { setStatus('当前约束下无法继续整理'); return; }
+    if (result.rejected) { setStatus('Cannot arrange further within the current constraints'); return; }
     const positions = new Map(result.graph.nodes.map(node => [node.id, node.position]));
     setNodes(current => current.map(node => node.type === 'diagram' ? { ...node, position: positions.get(node.id) } : node));
-    const movement = result.movedNodeIds.length, scope = t(selectedId ? '局部' : '全图');
-    setStatus(movement ? t('{scope}间距已整理：移动 {count} 个节点', { scope, count: movement }) : t('当前间距无需调整'));
+    const movement = result.movedNodeIds.length, scope = t(selectedId ? 'Local' : 'Full diagram');
+    setStatus(movement ? t('{scope} arranged: {count} nodes moved', { scope, count: movement }) : t('No spacing changes needed'));
   };
   const focusProblem = problem => {
     const rect = problem.bounds?.[0];

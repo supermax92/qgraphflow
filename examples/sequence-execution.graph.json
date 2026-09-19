@@ -1,96 +1,95 @@
 {
   "meta": {
-    "title": "时序执行与嵌套片段",
-    "subtitle": "六组调用／返回 · loop 内 alt · opt 内 par",
+    "title": "Sequence executions and nested fragments",
+    "subtitle": "six call/return pairs · alt inside loop · par inside opt",
     "sourceRef": "conceptual:sequence-execution-demo",
-    "scope": "概念示例：用于验证图示能力，不表示实际业务源码或运行结果。order 是排版槽位，par 分支上下位置不代表串行。",
+    "scope": "Conceptual example that exercises the notation; it does not describe real business code or runtime results. order is a layout slot; the vertical position of par branches is not serial order.",
     "diagramType": "sequence",
-    "locale": "zh-CN"
+    "locale": "en"
   },
   "nodes": [
     {
       "id": "client",
-      "label": "调用方",
+      "label": "Caller",
       "kind": "actor",
-      "module": "调用方",
       "position": {
-        "x": 897,
+        "x": 63,
         "y": 48
       },
       "size": {
         "width": 160,
-        "height": 2682
+        "height": 1888
       },
       "facts": [
-        "概念参与者，用于展示时序能力。"
+        "Conceptual participant used to demonstrate the sequence notation."
       ]
     },
     {
       "id": "order",
-      "label": "订单预检服务",
+      "label": "Order pre-check service",
       "kind": "participant",
-      "module": "订单预检服务",
+      "module": "order-precheck",
       "position": {
-        "x": 1596,
+        "x": 287,
         "y": 48
       },
       "size": {
-        "width": 166,
-        "height": 2682
+        "width": 334,
+        "height": 1888
       },
       "facts": [
-        "概念参与者，用于展示时序能力。"
+        "Conceptual participant used to demonstrate the sequence notation."
       ]
     },
     {
       "id": "inventory",
-      "label": "库存服务",
+      "label": "Inventory service",
       "kind": "participant",
-      "module": "库存服务",
+      "module": "inventory",
       "position": {
-        "x": 1248,
+        "x": 685,
         "y": 48
       },
       "size": {
-        "width": 160,
-        "height": 2682
+        "width": 256,
+        "height": 1888
       },
       "facts": [
-        "概念参与者，用于展示时序能力。"
+        "Conceptual participant used to demonstrate the sequence notation."
       ]
     },
     {
       "id": "risk",
-      "label": "风控服务",
+      "label": "Risk service",
       "kind": "participant",
-      "module": "风控服务",
+      "module": "risk",
       "position": {
-        "x": 1950,
+        "x": 1005,
         "y": 48
       },
       "size": {
-        "width": 160,
-        "height": 2682
+        "width": 191,
+        "height": 1888
       },
       "facts": [
-        "概念参与者，用于展示时序能力。"
+        "Conceptual participant used to demonstrate the sequence notation."
       ]
     },
     {
       "id": "audit",
-      "label": "审计服务",
+      "label": "Audit service",
       "kind": "participant",
-      "module": "审计服务",
+      "module": "audit",
       "position": {
-        "x": 546,
+        "x": 1260,
         "y": 48
       },
       "size": {
-        "width": 160,
-        "height": 2682
+        "width": 203,
+        "height": 1888
       },
       "facts": [
-        "概念参与者，用于展示时序能力。"
+        "Conceptual participant used to demonstrate the sequence notation."
       ]
     }
   ],
@@ -104,7 +103,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 262
+        "messageY": 216
       }
     },
     {
@@ -116,7 +115,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 323
+        "messageY": 262
       }
     },
     {
@@ -128,7 +127,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 425
+        "messageY": 358
       }
     },
     {
@@ -136,12 +135,12 @@
       "source": "inventory",
       "target": "order",
       "order": 8,
-      "label": "库存快照",
+      "label": "stock snapshot",
       "kind": "return",
       "evidence": "inference",
       "replyTo": "c3",
       "route": {
-        "messageY": 497
+        "messageY": 424
       }
     },
     {
@@ -149,12 +148,12 @@
       "source": "order",
       "target": "order",
       "order": 9,
-      "label": "准备完成",
+      "label": "prepared",
       "kind": "return",
       "evidence": "inference",
       "replyTo": "c2",
       "route": {
-        "messageY": 558
+        "messageY": 470
       }
     },
     {
@@ -166,7 +165,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 780
+        "messageY": 668
       }
     },
     {
@@ -179,7 +178,7 @@
       "evidence": "inference",
       "replyTo": "c4",
       "route": {
-        "messageY": 852
+        "messageY": 734
       }
     },
     {
@@ -191,7 +190,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 1856
+        "messageY": 1422
       }
     },
     {
@@ -199,12 +198,12 @@
       "source": "risk",
       "target": "order",
       "order": 29,
-      "label": "风险结果",
+      "label": "risk result",
       "kind": "return",
       "evidence": "inference",
       "replyTo": "c5",
       "route": {
-        "messageY": 1928
+        "messageY": 1488
       }
     },
     {
@@ -216,7 +215,7 @@
       "kind": "sync",
       "evidence": "inference",
       "route": {
-        "messageY": 2124
+        "messageY": 1614
       }
     },
     {
@@ -224,12 +223,12 @@
       "source": "audit",
       "target": "order",
       "order": 33,
-      "label": "已记录",
+      "label": "recorded",
       "kind": "return",
       "evidence": "inference",
       "replyTo": "c6",
       "route": {
-        "messageY": 2196
+        "messageY": 1680
       }
     },
     {
@@ -237,12 +236,12 @@
       "source": "order",
       "target": "client",
       "order": 38,
-      "label": "预检结果",
+      "label": "pre-check result",
       "kind": "return",
       "evidence": "inference",
       "replyTo": "c1",
       "route": {
-        "messageY": 2636
+        "messageY": 1874
       }
     }
   ],
@@ -325,14 +324,14 @@
     {
       "id": "retry",
       "kind": "loop",
-      "label": "尝试预留库存",
+      "label": "try to reserve stock",
       "position": {
-        "x": 32,
-        "y": 618
+        "x": 56,
+        "y": 530
       },
       "size": {
-        "width": 2493,
-        "height": 892
+        "width": 853,
+        "height": 628
       },
       "loop": {
         "min": 1,
@@ -352,14 +351,14 @@
     {
       "id": "outcome",
       "kind": "alt",
-      "label": "处理本次结果",
+      "label": "handle this attempt",
       "position": {
-        "x": 64,
-        "y": 882
+        "x": 88,
+        "y": 764
       },
       "size": {
-        "width": 2429,
-        "height": 444
+        "width": 789,
+        "height": 330
       },
       "parentId": "retry",
       "parentOperandId": "attempt",
@@ -368,27 +367,27 @@
           "id": "acquired",
           "guard": "reservation = ACQUIRED",
           "edgeIds": [],
-          "body": "reserved ← true；下一次检查退出循环"
+          "body": "reserved ← true; the next check leaves the loop"
         },
         {
           "id": "busy",
           "guard": "else",
           "edgeIds": [],
-          "body": "attempt ← attempt + 1；最多尝试 3 次"
+          "body": "attempt ← attempt + 1; at most 3 attempts"
         }
       ]
     },
     {
       "id": "optional",
       "kind": "opt",
-      "label": "预留成功后执行",
+      "label": "after a successful reservation",
       "position": {
         "x": 32,
-        "y": 1574
+        "y": 1182
       },
       "size": {
-        "width": 2493,
-        "height": 956
+        "width": 1426,
+        "height": 632
       },
       "operands": [
         {
@@ -401,21 +400,21 @@
     {
       "id": "parallel",
       "kind": "par",
-      "label": "分支并行，末端汇合",
+      "label": "concurrent branches, joined at the end",
       "position": {
         "x": 64,
-        "y": 1694
+        "y": 1284
       },
       "size": {
-        "width": 2429,
-        "height": 652
+        "width": 1362,
+        "height": 466
       },
       "parentId": "optional",
       "parentOperandId": "reserved",
       "operands": [
         {
           "id": "risk",
-          "label": "风险检查",
+          "label": "risk check",
           "edgeIds": [
             "c5",
             "r5"
@@ -423,7 +422,7 @@
         },
         {
           "id": "audit",
-          "label": "审计记录",
+          "label": "audit record",
           "edgeIds": [
             "c6",
             "r6"
@@ -433,7 +432,7 @@
     }
   ],
   "layout": {
-    "version": "strict-v1-elkjs-0.11.0",
+    "version": "adaptive-v2-elkjs-0.11.0",
     "strategy": "sequence-0"
   }
 }

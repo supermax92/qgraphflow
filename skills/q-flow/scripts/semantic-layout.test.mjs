@@ -144,7 +144,9 @@ test('all nine coordinate-free semantic inputs pass before any geometry is evalu
   assert.equal(report.rendering.status, 'not-checked');
   const imported = spawnSync(process.execPath, ['--input-type=module', '-'], { input: `await import(${JSON.stringify(new URL('./validate-graph.mjs', import.meta.url).href)}); process.stdout.write('imported');`, encoding: 'utf8' });
   assert.equal(imported.status, 0, imported.stderr); assert.equal(imported.stdout, 'imported', 'Importing from stdin must not execute the CLI or resolve a file named dash.');
-  assert.equal(report.layoutComposition, null);
+  assert.equal(report.layoutComposition, undefined, 'one-line receipts carry no composition detail');
+  const verbose = spawnSync(process.execPath, [path.join(import.meta.dirname, 'validate-graph.mjs'), inputPath, '--input-only', '--verbose'], { encoding: 'utf8' });
+  assert.equal(JSON.parse(verbose.stdout).layoutComposition, null, 'input-only has no geometry to compose even in verbose mode');
 });
 
 const chainOf = (type, length, kind, decorate = () => ({})) => {
@@ -623,7 +625,7 @@ test('the public generator compiles semantic input, preserves validated geometry
   const output = path.join(directory, 'viewer'), source = path.join(directory, 'input.json'), generator = path.join(import.meta.dirname, 'generate-viewer.mjs');
   const run = (...options) => spawnSync(process.execPath, [generator, source, output, ...options], { encoding: 'utf8' });
   fs.writeFileSync(source, JSON.stringify(input));
-  let result = run(); assert.equal(result.status, 0, result.stderr);
+  let result = run('--verbose'); assert.equal(result.status, 0, result.stderr);
   const report = JSON.parse(result.stdout);
   assert.equal(report.layout.length, 9);
   assert.ok(report.quality.every(item => item.semantic.status === 'passed' && item.geometry.status === 'passed' && item.rendering.status === 'not-checked'));

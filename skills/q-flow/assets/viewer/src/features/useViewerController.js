@@ -35,7 +35,7 @@ export function useViewerController(graph, theme, panels, moduleColors, original
   const saveGraph = () => saveGraphJson(graphForSave(layout.currentGraph), graph.meta.locale, setStatus);
   const reset = () => {
     layout.resetLayout(); selection.resetSelection(); setFlowEnabled(true);
-    setStatus('已重置：恢复原始位置和阅读视角');
+    setStatus('Reset: original positions and reading view restored');
   };
   return { ...layout, ...selection, ...presentation, ...panels, ...fullscreen,
     diagramType: graph.meta.diagramType ?? 'architecture', palette, moduleColors, reduceMotion, exportStatus, exportDiagram, saveGraph, reset,
