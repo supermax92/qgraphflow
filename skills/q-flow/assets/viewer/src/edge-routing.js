@@ -1,7 +1,13 @@
 import { TYPOGRAPHY } from './visual-style.js';
-import { layoutText, cardTextLayout, estimateLabelSize } from './text-layout.js';
+import { layoutText, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout } from './text-layout.js';
+import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 export { layoutText, cardTextLayout, estimateLabelSize } from './text-layout.js';
 import { getDiagram } from './diagrams/registry.js';
+import { sequenceHeaderHeight } from './diagrams/sequence.js';
+import { actorTop } from './diagrams/usecase.js';
+import { stateSymbolX } from './diagrams/state.js';
+import { sequencePairs, sequenceExecutions, sequenceEndpointY, executionAt, sequenceMessageLabel } from './sequence-executions.js';
+import { sequenceFragment, fragmentHeadingLayout, intersects, segmentBoxes, operandScopes } from './sequence-fragments.js';
 
 export const ENDPOINT_STUB = 12;
 export const ER_ENDPOINT_STUB = 28;
@@ -39,8 +45,9 @@ export function cardinalityMarks(cardinality, point, neighbor) {
 }
 
 export function graphBounds(graph, routes = createEdgeRoutes(graph)) {
-  const items = [...(graph.groups ?? []), ...graph.nodes];
+  const items = [...(graph.groups ?? []), ...graph.nodes, ...sequenceExecutions(graph).map(item => ({ position: { x: item.x, y: item.y }, size: { width: item.width, height: item.height } }))];
   const points = [...routes.values()].flatMap(route => [...route.points, { x: route.labelBox.x, y: route.labelBox.y }, { x: route.labelBox.x + route.labelBox.width, y: route.labelBox.y + route.labelBox.height }]);
+  for (const route of routes.values()) for (const label of route.endpointLabels ?? []) points.push({ x: label.labelBox.x, y: label.labelBox.y }, { x: label.labelBox.x + label.labelBox.width, y: label.labelBox.y + label.labelBox.height });
   if (getDiagram(graph.meta?.diagramType).cardinalities) for (const edge of graph.edges) {
     const route = routes.get(edge.id);
     for (const mark of [cardinalityMarks(edge.sourceCardinality, route.points[0], route.points[1]), cardinalityMarks(edge.targetCardinality, route.points.at(-1), route.points.at(-2))]) {
@@ -104,6 +111,7 @@ function longestSegmentMidpoint(points) {
   return longest.point;
 }
 
+// Every label sits on its own line, centred on the segment with the most clearance from both endpoints.
 function bestLabelPoint(points, labelSize, source, target) {
   let best = { clearance: -1, length: -1, point: longestSegmentMidpoint(points) };
   for (let index = 1; index < points.length; index += 1) {
@@ -151,6 +159,8 @@ function waypointEndpoint(node, point, fallbackSide, type) {
 
 function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints, stub = ENDPOINT_STUB) {
   const points = [start, outward(start, sourceSide, stub)];
+  // A shaped endpoint can sit inside its layout box. Turn at the real stub before joining its allocated channel.
+  if (['left', 'right'].includes(sourceSide) && waypoints.length && points[1].y !== waypoints[0].y) points.push({ x: points[1].x, y: waypoints[0].y });
   for (const waypoint of waypoints) appendOrthogonal(points, waypoint);
   appendOrthogonal(points, outward(end, targetSide, stub));
   points.push(end);
@@ -182,27 +192,32 @@ export function pathFromPoints(points, offsetX = 0, offsetY = 0) {
   }, `M ${shifted[0].x} ${shifted[0].y}`);
 }
 
-function routeSequenceEdge(edge, source, target, selfIndex, headerHeight) {
-  const sourceX = center(source).x;
-  const targetX = center(target).x;
-  const y = Math.min(source.position.y, target.position.y) + headerHeight + 4 + edge.order * 54;
-  const label = visibleEdgeLabel(edge, 'sequence');
-  const available = source.id === target.id ? Infinity : Math.max(1, Math.abs(targetX - sourceX) - 32 - 12);
-  const layout = layoutText(label, available);
-  const labelSize = { width: Math.max(24, layout.width + 12), height: layout.height + 6 };
+function routeSequenceEdge(edge, source, target, selfIndex, context) {
+  const { graph, executions, scopes, pairs } = context;
+  const y = sequenceEndpointY(graph, edge, 'send');
+  const endY = sequenceEndpointY(graph, edge, 'receive');
+  const sourceExecution = executionAt(executions, source.id, edge, 'send', y, scopes.get(edge.id));
+  const targetExecution = executionAt(executions, target.id, edge, 'receive', endY, scopes.get(edge.id));
+  const forward = source.id === target.id || center(source).x <= center(target).x;
+  const sourceX = sourceExecution ? sourceExecution.x + (forward ? sourceExecution.width : 0) : center(source).x;
+  const targetX = targetExecution ? targetExecution.x + (source.id === target.id || !forward ? targetExecution.width : 0) : center(target).x;
+  const label = sequenceMessageLabel(graph, edge, pairs, scopes);
+  const available = source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, Math.abs(targetX - sourceX) - 32 - 12));
+  const layout = edgeLabelLayout(label, available);
+  const labelSize = { width: layout.width, height: layout.height };
   if (source.id === target.id) {
     const extent = 48 + selfIndex * LANE_GAP;
     const start = { x: sourceX, y };
-    const end = { x: sourceX, y: y + 30 };
+    const end = { x: targetX, y: endY };
     const points = edge.route?.via?.length
       ? routePointsWithWaypoints(start, end, 'right', 'right', edge.route.via)
       : [start, { x: sourceX + extent, y }, { x: sourceX + extent, y: y + 30 }, end];
-    return { points, label, labelLines: layout.lines, labelSize, labelPoint: edge.route?.labelAt ?? { x: sourceX + extent + 8 + labelSize.width / 2, y: y + 15 }, sourceSide: 'right', targetSide: 'right' };
+    return { points, label, labelLines: layout.lines, labelSize, labelPoint: edge.route?.labelAt ?? { x: Math.max(...points.map(p => p.x)) + 8 + labelSize.width / 2, y: y + 15 }, sourceSide: 'right', targetSide: 'right' };
   }
   const points = edge.route?.via?.length
     ? routePointsWithWaypoints({ x: sourceX, y }, { x: targetX, y }, sourceX <= targetX ? 'right' : 'left', sourceX <= targetX ? 'left' : 'right', edge.route.via)
     : [{ x: sourceX, y }, { x: targetX, y }];
-  return { points, label, labelLines: layout.lines, labelSize, labelPoint: edge.route?.labelAt ?? { x: (sourceX + targetX) / 2, y: y + 2 - labelSize.height / 2 }, sourceSide: sourceX <= targetX ? 'right' : 'left', targetSide: sourceX <= targetX ? 'left' : 'right' };
+  return { points, label, labelLines: layout.lines, labelSize, labelPoint: edge.route?.labelAt ?? { x: (sourceX + targetX) / 2, y: y - 6 - labelSize.height / 2 }, sourceSide: sourceX <= targetX ? 'right' : 'left', targetSide: sourceX <= targetX ? 'left' : 'right' };
 }
 
 export function createEdgeRoutes(graph) {
@@ -214,7 +229,7 @@ export function createEdgeRoutes(graph) {
     const target = nodeById.get(edge.target);
     return { edge, source, target, self: source.id === target.id, ...sidesFor(source, target) };
   });
-  const sequenceHeader = graph.nodes.some(node => node.kind === 'actor') ? TYPOGRAPHY.sequenceActorHeader : TYPOGRAPHY.sequenceHeader;
+  const sequenceContext = type === 'sequence' ? { graph, executions: sequenceExecutions(graph), scopes: operandScopes(graph), pairs: sequencePairs(graph) } : null;
   const endpointBuckets = new Map();
   for (const item of prepared.filter(item => !getDiagram(type).sequence && !item.self && !item.edge.route?.via?.length)) {
     for (const [role, node, side, opposite] of [
@@ -233,30 +248,37 @@ export function createEdgeRoutes(graph) {
     bucket.forEach((item, index) => offsets.set(`${item.id}:${item.role}`, (index - (bucket.length - 1) / 2) * LANE_GAP));
   }
   const selfCounts = new Map();
+  const selfOrdinals = new Map();
+  for (const item of prepared.filter(item => item.self).sort((a, b) => (a.edge.order ?? 0) - (b.edge.order ?? 0) || (a.edge.id < b.edge.id ? -1 : 1))) {
+    const ordinal = selfCounts.get(item.source.id) ?? 0;
+    selfOrdinals.set(item.edge.id, ordinal); selfCounts.set(item.source.id, ordinal + 1);
+  }
   const routes = new Map();
   for (const item of prepared) {
     let route;
     if (getDiagram(type).sequence) {
-      const selfIndex = selfCounts.get(item.source.id) ?? 0;
-      if (item.self) selfCounts.set(item.source.id, selfIndex + 1);
-      route = routeSequenceEdge(item.edge, item.source, item.target, selfIndex, sequenceHeader);
+      const selfIndex = selfOrdinals.get(item.edge.id) ?? 0;
+      route = routeSequenceEdge(item.edge, item.source, item.target, selfIndex, sequenceContext);
     } else if (item.self) {
-      const selfIndex = selfCounts.get(item.source.id) ?? 0;
-      selfCounts.set(item.source.id, selfIndex + 1);
+      const selfIndex = selfOrdinals.get(item.edge.id);
       const right = item.source.position.x + item.source.size.width;
       const middleY = center(item.source).y;
       const extent = 48 + selfIndex * LANE_GAP;
       const label = visibleEdgeLabel(item.edge, type);
       const labelSize = estimateLabelSize(label);
-      const start = anchor(item.source, 'right', -16 - selfIndex * 12, type);
-      const end = anchor(item.source, 'right', 16 + selfIndex * 12, type);
+      const waypoints = item.edge.route?.via;
+      const sourceEndpoint = waypoints?.length && waypointEndpoint(item.source, waypoints[0], 'right', type);
+      const targetEndpoint = waypoints?.length && waypointEndpoint(item.target, waypoints.at(-1), 'right', type);
+      const sourceSide = sourceEndpoint ? sourceEndpoint.side : 'right', targetSide = targetEndpoint ? targetEndpoint.side : 'right';
+      const start = sourceEndpoint ? sourceEndpoint.point : anchor(item.source, 'right', -16 - selfIndex * 12, type);
+      const end = targetEndpoint ? targetEndpoint.point : anchor(item.source, 'right', 16 + selfIndex * 12, type);
       route = {
         points: item.edge.route?.via?.length
-          ? routePointsWithWaypoints(start, end, 'right', 'right', item.edge.route.via, stub)
+          ? routePointsWithWaypoints(start, end, sourceSide, targetSide, item.edge.route.via, stub)
           : [start, { x: right + extent, y: start.y }, { x: right + extent, y: end.y }, end],
         label,
         labelPoint: item.edge.route?.labelAt ?? { x: right + extent + 8 + labelSize.width / 2, y: middleY },
-        sourceSide: 'right', targetSide: 'right'
+        sourceSide, targetSide
       };
     } else {
       const waypoints = item.edge.route?.via;
@@ -278,7 +300,7 @@ export function createEdgeRoutes(graph) {
       route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target), sourceSide, targetSide };
     }
     const labelSize = route.labelSize ?? estimateLabelSize(route.label);
-    routes.set(item.edge.id, { ...route, labelLines: route.labelLines ?? layoutText(route.label, Infinity).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
+    routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines: route.labelLines ?? edgeLabelLayout(route.label).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
   }
   return routes;
 }
@@ -292,10 +314,10 @@ function boxesIntersect(a, b, margin = 0) {
 
 export function occupiedBox(node, type) {
   if (!getDiagram(type).sequence) return { ...node.position, ...node.size };
-  return { ...node.position, width: node.size.width, height: node.kind === 'actor' ? Math.min(node.size.height, TYPOGRAPHY.sequenceActorHeader) : Math.min(node.size.height, TYPOGRAPHY.sequenceHeader) };
+  return { ...node.position, width: node.size.width, height: Math.min(node.size.height, sequenceHeaderHeight(node)) };
 }
 
-function boxDistance(first, second) {
+export function boxDistance(first, second) {
   const horizontal = Math.max(first.x - second.x - second.width, second.x - first.x - first.width, 0);
   const vertical = Math.max(first.y - second.y - second.height, second.y - first.y - first.height, 0);
   return Math.hypot(horizontal, vertical);
@@ -311,7 +333,7 @@ function pointOnNodeSide(point, node, side, type) {
   return Math.hypot(point.x - expected.x, point.y - expected.y) < 1e-7;
 }
 
-function segmentCrossesBox(start, end, box) {
+export function segmentCrossesBox(start, end, box) {
   if (start.y === end.y) {
     return start.y > box.y && start.y < box.y + box.height
       && Math.max(Math.min(start.x, end.x), box.x) < Math.min(Math.max(start.x, end.x), box.x + box.width);
@@ -326,10 +348,10 @@ function segmentCrossesBox(start, end, box) {
 function routingBounds(node, type) {
   if (type === 'state' && ['initial', 'final'].includes(node.kind)) {
     const radius = node.kind === 'initial' ? 12 : 13, middle = center(node);
-    return { x: middle.x - radius, y: middle.y - radius, width: radius * 2, height: radius * 2 };
+    return { x: node.position.x + stateSymbolX(node) - radius, y: middle.y - radius, width: radius * 2, height: radius * 2 };
   }
   if (type === 'usecase' && node.kind === 'actor') {
-    const top = Math.max(0, (node.size.height - 104) / 2), middle = center(node);
+    const top = actorTop(node), middle = center(node);
     return { x: middle.x - 20, y: node.position.y + top + 2, width: 40, height: 74 };
   }
   if (type === 'deployment' && node.kind === 'device') return { x: node.position.x + 16, y: node.position.y, width: node.size.width - 32, height: node.size.height };
@@ -338,7 +360,12 @@ function routingBounds(node, type) {
 }
 
 function segmentCrossesNode(start, end, node, type) {
+  if (type === 'state' && ['initial', 'final'].includes(node.kind) && node.subtitle) {
+    const area = getDiagram(type).textArea(node);
+    if (segmentCrossesBox(start, end, { ...area, x: node.position.x + area.x, y: node.position.y + area.y })) return true;
+  }
   const bounds = routingBounds(node, type);
+  if (type === 'sequence') return segmentCrossesBox(start, end, bounds);
   if (type === 'usecase' && node.kind === 'actor') return segmentCrossesBox(start, end, bounds);
   const middle = center(node);
   if (start.y === end.y) {
@@ -369,9 +396,11 @@ function groupBorders(group) {
   ];
 }
 
-function groupHeadingBoxes(group) {
-  const height = Math.min(36, group.size.height);
-  const labelWidth = Math.min(group.size.width, estimateLabelSize(group.label).width + 20);
+export function groupHeadingBoxes(group) {
+  const fragment = ['alt', 'opt', 'loop', 'par'].includes(group.kind), heading = groupHeadingLayout(group);
+  const fragmentHeading = fragment ? fragmentHeadingLayout(group) : null;
+  const height = Math.min(fragment ? Math.max(36, fragmentHeading.height + 20) : heading.height, group.size.height);
+  const labelWidth = Math.min(group.size.width, (fragment ? fragmentHeading.width : heading.width) + 32);
   const boxes = [{ x: group.position.x, y: group.position.y, width: labelWidth, height }];
   if (['alt', 'opt', 'loop'].includes(group.kind)) boxes.push({ x: group.position.x + group.size.width - 52, y: group.position.y, width: 52, height });
   return boxes;
@@ -389,28 +418,61 @@ function sharedSegmentLength(firstStart, firstEnd, secondStart, secondEnd) {
   return 0;
 }
 
-function segmentsCross(firstStart, firstEnd, secondStart, secondEnd) {
-  const horizontal = firstStart.y === firstEnd.y;
-  const otherHorizontal = secondStart.y === secondEnd.y;
-  if (horizontal === otherHorizontal) return false;
-  const [hStart, hEnd, vStart, vEnd] = horizontal
-    ? [firstStart, firstEnd, secondStart, secondEnd]
-    : [secondStart, secondEnd, firstStart, firstEnd];
-  return vStart.x > Math.min(hStart.x, hEnd.x)
-    && vStart.x < Math.max(hStart.x, hEnd.x)
-    && hStart.y > Math.min(vStart.y, vEnd.y)
-    && hStart.y < Math.max(vStart.y, vEnd.y);
+export function routeCrossings(first, firstPoints, second, secondPoints) {
+  const points = new Map();
+  const ends = (edge, route) => [{ id: edge.source, point: route[0] }, { id: edge.target, point: route.at(-1) }];
+  const samePoint = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < .001;
+  for (let i = 1; i < firstPoints.length; i++) for (let j = 1; j < secondPoints.length; j++) {
+    const a = firstPoints[i - 1], b = firstPoints[i], c = secondPoints[j - 1], d = secondPoints[j];
+    const dx = b.x - a.x, dy = b.y - a.y, ex = d.x - c.x, ey = d.y - c.y, det = dx * ey - dy * ex;
+    if (Math.abs(det) < 1e-8) continue; // Collinear overlap is a separate hard rule.
+    const t = ((c.x - a.x) * ey - (c.y - a.y) * ex) / det, u = ((c.x - a.x) * dy - (c.y - a.y) * dx) / det;
+    if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+    const point = { x: +(a.x + t * dx).toFixed(3), y: +(a.y + t * dy).toFixed(3) };
+    if (ends(first, firstPoints).some(left => ends(second, secondPoints).some(right => left.id === right.id && samePoint(left.point, point) && samePoint(right.point, point)))) continue;
+    points.set(`${point.x},${point.y}`, point);
+  }
+  return [...points.values()].sort((a, b) => a.x - b.x || a.y - b.y);
 }
 
 export function auditGraphLayout(graph) {
   const type = graph.meta.diagramType ?? 'architecture';
+  const crossings = [];
   const routes = createEdgeRoutes(graph);
   const errors = [];
-  const warnings = [];
+  const warnings = [], diagnostics = [];
+  const elements = new Map([...graph.nodes, ...(graph.groups ?? []), ...sequenceExecutions(graph)].map(item => [item.id, item]));
+  const fail = (ruleId, elementIds, message) => {
+    errors.push(message);
+    const bounds = elementIds.flatMap(id => {
+      const item = elements.get(id);
+      if (item) return [item.position ? { ...item.position, ...item.size } : { x: item.x, y: item.y, width: item.width, height: item.height }];
+      const route = routes.get(id);
+      return route ? route.points.map(point => ({ ...point, width: 0, height: 0 })) : [];
+    });
+    diagnostics.push({ ruleId, severity: 'error', diagramType: type, elementIds, bounds, measured: message, required: 'clear full-size geometry', remediation: message.includes(';') ? message.split(';').slice(1).join(';').trim() : 'Adjust the identified elements while preserving the complete model.' });
+  };
+  if (type === 'sequence') {
+    for (const node of graph.nodes) if (node.size.height < sequenceHeaderHeight(node)) fail('sequence.header', [node.id], `layout: sequence node ${node.id} is shorter than its visible header`);
+    for (const group of graph.groups ?? []) {
+      const fragment = sequenceFragment(group, routes, graph.meta.locale, graph.groups ?? [], sequenceExecutions(graph));
+      for (const message of fragment.errors) fail('sequence.fragment', [group.id], message);
+      warnings.push(...fragment.warnings);
+    }
+    const executions = sequenceExecutions(graph);
+    for (const edge of graph.edges) {
+      const route = routes.get(edge.id);
+      for (const execution of executions) if (intersects(route.labelBox, execution, 2)) fail('sequence.label-execution', [edge.id, execution.id], `layout: edge ${edge.id} label overlaps execution ${execution.id}`);
+      for (const other of graph.edges) {
+        if (segmentBoxes(routes.get(other.id)).some(box => intersects(route.labelBox, box))) fail('sequence.message-clearance', [edge.id, other.id], `layout: sequence edge ${edge.id} label needs 6px clearance from message ${other.id}; shorten the label or adjust participant spacing/route hints`);
+      }
+      if (route.points.some(p => p.y > Math.min(...[edge.source, edge.target].map(id => { const n = graph.nodes.find(n => n.id === id); return n.position.y + n.size.height; })))) fail('sequence.lifeline', [edge.id, edge.source, edge.target], `layout: sequence edge ${edge.id} exceeds its participant lifeline`);
+    }
+  }
   if (getDiagram(type).cardLayout) for (const node of graph.nodes) {
     if (node.size.height < 100) continue;
     const { minHeight } = cardTextLayout(node);
-    if (node.size.height < minHeight) errors.push(`layout: node ${node.id} text needs at least ${minHeight}px height at 20/16px; enlarge the node and check its route clearance`);
+    if (node.size.height < minHeight) fail('text.card-height', [node.id], `layout: node ${node.id} text needs at least ${minHeight}px height at 20/16px; enlarge the node and check its route clearance`);
   }
   for (let left = 0; left < graph.nodes.length; left += 1) {
     for (let right = left + 1; right < graph.nodes.length; right += 1) {
@@ -418,10 +480,10 @@ export function auditGraphLayout(graph) {
       const second = graph.nodes[right];
       const firstBox = occupiedBox(first, type);
       const secondBox = occupiedBox(second, type);
-      if (boxesIntersect(firstBox, secondBox)) errors.push(`layout: nodes ${first.id} and ${second.id} overlap`);
+      if (boxesIntersect(firstBox, secondBox)) fail('shape.node-overlap', [first.id, second.id], `layout: nodes ${first.id} and ${second.id} overlap`);
       else {
         const distance = boxDistance(firstBox, secondBox);
-        if (distance < 64) warnings.push(`nodes ${first.id} and ${second.id} are only ${Math.round(distance)}px apart`);
+        if (distance < LAYOUT_LIMITS.nodeGap) warnings.push(`nodes ${first.id} and ${second.id} are only ${Math.round(distance)}px apart`);
       }
     }
   }
@@ -430,7 +492,7 @@ export function auditGraphLayout(graph) {
     for (let right = left + 1; right < labeledEdges.length; right += 1) {
       const first = labeledEdges[left];
       const second = labeledEdges[right];
-      if (boxesIntersect(routes.get(first.id).labelBox, routes.get(second.id).labelBox)) errors.push(`layout: edge labels ${first.id} and ${second.id} overlap`);
+      if (boxesIntersect(routes.get(first.id).labelBox, routes.get(second.id).labelBox)) fail('label.overlap', [first.id, second.id], `layout: edge labels ${first.id} and ${second.id} overlap`);
     }
   }
   for (let left = 0; left < graph.edges.length; left += 1) {
@@ -445,10 +507,10 @@ export function auditGraphLayout(graph) {
           longest = Math.max(longest, sharedSegmentLength(firstPoints[firstIndex - 1], firstPoints[firstIndex], secondPoints[secondIndex - 1], secondPoints[secondIndex]));
         }
       }
-      if (longest > ENDPOINT_STUB) errors.push(`layout: edges ${first.id} and ${second.id} share a route segment longer than ${ENDPOINT_STUB}px`);
-      if (first.source !== second.source && first.source !== second.target && first.target !== second.source && first.target !== second.target) {
-        const crossing = firstPoints.slice(1).some((point, firstIndex) => secondPoints.slice(1).some((otherPoint, secondIndex) => segmentsCross(firstPoints[firstIndex], point, secondPoints[secondIndex], otherPoint)));
-        if (crossing) warnings.push(`edges ${first.id} and ${second.id} cross`);
+      if (longest > ENDPOINT_STUB) fail('route.shared-segment', [first.id, second.id], `layout: edges ${first.id} and ${second.id} share a route segment longer than ${ENDPOINT_STUB}px`);
+      const points = routeCrossings(first, firstPoints, second, secondPoints);
+      if (points.length) {
+        crossings.push({ ruleId: 'route.point-crossing', severity: 'info', diagramType: type, elementIds: [first.id, second.id].sort(), measured: points.length, required: null, bounds: points.map(point => ({ ...point, width: 0, height: 0 })), repeated: Math.max(0, points.length - 1), remediation: 'Keep each relation traceable; prefer fewer repeated crossings without overlapping channels.' });
       }
     }
   }
@@ -457,7 +519,7 @@ export function auditGraphLayout(graph) {
     const source = graph.nodes.find(node => node.id === edge.source);
     const target = graph.nodes.find(node => node.id === edge.target);
     if (!getDiagram(type).sequence && (!pointOnNodeSide(route.points[0], source, route.sourceSide, type) || !pointOnNodeSide(route.points.at(-1), target, route.targetSide, type))) {
-      errors.push(`layout: edge ${edge.id} exceeds an endpoint side; enlarge the node or add route hints`);
+      fail('route.anchor', [edge.id, edge.source, edge.target], `layout: edge ${edge.id} exceeds an endpoint side; enlarge the node or add route hints`);
     }
     if (getDiagram(type).cardinalities) {
       for (const [role, point, neighbor, side, cardinality, hint] of [
@@ -467,11 +529,11 @@ export function auditGraphLayout(graph) {
         const direction = outward(point, side, 1);
         const projection = other => (other.x - point.x) * (direction.x - point.x) + (other.y - point.y) * (direction.y - point.y);
         if (projection(neighbor) < ER_ENDPOINT_STUB || (hint && projection(hint) < ER_ENDPOINT_STUB)) {
-          errors.push(`layout: ER edge ${edge.id} ${role} needs a ${ER_ENDPOINT_STUB}px outward straight segment; move the route hint or enlarge the gap`);
+          fail('route.er-stub', [edge.id], `layout: ER edge ${edge.id} ${role} needs a ${ER_ENDPOINT_STUB}px outward straight segment; move the route hint or enlarge the gap`);
         }
         const mark = cardinalityMarks(cardinality, point, neighbor);
         for (const node of graph.nodes) {
-          if (mark.bounds && boxesIntersect(mark.bounds, { ...node.position, ...node.size })) errors.push(`layout: ER edge ${edge.id} ${role} cardinality overlaps node ${node.id}`);
+          if (mark.bounds && boxesIntersect(mark.bounds, { ...node.position, ...node.size })) fail('marker.er-node', [edge.id, node.id], `layout: ER edge ${edge.id} ${role} cardinality overlaps node ${node.id}`);
         }
       }
       if (route.points.slice(1, -1).some((point, index) => {
@@ -479,34 +541,34 @@ export function auditGraphLayout(graph) {
         const after = route.points[index + 2];
         return before.x === point.x && point.x === after.x && (point.y - before.y) * (after.y - point.y) < 0
           || before.y === point.y && point.y === after.y && (point.x - before.x) * (after.x - point.x) < 0;
-      })) errors.push(`layout: ER edge ${edge.id} reverses within its route; reserve ${ER_ENDPOINT_STUB}px endpoint segments or move the route hints`);
+      })) fail('route.er-reversal', [edge.id], `layout: ER edge ${edge.id} reverses within its route; reserve ${ER_ENDPOINT_STUB}px endpoint segments or move the route hints`);
     }
     if (getDiagram(type).sequence && edge.source !== edge.target) {
       const available = Math.abs(center(source).x - center(target).x);
       const required = Math.max(160, route.labelBox.width + 32);
-      if (available < required) errors.push(`layout: sequence edge ${edge.id} needs ${Math.ceil(required)}px between participants; found ${Math.round(available)}px`);
-      if (route.labelBox.height > 54) errors.push(`layout: sequence edge ${edge.id} wrapped label needs ${route.labelBox.height}px height; enlarge participant spacing to fit the 54px message pitch`);
+      if (available < required) fail('sequence.participant-gap', [edge.id, edge.source, edge.target], `layout: sequence edge ${edge.id} needs ${Math.ceil(required)}px between participants; found ${Math.round(available)}px`);
+      if (edge.route?.messageY === undefined && route.labelBox.height > 54) fail('sequence.legacy-pitch', [edge.id], `layout: sequence edge ${edge.id} wrapped label needs ${route.labelBox.height}px height; enlarge participant spacing to fit the 54px message pitch`);
     }
     for (const node of graph.nodes) {
       for (let index = 1; index < route.points.length; index += 1) {
         if (node.id === edge.source && index === 1 || node.id === edge.target && index === route.points.length - 1) continue;
         if (segmentCrossesNode(route.points[index - 1], route.points[index], node, type)) {
           const kind = edge.source === edge.target && node.id === edge.source ? 'self-loop' : 'edge';
-          errors.push(`layout: ${kind} ${edge.id} crosses node ${node.id}`);
+          fail('route.node-obstacle', [edge.id, node.id], `layout: ${kind} ${edge.id} crosses node ${node.id}`);
           break;
         }
       }
     }
     if (!route.label) continue;
     for (const group of graph.groups ?? []) {
-      if (groupHeadingBoxes(group).some(heading => boxesIntersect(route.labelBox, heading))) errors.push(`layout: edge ${edge.id} label overlaps group ${group.id} heading`);
+      if (groupHeadingBoxes(group).some(heading => boxesIntersect(route.labelBox, heading))) fail('label.group-heading', [edge.id, group.id], `layout: edge ${edge.id} label overlaps group ${group.id} heading`);
       const borders = groupBorders(group);
-      if (borders.some(([start, end]) => segmentCrossesBox(start, end, route.labelBox))) errors.push(`layout: edge ${edge.id} label overlaps group ${group.id} boundary`);
+      if (borders.some(([start, end]) => segmentCrossesBox(start, end, route.labelBox))) fail('label.group-boundary', [edge.id, group.id], `layout: edge ${edge.id} label overlaps group ${group.id} boundary`);
     }
     for (const node of graph.nodes) {
       const nodeBox = routingBounds(node, type);
       if (boxesIntersect(route.labelBox, nodeBox)) {
-        errors.push(`layout: edge ${edge.id} label overlaps node ${node.id}`);
+        fail('label.node', [edge.id, node.id], `layout: edge ${edge.id} label overlaps node ${node.id}`);
       } else if (boxDistance(route.labelBox, nodeBox) < 12) {
         warnings.push(`edge ${edge.id} label has less than 12px clearance from node ${node.id}`);
       }
@@ -519,10 +581,10 @@ export function auditGraphLayout(graph) {
       for (let index = 1; index < route.points.length; index += 1) {
         const start = route.points[index - 1];
         const end = route.points[index];
-        if (groupHeadingBoxes(group).some(heading => segmentCrossesBox(start, end, heading))) errors.push(`layout: edge ${edge.id} crosses group ${group.id} heading`);
-        if (borders.some(([borderStart, borderEnd]) => sharedSegmentLength(start, end, borderStart, borderEnd) > ENDPOINT_STUB)) errors.push(`layout: edge ${edge.id} overlaps group ${group.id} boundary`);
+        if (groupHeadingBoxes(group).some(heading => segmentCrossesBox(start, end, heading))) fail('route.group-heading', [edge.id, group.id], `layout: edge ${edge.id} crosses group ${group.id} heading`);
+        if (borders.some(([borderStart, borderEnd]) => sharedSegmentLength(start, end, borderStart, borderEnd) > ENDPOINT_STUB)) fail('route.group-boundary', [edge.id, group.id], `layout: edge ${edge.id} overlaps group ${group.id} boundary`);
       }
     }
   }
-  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)], routes };
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)], routes, crossings, diagnostics };
 }

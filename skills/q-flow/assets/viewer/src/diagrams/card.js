@@ -9,13 +9,18 @@ export function genericCard(node, x, y, fill, stroke, palette, locale, outline =
   const subtitleText = subtitle.lines.map((line, index) => text(x + 15 + contentInset, y + 68 + title.height + index * subtitle.lineHeight, line, 'body')).join('');
   const core = coreNode(node);
 
-  const tone = core ? palette.heroInk : dataKinds.has(node.kind) ? palette.data : palette.ink;
+  // The icon plate is the identity chip: solid module color with a white glyph. Without a module it stays a quiet plate
+  // whose glyph takes the role tone. Titles never change color.
+  const chip = node.appearance?.chip, failure = node.kind === 'failure';
+  const tone = chip ? '#ffffff' : core ? palette.accent : dataKinds.has(node.kind) ? palette.data : failure ? palette.warn : palette.ink2;
+  const badge = chip ?? palette.badge;
   const icon = dataKinds.has(node.kind) ? '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>'
     : ['external', 'actor'].includes(node.kind) ? '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/>'
     : ['security', 'config'].includes(node.kind) ? '<path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6Z"/><path d="m8 12 3 3 5-6"/>'
     : '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/>';
-  if (compact) return `<g>${paint(outline(node, x, y), { fill, stroke })}<svg x="${x + 12 + contentInset}" y="${y + 10}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${tone}" stroke-width="1.5">${icon}</svg>${text(x + 33 + contentInset, y + 20, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype', ' style="font-size:8px"')}${text(x + 10 + contentInset, y + 41, fit(node.label, width), 'compact-title')}${text(x + 10 + contentInset, y + 57, fit(node.subtitle ?? '', width), 'compact-body')}</g>`;
-  return `<g filter="url(#node-shadow)">${paint(outline(node, x, y), { fill, stroke, 'stroke-width': 1 })}<rect x="${x + 15 + contentInset}" y="${y + 13}" width="25" height="25" rx="6" fill="${core ? palette.hero : palette.group}"/><svg x="${x + 20 + contentInset}" y="${y + 18}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${tone}" stroke-width="1.5">${icon}</svg>${text(x + 47 + contentInset, y + 29, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype')}${titleText}${subtitleText}</g>`;
+  if (compact) return `<g>${paint(outline(node, x, y), { fill, stroke })}<svg x="${x + 12 + contentInset}" y="${y + 10}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${chip ?? tone}" stroke-width="1.5">${icon}</svg>${text(x + 33 + contentInset, y + 20, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype', ' style="font-size:8px"')}${text(x + 10 + contentInset, y + 41, fit(node.label, width), 'compact-title')}${text(x + 10 + contentInset, y + 57, fit(node.subtitle ?? '', width), 'compact-body')}</g>`;
+  const frameWidth = node.appearance?.moduleColor || node.appearance?.ring ? 1.5 : 1;
+  return `<g filter="url(#node-shadow)">${paint(outline(node, x, y), { fill, stroke, 'stroke-width': frameWidth })}<rect x="${x + 15 + contentInset}" y="${y + 13}" width="25" height="25" rx="7" fill="${badge}"/><svg x="${x + 20 + contentInset}" y="${y + 18}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${tone}" stroke-width="${chip ? 1.75 : 1.5}">${icon}</svg>${text(x + 47 + contentInset, y + 29, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype')}${titleText}${subtitleText}</g>`;
 }
 
 

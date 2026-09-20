@@ -12,44 +12,39 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 
 </div>
 
-![E-Commerce als Architektur, Ablauf und Sequenz: 0,8 Sekunden je Ansicht, 2,4 Sekunden je Schleife, mit bewegten Verbindungslinien](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.core-three.gif)
+![Architektur, Sequenz und ER des Beispiels agent-desk, je 1,5 Sekunden](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.hero.gif)
 
 *Neun Diagrammarten: Architektur, Flussdiagramm, Sequenz, ER, Bereitstellung, Klasse, Zustand, Anwendungsfall und Datenfluss.*
 
 QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen, Konfiguration und Anforderungen. Beziehungen bleiben überprüfbar; das Ergebnis lässt sich als Offline-HTML teilen.
 
 - **Erkunden:** suchen, zoomen und verschieben; Verantwortlichkeiten sowie ein- und ausgehende Beziehungen verstehen.
+
+  ![Erkunden: nach refund suchen, zu Bestellwerkzeuge springen, herauszoomen bis der Orchestrator oberhalb sowie Bestelldatenbank und Sendungsverfolgung unterhalb sichtbar sind, dann verschieben](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.explore.gif)
+
 - **Prüfen:** Dateien, Zeilen, Symbole und ausdrücklich gekennzeichnete Unsicherheiten an Knoten und Kanten untersuchen.
+
+  ![Prüfen: Karte mit src/gateway/chat-gateway.js:5-19, Detailbereich mit Symbol und Belegen, dann die als inference gekennzeichnete Kante POST /chat](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.verify.gif)
+
 - **Bearbeiten:** Layout entsperren, Texte ändern und Elemente verschieben; bei Bedarf zurücksetzen.
+
+  ![Bearbeiten: Layout entsperren, LLM-Anbieter in LLM-Gateway umbenennen, mit seinen Kanten verschieben, dann zurücksetzen](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.edit.gif)
+
 - **Teilen:** Offline-HTML öffnen oder das vollständige Diagramm als SVG / PNG exportieren.
 
-*Erkunden: Navigation öffnen, den Kaufkoordinator suchen und lokalisieren. Ein Klick auf einen Knoten öffnet die Kurzansicht und hebt ein- und ausgehende Kanten hervor. Danach zoomen und den Ausschnitt verschieben.*
+  ![Teilen: Offline-HTML öffnen, PNG über Mehr exportieren, dann die exportierte Datei selbst](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.share.gif)
 
-![Navigation, Suche, Knotenkurzansicht, hervorgehobene Beziehungen, Zoom und Verschieben](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.explore.gif)
-
-*Prüfen: Aus der Kurzansicht die Detailleiste öffnen und Pfade, Zeilennummern und Symbole lesen. Anschließend eine Kante auswählen und ihre Erklärung samt Ableitungskennzeichnung prüfen.*
-
-Pfade, Zeilennummern und Symbole in dieser Interaktionsdemo sind erfunden. Sie zeigen die Beleganzeige und stehen nicht für Repository-Quellcode; Seite und Detailansicht kennzeichnen das ebenfalls. Bei echten Analysen reale Quellen verwenden und unbestätigte Beziehungen als Ableitung markieren.
-
-![Details mit ausdrücklich fiktiven Quellpfaden, Zeilen, Symbolen und abgeleiteten Beziehungen](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.verify.gif)
-
-*Bearbeiten: Im Menü **Mehr** das Layout entsperren, Namen und Beschreibung ändern, einen Knoten mit seinen Kanten verschieben und anschließend ursprüngliche Texte und Positionen wiederherstellen.*
-
-![Entsperren, Text bearbeiten, Knoten mit Kanten verschieben und zurücksetzen](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.edit.gif)
-
-*Teilen: HTML offline öffnen, über **Mehr** SVG und PNG exportieren und die PNG-Datei zur Prüfung des vollständigen Diagramms öffnen.*
-
-![Offline-HTML, SVG- und PNG-Export sowie die exportierte PNG-Datei](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.share.gif)
-
-Die Übersicht zeigt jede der drei Ansichten 0,8 Sekunden lang; eine Schleife dauert 2,4 Sekunden. Die vier Interaktionsanimationen lassen Zeit zum Lesen. Alle Medien verwenden den aus dem Quellcode gebauten Viewer mit deutschen Diagramm- und Oberflächentexten. Die fünf GIFs und neun PNGs liegen als separate [Dateien im Release showcase-v1](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1) vor; öffentliche Downloads und SHA-256-Prüfsummen wurden geprüft. Sie gehören weder zur Git-Historie noch zum Plugin-Paket; ihre Anzeige benötigt Internetzugang. Die erzeugte Diagramm-HTML selbst funktioniert offline.
+Die obere Animation zeigt Architektur, Sequenz und ER je 1,5 Sekunden (4,5 Sekunden pro Schleife); die vier Funktionsanimationen dauern 6,5–8,5 Sekunden. Alle wurden im aus dem Quellcode gebauten Viewer am [Beispiel agent-desk](../../examples/showcase/agent-desk) aufgenommen — fiktives Geschäft, echter Code — mit deutschem Diagramm- und Oberflächentext. Sie liegen als [Assets des Release showcase-v2](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2) außerhalb der Git-Historie und des Plugin-Pakets, zum Betrachten ist also eine Netzverbindung nötig; das erzeugte Diagramm-HTML selbst funktioniert offline.
 
 ## Installationsanleitung
 
 Benötigt werden Node.js 22 und ein Client mit Plugin-Unterstützung und eingerichtetem Modellzugriff.
 
+[Qoder Desktop](#qoder-desktop) kann das Plugin direkt aus dem Marketplace installieren; Schritt 1 entfällt.
+
 ### 1. Plugin herunterladen
 
-[qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
+[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
 
 Alle folgenden Terminalbefehle im **entpackten Plugin-Stammverzeichnis mit `skills/`** ausführen.
 
@@ -92,9 +87,11 @@ qodercli plugins install .
 
 Eine neue Sitzung starten und `q-flow` auswählen.
 
-#### Qoder IDE
+#### Qoder Desktop
 
-**Settings → Plugins → Custom → Import** öffnen, das vollständige Plugin-Stammverzeichnis importieren und `q-flow` auswählen.
+**Empfohlen:** Öffne **Settings → Plugins → Marketplace**, suche nach **代码图谱可视化** oder **qgraphflow** und installiere das Plugin. Starte eine neue Sitzung und wähle `q-flow`. Ein ZIP-Download oder ein Build aus dem Quellcode ist nicht erforderlich.
+
+Für eine lokale Installation führe zuerst Schritt 1 aus. Öffne dann **Settings → Plugins → Custom → Import** und importiere das vollständige entpackte Plugin-Stammverzeichnis. Starte eine neue Sitzung und wähle `q-flow`.
 
 #### Cursor
 
@@ -129,7 +126,7 @@ Ein eigenes Verzeichnis außerhalb des Anwendungsprojekts erstellen:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 
@@ -195,15 +192,15 @@ Der vorgebaute Viewer benötigt weder zusätzliche Abhängigkeiten noch API-Schl
 
 | Ansicht · PNG | Hauptfrage | Umfang des Beispiels |
 | --- | --- | --- |
-| [Architektur](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.architecture.png) | Welche Verantwortlichkeiten arbeiten zusammen? | Kanäle, Kaufabschluss, Preise, Risiko, Bestand, Zahlung, Bestellung, Ereignisse und Versand |
-| [Flussdiagramm](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.flowchart.png) | Wo verzweigt und vereinigt sich der Ablauf? | Fehlbestand, Risikoablehnung, Zahlungskompensation und erfolgreicher Commit |
-| [Sequenz](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.sequence.png) | In welcher Reihenfolge erfolgen Aufrufe und Antworten? | Erfolgreicher Kauf und asynchrones OrderPaid |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.er.png) | Wie hängen die Kerndaten zusammen? | Warenkorb, Bestellungen, Positionen, Zahlungen, Reservierungen und Pakete |
-| [Bereitstellung](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.deployment.png) | Wo laufen Einheiten und wie sind sie verbunden? | Randnetz, Kubernetes, Datendienste, Zahlung und Logistiknetz |
-| [Klasse](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.class.png) | Wie hängen Domänenobjekte und Schnittstellen ab? | Kaufdienst, Order und vier Ports |
-| [Zustand](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.state.png) | Welche Ereignisse und Bedingungen steuern eine Bestellung? | Zahlung, Versand, Stornierung, Erstattung und Abschluss |
-| [Anwendungsfall](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.usecase.png) | Was kann jeder Akteur tun? | Käufer, Händler, Lager und Betreuung |
-| [Datenfluss](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.de.dataflow.png) | Wie werden Daten umgewandelt und gespeichert? | Warenkorb, Transaktionsentscheidungen, Ereignisse, Lager und Empfangsbelege |
+| Architektur | Welche Verantwortlichkeiten arbeiten zusammen? | Kanäle, Kaufabschluss, Preise, Risiko, Bestand, Zahlung, Bestellung, Ereignisse und Versand |
+| Flussdiagramm | Wo verzweigt und vereinigt sich der Ablauf? | Fehlbestand, Risikoablehnung, Zahlungskompensation und erfolgreicher Commit |
+| Sequenz | In welcher Reihenfolge erfolgen Aufrufe und Antworten? | Erfolgreicher Kauf und asynchrones OrderPaid |
+| ER | Wie hängen die Kerndaten zusammen? | Warenkorb, Bestellungen, Positionen, Zahlungen, Reservierungen und Pakete |
+| Bereitstellung | Wo laufen Einheiten und wie sind sie verbunden? | Randnetz, Kubernetes, Datendienste, Zahlung und Logistiknetz |
+| Klasse | Wie hängen Domänenobjekte und Schnittstellen ab? | Kaufdienst, Order und vier Ports |
+| Zustand | Welche Ereignisse und Bedingungen steuern eine Bestellung? | Zahlung, Versand, Stornierung, Erstattung und Abschluss |
+| Anwendungsfall | Was kann jeder Akteur tun? | Käufer, Händler, Lager und Betreuung |
+| Datenfluss | Wie werden Daten umgewandelt und gespeichert? | Warenkorb, Transaktionsentscheidungen, Ereignisse, Lager und Empfangsbelege |
 
 Dies ist ein Konzeptmodell zur Demonstration von QGraphFlow, kein konkretes E-Commerce-Repository. Die Beispieldatei `graph.json` erfindet keine Quellpfade und kennzeichnet Beziehungen mit `inference`. Echte Projektdiagramme benötigen nachvollziehbaren Quellcode, DDL, Konfiguration, Tests und akzeptierte Anforderungen.
 
@@ -217,10 +214,10 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 Erforderlich sind Node.js 22, npm, tar, zip und unzip. Fehlerberichte sollten ein minimales anonymisiertes Diagramm, Client- und Browserversion sowie Reproduktionsschritte enthalten.
 
-[Belegquellen](../references/de/evidence-sources.md) · [Diagrammformat](../references/de/graph-schema.md) · [Geführte Bedarfsklärung](../references/de/guided-intake.md) · [Viewer-Entwicklung](../references/de/viewer-development.md) · [Diagrammgestaltung](../references/de/visual-contract.md)
+Referenzdokumentation (Englisch): [Belegquellen](../../skills/q-flow/references/evidence-sources.md) · [Diagrammformat](../../skills/q-flow/references/graph-schema.md) · [Geführte Bedarfsklärung](../../skills/q-flow/references/guided-intake.md) · [Viewer-Entwicklung](../../skills/q-flow/references/viewer-development.md) · [Diagrammgestaltung](../../skills/q-flow/references/visual-contract.md)
 
 ## Lizenz und Zuordnung
 
 [MIT](../../LICENSE) · [Drittanbieterhinweise](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow ist ein unabhängiges Projekt unter MIT-Lizenz. Das Handelsszenario ist konzeptionell und stellt keine Produktionsarchitektur eines Unternehmens dar. Eine Zugehörigkeit, Förderung oder Empfehlung wird nicht behauptet.
+QGraphFlow ist ein unabhängiges Projekt unter MIT-Lizenz. Die Szenarien in diesem Dokument sind konzeptionell und stellen keine Produktionsarchitektur eines Unternehmens dar. Eine Zugehörigkeit, Förderung oder Empfehlung wird nicht behauptet.

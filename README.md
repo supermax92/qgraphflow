@@ -12,44 +12,39 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 </div>
 
-![E-commerce architecture, flowchart and sequence: 0.8 seconds per view, 2.4 seconds per loop, with animated edges](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.core-three.gif)
+![Architecture, sequence and ER views of the agent-desk example, 1.5 seconds each](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.hero.gif)
 
 *Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
 - **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
+
+  ![Explore: search for refund, jump to Order tools, zoom out to the orchestrator upstream and the order database and logistics downstream, then pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.explore.gif)
+
 - **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
+
+  ![Verify: quick-look card with src/gateway/chat-gateway.js:5-19, details with the symbol and evidence facts, then the POST /chat edge marked as inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.verify.gif)
+
 - **Edit:** unlock the layout, change text and move elements; reset when needed.
+
+  ![Edit: unlock the layout, rename LLM provider to LLM gateway, drag it with its edges, then reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.edit.gif)
+
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
 
-*Explore: open navigation, search for the checkout orchestrator and locate it; select a node to open its quick-look card and highlight incoming/outgoing edges, then zoom and pan.*
+  ![Share: open the offline HTML, export PNG from More, then the exported file itself](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.share.gif)
 
-![Navigation, search, node quick look, relationship highlighting, zoom and pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.explore.gif)
-
-*Verify: open the details panel from the quick-look card to inspect paths, line numbers and symbols; then select an edge to inspect its explanation and inference marker.*
-
-The paths, line numbers and symbols in this interaction demo are fictional. They demonstrate the evidence panel and do not represent repository source; the page and details say so too. Use real sources for actual analysis and mark unconfirmed relationships as inference.
-
-![Details with explicitly fictional source paths, lines, symbols and relationship inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.verify.gif)
-
-*Edit: unlock the layout in **More**, edit a node's name and description, drag it with its connected edges, then reset to restore the original text and position.*
-
-![Unlock, edit text, drag a node with its edges, and reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.edit.gif)
-
-*Share: open the HTML offline, export SVG and PNG through **More**, and open the PNG to inspect the complete drawing.*
-
-![Offline HTML, SVG and PNG export, and the exported PNG](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.share.gif)
-
-The top animation shows each of three views for 0.8 seconds (2.4 seconds per loop). The four interaction animations allow time to read. All media use the source-built Viewer and English graph and interface text. The five GIFs and nine PNGs are hosted as independent [showcase-v1 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), with public downloads and SHA-256 checksums verified. They are excluded from Git history and plugin packages; viewing them requires network access. The generated diagram HTML itself works offline.
+The top animation shows the architecture, sequence and ER views for 1.5 seconds each (4.5 seconds per loop); the four feature animations run 6.5–8.5 seconds. All of them are recorded from the source-built Viewer on the [agent-desk example](examples/showcase/agent-desk) — fictional business, real code — with English graph and interface text. They are hosted as [showcase-v2 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2) and kept out of Git history and the plugin package, so viewing them needs network access; the generated diagram HTML itself works offline.
 
 ## Installation guide
 
 You need Node.js 22 and a plugin-capable client with model access configured.
 
+[Qoder Desktop](#qoder-desktop) users can install from the marketplace and skip step 1.
+
 ### 1. Download the plugin
 
-Download [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) and extract it into a separate directory, keeping hidden files.
+Download [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) and extract it into a separate directory, keeping hidden files.
 
 Run the following terminal commands from **the extracted plugin root containing `skills/`**.
 
@@ -92,9 +87,11 @@ qodercli plugins install .
 
 Start a new session and select `q-flow`.
 
-#### Qoder IDE
+#### Qoder Desktop
 
-Open **Settings → Plugins → Custom → Import**, import the complete plugin root directory, and select `q-flow`.
+**Recommended:** Open **Settings → Plugins → Marketplace**, search for **代码图谱可视化** or **qgraphflow**, and install the plugin. Start a new session and select `q-flow`. No ZIP download or source build is required.
+
+For local installation, complete step 1, then open **Settings → Plugins → Custom → Import** and import the complete extracted plugin root directory. Start a new session and select `q-flow`.
 
 #### Cursor
 
@@ -129,7 +126,7 @@ Create a separate directory outside your application project:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 
@@ -195,15 +192,15 @@ The prebuilt Viewer needs no dependency installation, API key or backend service
 
 | View · PNG | Main question | Example scope |
 | --- | --- | --- |
-| [Architecture](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.architecture.png) | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
-| [Flowchart](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.flowchart.png) | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
-| [Sequence](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.sequence.png) | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.er.png) | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
-| [Deployment](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.deployment.png) | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
-| [Class](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.class.png) | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
-| [State](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.state.png) | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
-| [Use case](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.usecase.png) | What can each actor do? | Buyer, merchant, warehouse and support |
-| [Data flow](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.en.dataflow.png) | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
+| Architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
+| Flowchart | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
+| Sequence | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
+| ER | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
+| Deployment | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
+| Class | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
+| State | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
+| Use case | What can each actor do? | Buyer, merchant, warehouse and support |
+| Data flow | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
 
 This is a concept model demonstrating QGraphFlow, not a particular e-commerce repository. The example `graph.json` invents no source paths and marks relationship evidence as `inference`. Real project diagrams need traceable source, DDL, configuration, tests and accepted requirements.
 
@@ -223,4 +220,4 @@ Development needs Node.js 22, npm, tar, zip and unzip. Include a minimal redacte
 
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-QGraphFlow is an independent MIT-licensed project. The commerce scenario is conceptual and does not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.

@@ -19,7 +19,7 @@ export function deploymentOutline(node, x, y) {
     ['ellipse', { cx: x + w / 2, cy: y + 18, rx: w / 2 - 12, ry: 16, fill: 'none' }]
   ];
   if (node.kind === 'external') return polygon(node, x, y, HEXAGON);
-  if (node.kind === 'service') return [...rectangle(node, x, y, 16), ['path', { d: `M${x} ${y + 36}h12M${x + w - 12} ${y + h - 36}h12`, fill: 'none' }]];
+  if (node.kind === 'service') return rectangle(node, x, y, 16);
   return rectangle(node, x, y, 10);
 }
 
@@ -35,10 +35,10 @@ const anchor = (node, side, offset) => {
 const contentInset = node => node.kind === 'external' ? Math.min(28, node.size.width * .08) : node.kind === 'device' ? 12 : 0;
 
 export default {
-  id: 'deployment', label: '部署图',
+  id: 'deployment', label: 'Deployment',
   nodeKinds: ["device", "node", "container", "artifact", "service", "database", "external"],
   groupKinds: ["host", "network", "cluster", "namespace"],
   edgeKinds: ["deploy", "network", "depends"],
   render: (node, ...args) => genericCard(node, ...args, deploymentOutline, contentInset(node)), outline: deploymentOutline, anchor,
-  cardLayout: true,
+  cardLayout: true, contentInset,
 };

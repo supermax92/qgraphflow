@@ -30,11 +30,17 @@ test('every registered node kind shares its visible contour with selection in bo
   }
 });
 
-test('architecture and deployment kinds keep dedicated visible contours', () => {
+test('notation kinds keep their contours; plain card kinds carry no extra marks', () => {
+  // The icon chip and kind label already say what a card is, so service / component / system share the card and
+  // only kinds with real notation (hexagon, octagon, slant, cylinder, cube, dog-ear, …) differ in outline.
+  const cards = { architecture: ['service', 'component', 'system'], deployment: ['service'] };
   for (const id of ['architecture', 'deployment']) {
     const diagram = DIAGRAMS.find(item => item.id === id);
-    const signatures = diagram.nodeKinds.map(kind => JSON.stringify(diagram.outline(node(kind), 0, 0)));
-    assert.equal(new Set(signatures).size, signatures.length, `${id} kinds must not fall back to one card outline`);
+    const outline = kind => diagram.outline(node(kind), 0, 0);
+    for (const kind of cards[id]) assert.equal(outline(kind).length, 1, `${id} ${kind} is a plain card without decorative marks`);
+    const notation = diagram.nodeKinds.filter(kind => !cards[id].includes(kind)).map(kind => JSON.stringify(outline(kind)));
+    assert.equal(new Set(notation).size, notation.length, `${id} notation kinds must stay distinguishable`);
+    for (const kind of diagram.nodeKinds.filter(kind => !cards[id].includes(kind))) assert.notEqual(JSON.stringify(outline(kind)), JSON.stringify(outline(cards[id][0])), `${id} ${kind} must not fall back to the card outline`);
   }
 });
 

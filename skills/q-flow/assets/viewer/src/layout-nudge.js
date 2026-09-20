@@ -1,10 +1,11 @@
 import { getDiagram } from './diagrams/registry.js';
 import { forceSimulation, forceX, forceY } from 'd3-force';
+import { LAYOUT_LIMITS, requireDiagramQuality } from './layout-quality.js';
+import { groupHeadingLayout } from './text-layout.js';
 
-const CLEARANCE = 65;
+const CLEARANCE = LAYOUT_LIMITS.nodeGap + 1;
 const MAX_SHIFT = 156;
-const GROUP_HEADER = 36;
-const GROUP_PADDING = 13;
+const GROUP_PADDING = LAYOUT_LIMITS.groupInset;
 const TICKS = 160;
 
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
@@ -20,6 +21,7 @@ function movableIds(graph, focusId) {
 }
 
 function containingGroup(node, groups) {
+  if (node.groupId) return groups.find(group => group.id === node.groupId);
   const matches = groups.filter(group => node.position.x >= group.position.x
     && node.position.y >= group.position.y
     && node.position.x + node.size.width <= group.position.x + group.size.width
@@ -34,7 +36,7 @@ function groupBounds(node, group, sequence) {
   const anchorX = node.position.x + halfWidth, anchorY = node.position.y + halfHeight;
   const minimumX = Math.max(group.position.x + GROUP_PADDING + halfWidth, anchorX - MAX_SHIFT);
   const maximumX = Math.min(group.position.x + group.size.width - GROUP_PADDING - halfWidth, anchorX + MAX_SHIFT);
-  const minimumY = Math.max(group.position.y + Math.min(GROUP_HEADER, group.size.height) + GROUP_PADDING + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
+  const minimumY = Math.max(group.position.y + groupHeadingLayout(group).height + LAYOUT_LIMITS.groupHeadingGap + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
   const maximumY = Math.min(group.position.y + group.size.height - GROUP_PADDING - halfHeight, anchorY + (sequence ? 0 : MAX_SHIFT));
   return { minimumX, maximumX, minimumY, maximumY };
 }
@@ -138,5 +140,8 @@ export function nudgeGraphLayout(graph, focusId = null) {
     if (position.x !== node.position.x || position.y !== node.position.y) movedNodeIds.push(node.id);
     return { ...node, position };
   });
-  return { graph: { ...graph, nodes }, movedNodeIds };
+  const candidate = { ...graph, nodes };
+  try { requireDiagramQuality(candidate); }
+  catch (error) { return { graph, movedNodeIds: [], rejected: { message: error.message, diagnostics: error.diagnostics ?? [] } }; }
+  return { graph: candidate, movedNodeIds };
 }

@@ -5,15 +5,15 @@ import { nodeAppearance } from './visual-style.js';
 export function renderNode(node, type, offsetX = 0, offsetY = 0, palette, locale, moduleColors) {
   const definition = getDiagram(type);
   if (!definition) throw new Error(`Unsupported diagram type: ${type}`);
-  const { fill, stroke, moduleColor } = nodeAppearance(node, palette, moduleColors);
-  const content = definition.render(node, node.position.x + offsetX, node.position.y + offsetY, fill, stroke, palette, locale);
+  const appearance = nodeAppearance(node, palette, moduleColors), { fill, stroke, ring } = appearance;
+  const x = node.position.x + offsetX, y = node.position.y + offsetY;
+  const content = definition.render({ ...node, appearance }, x, y, fill, stroke, palette, locale);
+  // A soft ring behind the frame marks the business center or an explicit failure without touching the text.
+  const halo = ring && !['actor', 'initial', 'final'].includes(node.kind) ? paint(definition.outline(node, x, y), { class: 'role-ring', fill: 'none', stroke: ring, 'stroke-width': 5 }) : '';
   const description = [node.label, node.subtitle,
     ...(node.fields ?? []).map(field => `${field.key ? field.key + ' ' : ''}${field.name}: ${field.type}${field.nullable === undefined ? '' : ` (nullable: ${field.nullable})`}`),
     ...(node.attributes ?? []), ...(node.methods ?? [])].filter(Boolean).join('\n');
-  const stripe = moduleColor && !['actor', 'initial', 'final', 'decision', 'choice', 'usecase'].includes(node.kind)
-    ? `<path class="module-accent" d="M${node.position.x + offsetX + 20} ${node.position.y + offsetY + 3}H${node.position.x + offsetX + node.size.width - 20}" fill="none" stroke="${moduleColor}" stroke-width="5" stroke-linecap="round"/>`
-    : '';
-  return `<g class="node-drawing${coreNode(node) && !definition.compartments ? ' core-node' : ''}"><title>${escapeXml(description)}</title>${content}${stripe}</g>`;
+  return `<g data-diagram-node-id="${escapeXml(node.id)}" class="node-drawing${coreNode(node) && !definition.compartments ? ' core-node' : ''}"><title>${escapeXml(description)}</title>${halo}${content}</g>`;
 }
 
 export function renderSelection(node, type) {

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { appleEase } from './useGraphLayout.js';
-import { createEdgeRoutes, graphBounds, occupiedBox } from '../edge-routing.js';
+import { createEdgeRoutes, occupiedBox } from '../edge-routing.js';
 import { readingRect, readingViewport } from '../reading-area.js';
 
 const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12;
@@ -16,11 +16,12 @@ export function useReveal(canvasRef, nodes, graph, diagramType, reduceMotion) {
     const box = canvasRef.current?.getBoundingClientRect();
     if (!box?.width || box.width <= 700) return;
     if (diagramType === 'sequence') {
-      const routes = createEdgeRoutes(graph), bounds = graphBounds(graph, routes);
+      const routes = createEdgeRoutes(graph);
       const selected = graph.nodes.find(item => item.id === selectedId);
       const selectedEdge = routes.get(selectedEdgeId);
-      const priority = selected ? occupiedBox(selected, diagramType) : selectedEdge?.labelBox ?? { x: bounds.x, y: bounds.y, width: 0, height: 0 };
-      const viewport = readingViewport(bounds, readingRect(canvasRef.current, navOpen, drawerOpen), getViewport(), priority);
+      const priority = selected ? occupiedBox(selected, diagramType) : selectedEdge?.labelBox;
+      if (!priority) return;
+      const viewport = readingViewport(priority, readingRect(canvasRef.current, navOpen, drawerOpen), getViewport());
       if (viewport.x !== getViewport().x || viewport.y !== getViewport().y || viewport.zoom !== getViewport().zoom) {
         setViewport(viewport, { duration: reduceMotion ? 0 : 360, ease: appleEase });
       }

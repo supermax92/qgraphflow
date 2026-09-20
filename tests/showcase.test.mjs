@@ -7,7 +7,6 @@ import { validateGraph } from '../skills/q-flow/scripts/validate-graph.mjs';
 import { auditGraphLayout } from '../skills/q-flow/assets/viewer/src/edge-routing.js';
 import { renderNode } from '../skills/q-flow/assets/viewer/src/node-svg.js';
 import { PALETTES } from '../skills/q-flow/assets/viewer/src/visual-style.js';
-import { createHash } from 'node:crypto';
 
 const root = path.resolve(import.meta.dirname, '..');
 const locales = ['en', 'zh-CN', 'ja', 'ko', 'de', 'fr', 'es'];
@@ -80,39 +79,34 @@ test('localized ecommerce preserves domain structure and renders complete node t
       assert.deepEqual(structure(graph), structure(ecommerce[index]));
       if (!['zh-CN', 'ja'].includes(locale)) assert.doesNotMatch(JSON.stringify(graph), /[\u4e00-\u9fff]/);
       for (const node of graph.nodes) {
-        assert.ok(!renderNode(node, types[index], 0, 0, PALETTES.light, locale).includes('…'), `${locale}/${types[index]}/${node.id}: truncated text`);
+        const rendered = renderNode(node, types[index], 0, 0, PALETTES.light, locale);
+        if (types[index] === 'sequence' && node.subtitle) {
+          assert.match(rendered, /class="body"[^>]*>[^<]+<\/text>/, 'sequence subtitle is drawn, with bounded ellipsis allowed');
+          assert.ok(rendered.includes(node.subtitle.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')), 'full subtitle remains in description');
+        } else assert.ok(!rendered.includes('…'), `${locale}/${types[index]}/${node.id}: truncated text`);
       }
     });
   }
 });
 
-test('each README links to its inline installation guide, references and localized media', () => {
+test('each README links to its inline installation guide, English references and its own showcase-v2 media', () => {
   const documents = readmeLocales.map(locale => locale === 'en' ? 'README.md' : `docs/readme/README.${locale}.md`);
   const installationHeadings = {
     en: 'Installation guide', 'zh-CN': '安装指南', ru: 'Установка', pt: 'Guia de instalação',
     ja: 'インストールガイド', de: 'Installationsanleitung', es: 'Guía de instalación'
   };
-  const media = JSON.parse(read('docs/showcase-media.json'));
-  const assets = new Set(media.locales.flatMap(entry => entry.assets.map(asset => asset.name)));
-  const prefix = 'https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/';
-  assert.equal(media.status, 'published');
-  assert.equal(media.release.tag, 'showcase-v1');
-  assert.equal(media.release.assetBaseUrl, prefix);
   documents.forEach((file, index) => {
     const locale = readmeLocales[index];
     const markdown = read(file);
     const links = [...markdown.matchAll(/!?\[[^\]]*\]\(([^\s)]+)\)/g)].map(match => match[1]);
     const local = links.filter(link => !/^(https?:|#)/.test(link)).map(link => path.resolve(root, path.dirname(file), link));
-    for (const target of local) {
-      if (target.startsWith(path.join(root, 'docs/images/showcase/'))) assert.ok(assets.has(path.basename(target)), `${file}: undeclared media ${target}`);
-      else assert.ok(fs.existsSync(target), `${file}: ${target}`);
-    }
+    for (const target of local) assert.ok(fs.existsSync(target), `${file}: ${target}`);
     for (const document of documents) assert.ok(local.includes(path.join(root, document)), `${file}: ${document}`);
     const heading = installationHeadings[locale];
     assert.ok(links.includes(`#${heading.toLowerCase().replaceAll(' ', '-')}`), `${file}: installation link`);
     const installation = markdown.split(`\n## ${heading}\n`)[1]?.split('\n## ')[0];
     assert.ok(installation, `${file}: inline installation guide`);
-    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder IDE', 'Cursor']) {
+    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder Desktop', 'Cursor']) {
       assert.ok(installation.includes(`#### ${client}\n`), `${file}: ${client}`);
     }
     for (const command of [
@@ -122,45 +116,18 @@ test('each README links to its inline installation guide, references and localiz
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
-      const directory = locale === 'en' ? 'skills/q-flow/references' : `docs/references/${locale}`;
-      assert.ok(local.includes(path.join(root, directory, `${reference}.md`)));
+      assert.ok(local.includes(path.join(root, 'skills/q-flow/references', `${reference}.md`)));
     }
-    const images = links.filter(link => link.endsWith('.gif'));
-    assert.deepEqual(images, ['core-three', 'explore', 'verify', 'edit', 'share'].map(name => `${prefix}ecommerce.${locale}.${name}.gif`));
-    assert.deepEqual(links.filter(link => link.endsWith('.png')), types.map(type => `${prefix}ecommerce.${locale}.${type}.png`));
-    for (const link of links.filter(link => /\.(gif|png)$/.test(link))) assert.ok(assets.has(path.basename(new URL(link).pathname)), `${file}: undeclared media ${link}`);
+    // Showcase media: five showcase-v2 GIFs in the README's own locale, recorded by scripts/showcase-record.mjs and
+    // hosted as Release assets. The showcase-v1 recordings were removed on 2026-09-19 and nothing is embedded locally.
+    const media = links.filter(link => /\.(gif|png|mp4)(\?|$)/.test(link));
+    const clips = ['hero', 'explore', 'verify', 'edit', 'share'];
+    assert.deepEqual(media, clips.map(clip => `https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.${locale}.${clip}.gif`), `${file}: showcase media`);
+    assert.ok(markdown.includes('https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2'), `${file}: release link`);
+    assert.doesNotMatch(markdown, /showcase-v1|images\/showcase/, `${file}: historical showcase media`);
     assert.doesNotMatch(markdown, /README\.(ko|fr)\.md|kafka\.[\w-]+\.(gif|graph\.json)/);
   });
   for (const locale of ['ko', 'fr']) assert.ok(!fs.existsSync(path.join(root, `docs/readme/README.${locale}.md`)));
-});
-
-test('published media receipts retain Viewer provenance and match source graphs and local files when present', t => {
-  const sha = file => createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
-  const media = JSON.parse(read('docs/showcase-media.json'));
-  assert.equal(media.status, 'published');
-  assert.match(media.viewerSha256, /^[a-f0-9]{64}$/);
-  // Published receipts describe the recording's Viewer, not later runtime builds.
-  // package-media.mjs separately rejects stale media before creating a new package.
-  if (media.viewerSha256 !== sha('skills/q-flow/assets/viewer-dist/index.html')) {
-    t.diagnostic('Published media use a historical Viewer; package:media requires re-recording for the current Viewer.');
-  }
-  assert.deepEqual(media.locales.map(entry => entry.locale), readmeLocales);
-  for (const entry of media.locales) {
-    assert.equal(entry.graphSha256, sha(entry.graph), entry.locale);
-    assert.equal(entry.assets.length, 14);
-    for (const asset of entry.assets) {
-      assert.ok(asset.name.startsWith(`ecommerce.${entry.locale}.`));
-      assert.ok(asset.width > 0 && asset.height > 0 && asset.bytes > 0);
-      assert.match(asset.sha256, /^[a-f0-9]{64}$/, asset.name);
-      if (asset.name.endsWith('.gif')) assert.ok(asset.frames > 1 && asset.durationMs > 0);
-      if (asset.name.endsWith('.core-three.gif')) assert.equal(asset.durationMs, 2400);
-      const file = `${media.directory}/${asset.name}`;
-      if (fs.existsSync(path.join(root, file))) {
-        assert.equal(fs.statSync(path.join(root, file)).size, asset.bytes, file);
-        assert.equal(asset.sha256, sha(file), file);
-      }
-    }
-  }
 });
 
 test('Git installations exclude showcase media from branch/tag history and new files', () => {

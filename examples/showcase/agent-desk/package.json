@@ -1,0 +1,6 @@
+{
+  "name": "agent-desk-sample",
+  "private": true,
+  "type": "module",
+  "description": "QGraphFlow 展示用样本工程：电商 AI 客服智能体（虚构业务，真实代码，仅依赖 Node 内置模块）。"
+}

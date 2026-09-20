@@ -26,7 +26,7 @@ test('seven installation guides preserve the Chinese commands and working links'
     const markdown = read(file);
     assert.deepEqual(commands(markdown), expected, file);
     assert.equal((markdown.match(/^```/gm) ?? []).length, 10, `${file}: code fences`);
-    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder IDE', 'Cursor']) {
+    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder Desktop', 'Cursor']) {
       assert.ok(markdown.includes(`### ${client}`), `${file}: ${client}`);
     }
     for (const guide of guides) assert.ok(markdown.includes(`](${path.basename(guide)})`), `${file}: ${guide}`);

@@ -1,0 +1,438 @@
+{
+  "meta": {
+    "title": "Sequence executions and nested fragments",
+    "subtitle": "six call/return pairs · alt inside loop · par inside opt",
+    "sourceRef": "conceptual:sequence-execution-demo",
+    "scope": "Conceptual example that exercises the notation; it does not describe real business code or runtime results. order is a layout slot; the vertical position of par branches is not serial order.",
+    "diagramType": "sequence",
+    "locale": "en"
+  },
+  "nodes": [
+    {
+      "id": "client",
+      "label": "Caller",
+      "kind": "actor",
+      "position": {
+        "x": 63,
+        "y": 48
+      },
+      "size": {
+        "width": 160,
+        "height": 1888
+      },
+      "facts": [
+        "Conceptual participant used to demonstrate the sequence notation."
+      ]
+    },
+    {
+      "id": "order",
+      "label": "Order pre-check service",
+      "kind": "participant",
+      "module": "order-precheck",
+      "position": {
+        "x": 287,
+        "y": 48
+      },
+      "size": {
+        "width": 334,
+        "height": 1888
+      },
+      "facts": [
+        "Conceptual participant used to demonstrate the sequence notation."
+      ]
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory service",
+      "kind": "participant",
+      "module": "inventory",
+      "position": {
+        "x": 685,
+        "y": 48
+      },
+      "size": {
+        "width": 256,
+        "height": 1888
+      },
+      "facts": [
+        "Conceptual participant used to demonstrate the sequence notation."
+      ]
+    },
+    {
+      "id": "risk",
+      "label": "Risk service",
+      "kind": "participant",
+      "module": "risk",
+      "position": {
+        "x": 1005,
+        "y": 48
+      },
+      "size": {
+        "width": 191,
+        "height": 1888
+      },
+      "facts": [
+        "Conceptual participant used to demonstrate the sequence notation."
+      ]
+    },
+    {
+      "id": "audit",
+      "label": "Audit service",
+      "kind": "participant",
+      "module": "audit",
+      "position": {
+        "x": 1260,
+        "y": 48
+      },
+      "size": {
+        "width": 203,
+        "height": 1888
+      },
+      "facts": [
+        "Conceptual participant used to demonstrate the sequence notation."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "c1",
+      "source": "client",
+      "target": "order",
+      "order": 3,
+      "label": "submitCheck()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 216
+      }
+    },
+    {
+      "id": "c2",
+      "source": "order",
+      "target": "order",
+      "order": 4,
+      "label": "prepare()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 262
+      }
+    },
+    {
+      "id": "c3",
+      "source": "order",
+      "target": "inventory",
+      "order": 6,
+      "label": "readStock()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 358
+      }
+    },
+    {
+      "id": "r3",
+      "source": "inventory",
+      "target": "order",
+      "order": 8,
+      "label": "stock snapshot",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c3",
+      "route": {
+        "messageY": 424
+      }
+    },
+    {
+      "id": "r2",
+      "source": "order",
+      "target": "order",
+      "order": 9,
+      "label": "prepared",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c2",
+      "route": {
+        "messageY": 470
+      }
+    },
+    {
+      "id": "c4",
+      "source": "order",
+      "target": "inventory",
+      "order": 13,
+      "label": "tryReserve()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 668
+      }
+    },
+    {
+      "id": "r4",
+      "source": "inventory",
+      "target": "order",
+      "order": 15,
+      "label": "ACQUIRED / BUSY",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c4",
+      "route": {
+        "messageY": 734
+      }
+    },
+    {
+      "id": "c5",
+      "source": "order",
+      "target": "risk",
+      "order": 27,
+      "label": "checkRisk()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 1422
+      }
+    },
+    {
+      "id": "r5",
+      "source": "risk",
+      "target": "order",
+      "order": 29,
+      "label": "risk result",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c5",
+      "route": {
+        "messageY": 1488
+      }
+    },
+    {
+      "id": "c6",
+      "source": "order",
+      "target": "audit",
+      "order": 32,
+      "label": "recordCheck()",
+      "kind": "sync",
+      "evidence": "inference",
+      "route": {
+        "messageY": 1614
+      }
+    },
+    {
+      "id": "r6",
+      "source": "audit",
+      "target": "order",
+      "order": 33,
+      "label": "recorded",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c6",
+      "route": {
+        "messageY": 1680
+      }
+    },
+    {
+      "id": "r1",
+      "source": "order",
+      "target": "client",
+      "order": 38,
+      "label": "pre-check result",
+      "kind": "return",
+      "evidence": "inference",
+      "replyTo": "c1",
+      "route": {
+        "messageY": 1874
+      }
+    }
+  ],
+  "executions": [
+    {
+      "id": "exec-1",
+      "participantId": "order",
+      "start": {
+        "edgeId": "c1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r1",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-2",
+      "participantId": "order",
+      "start": {
+        "edgeId": "c2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r2",
+        "at": "send"
+      },
+      "parentId": "exec-1"
+    },
+    {
+      "id": "exec-3",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "c3",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r3",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-4",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "c4",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r4",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-5",
+      "participantId": "risk",
+      "start": {
+        "edgeId": "c5",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r5",
+        "at": "send"
+      }
+    },
+    {
+      "id": "exec-6",
+      "participantId": "audit",
+      "start": {
+        "edgeId": "c6",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "r6",
+        "at": "send"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "retry",
+      "kind": "loop",
+      "label": "try to reserve stock",
+      "position": {
+        "x": 56,
+        "y": 530
+      },
+      "size": {
+        "width": 853,
+        "height": 628
+      },
+      "loop": {
+        "min": 1,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "attempt",
+          "guard": "attempt < 3 && !reserved",
+          "edgeIds": [
+            "c4",
+            "r4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outcome",
+      "kind": "alt",
+      "label": "handle this attempt",
+      "position": {
+        "x": 88,
+        "y": 764
+      },
+      "size": {
+        "width": 789,
+        "height": 330
+      },
+      "parentId": "retry",
+      "parentOperandId": "attempt",
+      "operands": [
+        {
+          "id": "acquired",
+          "guard": "reservation = ACQUIRED",
+          "edgeIds": [],
+          "body": "reserved ← true; the next check leaves the loop"
+        },
+        {
+          "id": "busy",
+          "guard": "else",
+          "edgeIds": [],
+          "body": "attempt ← attempt + 1; at most 3 attempts"
+        }
+      ]
+    },
+    {
+      "id": "optional",
+      "kind": "opt",
+      "label": "after a successful reservation",
+      "position": {
+        "x": 32,
+        "y": 1182
+      },
+      "size": {
+        "width": 1426,
+        "height": 632
+      },
+      "operands": [
+        {
+          "id": "reserved",
+          "guard": "reserved = true",
+          "edgeIds": []
+        }
+      ]
+    },
+    {
+      "id": "parallel",
+      "kind": "par",
+      "label": "concurrent branches, joined at the end",
+      "position": {
+        "x": 64,
+        "y": 1284
+      },
+      "size": {
+        "width": 1362,
+        "height": 466
+      },
+      "parentId": "optional",
+      "parentOperandId": "reserved",
+      "operands": [
+        {
+          "id": "risk",
+          "label": "risk check",
+          "edgeIds": [
+            "c5",
+            "r5"
+          ]
+        },
+        {
+          "id": "audit",
+          "label": "audit record",
+          "edgeIds": [
+            "c6",
+            "r6"
+          ]
+        }
+      ]
+    }
+  ],
+  "layout": {
+    "version": "adaptive-v2-elkjs-0.11.0",
+    "strategy": "sequence-0"
+  }
+}

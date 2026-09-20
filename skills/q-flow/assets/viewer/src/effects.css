@@ -1,60 +1,10 @@
-/* Effect layer: role glow on node outlines, a luminous selection, a brighter flow and a vignette on the dark canvas.
-   Loaded after styles.css so its hover / selection rules win. Every colour is a palette token, so the layer follows the
-   theme; the whole file can be dropped without touching the DOM, the palette or the exports. Glow uses `filter:
-   drop-shadow` on the SVG `.node-surface` (follows diamonds, ellipses and lifelines; never a card `box-shadow`), and
-   `box-shadow` only on HTML chrome. The final media query switches the layer off entirely. */
+/* Keep permanent surfaces quiet; selection and moving strokes supply local emphasis. */
+.edge-flow { stroke-width: 2.8px; filter: none; }
+.flow-edge--sequence .edge-flow { stroke-width: 3.2px; }
+.selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .12; }
 
-/* ---------- Dark canvas vignette ---------- */
-:root[data-theme="dark"] .react-flow, :root[data-theme="dark"] .react-flow.dark { background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent) 10%, var(--canvas)), var(--canvas) 62%); }
-
-/* ---------- Role glow (dark) ---------- */
-/* Same order of precedence as `nodeAppearance()`: data, then warning, then core wins; hover / selected win over all. */
-.diagram-node:is(.kind-data, .kind-database, .kind-dataStore, .kind-entity, .kind-input, .kind-output) .node-surface { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--good) 50%, transparent)); }
-.diagram-node:is(.kind-decision, .kind-choice, .kind-failure) .node-surface { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--warm) 55%, transparent)); }
-.diagram-node.is-core .node-surface { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--hero-border) 60%, transparent)); }
-.diagram-node.has-module .node-surface { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--node-module) 48%, transparent)); }
-.diagram-node:hover .node-surface, .diagram-node.is-selected .node-surface { filter: drop-shadow(0 0 16px color-mix(in srgb, var(--accent) 75%, transparent)); }
-
-/* ---------- Light theme: a soft tinted shadow instead of glow; emphasis only deepens the shadow ---------- */
-:root[data-theme="light"] .diagram-node .node-surface { filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--node-module, var(--accent)) 20%, transparent)); }
-:root[data-theme="light"] .diagram-node:hover .node-surface, :root[data-theme="light"] .diagram-node.is-selected .node-surface { filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent)); }
-
-/* ---------- Luminous selection and flow ---------- */
-/* The outline rebound keyframes (`selection-node-jelly` / `selection-line-jelly`) stay as they are; only the halos land on
-   their wider, brighter resting state, because `selection-glow` fills forwards and would otherwise snap back to 9px / .16.
-   Edge halos rest at .3 rather than .5 and their rebound bounces only in width: over a moving dash anything brighter drops
-   the selected flow below the 60% contrast browser-interactions.mjs enforces in dark mode (`has-flow` already halves the
-   halo's stroke opacity). */
-.selection-node-halo, .selection-edge-halo { stroke-width: 14px; opacity: .5; filter: blur(6px); }
-.selection-edge-halo { opacity: .3; }
-.selection-feedback.is-animated .selection-node-halo { animation-name: selection-glow-lit; }
-.selection-feedback.is-animated .selection-edge-halo { animation-name: selection-glow-lit-edge; }
-@keyframes selection-glow-lit {
-  0% { stroke-width: 2px; opacity: 0; }
-  24% { stroke-width: 26px; opacity: .7; }
-  44% { stroke-width: 8px; opacity: .3; }
-  63% { stroke-width: 18px; opacity: .6; }
-  80% { stroke-width: 11px; opacity: .42; }
-  100% { stroke-width: 14px; opacity: .5; }
-}
-@keyframes selection-glow-lit-edge {
-  0% { stroke-width: 2px; opacity: 0; }
-  24% { stroke-width: 18px; opacity: .3; }
-  44% { stroke-width: 8px; opacity: .18; }
-  63% { stroke-width: 16px; opacity: .28; }
-  80% { stroke-width: 11px; opacity: .22; }
-  100% { stroke-width: 14px; opacity: .3; }
-}
-.edge-flow { stroke-width: 2.6; filter: drop-shadow(0 0 5px var(--accent)); }
-.flow-edge--sequence .edge-flow { stroke-width: 1.2; filter: none; }
-.flow-edge--sequence .selection-edge-halo { stroke-width: 9px; opacity: .16; filter: blur(2px); }
-.flow-edge--sequence .selection-feedback.is-animated .selection-edge-halo { animation-name: selection-glow; }
-
-/* ---------- Off switch: the same two preferences styles.css already honours ---------- */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .diagram-node .node-surface, .edge-flow { filter: none !important; }
-  .edge-flow { stroke-width: 2; }
-  .selection-node-halo, .selection-edge-halo { stroke-width: 9px; opacity: .16; filter: blur(2px); }
-  .selection-feedback.is-animated :is(.selection-node-halo, .selection-edge-halo) { animation-name: selection-glow; }
-  :root[data-theme="dark"] .react-flow, :root[data-theme="dark"] .react-flow.dark { background: var(--canvas); }
+  .edge-flow { stroke-width: 2px; }
+  .selection-node-halo, .selection-edge-halo { display: none; filter: none; }
 }

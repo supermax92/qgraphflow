@@ -20,9 +20,6 @@ export function architectureOutline(node, x, y) {
     ['ellipse', { cx: x + w / 2, cy: y + 18, rx: w / 2 - 12, ry: 16, fill: 'none' }]
   ];
   if (node.kind === 'framework') return [...base, ['path', { d: `M${x + 16} ${y + 24}H${x + w - 16}M${x + 16} ${y + h - 24}H${x + w - 16}`, fill: 'none', 'stroke-dasharray': '7 5' }]];
-  if (node.kind === 'component') return [...base, ['rect', { x: x + 7, y: y + 32, width: 15, height: 12, rx: 2 }], ['rect', { x: x + 7, y: y + 50, width: 15, height: 12, rx: 2 }]];
-  if (node.kind === 'system') return [...base, ['rect', { x: x + 7, y: y + 7, width: w - 14, height: h - 14, rx: 7, fill: 'none' }]];
-  if (node.kind === 'service') return [...base, ['path', { d: `M${x} ${y + 36}h12M${x + w - 12} ${y + h - 36}h12`, fill: 'none' }]];
   return base;
 }
 
@@ -40,10 +37,10 @@ const contentInset = node => ['external', 'config', 'failure'].includes(node.kin
 
 export default {
   dashedKinds: ['framework', 'optional'],
-  id: 'architecture', label: '架构图',
+  id: 'architecture', label: 'Architecture',
   nodeKinds: ["external", "config", "framework", "security", "service", "business", "data", "failure", "system", "component", "database"],
   groupKinds: ["runtime", "security", "ownership", "external"],
   edgeKinds: ["request", "call", "data", "success", "failure", "framework", "optional", "depends"],
   render: (node, ...args) => genericCard(node, ...args, architectureOutline, contentInset(node)), outline: architectureOutline, anchor,
-  cardLayout: true,
+  cardLayout: true, contentInset,
 };

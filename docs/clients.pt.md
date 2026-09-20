@@ -4,17 +4,17 @@
 
 [Voltar ao README](readme/README.pt.md)
 
-O Claude Code pode instalar o plugin diretamente do GitHub (veja a seção Claude Code abaixo). Para os demais clientes, primeiro baixe o código-fonte do QGraphFlow, gere o pacote de execução e instale-o no seu cliente.
+O Qoder Desktop pode instalar o plugin pelo Marketplace, e o Claude Code diretamente do GitHub (veja as respectivas seções abaixo). Nos dois casos, você pode pular a etapa 1. Para uma instalação local, primeiro baixe o código-fonte do QGraphFlow e gere o pacote de execução.
 
-Você precisa de Node.js 22, Git, npm, `tar`, `zip`, `unzip` e um cliente com acesso ao modelo configurado.
+Você precisa de Node.js 22 e de um cliente com acesso ao modelo configurado. Para compilar a partir do código-fonte, também precisa de Git, npm, `tar`, `zip` e `unzip`.
 
-## 1. Baixar e gerar o pacote
+## 1. Baixar e gerar o pacote para instalação local
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.4.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
 ```
 
 Se já tiver o código-fonte do QGraphFlow, pule a clonagem e entre no diretório raiz dele. Ajuste o nome do ZIP à versão no `package.json` do QGraphFlow. Use novos diretórios para gerar e extrair o pacote, sem sobrescrever arquivos existentes. O Git baixa apenas o código enviado ao repositório, não as alterações locais sem commit.
@@ -60,9 +60,11 @@ qodercli plugins install ./dist/runtime
 
 Inicie uma nova sessão e selecione `q-flow`.
 
-### Qoder IDE
+### Qoder Desktop
 
-Abra Settings → Plugins → Import e importe o diretório completo `dist/runtime`. Recarregue o cliente e selecione `q-flow`.
+**Recomendado:** Abra **Settings → Plugins → Marketplace**, pesquise **代码图谱可视化** ou **qgraphflow** e instale o plugin. Inicie uma nova sessão e selecione `q-flow`. Não é necessário baixar um ZIP nem compilar o código-fonte.
+
+Para uma instalação local, conclua primeiro a etapa 1. Depois, abra **Settings → Plugins → Custom → Import** e importe o diretório completo `dist/runtime`. Recarregue o cliente e selecione `q-flow`.
 
 ### Cursor
 

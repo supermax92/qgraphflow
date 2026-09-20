@@ -1,6 +1,15 @@
-import { cardTextLayout, layoutText } from '../text-layout.js';
+import { cardTextLayout, layoutText, groupHeadingLayout } from '../text-layout.js';
 import { TYPOGRAPHY, isCore as coreNode, dataKinds, kindLabels, nodeMetrics } from '../visual-style.js';
 export { cardTextLayout, layoutText, TYPOGRAPHY, coreNode, dataKinds, kindLabels, nodeMetrics };
+
+export function groupHeadingSvg(group, x = 0, y = 0) {
+  return groupHeadingLayout(group).lines.map((line, i) => text(x + 16, y + 26 + i * 22, line, 'group')).join('');
+}
+
+export function groupFrameSvg(group, appearance, x = 0, y = 0) {
+  const radius = ['loop', 'par'].includes(group.kind) ? 5 : 14;
+  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="${appearance.stroke}" stroke-width="1"/>`;
+}
 
 export function escapeXml(value = '') {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -16,7 +25,7 @@ export function text(x, y, value, className, extra = '') {
   const fitted = value && typeof value === 'object' && 'width' in value;
   const fontSize = Number(extra.match(/font-size:([\d.]+)px/)?.[1]) || {
     title: TYPOGRAPHY.title, 'shape-title': TYPOGRAPHY.title, 'participant-title': TYPOGRAPHY.title,
-    body: TYPOGRAPHY.body, 'field-name': TYPOGRAPHY.body, 'field-type': TYPOGRAPHY.small,
+    body: TYPOGRAPHY.body, 'field-name': TYPOGRAPHY.body, 'field-type': TYPOGRAPHY.body,
     member: TYPOGRAPHY.body, 'entity-title': TYPOGRAPHY.title, 'compact-title': 14, 'compact-body': 10
   }[className] || TYPOGRAPHY.small;
   let content = fitted ? value.value : value;
@@ -37,7 +46,7 @@ export function centeredTitle(cx, cy, value, width, height = Infinity, subtitle 
   const usedHeight = titleCount * title.lineHeight + (bodyCount ? 5 + bodyCount * body.lineHeight : 0);
   const top = cy - usedHeight / 2;
   const lines = (layout, count, y, className) => layout.lines.slice(0, count).map((line, index) =>
-    text(cx, y + index * layout.lineHeight, fit(line + (index === count - 1 && count < layout.lines.length ? '…' : ''), width), className, ' text-anchor="middle"')).join('');
+    text(cx, y + index * layout.lineHeight, line + (index === count - 1 && count < layout.lines.length ? '…' : ''), className, ' text-anchor="middle"')).join('');
   const markup = lines(title, titleCount, top + 22, 'shape-title')
     + lines(body, bodyCount, top + titleCount * title.lineHeight + 5 + 18, 'body');
   // Legacy tiny symbols may be shorter than one title line; only their text is scaled to the available height.
@@ -139,7 +148,9 @@ export function svgStyles(palette, scope = '') {
   return `${scope}.heading{font:650 24px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink};letter-spacing:-.5px}
 ${scope}.meta{font:400 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink3}}
 ${scope}.group{font:650 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2};letter-spacing:.4px}
-${scope}.group-kind,${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3};letter-spacing:.7px}
+${scope}[data-diagram-group-id]>.group{fill:${palette.ink2}}
+${scope}.group-kind{font:600 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink2};letter-spacing:.7px}
+${scope}.stereotype{font:600 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink3};letter-spacing:.6px}
 ${scope}.title,${scope}.participant-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.shape-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.body{font:400 ${TYPOGRAPHY.body}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
@@ -149,11 +160,9 @@ ${scope}.field-key{font:700 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${
 ${scope}.field-name{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
 ${scope}.compact-title{font:650 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.compact-body{font:400 10px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
-${scope}.core-node .compact-title,${scope}.core-node .compact-body{fill:${palette.heroInk}}
 ${scope}.entity-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
-${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.data}}
+${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
 ${scope}.member{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
-${scope}.field-type{font:400 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.ink3}}
-${scope}.core-node .title,${scope}.core-node .shape-title,${scope}.core-node .participant-title{fill:${palette.heroInk}}
-${scope}.core-node .body,${scope}.core-node .stereotype{fill:${palette.heroInk};opacity:.76}`;
+${scope}.field-type{font:400 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink3}}
+`;
 }

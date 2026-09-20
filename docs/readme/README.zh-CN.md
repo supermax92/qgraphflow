@@ -12,44 +12,39 @@
 
 </div>
 
-![复杂电商架构图、流程图与时序图动态总览，每类图展示 0.8 秒，完整循环 2.4 秒，保留连线流动](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.core-three.gif)
+![agent-desk 示例的架构图、时序图与 ER 图，每类 1.5 秒](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.hero.gif)
 
 *支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
 - **探索：** 搜索定位、缩放和平移画布，查看组件职责与上下游关系。
+
+  ![探索：搜索 refund 定位到订单工具集，拉远查看上游的智能体编排器与下游的订单库、物流查询平台，再平移画布](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.explore.gif)
+
 - **核验：** 从节点或连线查看详情，核对源码文件、行号、符号和明确标注的不确定性。
+
+  ![核验：速览卡显示 src/gateway/chat-gateway.js:5-19，详情栏显示符号与证据事实，再查看标为 inference 的 POST /chat 连线](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.verify.gif)
+
 - **编辑：** 解锁后修改文字、移动元素；不满意时一键重置。
+
+  ![编辑：解除布局锁定，把 LLM 服务商改名为 LLM 网关，拖动节点带动连线，最后一键重置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.edit.gif)
+
 - **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
 
-*探索：展开左侧导航，搜索结算编排器并定位；点击节点弹出快速查看卡片，高亮上下游连线，再缩放和平移画布。*
+  ![分享：打开离线 HTML，从「更多」导出 PNG，最后展示导出的文件本身](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.share.gif)
 
-![QGraphFlow 探索能力：左侧导航、搜索定位、节点快速查看、上下游高亮与画布缩放平移](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.explore.gif)
-
-*核验：从快速查看卡片进入右侧详情栏，查看文件路径、行号与符号；再选择连线，查看关系说明与推断标记。*
-
-本段中的代码路径、行号与符号均为虚构，仅演示证据栏交互，不代表仓库源码；页面和详情中也已标明。实际分析时应填写真实来源，无法确认的关系应标注为推断。
-
-![QGraphFlow 核验能力：右侧详情展示虚构源码路径、行号、符号以及关系推断](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.verify.gif)
-
-*编辑：在「更多」菜单解除布局锁定，修改节点名称与说明，拖动节点并让连线跟随；最后重置，恢复原始文字和位置。*
-
-![QGraphFlow 编辑能力：解锁、修改文字、拖动节点与连线跟随、一键重置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.edit.gif)
-
-*分享：离线打开完整 HTML，展开下载菜单，实际导出 SVG 和 PNG，再打开 PNG 检查完整图形。*
-
-![QGraphFlow 分享能力：离线 HTML、下载菜单、SVG 和 PNG 导出及完整 PNG 预览](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.share.gif)
-
-顶部三图总览每类展示 0.8 秒，完整循环 2.4 秒；下方四张能力动图留出操作与阅读时间，保留模块配色、完整文字和连线流动。全部 GIF 与 PNG 使用源码构建的 Viewer 生成，图中文字和界面均为中文。这五张 GIF 和九张 PNG 作为独立附件托管在 [showcase-v1 Release](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1)，已核验公开下载与 SHA-256；不进入 Git 历史或插件包，查看这些媒体需要联网。生成的图形 HTML 本身支持离线使用。
+顶部动图依次展示架构图、时序图与 ER 图，每类 1.5 秒，完整循环 4.5 秒；下方四张能力动图各 6.5–8.5 秒。全部动图用源码构建的 Viewer 录制自 [agent-desk 示例](../../examples/showcase/agent-desk)（虚构业务、真实代码），图中文字与界面均为中文。它们作为 [showcase-v2 Release 附件](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2)托管，不进入 Git 历史与插件包，查看需要联网；生成的图形 HTML 本身可离线使用。
 
 ## 安装指南
 
 准备 Node.js 22，以及已配置好模型访问、支持插件功能的客户端。
 
+[Qoder Desktop](#qoder-desktop) 可直接从插件商城安装，跳过第 1 步。
+
 ### 1. 下载插件
 
-下载 [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip)，解压到独立目录，保留隐藏文件。
+下载 [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip)，解压到独立目录，保留隐藏文件。
 
 以下终端命令均在**解压后包含 `skills/` 的插件根目录**执行。
 
@@ -92,9 +87,11 @@ qodercli plugins install .
 
 新建会话，选择 `q-flow`。
 
-#### Qoder IDE
+#### Qoder Desktop
 
-打开 **Settings → Plugins → Custom → Import**，导入完整的插件根目录，再选择 `q-flow`。
+**推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **代码图谱可视化** 或 **qgraphflow**，安装插件。新建会话，选择 `q-flow`。无需下载 ZIP 或构建源码。
+
+如需本地安装，先完成第 1 步，再打开 **Settings → Plugins → Custom → Import**，导入解压后的完整插件根目录。新建会话，选择 `q-flow`。
 
 #### Cursor
 
@@ -127,7 +124,7 @@ npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.gith
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 
@@ -195,15 +192,15 @@ node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN
 
 | 视图 · PNG | 主要问题 | 本示例范围 |
 | --- | --- | --- |
-| [架构图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.architecture.png) | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
-| [流程图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.flowchart.png) | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
-| [时序图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.sequence.png) | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
-| [ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.er.png) | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
-| [部署图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.deployment.png) | 运行单元放在哪里、怎样连接？ | 边缘、Kubernetes、数据服务、支付和仓配网络 |
-| [类图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.class.png) | 领域对象和代码契约怎样依赖？ | Checkout 应用服务、Order 与四个端口 |
-| [状态图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.state.png) | 订单受哪些事件和守卫条件推进？ | 支付、履约、取消、退款和关闭 |
-| [用例图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.usecase.png) | 每类参与者拥有哪些能力？ | 买家、商家、仓库与客服 |
-| [数据流图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.zh-CN.dataflow.png) | 数据资产经过哪些变换和存储？ | 购物车、交易决策、订单事件、仓配和物流回执 |
+| 架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
+| 流程图 | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
+| 时序图 | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
+| ER 图 | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
+| 部署图 | 运行单元放在哪里、怎样连接？ | 边缘、Kubernetes、数据服务、支付和仓配网络 |
+| 类图 | 领域对象和代码契约怎样依赖？ | Checkout 应用服务、Order 与四个端口 |
+| 状态图 | 订单受哪些事件和守卫条件推进？ | 支付、履约、取消、退款和关闭 |
+| 用例图 | 每类参与者拥有哪些能力？ | 买家、商家、仓库与客服 |
+| 数据流图 | 数据资产经过哪些变换和存储？ | 购物车、交易决策、订单事件、仓配和物流回执 |
 
 这是用于展示 QGraphFlow 能力的概念模型，不对应某个电商仓库。`graph.json` 不伪造源码路径，关系证据统一标记为 `inference`；对真实项目绘图时，应改用源码、DDL、配置、测试和已接受需求中的可追溯证据。
 
@@ -217,10 +214,10 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 开发需要 Node.js 22、npm、tar、zip 和 unzip。反馈问题时，请附最小脱敏图数据、客户端和浏览器版本，以及复现步骤。
 
-[证据来源](../references/zh-CN/evidence-sources.md) · [图数据格式](../references/zh-CN/graph-schema.md) · [需求引导](../references/zh-CN/guided-intake.md) · [Viewer 开发与验收](../references/zh-CN/viewer-development.md) · [图形表达约定](../references/zh-CN/visual-contract.md)
+参考文档（英文）：[证据来源](../../skills/q-flow/references/evidence-sources.md) · [图数据格式](../../skills/q-flow/references/graph-schema.md) · [需求引导](../../skills/q-flow/references/guided-intake.md) · [Viewer 开发与验收](../../skills/q-flow/references/viewer-development.md) · [图形表达约定](../../skills/q-flow/references/visual-contract.md)
 
 ## 许可证与归属
 
 [MIT](../../LICENSE) · [第三方声明](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow 是采用 MIT 许可证的独立项目。本文电商场景为概念示例，不代表任何真实公司的生产架构。
+QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。

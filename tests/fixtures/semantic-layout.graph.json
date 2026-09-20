@@ -1,0 +1,1058 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "architecture semantic layout golden",
+        "diagramType": "architecture",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "client",
+          "label": "client",
+          "kind": "external"
+        },
+        {
+          "id": "gateway",
+          "label": "gateway",
+          "kind": "service",
+          "groupId": "app",
+          "layout": {
+            "rank": 1
+          }
+        },
+        {
+          "id": "orders",
+          "label": "orders",
+          "kind": "business",
+          "groupId": "app",
+          "layout": {
+            "rank": 2
+          }
+        },
+        {
+          "id": "stock",
+          "label": "stock",
+          "kind": "business",
+          "groupId": "app",
+          "layout": {
+            "rank": 2
+          }
+        },
+        {
+          "id": "cache",
+          "label": "cache",
+          "kind": "data",
+          "layout": {
+            "rank": 3
+          }
+        },
+        {
+          "id": "db",
+          "label": "db",
+          "kind": "database",
+          "layout": {
+            "rank": 3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "request",
+          "source": "client",
+          "target": "gateway",
+          "kind": "request",
+          "evidence": "inference"
+        },
+        {
+          "id": "orders-call",
+          "source": "gateway",
+          "target": "orders",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-call",
+          "source": "gateway",
+          "target": "stock",
+          "kind": "call",
+          "evidence": "inference"
+        },
+        {
+          "id": "orders-cache",
+          "source": "orders",
+          "target": "cache",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "stock-db",
+          "source": "stock",
+          "target": "db",
+          "kind": "data",
+          "evidence": "inference"
+        },
+        {
+          "id": "cache-db",
+          "source": "cache",
+          "target": "db",
+          "kind": "data",
+          "evidence": "inference"
+        }
+      ],
+      "groups": [
+        {
+          "id": "app",
+          "label": "app",
+          "kind": "runtime"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "flowchart semantic layout golden",
+        "diagramType": "flowchart",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "start",
+          "kind": "start"
+        },
+        {
+          "id": "check",
+          "label": "库存与配送条件是否同时满足？",
+          "kind": "decision"
+        },
+        {
+          "id": "reserve",
+          "label": "reserve",
+          "kind": "process"
+        },
+        {
+          "id": "reject",
+          "label": "reject",
+          "kind": "process"
+        },
+        {
+          "id": "join",
+          "label": "join",
+          "kind": "process"
+        },
+        {
+          "id": "end",
+          "label": "end",
+          "kind": "end"
+        }
+      ],
+      "edges": [
+        {
+          "id": "begin",
+          "source": "start",
+          "target": "check",
+          "kind": "flow",
+          "evidence": "inference"
+        },
+        {
+          "id": "yes",
+          "source": "check",
+          "target": "reserve",
+          "kind": "yes",
+          "evidence": "inference"
+        },
+        {
+          "id": "no",
+          "source": "check",
+          "target": "reject",
+          "kind": "no",
+          "evidence": "inference"
+        },
+        {
+          "id": "reserved",
+          "source": "reserve",
+          "target": "join",
+          "kind": "flow",
+          "evidence": "inference"
+        },
+        {
+          "id": "rejected",
+          "source": "reject",
+          "target": "join",
+          "kind": "flow",
+          "evidence": "inference"
+        },
+        {
+          "id": "retry",
+          "source": "reject",
+          "target": "check",
+          "kind": "flow",
+          "evidence": "inference",
+          "label": "重试 / retry"
+        },
+        {
+          "id": "finish",
+          "source": "join",
+          "target": "end",
+          "kind": "flow",
+          "evidence": "inference"
+        }
+      ],
+      "layout": {
+        "primaryPath": [
+          "start",
+          "check",
+          "reserve",
+          "join",
+          "end"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "时序执行与嵌套片段",
+        "subtitle": "六组调用／返回 · loop 内 alt · opt 内 par",
+        "sourceRef": "conceptual:sequence-execution-demo",
+        "scope": "Conceptual fixture: preserves paired calls, self call, nested activations, loop-alt and opt-par; order is message identity, not elapsed time.",
+        "diagramType": "sequence",
+        "locale": "zh-CN"
+      },
+      "nodes": [
+        {
+          "id": "client",
+          "label": "调用方",
+          "kind": "actor",
+          "module": "调用方",
+          "facts": [
+            "概念参与者，用于展示时序能力。"
+          ]
+        },
+        {
+          "id": "order",
+          "label": "订单预检服务",
+          "kind": "participant",
+          "module": "订单预检服务",
+          "facts": [
+            "概念参与者，用于展示时序能力。"
+          ]
+        },
+        {
+          "id": "inventory",
+          "label": "库存服务",
+          "kind": "participant",
+          "module": "库存服务",
+          "facts": [
+            "概念参与者，用于展示时序能力。"
+          ]
+        },
+        {
+          "id": "risk",
+          "label": "风控服务",
+          "kind": "participant",
+          "module": "风控服务",
+          "facts": [
+            "概念参与者，用于展示时序能力。"
+          ]
+        },
+        {
+          "id": "audit",
+          "label": "审计服务",
+          "kind": "participant",
+          "module": "审计服务",
+          "facts": [
+            "概念参与者，用于展示时序能力。"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "c1",
+          "source": "client",
+          "target": "order",
+          "order": 3,
+          "label": "submitCheck()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "c2",
+          "source": "order",
+          "target": "order",
+          "order": 4,
+          "label": "prepare()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "c3",
+          "source": "order",
+          "target": "inventory",
+          "order": 6,
+          "label": "readStock()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "r3",
+          "source": "inventory",
+          "target": "order",
+          "order": 8,
+          "label": "库存快照",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c3"
+        },
+        {
+          "id": "r2",
+          "source": "order",
+          "target": "order",
+          "order": 9,
+          "label": "准备完成",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c2"
+        },
+        {
+          "id": "c4",
+          "source": "order",
+          "target": "inventory",
+          "order": 13,
+          "label": "tryReserve()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "r4",
+          "source": "inventory",
+          "target": "order",
+          "order": 15,
+          "label": "ACQUIRED / BUSY",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c4"
+        },
+        {
+          "id": "c5",
+          "source": "order",
+          "target": "risk",
+          "order": 27,
+          "label": "checkRisk()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "r5",
+          "source": "risk",
+          "target": "order",
+          "order": 29,
+          "label": "风险结果",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c5"
+        },
+        {
+          "id": "c6",
+          "source": "order",
+          "target": "audit",
+          "order": 32,
+          "label": "recordCheck()",
+          "kind": "sync",
+          "evidence": "inference"
+        },
+        {
+          "id": "r6",
+          "source": "audit",
+          "target": "order",
+          "order": 33,
+          "label": "已记录",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c6"
+        },
+        {
+          "id": "r1",
+          "source": "order",
+          "target": "client",
+          "order": 38,
+          "label": "预检结果",
+          "kind": "return",
+          "evidence": "inference",
+          "replyTo": "c1"
+        }
+      ],
+      "executions": [
+        {
+          "id": "exec-1",
+          "participantId": "order",
+          "start": {
+            "edgeId": "c1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r1",
+            "at": "send"
+          }
+        },
+        {
+          "id": "exec-2",
+          "participantId": "order",
+          "start": {
+            "edgeId": "c2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r2",
+            "at": "send"
+          },
+          "parentId": "exec-1"
+        },
+        {
+          "id": "exec-3",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "c3",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "exec-4",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "c4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r4",
+            "at": "send"
+          }
+        },
+        {
+          "id": "exec-5",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "c5",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "exec-6",
+          "participantId": "audit",
+          "start": {
+            "edgeId": "c6",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "r6",
+            "at": "send"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "retry",
+          "kind": "loop",
+          "label": "尝试预留库存",
+          "loop": {
+            "min": 1,
+            "max": 3
+          },
+          "operands": [
+            {
+              "id": "attempt",
+              "guard": "attempt < 3 && !reserved",
+              "edgeIds": [
+                "c4",
+                "r4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outcome",
+          "kind": "alt",
+          "label": "处理本次结果",
+          "parentId": "retry",
+          "parentOperandId": "attempt",
+          "operands": [
+            {
+              "id": "acquired",
+              "guard": "reservation = ACQUIRED",
+              "edgeIds": [],
+              "body": "reserved ← true；下一次检查退出循环"
+            },
+            {
+              "id": "busy",
+              "guard": "else",
+              "edgeIds": [],
+              "body": "attempt ← attempt + 1；最多尝试 3 次"
+            }
+          ]
+        },
+        {
+          "id": "optional",
+          "kind": "opt",
+          "label": "预留成功后执行",
+          "operands": [
+            {
+              "id": "reserved",
+              "guard": "reserved = true",
+              "edgeIds": []
+            }
+          ]
+        },
+        {
+          "id": "parallel",
+          "kind": "par",
+          "label": "分支并行，末端汇合",
+          "parentId": "optional",
+          "parentOperandId": "reserved",
+          "operands": [
+            {
+              "id": "risk",
+              "label": "风险检查",
+              "edgeIds": [
+                "c5",
+                "r5"
+              ]
+            },
+            {
+              "id": "audit",
+              "label": "审计记录",
+              "edgeIds": [
+                "c6",
+                "r6"
+              ]
+            }
+          ]
+        }
+      ],
+      "layout": {
+        "participantOrder": [
+          "client",
+          "order",
+          "inventory",
+          "risk",
+          "audit"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "er semantic layout golden",
+        "diagramType": "er",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "orders",
+          "label": "orders",
+          "kind": "entity",
+          "fields": [
+            {
+              "name": "id",
+              "type": "BIGINT",
+              "key": "PK"
+            }
+          ]
+        },
+        {
+          "id": "items",
+          "label": "items",
+          "kind": "entity",
+          "fields": [
+            {
+              "name": "id",
+              "type": "BIGINT",
+              "key": "PK"
+            }
+          ]
+        },
+        {
+          "id": "order_items",
+          "label": "order_items",
+          "kind": "entity",
+          "fields": [
+            {
+              "name": "id",
+              "type": "BIGINT",
+              "key": "PK"
+            },
+            {
+              "name": "order_id",
+              "type": "BIGINT",
+              "key": "FK"
+            },
+            {
+              "name": "item_id",
+              "type": "BIGINT",
+              "key": "FK"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "order-lines",
+          "source": "orders",
+          "target": "order_items",
+          "kind": "relationship",
+          "evidence": "inference",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "item-lines",
+          "source": "items",
+          "target": "order_items",
+          "kind": "relationship",
+          "evidence": "inference",
+          "sourceCardinality": "1",
+          "targetCardinality": "1..*"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "deployment semantic layout golden",
+        "diagramType": "deployment",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "client",
+          "label": "client",
+          "kind": "external"
+        },
+        {
+          "id": "api",
+          "label": "api",
+          "kind": "service",
+          "groupId": "host"
+        },
+        {
+          "id": "image",
+          "label": "image",
+          "kind": "artifact",
+          "groupId": "host"
+        },
+        {
+          "id": "db",
+          "label": "db",
+          "kind": "database",
+          "groupId": "network"
+        }
+      ],
+      "edges": [
+        {
+          "id": "connect",
+          "source": "client",
+          "target": "api",
+          "kind": "network",
+          "evidence": "inference"
+        },
+        {
+          "id": "deploy",
+          "source": "image",
+          "target": "api",
+          "kind": "deploy",
+          "evidence": "inference"
+        },
+        {
+          "id": "query",
+          "source": "api",
+          "target": "db",
+          "kind": "network",
+          "evidence": "inference"
+        }
+      ],
+      "groups": [
+        {
+          "id": "network",
+          "label": "network",
+          "kind": "network"
+        },
+        {
+          "id": "cluster",
+          "label": "cluster",
+          "kind": "cluster",
+          "parentId": "network"
+        },
+        {
+          "id": "host",
+          "label": "host",
+          "kind": "host",
+          "parentId": "cluster"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "class semantic layout golden",
+        "diagramType": "class",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "Repository",
+          "label": "Repository",
+          "kind": "interface",
+          "methods": [
+            "+ findById(id: OrderId): Optional<Order>"
+          ],
+          "layout": {
+            "rank": 0
+          }
+        },
+        {
+          "id": "SqlRepository",
+          "label": "SqlRepository",
+          "kind": "class",
+          "attributes": [
+            "- tableName: String"
+          ],
+          "methods": [
+            "+ findById(id: OrderId): Optional<Order>"
+          ],
+          "layout": {
+            "rank": 1
+          }
+        },
+        {
+          "id": "Order",
+          "label": "Order",
+          "kind": "class",
+          "attributes": [
+            "- id: OrderId",
+            "- lines: List<OrderLine>"
+          ]
+        },
+        {
+          "id": "OrderLine",
+          "label": "OrderLine",
+          "kind": "class",
+          "attributes": [
+            "- quantity: BigDecimal"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "implements",
+          "source": "SqlRepository",
+          "target": "Repository",
+          "kind": "implementation",
+          "evidence": "inference"
+        },
+        {
+          "id": "loads",
+          "source": "SqlRepository",
+          "target": "Order",
+          "kind": "dependency",
+          "evidence": "inference"
+        },
+        {
+          "id": "contains",
+          "source": "Order",
+          "target": "OrderLine",
+          "kind": "composition",
+          "evidence": "inference",
+          "sourceMultiplicity": "1",
+          "targetMultiplicity": "1..*"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "state semantic layout golden",
+        "diagramType": "state",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "initial",
+          "kind": "initial"
+        },
+        {
+          "id": "pending",
+          "label": "pending",
+          "kind": "state"
+        },
+        {
+          "id": "decide",
+          "label": "decide",
+          "kind": "choice"
+        },
+        {
+          "id": "done",
+          "label": "done",
+          "kind": "state"
+        },
+        {
+          "id": "failed",
+          "label": "failed",
+          "kind": "state"
+        },
+        {
+          "id": "final",
+          "label": "final",
+          "kind": "final"
+        }
+      ],
+      "edges": [
+        {
+          "id": "create",
+          "source": "initial",
+          "target": "pending",
+          "kind": "transition",
+          "evidence": "inference"
+        },
+        {
+          "id": "verify",
+          "source": "pending",
+          "target": "decide",
+          "kind": "transition",
+          "evidence": "inference",
+          "label": "verify",
+          "guard": "valid && authorized",
+          "action": "reserve()"
+        },
+        {
+          "id": "success",
+          "source": "decide",
+          "target": "done",
+          "kind": "transition",
+          "evidence": "inference",
+          "guard": "accepted"
+        },
+        {
+          "id": "failure",
+          "source": "decide",
+          "target": "failed",
+          "kind": "transition",
+          "evidence": "inference",
+          "guard": "rejected"
+        },
+        {
+          "id": "recover",
+          "source": "failed",
+          "target": "pending",
+          "kind": "transition",
+          "evidence": "inference",
+          "label": "retry"
+        },
+        {
+          "id": "self",
+          "source": "pending",
+          "target": "pending",
+          "kind": "transition",
+          "evidence": "inference",
+          "label": "refresh"
+        },
+        {
+          "id": "finish",
+          "source": "done",
+          "target": "final",
+          "kind": "transition",
+          "evidence": "inference"
+        }
+      ],
+      "layout": {
+        "primaryPath": [
+          "initial",
+          "pending",
+          "decide",
+          "done",
+          "final"
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "usecase semantic layout golden",
+        "diagramType": "usecase",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "buyer",
+          "kind": "actor"
+        },
+        {
+          "id": "admin",
+          "label": "admin",
+          "kind": "actor"
+        },
+        {
+          "id": "purchase",
+          "label": "purchase",
+          "kind": "usecase",
+          "groupId": "shop"
+        },
+        {
+          "id": "refund",
+          "label": "refund",
+          "kind": "usecase",
+          "groupId": "shop"
+        },
+        {
+          "id": "authorize",
+          "label": "authorize",
+          "kind": "usecase",
+          "groupId": "shop"
+        },
+        {
+          "id": "coupon",
+          "label": "选择符合规则的优惠券 / Apply eligible coupon",
+          "kind": "usecase",
+          "groupId": "shop"
+        }
+      ],
+      "edges": [
+        {
+          "id": "buy",
+          "source": "buyer",
+          "target": "purchase",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "manage",
+          "source": "admin",
+          "target": "refund",
+          "kind": "association",
+          "evidence": "inference"
+        },
+        {
+          "id": "purchase-auth",
+          "source": "purchase",
+          "target": "authorize",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "refund-auth",
+          "source": "refund",
+          "target": "authorize",
+          "kind": "include",
+          "evidence": "inference"
+        },
+        {
+          "id": "discount",
+          "source": "coupon",
+          "target": "purchase",
+          "kind": "extend",
+          "evidence": "inference"
+        }
+      ],
+      "groups": [
+        {
+          "id": "shop",
+          "label": "shop",
+          "kind": "system"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "dataflow semantic layout golden",
+        "diagramType": "dataflow",
+        "sourceRef": "conceptual:semantic-layout-golden",
+        "locale": "en"
+      },
+      "nodes": [
+        {
+          "id": "requester",
+          "label": "requester",
+          "kind": "external"
+        },
+        {
+          "id": "validate",
+          "label": "validate",
+          "kind": "process"
+        },
+        {
+          "id": "enrich",
+          "label": "enrich",
+          "kind": "process"
+        },
+        {
+          "id": "orders",
+          "label": "orders",
+          "kind": "dataStore"
+        },
+        {
+          "id": "receiver",
+          "label": "receiver",
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "id": "input",
+          "source": "requester",
+          "target": "validate",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "请求 / Request"
+        },
+        {
+          "id": "valid",
+          "source": "validate",
+          "target": "enrich",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "已校验数据"
+        },
+        {
+          "id": "store",
+          "source": "enrich",
+          "target": "orders",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "订单记录"
+        },
+        {
+          "id": "read",
+          "source": "orders",
+          "target": "enrich",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "历史记录"
+        },
+        {
+          "id": "output",
+          "source": "enrich",
+          "target": "receiver",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "处理结果"
+        },
+        {
+          "id": "feedback",
+          "source": "enrich",
+          "target": "validate",
+          "kind": "data",
+          "evidence": "inference",
+          "label": "纠正信息"
+        }
+      ]
+    }
+  ]
+}

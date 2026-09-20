@@ -12,44 +12,39 @@ Sigue el recorrido. Comprueba las evidencias. Comparte un archivo sin conexión.
 
 </div>
 
-![Arquitectura, flujo y secuencia de comercio electrónico: 0,8 segundos por vista, 2,4 segundos por ciclo y conexiones animadas](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.core-three.gif)
+![Arquitectura, secuencia y ER del ejemplo agent-desk, 1,5 segundos por vista](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.hero.gif)
 
 *Nueve tipos: arquitectura, flujo, secuencia, ER, despliegue, clases, estados, casos de uso y flujo de datos.*
 
 QGraphFlow genera diagramas de software interactivos a partir del código, los esquemas, la configuración y los requisitos. Permite comprobar las relaciones y compartir el resultado como HTML sin conexión.
 
 - **Explorar:** buscar, ampliar y desplazar el lienzo; consultar responsabilidades y relaciones entrantes y salientes.
+
+  ![Explorar: buscar refund, saltar a Herramientas de pedidos, alejar hasta ver el orquestador arriba y la base de datos de pedidos y el seguimiento logístico abajo, luego desplazar](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.explore.gif)
+
 - **Verificar:** inspeccionar nodos y conexiones para revisar archivos, líneas, símbolos e incertidumbres explícitas.
+
+  ![Verificar: tarjeta con src/gateway/chat-gateway.js:5-19, panel de detalles con el símbolo y los hechos de evidencia, luego la conexión POST /chat marcada como inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.verify.gif)
+
 - **Editar:** desbloquear el diseño, cambiar textos y mover elementos; restablecer cuando sea necesario.
+
+  ![Editar: desbloquear el diseño, renombrar Proveedor LLM a Pasarela LLM, arrastrarlo con sus conexiones y restablecer](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.edit.gif)
+
 - **Compartir:** abrir el HTML sin conexión o exportar el diagrama completo a SVG / PNG.
 
-*Explorar: abrir la navegación, buscar el coordinador de compra y localizarlo. Seleccionar un nodo abre su tarjeta y resalta conexiones entrantes y salientes; después, ampliar y desplazar el lienzo.*
+  ![Compartir: abrir el HTML sin conexión, exportar PNG desde Más y luego el archivo exportado](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.share.gif)
 
-![Navegación, búsqueda, tarjeta del nodo, relaciones resaltadas, zoom y desplazamiento](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.explore.gif)
-
-*Verificar: abrir los detalles desde la tarjeta para consultar rutas, números de línea y símbolos. Seleccionar después una conexión para leer su explicación y su marca de inferencia.*
-
-Las rutas, líneas y símbolos de esta demostración son ficticios. Ilustran el panel de evidencias y no representan código del repositorio; la página y los detalles también lo indican. En análisis reales, usar fuentes reales y marcar las relaciones no confirmadas como inferencias.
-
-![Detalles con rutas, líneas y símbolos explícitamente ficticios e inferencias de relaciones](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.verify.gif)
-
-*Editar: desbloquear el diseño en **Más**, cambiar el nombre y la descripción de un nodo, arrastrarlo con sus conexiones y restablecer el texto y la posición originales.*
-
-![Desbloqueo, edición de texto, movimiento del nodo con sus conexiones y restablecimiento](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.edit.gif)
-
-*Compartir: abrir el HTML sin conexión, exportar SVG y PNG desde **Más** y abrir el PNG para comprobar el diagrama completo.*
-
-![HTML sin conexión, exportación SVG y PNG, y apertura del PNG exportado](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.share.gif)
-
-La vista general muestra cada uno de los tres diagramas durante 0,8 segundos: 2,4 segundos por ciclo. Las cuatro animaciones de interacción dejan tiempo para leer. Todos los medios usan el Viewer compilado desde el código fuente, con textos del diagrama y la interfaz en español. Los cinco GIF y nueve PNG se alojan como [archivos independientes del Release showcase-v1](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v1), con descargas públicas y sumas SHA-256 verificadas. No forman parte del historial de Git ni de los paquetes del complemento; verlos requiere conexión a internet. El HTML generado del diagrama funciona sin conexión.
+La animación superior muestra arquitectura, secuencia y ER durante 1,5 segundos cada una (4,5 segundos por ciclo); las cuatro animaciones de funciones duran entre 6,5 y 8,5 segundos. Todas se grabaron con el Viewer construido desde el código fuente sobre el [ejemplo agent-desk](../../examples/showcase/agent-desk) — negocio ficticio, código real — con diagramas e interfaz en español. Se alojan como [recursos de la Release showcase-v2](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2), fuera del historial de Git y del paquete del plugin, así que verlas requiere red; el HTML generado del diagrama funciona sin conexión.
 
 ## Guía de instalación
 
 Se necesitan Node.js 22 y un cliente compatible con complementos que tenga configurado el acceso al modelo.
 
+En [Qoder Desktop](#qoder-desktop), puedes instalar desde el Marketplace y omitir el paso 1.
+
 ### 1. Descargar el complemento
 
-Descargar [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
+Descargar [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
 
 Ejecutar los comandos siguientes desde **la raíz del complemento extraído, que contiene `skills/`**.
 
@@ -92,9 +87,11 @@ qodercli plugins install .
 
 Iniciar una sesión nueva y seleccionar `q-flow`.
 
-#### Qoder IDE
+#### Qoder Desktop
 
-Abrir **Settings → Plugins → Custom → Import**, importar el directorio raíz completo del complemento y seleccionar `q-flow`.
+**Recomendado:** Abre **Settings → Plugins → Marketplace**, busca **代码图谱可视化** o **qgraphflow** e instala el complemento. Inicia una sesión nueva y selecciona `q-flow`. No necesitas descargar un ZIP ni compilar el código fuente.
+
+Para una instalación local, completa primero el paso 1. Después abre **Settings → Plugins → Custom → Import** e importa el directorio raíz completo del complemento extraído. Inicia una sesión nueva y selecciona `q-flow`.
 
 #### Cursor
 
@@ -129,7 +126,7 @@ Crear un directorio independiente fuera del proyecto de la aplicación:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 
@@ -195,15 +192,15 @@ El Viewer precompilado no necesita instalar dependencias, claves API ni servicio
 
 | Vista · PNG | Pregunta principal | Alcance del ejemplo |
 | --- | --- | --- |
-| [Arquitectura](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.architecture.png) | ¿Qué responsabilidades colaboran? | Canales, compra, precios, riesgo, inventario, pago, pedidos, eventos y entrega |
-| [Flujo](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.flowchart.png) | ¿Dónde se bifurca y converge el proceso? | Falta de inventario, rechazo de riesgo, compensación del pago y confirmación exitosa |
-| [Secuencia](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.sequence.png) | ¿En qué orden ocurren llamadas y retornos? | Compra exitosa y OrderPaid asíncrono |
-| [ER](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.er.png) | ¿Cómo se relacionan los datos principales? | Carrito, pedidos, líneas, pagos, reservas y paquetes |
-| [Despliegue](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.deployment.png) | ¿Dónde se ejecutan y conectan las unidades? | Borde, Kubernetes, servicios de datos, pagos y redes logísticas |
-| [Clases](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.class.png) | ¿Cómo dependen los objetos de dominio y los contratos? | Servicio de compra, Order y cuatro puertos |
-| [Estados](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.state.png) | ¿Qué eventos y condiciones hacen avanzar un pedido? | Pago, entrega, cancelación, reembolso y cierre |
-| [Casos de uso](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.usecase.png) | ¿Qué puede hacer cada actor? | Comprador, comercio, almacén y atención al cliente |
-| [Flujo de datos](https://github.com/supermax92/qgraphflow/releases/download/showcase-v1/ecommerce.es.dataflow.png) | ¿Cómo se transforman y almacenan los datos? | Carrito, decisiones, eventos, almacén y comprobantes de entrega |
+| Arquitectura | ¿Qué responsabilidades colaboran? | Canales, compra, precios, riesgo, inventario, pago, pedidos, eventos y entrega |
+| Flujo | ¿Dónde se bifurca y converge el proceso? | Falta de inventario, rechazo de riesgo, compensación del pago y confirmación exitosa |
+| Secuencia | ¿En qué orden ocurren llamadas y retornos? | Compra exitosa y OrderPaid asíncrono |
+| ER | ¿Cómo se relacionan los datos principales? | Carrito, pedidos, líneas, pagos, reservas y paquetes |
+| Despliegue | ¿Dónde se ejecutan y conectan las unidades? | Borde, Kubernetes, servicios de datos, pagos y redes logísticas |
+| Clases | ¿Cómo dependen los objetos de dominio y los contratos? | Servicio de compra, Order y cuatro puertos |
+| Estados | ¿Qué eventos y condiciones hacen avanzar un pedido? | Pago, entrega, cancelación, reembolso y cierre |
+| Casos de uso | ¿Qué puede hacer cada actor? | Comprador, comercio, almacén y atención al cliente |
+| Flujo de datos | ¿Cómo se transforman y almacenan los datos? | Carrito, decisiones, eventos, almacén y comprobantes de entrega |
 
 Este modelo conceptual demuestra QGraphFlow y no corresponde a un repositorio de comercio concreto. El ejemplo `graph.json` no inventa rutas de código y marca las evidencias de las relaciones como `inference`. Los diagramas reales necesitan código, DDL, configuración, pruebas y requisitos aceptados que se puedan rastrear.
 
@@ -217,10 +214,10 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 Se necesitan Node.js 22, npm, tar, zip y unzip. Al informar de un problema, incluir un gráfico mínimo sin datos sensibles, versiones del cliente y navegador y pasos de reproducción.
 
-[Fuentes de evidencia](../references/es/evidence-sources.md) · [Formato de gráficos](../references/es/graph-schema.md) · [Consulta guiada](../references/es/guided-intake.md) · [Desarrollo del Viewer](../references/es/viewer-development.md) · [Composición de diagramas](../references/es/visual-contract.md)
+Documentación de referencia (en inglés): [Fuentes de evidencia](../../skills/q-flow/references/evidence-sources.md) · [Formato de gráficos](../../skills/q-flow/references/graph-schema.md) · [Consulta guiada](../../skills/q-flow/references/guided-intake.md) · [Desarrollo del Viewer](../../skills/q-flow/references/viewer-development.md) · [Composición de diagramas](../../skills/q-flow/references/visual-contract.md)
 
 ## Licencia y atribución
 
 [MIT](../../LICENSE) · [Avisos de terceros](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow es un proyecto independiente con licencia MIT. El escenario comercial es conceptual y no representa la arquitectura de producción de ninguna empresa; no implica afiliación, patrocinio ni respaldo.
+QGraphFlow es un proyecto independiente con licencia MIT. Los escenarios de este documento son conceptuales y no representan la arquitectura de producción de ninguna empresa; no implica afiliación, patrocinio ni respaldo.

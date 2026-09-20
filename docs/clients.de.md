@@ -4,17 +4,17 @@
 
 [Zurück zur README](readme/README.de.md)
 
-Claude Code kann das Plugin direkt von GitHub installieren (siehe Abschnitt Claude Code unten). Für andere Clients lade zuerst den QGraphFlow-Quellcode herunter, erstelle das Laufzeitpaket und installiere es dann in deinem Client.
+Qoder Desktop kann das Plugin aus dem Marketplace installieren, Claude Code direkt von GitHub (siehe die jeweiligen Abschnitte unten). In beiden Fällen entfällt Schritt 1. Für eine lokale Installation lade zuerst den QGraphFlow-Quellcode herunter und erstelle das Laufzeitpaket.
 
-Du benötigst Node.js 22, Git, npm, `tar`, `zip`, `unzip` und einen Client mit eingerichtetem Modellzugriff.
+Du benötigst Node.js 22 und einen Client mit eingerichtetem Modellzugriff. Zum Bauen aus dem Quellcode werden außerdem Git, npm, `tar`, `zip` und `unzip` benötigt.
 
-## 1. Herunterladen und Paket erstellen
+## 1. Für die lokale Installation herunterladen und bauen
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.4.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
 ```
 
 Wenn der QGraphFlow-Quellcode bereits vorliegt, überspringe das Klonen und wechsle in dessen Stammverzeichnis. Passe den ZIP-Dateinamen an die Version in der `package.json` von QGraphFlow an. Verwende neue Ausgabe- und Entpackverzeichnisse, ohne vorhandene Dateien zu überschreiben. Git lädt nur bereits gepushten Code herunter, keine lokalen Änderungen ohne Commit.
@@ -60,9 +60,11 @@ qodercli plugins install ./dist/runtime
 
 Starte eine neue Sitzung und wähle `q-flow` aus.
 
-### Qoder IDE
+### Qoder Desktop
 
-Öffne Settings → Plugins → Import und importiere das vollständige Verzeichnis `dist/runtime`. Lade den Client neu und wähle `q-flow` aus.
+**Empfohlen:** Öffne **Settings → Plugins → Marketplace**, suche nach **代码图谱可视化** oder **qgraphflow** und installiere das Plugin. Starte eine neue Sitzung und wähle `q-flow`. Ein ZIP-Download oder ein Build aus dem Quellcode ist nicht erforderlich.
+
+Für eine lokale Installation führe zuerst Schritt 1 aus. Öffne dann **Settings → Plugins → Custom → Import** und importiere das vollständige Verzeichnis `dist/runtime`. Lade den Client neu und wähle `q-flow`.
 
 ### Cursor
 

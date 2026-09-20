@@ -1,6 +1,6 @@
 {
   "name": "qgraphflow",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "author": {
     "name": "Max Zheng"
@@ -8,8 +8,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "QGraphFlow",
-    "shortDescription": "架构与流程图：基于源码、配置和文档生成九类交互式软件图",
-    "longDescription": "使用 CodeGraph 或仓库原始证据生成流程、架构、时序、ER、部署、类、状态、用例与数据流图，交付离线 HTML 和可审计 graph.json，并在页面内下载 SVG 或 PNG。",
+    "shortDescription": "Architecture and flow diagrams: nine kinds of interactive software diagrams from source, configuration and documents",
+    "longDescription": "Generate flow, architecture, sequence, ER, deployment, class, state, use-case and data-flow diagrams from CodeGraph or raw repository evidence; deliver an offline HTML viewer and an auditable graph.json with in-page SVG and PNG download.",
     "developerName": "Max Zheng",
     "category": "Productivity",
     "capabilities": [
@@ -17,9 +17,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "使用 $q-flow 分析当前模块并生成交互式架构图。",
-      "使用 $q-flow 根据源码调用顺序生成时序图。",
-      "使用 $q-flow 根据数据库迁移和实体生成 ER 图。"
+      "Use $q-flow to analyse the current module and generate an interactive architecture diagram.",
+      "Use $q-flow to generate a sequence diagram from the call order in the source.",
+      "Use $q-flow to generate an ER diagram from the database migrations and entities."
     ],
     "brandColor": "#203f35"
   }

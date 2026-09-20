@@ -2,6 +2,7 @@
 **/.DS_Store
 .idea/
 .playwright-cli/
+.playwright-mcp/
 /output/
 /dist/
 /*.tgz

@@ -11,7 +11,7 @@ const graph = {
   meta: { title: 'Order system', sourceRef: 'Fictional example', diagramType: 'architecture', locale: 'en' },
   nodes: [
     { id: 'api', label: 'Order API', kind: 'service', tags: ['core'], position: { x: 0, y: 0 }, size: { width: 240, height: 140 } },
-    { id: 'db', label: '订单数据库', kind: 'database', position: { x: 400, y: 0 }, size: { width: 240, height: 140 } }
+    { id: 'db', label: '订单数据库', kind: 'database', position: { x: 520, y: 0 }, size: { width: 240, height: 140 } }
   ],
   edges: [{ id: 'save', source: 'api', target: 'db', kind: 'data', label: 'INSERT orders', evidence: 'document' }]
 };
@@ -40,7 +40,8 @@ test('unsupported locale is rejected before generation', () => {
 });
 
 test('every locale has the same UI messages and preserves substitution parameters', () => {
-  const keys = Object.keys(messages.en).sort();
+  assert.equal(messages.en, undefined, 'English is the source language, not a catalog');
+  const keys = Object.keys(messages['zh-CN']).sort();
   const parameters = text => [...text.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort();
   for (const [locale, catalog] of Object.entries(messages)) {
     assert.deepEqual(Object.keys(catalog).sort(), keys, locale);
@@ -58,8 +59,15 @@ test('all README and legacy languages reach exports and formatted interface mess
     assert.deepEqual(validateGraph(localized), [], locale);
     assert.ok(createDiagramSvg(localized).includes(`>${service}</text>`), locale);
     assert.ok(createDiagramSvg(localized).includes('订单数据库'), 'authored identifiers are preserved');
-    const status = translate(locale, '匹配结果 · {count}', { count: 6 });
+    const status = translate(locale, 'Matches · {count}', { count: 6 });
     assert.ok(status.includes('6') && !status.includes('{'), locale);
-    if (locale !== 'zh-CN') assert.notEqual(translate(locale, '搜索节点'), '搜索节点', locale);
+    if (locale !== 'en') assert.notEqual(translate(locale, 'Search nodes'), 'Search nodes', locale);
   }
+});
+
+test('a missing locale means zh-CN and interface strings never contain Chinese at the source', () => {
+  assert.equal(translate(undefined, 'Search nodes'), '搜索节点');
+  assert.equal(translate('en', 'Search nodes'), 'Search nodes');
+  assert.equal(translate('zh-CN', 'Legend'), '图例');
+  for (const key of Object.keys(messages['zh-CN'])) assert.doesNotMatch(key, /[\u4e00-\u9fff]/, key);
 });

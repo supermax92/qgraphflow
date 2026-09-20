@@ -1,7 +1,5 @@
 # Guided intake
 
-[English](guided-intake.md) · [简体中文](../../../docs/references/zh-CN/guided-intake.md) · [Русский](../../../docs/references/ru/guided-intake.md) · [Português](../../../docs/references/pt/guided-intake.md) · [日本語](../../../docs/references/ja/guided-intake.md) · [Deutsch](../../../docs/references/de/guided-intake.md) · [Español](../../../docs/references/es/guided-intake.md)
-
 Used only when the invocation and the conversation together do not supply a ready request. A ready request names a **subject** and the **question** the diagram must answer. Everything else has a default and is never asked.
 
 ## Readiness
@@ -60,7 +58,7 @@ Node unit is one level below the subject:
 | One flow | Step or function |
 | Entity set | Table |
 
-One view stays inside the Viewer's routing budget: about 10 nodes and 9 edges. Keep the main nodes that answer the question; list omitted nodes in `facts` or the delivery note. Drill-down is a follow-up call after the user has seen the first diagram: it takes the chosen node as the subject and writes a new `<node-scope>-<diagram-type>/` directory. Do not ask about drill-down in the first round.
+No fixed node or edge cap applies. Keep all facts needed by the requested scope; use the type-specific canvas budget and strict readability checks. A separate detail view may supplement the original model, but must not silently remove its relationships.
 
 ## Asking
 
@@ -94,7 +92,9 @@ Structure intents finish in the first round. A second round happens only in thes
 One line, then start evidence without a second confirmation. The user can correct it with a new message at any time.
 
 ```
-<type> · <subject> · answers <question> · <node unit>, about 10 nodes · <output directory> · <CodeGraph | direct tracing>. Say so to drill into a node later.
+<type> · <subject> · answers <question> · <node unit>, nodes required by the evidence · <type-specific layout> · <output directory> · <CodeGraph | direct tracing>. Say so to drill into a node later.
 ```
 
-Example: `sequence · order module, OrderController.create flow · answers the call order of placing an order · step-level nodes, about 10 · docs/qgraphflow/order-create-sequence/ · direct tracing. Say so to drill into a step later.`
+Example: `sequence · order module, OrderController.create flow · answers the call order of placing an order · step-level nodes, as required · participants across and time down · docs/qgraphflow/order-create-sequence/ · direct tracing. Say so to drill into a step later.`
+
+If bounded layout fails, report the blocking nodes and relationships and propose separate views with explicit coverage of the original model; never silently reduce the requested detail.

@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "title": "一轮客服对话 · 智能体如何决定调用哪个工具",
+    "subtitle": "意图识别 → loop 工具调用 ⊃ alt 成功 / 降级 → 生成回复 → par 推送 ∥ 审计",
+    "diagramType": "sequence",
+    "locale": "zh-CN",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "示例系统：虚构业务，真实代码（examples/showcase/agent-desk）。"
+  },
+  "layout": {
+    "participantOrder": [
+      "user",
+      "gateway",
+      "orch",
+      "tools",
+      "llm",
+      "audit"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "user",
+      "label": "用户",
+      "kind": "actor",
+      "subtitle": "小程序会话"
+    },
+    {
+      "id": "gateway",
+      "label": "客服网关",
+      "kind": "participant",
+      "subtitle": "createChatGateway",
+      "source": {
+        "kind": "source",
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 5,
+        "lineEnd": 19,
+        "symbol": "createChatGateway"
+      },
+      "module": "接入"
+    },
+    {
+      "id": "orch",
+      "label": "智能体编排器",
+      "kind": "service",
+      "subtitle": "AgentOrchestrator.handle",
+      "tags": [
+        "core"
+      ],
+      "source": {
+        "kind": "source",
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 13,
+        "lineEnd": 38,
+        "symbol": "handle"
+      },
+      "module": "智能体"
+    },
+    {
+      "id": "tools",
+      "label": "工具执行器",
+      "kind": "service",
+      "subtitle": "ToolRegistry.execute",
+      "source": {
+        "kind": "source",
+        "file": "src/agent/tool-registry.js",
+        "lineStart": 11,
+        "lineEnd": 20,
+        "symbol": "execute"
+      },
+      "module": "工具"
+    },
+    {
+      "id": "llm",
+      "label": "LLM 网关",
+      "kind": "external",
+      "subtitle": "LlmGatewayClient.complete",
+      "source": {
+        "kind": "source",
+        "file": "src/llm/llm-gateway-client.js",
+        "lineStart": 9,
+        "lineEnd": 26,
+        "symbol": "complete"
+      },
+      "module": "大模型"
+    },
+    {
+      "id": "audit",
+      "label": "审计日志",
+      "kind": "participant",
+      "subtitle": "AuditLog.record",
+      "source": {
+        "kind": "source",
+        "file": "src/audit/audit-log.js",
+        "lineStart": 7,
+        "lineEnd": 9,
+        "symbol": "record"
+      },
+      "module": "审计日志"
+    }
+  ],
+  "groups": [
+    {
+      "id": "loop",
+      "label": "工具调用循环",
+      "kind": "loop",
+      "loop": {
+        "min": 0,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "call",
+          "guard": "plan.tool && attempt < maxToolCalls",
+          "edgeIds": [
+            "m5",
+            "m6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outcome",
+      "label": "工具结果",
+      "kind": "alt",
+      "parentId": "loop",
+      "parentOperandId": "call",
+      "operands": [
+        {
+          "id": "ok",
+          "guard": "outcome.ok",
+          "edgeIds": [
+            "m7",
+            "m8"
+          ]
+        },
+        {
+          "id": "failed",
+          "guard": "else",
+          "edgeIds": [],
+          "body": "degraded ← true；跳出循环，改用兜底话术"
+        }
+      ]
+    },
+    {
+      "id": "finish",
+      "label": "并行收尾",
+      "kind": "par",
+      "operands": [
+        {
+          "id": "push",
+          "label": "推送回复",
+          "edgeIds": [
+            "m11"
+          ]
+        },
+        {
+          "id": "record",
+          "label": "写审计",
+          "edgeIds": [
+            "m12"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "user",
+      "target": "gateway",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "POST /chat「订单怎么还没发货」",
+      "order": 1
+    },
+    {
+      "id": "m2",
+      "source": "gateway",
+      "target": "orch",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "handle(session, text)",
+      "order": 2
+    },
+    {
+      "id": "m3",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(历史, 工具清单)",
+      "order": 3
+    },
+    {
+      "id": "m4",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ tool: lookupOrder, args }",
+      "order": 4,
+      "replyTo": "m3"
+    },
+    {
+      "id": "m5",
+      "source": "orch",
+      "target": "tools",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "execute(lookupOrder, { orderId })",
+      "order": 5
+    },
+    {
+      "id": "m6",
+      "source": "tools",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ ok, result | error, latencyMs }",
+      "order": 6,
+      "replyTo": "m5"
+    },
+    {
+      "id": "m7",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(历史 + 观察)",
+      "order": 7
+    },
+    {
+      "id": "m8",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ tool | null }",
+      "order": 8,
+      "replyTo": "m7"
+    },
+    {
+      "id": "m9",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(生成最终回复)",
+      "order": 9
+    },
+    {
+      "id": "m10",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ text }",
+      "order": 10,
+      "replyTo": "m9"
+    },
+    {
+      "id": "m11",
+      "source": "orch",
+      "target": "gateway",
+      "kind": "async",
+      "evidence": "source",
+      "label": "push(回复分片)",
+      "order": 11
+    },
+    {
+      "id": "m12",
+      "source": "orch",
+      "target": "audit",
+      "kind": "async",
+      "evidence": "source",
+      "label": "record(工具与模型调用)",
+      "order": 12
+    },
+    {
+      "id": "m13",
+      "source": "orch",
+      "target": "gateway",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ reply, toolCalls, degraded }",
+      "order": 13,
+      "replyTo": "m2"
+    },
+    {
+      "id": "m14",
+      "source": "gateway",
+      "target": "user",
+      "kind": "return",
+      "evidence": "source",
+      "label": "200 回复",
+      "order": 14,
+      "replyTo": "m1"
+    }
+  ],
+  "executions": [
+    {
+      "id": "x-gateway",
+      "participantId": "gateway",
+      "start": {
+        "edgeId": "m1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m14",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-orch",
+      "participantId": "orch",
+      "start": {
+        "edgeId": "m2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m13",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-plan",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m3",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m4",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-tool",
+      "participantId": "tools",
+      "start": {
+        "edgeId": "m5",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m6",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-next",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m7",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m8",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-answer",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m9",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m10",
+        "at": "send"
+      }
+    }
+  ]
+}

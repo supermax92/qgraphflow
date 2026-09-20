@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "title": "ИИ-агент поддержки для e-commerce · компоненты и зависимости",
+    "subtitle": "Вопрос из мини-приложения → шлюз поддержки → оркестрация агента → инструменты / модель / данные",
+    "diagramType": "architecture",
+    "locale": "ru",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "Пример системы: вымышленный бизнес, настоящий код (examples/showcase/agent-desk)."
+  },
+  "groups": [
+    {
+      "id": "agent",
+      "label": "Среда агента",
+      "kind": "runtime"
+    },
+    {
+      "id": "data",
+      "label": "Слой данных",
+      "kind": "runtime"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "miniapp",
+      "label": "Вход поддержки мини-приложения",
+      "kind": "external",
+      "subtitle": "Клиент задаёт вопрос в чате",
+      "facts": [
+        "Вызывает POST /chat с Bearer-токеном"
+      ],
+      "layout": {
+        "rank": 0
+      }
+    },
+    {
+      "id": "gateway",
+      "label": "Шлюз поддержки",
+      "kind": "service",
+      "module": "Доступ",
+      "subtitle": "POST /chat · Bearer-аутентификация · отправка частей ответа",
+      "source": {
+        "kind": "source",
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 5,
+        "lineEnd": 19,
+        "symbol": "createChatGateway"
+      },
+      "layout": {
+        "rank": 1
+      },
+      "facts": [
+        "Проверяет Bearer-токен через authenticate() и передаёт запрос оркестратору."
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "label": "Оркестратор агента",
+      "kind": "business",
+      "groupId": "agent",
+      "module": "Агент",
+      "subtitle": "намерение · цикл инструментов · ответ",
+      "tags": [
+        "core"
+      ],
+      "source": {
+        "kind": "source",
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 5,
+        "lineEnd": 38,
+        "symbol": "AgentOrchestrator"
+      },
+      "layout": {
+        "rank": 2
+      }
+    },
+    {
+      "id": "tools",
+      "label": "Инструменты заказов",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "Инструменты",
+      "subtitle": "lookupOrder · trackShipment · requestRefund (идемпотентно)",
+      "source": {
+        "kind": "source",
+        "file": "src/tools/order-tools.js",
+        "lineStart": 2,
+        "lineEnd": 23,
+        "symbol": "orderTools"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "audit",
+      "label": "Журнал аудита",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "Аудит",
+      "subtitle": "Фиксирует вызовы инструментов и модели за ход",
+      "source": {
+        "kind": "source",
+        "file": "src/audit/audit-log.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "AuditLog"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "config",
+      "label": "Конфигурация",
+      "kind": "config",
+      "groupId": "agent",
+      "module": "Агент",
+      "subtitle": "модель · повторы · лимит инструментов",
+      "source": {
+        "kind": "config",
+        "file": "src/config.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "config"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "sessions",
+      "label": "Хранилище сессий",
+      "kind": "data",
+      "groupId": "data",
+      "module": "Данные",
+      "subtitle": "sessions · messages · tool_calls",
+      "source": {
+        "kind": "source",
+        "file": "src/repo/session-repository.js",
+        "lineStart": 2,
+        "lineEnd": 29,
+        "symbol": "SessionRepository"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "orders",
+      "label": "База заказов",
+      "kind": "database",
+      "groupId": "data",
+      "module": "Данные",
+      "subtitle": "orders · refunds",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 18,
+        "lineEnd": 44
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "llm",
+      "label": "Провайдер LLM",
+      "kind": "external",
+      "module": "Модель",
+      "subtitle": "LlmGatewayClient · повтор при 429",
+      "source": {
+        "kind": "source",
+        "file": "src/llm/llm-gateway-client.js",
+        "lineStart": 4,
+        "lineEnd": 27,
+        "symbol": "LlmGatewayClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "logistics",
+      "label": "Отслеживание доставки",
+      "kind": "external",
+      "module": "Инструменты",
+      "subtitle": "LogisticsClient.track",
+      "source": {
+        "kind": "source",
+        "file": "src/clients/logistics-client.js",
+        "lineStart": 4,
+        "lineEnd": 15,
+        "symbol": "LogisticsClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "miniapp",
+      "target": "gateway",
+      "kind": "request",
+      "evidence": "inference",
+      "label": "POST /chat"
+    },
+    {
+      "id": "e3",
+      "source": "gateway",
+      "target": "orchestrator",
+      "kind": "call",
+      "evidence": "source",
+      "label": "handle(session, text)"
+    },
+    {
+      "id": "e4",
+      "source": "orchestrator",
+      "target": "llm",
+      "kind": "request",
+      "evidence": "source",
+      "label": "complete: намерение / ответ"
+    },
+    {
+      "id": "e5",
+      "source": "orchestrator",
+      "target": "tools",
+      "kind": "call",
+      "label": "execute(tool, args) ≤ 3 раз",
+      "evidence": "source"
+    },
+    {
+      "id": "e7",
+      "source": "tools",
+      "target": "orders",
+      "kind": "data",
+      "evidence": "source",
+      "label": "чтение заказов · запись возвратов"
+    },
+    {
+      "id": "e9",
+      "source": "tools",
+      "target": "logistics",
+      "kind": "request",
+      "evidence": "source",
+      "label": "track(trackingNo)"
+    },
+    {
+      "id": "e10",
+      "source": "orchestrator",
+      "target": "sessions",
+      "kind": "data",
+      "evidence": "source",
+      "label": "сообщения · записи вызовов"
+    },
+    {
+      "id": "e11",
+      "source": "orchestrator",
+      "target": "audit",
+      "kind": "call",
+      "evidence": "source",
+      "label": "record (параллельно с push)"
+    },
+    {
+      "id": "e12",
+      "source": "orchestrator",
+      "target": "config",
+      "kind": "depends",
+      "evidence": "config",
+      "label": "maxToolCalls"
+    }
+  ]
+}

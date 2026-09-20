@@ -1,7 +1,5 @@
 # Evidence sources and CodeGraph fallback
 
-[English](evidence-sources.md) · [简体中文](../../../docs/references/zh-CN/evidence-sources.md) · [Русский](../../../docs/references/ru/evidence-sources.md) · [Português](../../../docs/references/pt/evidence-sources.md) · [日本語](../../../docs/references/ja/evidence-sources.md) · [Deutsch](../../../docs/references/de/evidence-sources.md) · [Español](../../../docs/references/es/evidence-sources.md)
-
 CodeGraph is the preferred call-graph accelerator, not a hard dependency.
 
 ## CodeGraph preflight
