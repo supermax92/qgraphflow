@@ -158,3 +158,17 @@ test('group colors and explicit metadata survive edits, themes and static export
   const old = fixture(); delete old.executions; old.edges.forEach(edge => delete edge.replyTo); old.groups = [];
   assert.deepEqual(validateGraph(old), []); assert.equal(sequencePairs(old).size, 0);
 });
+
+test('pair numbers follow message order even when call ids sort differently as strings', () => {
+  const graph = { meta: { title: 'Pairs', sourceRef: 'test', diagramType: 'sequence' },
+    nodes: [{ id: 'a', label: 'A', kind: 'actor' }, { id: 'b', label: 'B', kind: 'service' }],
+    edges: [
+      { id: 'm2', source: 'a', target: 'b', kind: 'sync', label: 'first()', order: 1, evidence: 'source' },
+      { id: 'm3', source: 'b', target: 'a', kind: 'return', label: 'ok', order: 2, replyTo: 'm2', evidence: 'source' },
+      { id: 'm12', source: 'a', target: 'b', kind: 'sync', label: 'second()', order: 3, evidence: 'source' },
+      { id: 'm13', source: 'b', target: 'a', kind: 'return', label: 'ok', order: 4, replyTo: 'm12', evidence: 'source' }
+    ] };
+  const pairs = sequencePairs(graph);
+  assert.equal(pairs.get('m2').label, 'C1'); assert.equal(pairs.get('m3').label, '↩ C1');
+  assert.equal(pairs.get('m12').label, 'C2'); assert.equal(pairs.get('m13').label, '↩ C2');
+});

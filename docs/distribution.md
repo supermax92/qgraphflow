@@ -34,9 +34,9 @@ Use new output directories. Packaging refuses to overwrite existing outputs. `np
 
 Local-directory clients may copy ignored files too. Install from an extracted runtime archive, not the development checkout. Passing package tests is not proof of all four clients' installation or official marketplace approval; verify each client separately before claiming support has been accepted there.
 
-## Qoder IDE marketplace
+## Qoder Desktop marketplace
 
-QGraphFlow is available in the Qoder IDE marketplace. Search for **代码图谱可视化** or **qgraphflow** and install it; see the [client installation guide](clients.md#qoder-ide) and [Qoder's marketplace documentation](https://docs.qoder.com/extensions/plugins).
+QGraphFlow is available in the Qoder Desktop marketplace. Search for **代码图谱可视化** or **qgraphflow** and install it; see the [client installation guide](clients.md#qoder-desktop) and [Qoder's marketplace documentation](https://docs.qoder.com/extensions/plugins).
 
 Track marketplace releases separately from GitHub Releases and npm packages. For each marketplace update, record the version actually published in Qoder and its corresponding source commit or release archive.
 

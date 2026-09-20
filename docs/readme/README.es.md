@@ -12,20 +12,35 @@ Sigue el recorrido. Comprueba las evidencias. Comparte un archivo sin conexión.
 
 </div>
 
+![Arquitectura, secuencia y ER del ejemplo agent-desk, 1,5 segundos por vista](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.hero.gif)
+
 *Nueve tipos: arquitectura, flujo, secuencia, ER, despliegue, clases, estados, casos de uso y flujo de datos.*
 
 QGraphFlow genera diagramas de software interactivos a partir del código, los esquemas, la configuración y los requisitos. Permite comprobar las relaciones y compartir el resultado como HTML sin conexión.
 
 - **Explorar:** buscar, ampliar y desplazar el lienzo; consultar responsabilidades y relaciones entrantes y salientes.
+
+  ![Explorar: buscar refund, saltar a Herramientas de pedidos, alejar hasta ver el orquestador arriba y la base de datos de pedidos y el seguimiento logístico abajo, luego desplazar](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.explore.gif)
+
 - **Verificar:** inspeccionar nodos y conexiones para revisar archivos, líneas, símbolos e incertidumbres explícitas.
+
+  ![Verificar: tarjeta con src/gateway/chat-gateway.js:5-19, panel de detalles con el símbolo y los hechos de evidencia, luego la conexión POST /chat marcada como inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.verify.gif)
+
 - **Editar:** desbloquear el diseño, cambiar textos y mover elementos; restablecer cuando sea necesario.
+
+  ![Editar: desbloquear el diseño, renombrar Proveedor LLM a Pasarela LLM, arrastrarlo con sus conexiones y restablecer](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.edit.gif)
+
 - **Compartir:** abrir el HTML sin conexión o exportar el diagrama completo a SVG / PNG.
+
+  ![Compartir: abrir el HTML sin conexión, exportar PNG desde Más y luego el archivo exportado](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.share.gif)
+
+La animación superior muestra arquitectura, secuencia y ER durante 1,5 segundos cada una (4,5 segundos por ciclo); las cuatro animaciones de funciones duran entre 6,5 y 8,5 segundos. Todas se grabaron con el Viewer construido desde el código fuente sobre el [ejemplo agent-desk](../../examples/showcase/agent-desk) — negocio ficticio, código real — con diagramas e interfaz en español. Se alojan como [recursos de la Release showcase-v2](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2), fuera del historial de Git y del paquete del plugin, así que verlas requiere red; el HTML generado del diagrama funciona sin conexión.
 
 ## Guía de instalación
 
 Se necesitan Node.js 22 y un cliente compatible con complementos que tenga configurado el acceso al modelo.
 
-En [Qoder IDE](#qoder-ide), puedes instalar desde el Marketplace y omitir el paso 1.
+En [Qoder Desktop](#qoder-desktop), puedes instalar desde el Marketplace y omitir el paso 1.
 
 ### 1. Descargar el complemento
 
@@ -72,7 +87,7 @@ qodercli plugins install .
 
 Iniciar una sesión nueva y seleccionar `q-flow`.
 
-#### Qoder IDE
+#### Qoder Desktop
 
 **Recomendado:** Abre **Settings → Plugins → Marketplace**, busca **代码图谱可视化** o **qgraphflow** e instala el complemento. Inicia una sesión nueva y selecciona `q-flow`. No necesitas descargar un ZIP ni compilar el código fuente.
 
@@ -205,4 +220,4 @@ Documentación de referencia (en inglés): [Fuentes de evidencia](../../skills/q
 
 [MIT](../../LICENSE) · [Avisos de terceros](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow es un proyecto independiente con licencia MIT. El escenario comercial es conceptual y no representa la arquitectura de producción de ninguna empresa; no implica afiliación, patrocinio ni respaldo.
+QGraphFlow es un proyecto independiente con licencia MIT. Los escenarios de este documento son conceptuales y no representan la arquitectura de producción de ninguna empresa; no implica afiliación, patrocinio ni respaldo.

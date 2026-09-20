@@ -1,5 +1,5 @@
 import { translate } from '../i18n.js';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import { cubicBezier } from 'motion';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
@@ -21,6 +21,13 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
   const [locked, setLocked] = useState(true);
   const canvasRef = useRef(null);
   const { getViewport, setCenter, setViewport } = useReactFlow();
+  // Recording and QA drivers steer the camera through the same viewport API as the page when it is opened with
+  // ?automation=1; ordinary pages expose nothing.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('automation')) return undefined;
+    window.__qgraphflowAutomation = { getViewport, setViewport, setCenter, ease: appleEase };
+    return () => { delete window.__qgraphflowAutomation; };
+  }, [getViewport, setViewport, setCenter]);
   const currentGraph = useMemo(() => currentGraphFromFlow(originalGraph, nodes, edges), [originalGraph, nodes, edges]);
   const [renderProblem, setRenderProblem] = useState(null);
   const onNodesChange = useCallback(changes => applyNodeChanges(constrainNodeChanges(changes, nodes, diagramType)), [applyNodeChanges, diagramType, nodes]);

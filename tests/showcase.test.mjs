@@ -89,7 +89,7 @@ test('localized ecommerce preserves domain structure and renders complete node t
   }
 });
 
-test('each README links to its inline installation guide and English references, without historical showcase media', () => {
+test('each README links to its inline installation guide, English references and its own showcase-v2 media', () => {
   const documents = readmeLocales.map(locale => locale === 'en' ? 'README.md' : `docs/readme/README.${locale}.md`);
   const installationHeadings = {
     en: 'Installation guide', 'zh-CN': '安装指南', ru: 'Установка', pt: 'Guia de instalação',
@@ -106,7 +106,7 @@ test('each README links to its inline installation guide and English references,
     assert.ok(links.includes(`#${heading.toLowerCase().replaceAll(' ', '-')}`), `${file}: installation link`);
     const installation = markdown.split(`\n## ${heading}\n`)[1]?.split('\n## ')[0];
     assert.ok(installation, `${file}: inline installation guide`);
-    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder IDE', 'Cursor']) {
+    for (const client of ['Codex App / CLI', 'Claude Code', 'Qoder CLI', 'Qoder Desktop', 'Cursor']) {
       assert.ok(installation.includes(`#### ${client}\n`), `${file}: ${client}`);
     }
     for (const command of [
@@ -118,8 +118,13 @@ test('each README links to its inline installation guide and English references,
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
       assert.ok(local.includes(path.join(root, 'skills/q-flow/references', `${reference}.md`)));
     }
-    // The historical showcase-v1 recordings were removed on 2026-09-19; README diagrams are rebuilt under new rules.
-    assert.doesNotMatch(markdown, /showcase-v1|images\/showcase|\.(gif|png)\)/, `${file}: historical showcase media`);
+    // Showcase media: five showcase-v2 GIFs in the README's own locale, recorded by scripts/showcase-record.mjs and
+    // hosted as Release assets. The showcase-v1 recordings were removed on 2026-09-19 and nothing is embedded locally.
+    const media = links.filter(link => /\.(gif|png|mp4)(\?|$)/.test(link));
+    const clips = ['hero', 'explore', 'verify', 'edit', 'share'];
+    assert.deepEqual(media, clips.map(clip => `https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.${locale}.${clip}.gif`), `${file}: showcase media`);
+    assert.ok(markdown.includes('https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2'), `${file}: release link`);
+    assert.doesNotMatch(markdown, /showcase-v1|images\/showcase/, `${file}: historical showcase media`);
     assert.doesNotMatch(markdown, /README\.(ko|fr)\.md|kafka\.[\w-]+\.(gif|graph\.json)/);
   });
   for (const locale of ['ko', 'fr']) assert.ok(!fs.existsSync(path.join(root, `docs/readme/README.${locale}.md`)));

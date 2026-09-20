@@ -4,7 +4,7 @@
 
 [README に戻る](readme/README.ja.md)
 
-Qoder IDE ではマーケットプレイスから、Claude Code では GitHub から直接インストールできます（下記の各項を参照）。どちらも手順 1 は不要です。ローカルインストールの場合は、先に QGraphFlow のソースコードをダウンロードして実行用パッケージを作成してください。
+Qoder Desktop ではマーケットプレイスから、Claude Code では GitHub から直接インストールできます（下記の各項を参照）。どちらも手順 1 は不要です。ローカルインストールの場合は、先に QGraphFlow のソースコードをダウンロードして実行用パッケージを作成してください。
 
 Node.js 22 と、モデルへのアクセスを設定済みのクライアントが必要です。ソースからビルドする場合は、Git、npm、`tar`、`zip`、`unzip` も必要です。
 
@@ -60,7 +60,7 @@ qodercli plugins install ./dist/runtime
 
 新しいセッションを開始し、`q-flow` を選択します。
 
-### Qoder IDE
+### Qoder Desktop
 
 **推奨：** **Settings → Plugins → Marketplace** を開き、**代码图谱可视化** または **qgraphflow** を検索してインストールします。新しいセッションを開始し、`q-flow` を選択します。ZIP のダウンロードやソースのビルドは不要です。
 

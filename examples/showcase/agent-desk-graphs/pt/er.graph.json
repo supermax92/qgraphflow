@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "title": "Modelo de dados do agente de atendimento",
+    "subtitle": "sessões → mensagens → chamadas de ferramentas → pedidos → reembolsos",
+    "diagramType": "er",
+    "locale": "pt",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "Sistema de exemplo: negócio fictício, código real (examples/showcase/agent-desk)."
+  },
+  "nodes": [
+    {
+      "id": "sessions",
+      "label": "sessions",
+      "kind": "entity",
+      "module": "Sessões",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 2,
+        "lineEnd": 8,
+        "symbol": "sessions"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "VARCHAR(32)",
+          "nullable": false,
+          "key": "PK"
+        },
+        {
+          "name": "customer_id",
+          "type": "BIGINT",
+          "nullable": false
+        },
+        {
+          "name": "channel",
+          "type": "VARCHAR(16)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(16)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "messages",
+      "label": "messages",
+      "kind": "entity",
+      "module": "Sessões",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 10,
+        "lineEnd": 16,
+        "symbol": "messages"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "BIGSERIAL",
+          "nullable": false,
+          "key": "PK"
+        },
+        {
+          "name": "session_id",
+          "type": "VARCHAR(32)",
+          "nullable": false,
+          "key": "FK"
+        },
+        {
+          "name": "role",
+          "type": "VARCHAR(16)",
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "tool_calls",
+      "label": "tool_calls",
+      "kind": "entity",
+      "module": "Agente",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 26,
+        "lineEnd": 35,
+        "symbol": "tool_calls"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "BIGSERIAL",
+          "nullable": false,
+          "key": "PK"
+        },
+        {
+          "name": "message_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "key": "FK"
+        },
+        {
+          "name": "order_id",
+          "type": "VARCHAR(32)",
+          "nullable": true,
+          "key": "FK"
+        },
+        {
+          "name": "tool",
+          "type": "VARCHAR(32)",
+          "nullable": false
+        },
+        {
+          "name": "arguments",
+          "type": "JSONB",
+          "nullable": false
+        },
+        {
+          "name": "result",
+          "type": "JSONB",
+          "nullable": true
+        },
+        {
+          "name": "ok",
+          "type": "BOOLEAN",
+          "nullable": false
+        },
+        {
+          "name": "latency_ms",
+          "type": "INTEGER",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "label": "orders",
+      "kind": "entity",
+      "module": "Pedidos",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 18,
+        "lineEnd": 24,
+        "symbol": "orders"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "VARCHAR(32)",
+          "nullable": false,
+          "key": "PK"
+        },
+        {
+          "name": "customer_id",
+          "type": "BIGINT",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(16)",
+          "nullable": false
+        },
+        {
+          "name": "tracking_no",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "total_cents",
+          "type": "INTEGER",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "refunds",
+      "label": "refunds",
+      "kind": "entity",
+      "module": "Pedidos",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 37,
+        "lineEnd": 44,
+        "symbol": "refunds"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "BIGSERIAL",
+          "nullable": false,
+          "key": "PK"
+        },
+        {
+          "name": "order_id",
+          "type": "VARCHAR(32)",
+          "nullable": false,
+          "key": "FK"
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "key": "UK"
+        },
+        {
+          "name": "amount_cents",
+          "type": "INTEGER",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(16)",
+          "nullable": false
+        },
+        {
+          "name": "requested_at",
+          "type": "TIMESTAMP",
+          "nullable": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "r1",
+      "source": "sessions",
+      "target": "messages",
+      "kind": "relationship",
+      "evidence": "schema",
+      "label": "contém",
+      "sourceCardinality": "1",
+      "targetCardinality": "0..*"
+    },
+    {
+      "id": "r2",
+      "source": "messages",
+      "target": "tool_calls",
+      "kind": "relationship",
+      "evidence": "schema",
+      "label": "dispara",
+      "sourceCardinality": "1",
+      "targetCardinality": "0..*"
+    },
+    {
+      "id": "r3",
+      "source": "orders",
+      "target": "tool_calls",
+      "kind": "relationship",
+      "evidence": "schema",
+      "label": "envolve",
+      "sourceCardinality": "0..1",
+      "targetCardinality": "0..*"
+    },
+    {
+      "id": "r4",
+      "source": "orders",
+      "target": "refunds",
+      "kind": "relationship",
+      "evidence": "schema",
+      "label": "reembolsa",
+      "sourceCardinality": "1",
+      "targetCardinality": "0..1"
+    }
+  ]
+}

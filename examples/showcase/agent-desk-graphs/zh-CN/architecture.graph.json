@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "title": "电商 AI 客服智能体 · 组件与依赖",
+    "subtitle": "小程序提问 → 客服网关 → 智能体编排 → 工具 / 模型 / 数据",
+    "diagramType": "architecture",
+    "locale": "zh-CN",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "示例系统：虚构业务，真实代码（examples/showcase/agent-desk）。"
+  },
+  "groups": [
+    {
+      "id": "agent",
+      "label": "智能体运行时",
+      "kind": "runtime"
+    },
+    {
+      "id": "data",
+      "label": "数据层",
+      "kind": "runtime"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "miniapp",
+      "label": "小程序客服入口",
+      "kind": "external",
+      "subtitle": "用户在会话里提问",
+      "facts": [
+        "凭 Bearer token 调用 POST /chat"
+      ],
+      "layout": {
+        "rank": 0
+      }
+    },
+    {
+      "id": "gateway",
+      "label": "客服网关",
+      "kind": "service",
+      "module": "接入",
+      "subtitle": "POST /chat · Bearer 认证 · 推送回复分片",
+      "source": {
+        "kind": "source",
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 5,
+        "lineEnd": 19,
+        "symbol": "createChatGateway"
+      },
+      "layout": {
+        "rank": 1
+      },
+      "facts": [
+        "先 authenticate() 校验 Bearer token，再交给编排器。"
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "label": "智能体编排器",
+      "kind": "business",
+      "groupId": "agent",
+      "module": "智能体",
+      "subtitle": "意图识别 · 工具循环 · 生成回复",
+      "tags": [
+        "core"
+      ],
+      "source": {
+        "kind": "source",
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 5,
+        "lineEnd": 38,
+        "symbol": "AgentOrchestrator"
+      },
+      "layout": {
+        "rank": 2
+      }
+    },
+    {
+      "id": "tools",
+      "label": "订单工具集",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "工具",
+      "subtitle": "lookupOrder · trackShipment · requestRefund（幂等）",
+      "source": {
+        "kind": "source",
+        "file": "src/tools/order-tools.js",
+        "lineStart": 2,
+        "lineEnd": 23,
+        "symbol": "orderTools"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "audit",
+      "label": "审计日志",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "审计日志",
+      "subtitle": "每轮记录工具与模型调用",
+      "source": {
+        "kind": "source",
+        "file": "src/audit/audit-log.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "AuditLog"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "config",
+      "label": "运行配置",
+      "kind": "config",
+      "groupId": "agent",
+      "module": "智能体",
+      "subtitle": "模型 · 重试 · 工具调用上限",
+      "source": {
+        "kind": "config",
+        "file": "src/config.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "config"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "sessions",
+      "label": "会话仓储",
+      "kind": "data",
+      "groupId": "data",
+      "module": "仓储",
+      "subtitle": "sessions · messages · tool_calls",
+      "source": {
+        "kind": "source",
+        "file": "src/repo/session-repository.js",
+        "lineStart": 2,
+        "lineEnd": 29,
+        "symbol": "SessionRepository"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "orders",
+      "label": "订单库",
+      "kind": "database",
+      "groupId": "data",
+      "module": "仓储",
+      "subtitle": "orders · refunds",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 18,
+        "lineEnd": 44
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "llm",
+      "label": "LLM 服务商",
+      "kind": "external",
+      "module": "大模型",
+      "subtitle": "LlmGatewayClient · 429 重试",
+      "source": {
+        "kind": "source",
+        "file": "src/llm/llm-gateway-client.js",
+        "lineStart": 4,
+        "lineEnd": 27,
+        "symbol": "LlmGatewayClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "logistics",
+      "label": "物流查询平台",
+      "kind": "external",
+      "module": "工具",
+      "subtitle": "LogisticsClient.track",
+      "source": {
+        "kind": "source",
+        "file": "src/clients/logistics-client.js",
+        "lineStart": 4,
+        "lineEnd": 15,
+        "symbol": "LogisticsClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "miniapp",
+      "target": "gateway",
+      "kind": "request",
+      "evidence": "inference",
+      "label": "POST /chat"
+    },
+    {
+      "id": "e3",
+      "source": "gateway",
+      "target": "orchestrator",
+      "kind": "call",
+      "evidence": "source",
+      "label": "handle(session, text)"
+    },
+    {
+      "id": "e4",
+      "source": "orchestrator",
+      "target": "llm",
+      "kind": "request",
+      "evidence": "source",
+      "label": "complete：意图识别 / 生成回复"
+    },
+    {
+      "id": "e5",
+      "source": "orchestrator",
+      "target": "tools",
+      "kind": "call",
+      "label": "execute(tool, args) ≤ 3 次",
+      "evidence": "source"
+    },
+    {
+      "id": "e7",
+      "source": "tools",
+      "target": "orders",
+      "kind": "data",
+      "evidence": "source",
+      "label": "查订单 · 写退款"
+    },
+    {
+      "id": "e9",
+      "source": "tools",
+      "target": "logistics",
+      "kind": "request",
+      "evidence": "source",
+      "label": "track(trackingNo)"
+    },
+    {
+      "id": "e10",
+      "source": "orchestrator",
+      "target": "sessions",
+      "kind": "data",
+      "evidence": "source",
+      "label": "消息 · 工具调用记录"
+    },
+    {
+      "id": "e11",
+      "source": "orchestrator",
+      "target": "audit",
+      "kind": "call",
+      "evidence": "source",
+      "label": "record（与推送并行）"
+    },
+    {
+      "id": "e12",
+      "source": "orchestrator",
+      "target": "config",
+      "kind": "depends",
+      "evidence": "config",
+      "label": "maxToolCalls"
+    }
+  ]
+}

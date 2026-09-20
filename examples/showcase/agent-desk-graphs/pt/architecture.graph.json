@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "title": "Agente de IA para atendimento em e-commerce · componentes e dependências",
+    "subtitle": "Pergunta no mini-app → gateway de atendimento → orquestração do agente → ferramentas / modelo / dados",
+    "diagramType": "architecture",
+    "locale": "pt",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "Sistema de exemplo: negócio fictício, código real (examples/showcase/agent-desk)."
+  },
+  "groups": [
+    {
+      "id": "agent",
+      "label": "Runtime do agente",
+      "kind": "runtime"
+    },
+    {
+      "id": "data",
+      "label": "Camada de dados",
+      "kind": "runtime"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "miniapp",
+      "label": "Entrada de atendimento do mini-app",
+      "kind": "external",
+      "subtitle": "O cliente pergunta no chat",
+      "facts": [
+        "Chama POST /chat com um token Bearer"
+      ],
+      "layout": {
+        "rank": 0
+      }
+    },
+    {
+      "id": "gateway",
+      "label": "Gateway de atendimento",
+      "kind": "service",
+      "module": "Acesso",
+      "subtitle": "POST /chat · auth Bearer · envia trechos da resposta",
+      "source": {
+        "kind": "source",
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 5,
+        "lineEnd": 19,
+        "symbol": "createChatGateway"
+      },
+      "layout": {
+        "rank": 1
+      },
+      "facts": [
+        "Valida o token Bearer com authenticate() antes de passar ao orquestrador."
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "label": "Orquestrador do agente",
+      "kind": "business",
+      "groupId": "agent",
+      "module": "Agente",
+      "subtitle": "intenção · laço de ferramentas · resposta",
+      "tags": [
+        "core"
+      ],
+      "source": {
+        "kind": "source",
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 5,
+        "lineEnd": 38,
+        "symbol": "AgentOrchestrator"
+      },
+      "layout": {
+        "rank": 2
+      }
+    },
+    {
+      "id": "tools",
+      "label": "Ferramentas de pedidos",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "Ações",
+      "subtitle": "lookupOrder · trackShipment · requestRefund (idempotente)",
+      "source": {
+        "kind": "source",
+        "file": "src/tools/order-tools.js",
+        "lineStart": 2,
+        "lineEnd": 23,
+        "symbol": "orderTools"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "audit",
+      "label": "Registro de auditoria",
+      "kind": "component",
+      "groupId": "agent",
+      "module": "Registro",
+      "subtitle": "Registra chamadas de ferramentas e modelo por turno",
+      "source": {
+        "kind": "source",
+        "file": "src/audit/audit-log.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "AuditLog"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "config",
+      "label": "Configuração",
+      "kind": "config",
+      "groupId": "agent",
+      "module": "Agente",
+      "subtitle": "modelo · tentativas · limite de ferramentas",
+      "source": {
+        "kind": "config",
+        "file": "src/config.js",
+        "lineStart": 2,
+        "lineEnd": 10,
+        "symbol": "config"
+      },
+      "layout": {
+        "rank": 3
+      }
+    },
+    {
+      "id": "sessions",
+      "label": "Repositório de sessões",
+      "kind": "data",
+      "groupId": "data",
+      "module": "Persistência",
+      "subtitle": "sessions · messages · tool_calls",
+      "source": {
+        "kind": "source",
+        "file": "src/repo/session-repository.js",
+        "lineStart": 2,
+        "lineEnd": 29,
+        "symbol": "SessionRepository"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "orders",
+      "label": "Banco de pedidos",
+      "kind": "database",
+      "groupId": "data",
+      "module": "Persistência",
+      "subtitle": "orders · refunds",
+      "source": {
+        "kind": "schema",
+        "file": "db/schema.sql",
+        "lineStart": 18,
+        "lineEnd": 44
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "llm",
+      "label": "Provedor LLM",
+      "kind": "external",
+      "module": "Modelo",
+      "subtitle": "LlmGatewayClient · repete em 429",
+      "source": {
+        "kind": "source",
+        "file": "src/llm/llm-gateway-client.js",
+        "lineStart": 4,
+        "lineEnd": 27,
+        "symbol": "LlmGatewayClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    },
+    {
+      "id": "logistics",
+      "label": "Rastreamento logístico",
+      "kind": "external",
+      "module": "Ações",
+      "subtitle": "LogisticsClient.track",
+      "source": {
+        "kind": "source",
+        "file": "src/clients/logistics-client.js",
+        "lineStart": 4,
+        "lineEnd": 15,
+        "symbol": "LogisticsClient"
+      },
+      "layout": {
+        "rank": 4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "miniapp",
+      "target": "gateway",
+      "kind": "request",
+      "evidence": "inference",
+      "label": "POST /chat"
+    },
+    {
+      "id": "e3",
+      "source": "gateway",
+      "target": "orchestrator",
+      "kind": "call",
+      "evidence": "source",
+      "label": "handle(session, text)"
+    },
+    {
+      "id": "e4",
+      "source": "orchestrator",
+      "target": "llm",
+      "kind": "request",
+      "evidence": "source",
+      "label": "complete: intenção / resposta"
+    },
+    {
+      "id": "e5",
+      "source": "orchestrator",
+      "target": "tools",
+      "kind": "call",
+      "label": "execute(tool, args) ≤ 3 vezes",
+      "evidence": "source"
+    },
+    {
+      "id": "e7",
+      "source": "tools",
+      "target": "orders",
+      "kind": "data",
+      "evidence": "source",
+      "label": "ler pedidos · gravar reembolsos"
+    },
+    {
+      "id": "e9",
+      "source": "tools",
+      "target": "logistics",
+      "kind": "request",
+      "evidence": "source",
+      "label": "track(trackingNo)"
+    },
+    {
+      "id": "e10",
+      "source": "orchestrator",
+      "target": "sessions",
+      "kind": "data",
+      "evidence": "source",
+      "label": "mensagens · registros de ferramentas"
+    },
+    {
+      "id": "e11",
+      "source": "orchestrator",
+      "target": "audit",
+      "kind": "call",
+      "evidence": "source",
+      "label": "record (em paralelo ao push)"
+    },
+    {
+      "id": "e12",
+      "source": "orchestrator",
+      "target": "config",
+      "kind": "depends",
+      "evidence": "config",
+      "label": "maxToolCalls"
+    }
+  ]
+}

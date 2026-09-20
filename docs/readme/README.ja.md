@@ -12,20 +12,35 @@
 
 </div>
 
+![agent-desk サンプルのアーキテクチャ図・シーケンス図・ER 図を 1.5 秒ずつ](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.hero.gif)
+
 *9種類の図に対応：アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
 
 QGraphFlow はソースコード、データ構造、設定、要件から対話型のソフトウェア図を生成します。関係の根拠を確認し、共有可能なオフライン HTML として届けます。
 
 - **探索：** 検索・拡大縮小・パンで、責務と上流・下流の関係を確認。
+
+  ![探索：refund を検索して注文ツールへジャンプし、上流のエージェントオーケストレーターと下流の注文データベース・配送追跡サービスが見えるまで縮小してからパンする](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.explore.gif)
+
 - **検証：** ノードや接続線からファイル、行番号、シンボル、明示された不確実性を確認。
+
+  ![検証：src/gateway/chat-gateway.js:5-19 を示すカード、シンボルと根拠事実を示す詳細パネル、そして inference と記された POST /chat の接続線](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.verify.gif)
+
 - **編集：** ロック解除後に文字や位置を変更。必要に応じてリセット。
+
+  ![編集：ロックを解除し、LLM プロバイダーを LLM ゲートウェイに改名し、接続線ごとドラッグしてからリセットする](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.edit.gif)
+
 - **共有：** オフライン HTML を開くか、図全体を SVG / PNG に出力。
+
+  ![共有：オフライン HTML を開き、「その他」から PNG を書き出し、書き出されたファイルそのものを表示する](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.share.gif)
+
+上部のアニメーションはアーキテクチャ図・シーケンス図・ER 図を 1.5 秒ずつ（1 ループ 4.5 秒）表示し、4 つの機能アニメーションは 6.5〜8.5 秒です。すべてソースからビルドした Viewer で [agent-desk サンプル](../../examples/showcase/agent-desk)（架空の業務、実在のコード）を日本語の図と UI で録画しています。[showcase-v2 Release のアセット](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2)として配置し、Git 履歴やプラグインパッケージには含めないため閲覧にはネットワークが必要です。生成された図の HTML 自体はオフラインで動作します。
 
 ## インストールガイド
 
 Node.js 22 と、プラグインに対応しモデルへのアクセスを設定済みのクライアントを用意してください。
 
-[Qoder IDE](#qoder-ide) ではマーケットプレイスから直接インストールできるため、手順 1 は不要です。
+[Qoder Desktop](#qoder-desktop) ではマーケットプレイスから直接インストールできるため、手順 1 は不要です。
 
 ### 1. プラグインをダウンロード
 
@@ -72,7 +87,7 @@ qodercli plugins install .
 
 新しいセッションを開始し、`q-flow` を選択します。
 
-#### Qoder IDE
+#### Qoder Desktop
 
 **推奨：** **Settings → Plugins → Marketplace** を開き、**代码图谱可视化** または **qgraphflow** を検索してインストールします。新しいセッションを開始し、`q-flow` を選択します。ZIP のダウンロードやソースのビルドは不要です。
 
@@ -205,4 +220,4 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 [MIT](../../LICENSE) · [第三者の表示](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow は MIT ライセンスの独立プロジェクトです。この EC シナリオは概念例で、実在する企業の本番構成を表しません。提携、後援、推奨を意味するものでもありません。
+QGraphFlow は MIT ライセンスの独立プロジェクトです。本文のシナリオは概念例で、実在する企業の本番構成を表しません。提携、後援、推奨を意味するものでもありません。

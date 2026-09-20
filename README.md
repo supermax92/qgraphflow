@@ -12,20 +12,35 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 </div>
 
+![Architecture, sequence and ER views of the agent-desk example, 1.5 seconds each](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.hero.gif)
+
 *Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
 - **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
+
+  ![Explore: search for refund, jump to Order tools, zoom out to the orchestrator upstream and the order database and logistics downstream, then pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.explore.gif)
+
 - **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
+
+  ![Verify: quick-look card with src/gateway/chat-gateway.js:5-19, details with the symbol and evidence facts, then the POST /chat edge marked as inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.verify.gif)
+
 - **Edit:** unlock the layout, change text and move elements; reset when needed.
+
+  ![Edit: unlock the layout, rename LLM provider to LLM gateway, drag it with its edges, then reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.edit.gif)
+
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
+
+  ![Share: open the offline HTML, export PNG from More, then the exported file itself](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.share.gif)
+
+The top animation shows the architecture, sequence and ER views for 1.5 seconds each (4.5 seconds per loop); the four feature animations run 6.5–8.5 seconds. All of them are recorded from the source-built Viewer on the [agent-desk example](examples/showcase/agent-desk) — fictional business, real code — with English graph and interface text. They are hosted as [showcase-v2 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2) and kept out of Git history and the plugin package, so viewing them needs network access; the generated diagram HTML itself works offline.
 
 ## Installation guide
 
 You need Node.js 22 and a plugin-capable client with model access configured.
 
-[Qoder IDE](#qoder-ide) users can install from the marketplace and skip step 1.
+[Qoder Desktop](#qoder-desktop) users can install from the marketplace and skip step 1.
 
 ### 1. Download the plugin
 
@@ -72,7 +87,7 @@ qodercli plugins install .
 
 Start a new session and select `q-flow`.
 
-#### Qoder IDE
+#### Qoder Desktop
 
 **Recommended:** Open **Settings → Plugins → Marketplace**, search for **代码图谱可视化** or **qgraphflow**, and install the plugin. Start a new session and select `q-flow`. No ZIP download or source build is required.
 
@@ -205,4 +220,4 @@ Development needs Node.js 22, npm, tar, zip and unzip. Include a minimal redacte
 
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-QGraphFlow is an independent MIT-licensed project. The commerce scenario is conceptual and does not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.

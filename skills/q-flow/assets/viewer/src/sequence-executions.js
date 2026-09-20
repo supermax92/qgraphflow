@@ -1,9 +1,11 @@
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { operandScopes } from './sequence-fragments.js';
 
+// Pair numbers follow the calls' message order (C1 is the first call that gets a reply), not their id spelling.
 export function sequencePairs(graph) {
   if (graph.meta.diagramType !== 'sequence') return new Map();
-  const calls = [...new Set(graph.edges.map(edge => edge.replyTo).filter(Boolean))].sort();
+  const orderOf = new Map(graph.edges.map(edge => [edge.id, edge.order]));
+  const calls = [...new Set(graph.edges.map(edge => edge.replyTo).filter(Boolean))].sort((a, b) => (orderOf.get(a) ?? Infinity) - (orderOf.get(b) ?? Infinity) || (a < b ? -1 : a > b ? 1 : 0));
   const indices = new Map(calls.map((id, index) => [id, index]));
   return new Map(graph.edges.filter(edge => indices.has(edge.replyTo ?? edge.id)).map(edge => {
     const callId = edge.replyTo ?? edge.id, index = indices.get(callId);

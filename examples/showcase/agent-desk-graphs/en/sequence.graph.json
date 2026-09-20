@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "title": "One support turn · how the agent picks a tool",
+    "subtitle": "intent → loop tool calls ⊃ alt success / fallback → reply → par push ∥ audit",
+    "diagramType": "sequence",
+    "locale": "en",
+    "sourceRef": "examples/showcase/agent-desk @ working tree",
+    "scope": "Sample system: fictional business, real code (examples/showcase/agent-desk)."
+  },
+  "layout": {
+    "participantOrder": [
+      "user",
+      "gateway",
+      "orch",
+      "tools",
+      "llm",
+      "audit"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "user",
+      "label": "Customer",
+      "kind": "actor",
+      "subtitle": "mini-app session"
+    },
+    {
+      "id": "gateway",
+      "label": "Support gateway",
+      "kind": "participant",
+      "subtitle": "createChatGateway",
+      "source": {
+        "kind": "source",
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 5,
+        "lineEnd": 19,
+        "symbol": "createChatGateway"
+      },
+      "module": "Access"
+    },
+    {
+      "id": "orch",
+      "label": "Agent orchestrator",
+      "kind": "service",
+      "subtitle": "AgentOrchestrator.handle",
+      "tags": [
+        "core"
+      ],
+      "source": {
+        "kind": "source",
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 13,
+        "lineEnd": 38,
+        "symbol": "handle"
+      },
+      "module": "Agent"
+    },
+    {
+      "id": "tools",
+      "label": "Tool executor",
+      "kind": "service",
+      "subtitle": "ToolRegistry.execute",
+      "source": {
+        "kind": "source",
+        "file": "src/agent/tool-registry.js",
+        "lineStart": 11,
+        "lineEnd": 20,
+        "symbol": "execute"
+      },
+      "module": "Tools"
+    },
+    {
+      "id": "llm",
+      "label": "LLM gateway",
+      "kind": "external",
+      "subtitle": "LlmGatewayClient.complete",
+      "source": {
+        "kind": "source",
+        "file": "src/llm/llm-gateway-client.js",
+        "lineStart": 9,
+        "lineEnd": 26,
+        "symbol": "complete"
+      },
+      "module": "Model"
+    },
+    {
+      "id": "audit",
+      "label": "Audit log",
+      "kind": "participant",
+      "subtitle": "AuditLog.record",
+      "source": {
+        "kind": "source",
+        "file": "src/audit/audit-log.js",
+        "lineStart": 7,
+        "lineEnd": 9,
+        "symbol": "record"
+      },
+      "module": "Audit"
+    }
+  ],
+  "groups": [
+    {
+      "id": "loop",
+      "label": "Tool-call loop",
+      "kind": "loop",
+      "loop": {
+        "min": 0,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "call",
+          "guard": "plan.tool && attempt < maxToolCalls",
+          "edgeIds": [
+            "m5",
+            "m6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outcome",
+      "label": "Tool outcome",
+      "kind": "alt",
+      "parentId": "loop",
+      "parentOperandId": "call",
+      "operands": [
+        {
+          "id": "ok",
+          "guard": "outcome.ok",
+          "edgeIds": [
+            "m7",
+            "m8"
+          ]
+        },
+        {
+          "id": "failed",
+          "guard": "else",
+          "edgeIds": [],
+          "body": "degraded ← true; leave the loop, use the fallback answer"
+        }
+      ]
+    },
+    {
+      "id": "finish",
+      "label": "Parallel wrap-up",
+      "kind": "par",
+      "operands": [
+        {
+          "id": "push",
+          "label": "push reply",
+          "edgeIds": [
+            "m11"
+          ]
+        },
+        {
+          "id": "record",
+          "label": "write audit",
+          "edgeIds": [
+            "m12"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "user",
+      "target": "gateway",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "POST /chat \"where is my order?\"",
+      "order": 1
+    },
+    {
+      "id": "m2",
+      "source": "gateway",
+      "target": "orch",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "handle(session, text)",
+      "order": 2
+    },
+    {
+      "id": "m3",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(history, tools)",
+      "order": 3
+    },
+    {
+      "id": "m4",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ tool: lookupOrder, args }",
+      "order": 4,
+      "replyTo": "m3"
+    },
+    {
+      "id": "m5",
+      "source": "orch",
+      "target": "tools",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "execute(lookupOrder, { orderId })",
+      "order": 5
+    },
+    {
+      "id": "m6",
+      "source": "tools",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ ok, result | error, latencyMs }",
+      "order": 6,
+      "replyTo": "m5"
+    },
+    {
+      "id": "m7",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(history + observation)",
+      "order": 7
+    },
+    {
+      "id": "m8",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ tool | null }",
+      "order": 8,
+      "replyTo": "m7"
+    },
+    {
+      "id": "m9",
+      "source": "orch",
+      "target": "llm",
+      "kind": "sync",
+      "evidence": "source",
+      "label": "complete(final reply)",
+      "order": 9
+    },
+    {
+      "id": "m10",
+      "source": "llm",
+      "target": "orch",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ text }",
+      "order": 10,
+      "replyTo": "m9"
+    },
+    {
+      "id": "m11",
+      "source": "orch",
+      "target": "gateway",
+      "kind": "async",
+      "evidence": "source",
+      "label": "push(reply chunk)",
+      "order": 11
+    },
+    {
+      "id": "m12",
+      "source": "orch",
+      "target": "audit",
+      "kind": "async",
+      "evidence": "source",
+      "label": "record(tool and model calls)",
+      "order": 12
+    },
+    {
+      "id": "m13",
+      "source": "orch",
+      "target": "gateway",
+      "kind": "return",
+      "evidence": "source",
+      "label": "{ reply, toolCalls, degraded }",
+      "order": 13,
+      "replyTo": "m2"
+    },
+    {
+      "id": "m14",
+      "source": "gateway",
+      "target": "user",
+      "kind": "return",
+      "evidence": "source",
+      "label": "200 reply",
+      "order": 14,
+      "replyTo": "m1"
+    }
+  ],
+  "executions": [
+    {
+      "id": "x-gateway",
+      "participantId": "gateway",
+      "start": {
+        "edgeId": "m1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m14",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-orch",
+      "participantId": "orch",
+      "start": {
+        "edgeId": "m2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m13",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-plan",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m3",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m4",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-tool",
+      "participantId": "tools",
+      "start": {
+        "edgeId": "m5",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m6",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-next",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m7",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m8",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x-llm-answer",
+      "participantId": "llm",
+      "start": {
+        "edgeId": "m9",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m10",
+        "at": "send"
+      }
+    }
+  ]
+}

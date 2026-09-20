@@ -12,20 +12,35 @@
 
 </div>
 
+![agent-desk 示例的架构图、时序图与 ER 图，每类 1.5 秒](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.hero.gif)
+
 *支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
 - **探索：** 搜索定位、缩放和平移画布，查看组件职责与上下游关系。
+
+  ![探索：搜索 refund 定位到订单工具集，拉远查看上游的智能体编排器与下游的订单库、物流查询平台，再平移画布](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.explore.gif)
+
 - **核验：** 从节点或连线查看详情，核对源码文件、行号、符号和明确标注的不确定性。
+
+  ![核验：速览卡显示 src/gateway/chat-gateway.js:5-19，详情栏显示符号与证据事实，再查看标为 inference 的 POST /chat 连线](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.verify.gif)
+
 - **编辑：** 解锁后修改文字、移动元素；不满意时一键重置。
+
+  ![编辑：解除布局锁定，把 LLM 服务商改名为 LLM 网关，拖动节点带动连线，最后一键重置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.edit.gif)
+
 - **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
+
+  ![分享：打开离线 HTML，从「更多」导出 PNG，最后展示导出的文件本身](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.share.gif)
+
+顶部动图依次展示架构图、时序图与 ER 图，每类 1.5 秒，完整循环 4.5 秒；下方四张能力动图各 6.5–8.5 秒。全部动图用源码构建的 Viewer 录制自 [agent-desk 示例](../../examples/showcase/agent-desk)（虚构业务、真实代码），图中文字与界面均为中文。它们作为 [showcase-v2 Release 附件](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2)托管，不进入 Git 历史与插件包，查看需要联网；生成的图形 HTML 本身可离线使用。
 
 ## 安装指南
 
 准备 Node.js 22，以及已配置好模型访问、支持插件功能的客户端。
 
-[Qoder IDE](#qoder-ide) 可直接从插件商城安装，跳过第 1 步。
+[Qoder Desktop](#qoder-desktop) 可直接从插件商城安装，跳过第 1 步。
 
 ### 1. 下载插件
 
@@ -72,7 +87,7 @@ qodercli plugins install .
 
 新建会话，选择 `q-flow`。
 
-#### Qoder IDE
+#### Qoder Desktop
 
 **推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **代码图谱可视化** 或 **qgraphflow**，安装插件。新建会话，选择 `q-flow`。无需下载 ZIP 或构建源码。
 
@@ -205,4 +220,4 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 [MIT](../../LICENSE) · [第三方声明](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow 是采用 MIT 许可证的独立项目。本文电商场景为概念示例，不代表任何真实公司的生产架构。
+QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。

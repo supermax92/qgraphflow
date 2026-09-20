@@ -4,7 +4,7 @@
 
 [Back to README](../README.md)
 
-Qoder IDE can install the plugin from its marketplace, and Claude Code can install directly from GitHub (see their sections below). Both can skip step 1. For local installation, download the QGraphFlow source and build the runtime package first.
+Qoder Desktop can install the plugin from its marketplace, and Claude Code can install directly from GitHub (see their sections below). Both can skip step 1. For local installation, download the QGraphFlow source and build the runtime package first.
 
 You need Node.js 22 and a client with model access configured. Building from source also requires Git, npm, `tar`, `zip` and `unzip`.
 
@@ -60,7 +60,7 @@ qodercli plugins install ./dist/runtime
 
 Start a new session and select `q-flow`.
 
-### Qoder IDE
+### Qoder Desktop
 
 **Recommended:** Open **Settings → Plugins → Marketplace**, search for **代码图谱可视化** or **qgraphflow**, and install the plugin. Start a new session and select `q-flow`. No ZIP download or source build is required.
 
