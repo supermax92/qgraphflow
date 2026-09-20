@@ -50,9 +50,10 @@ jobs:
         run: |
           npm install --prefix verified --ignore-scripts --no-audit --no-fund --package-lock=false "./publish/supermax92-qgraphflow-$VERSION.tgz"
           diff -r runtime verified/node_modules/@supermax92/qgraphflow
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json --input-only
           node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json output/order
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/showcase/kafka.en.graph.json output/nine
+          # The nine-view collection is not part of the runtime package; the checkout supplies the input, the installed package generates it.
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/showcase/kafka.en.graph.json output/nine
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
