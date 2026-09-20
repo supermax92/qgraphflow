@@ -23,6 +23,6 @@ jobs:
       - run: npm ci --prefix skills/q-flow/assets/viewer
       - run: npm run build --prefix skills/q-flow/assets/viewer
       - run: node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
-      - run: node skills/q-flow/scripts/validate-graph.mjs examples/order-flow.graph.json
+      - run: node skills/q-flow/scripts/validate-graph.mjs examples/order-flow.graph.json --input-only
       - run: node skills/q-flow/scripts/generate-viewer.mjs examples/order-flow.graph.json output/example
       - run: npm run package
