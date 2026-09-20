@@ -44,7 +44,7 @@ Benötigt werden Node.js 22 und ein Client mit Plugin-Unterstützung und eingeri
 
 ### 1. Plugin herunterladen
 
-[qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
+[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
 
 Alle folgenden Terminalbefehle im **entpackten Plugin-Stammverzeichnis mit `skills/`** ausführen.
 
@@ -126,7 +126,7 @@ Ein eigenes Verzeichnis außerhalb des Anwendungsprojekts erstellen:
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 

@@ -44,7 +44,7 @@ Node.js 22 と、プラグインに対応しモデルへのアクセスを設定
 
 ### 1. プラグインをダウンロード
 
-[qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
+[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
 
 以下のコマンドはすべて、**展開後の `skills/` を含むプラグインのルートディレクトリ**で実行してください。
 
@@ -126,7 +126,7 @@ npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.gith
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 

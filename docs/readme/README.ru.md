@@ -44,7 +44,7 @@ QGraphFlow создаёт интерактивные диаграммы прог
 
 ### 1. Скачайте плагин
 
-Скачайте [qgraphflow-0.0.4.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.4/qgraphflow-0.0.4.zip) и распакуйте в отдельный каталог, сохранив скрытые файлы.
+Скачайте [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) и распакуйте в отдельный каталог, сохранив скрытые файлы.
 
 Все команды ниже выполняйте из **корневого каталога распакованного плагина, содержащего `skills/`**.
 
@@ -126,7 +126,7 @@ npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.gith
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.4 --ignore-scripts
+npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
 cd node_modules/@supermax92/qgraphflow
 ```
 

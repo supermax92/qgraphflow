@@ -1,6 +1,6 @@
 {
   "name": "qgraphflow",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Generate evidence-grounded interactive software diagrams with offline HTML, SVG and PNG export.",
   "author": {
     "name": "Max Zheng",
