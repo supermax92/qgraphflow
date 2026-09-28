@@ -6,6 +6,8 @@
 
 Siga o caminho. Confira as evidências. Compartilhe um arquivo offline.
 
+<sub>💡 Inspirado em <a href="https://github.com/Cocoon-AI/architecture-diagram-generator">Cocoon-AI/architecture-diagram-generator</a> — agradecemos pela ideia.</sub>
+
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
 [Instalação por cliente](#guia-de-instalação) · [Relatar problema](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
