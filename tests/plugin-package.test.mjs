@@ -244,7 +244,9 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.ok(publishCommand, 'The workflow must expose its explicit npm publish command');
   fs.mkdirSync(path.join(temp, 'publish'));
   fs.copyFileSync(path.join(temp, scoped.filename), path.join(temp, 'publish', scoped.filename));
-  const published = JSON.parse(run('env', [`VERSION=${pkg.version}`, 'bash', '-e', '-c', `${publishCommand} --dry-run --json`], temp));
+  const publishOutput = JSON.parse(run('env', [`VERSION=${pkg.version}`, 'bash', '-e', '-c', `${publishCommand} --dry-run --json`], temp));
+  // npm 11 (bundled with Node 24) keys `npm publish --json` by package name; npm 10 prints the package itself.
+  const published = publishOutput['@supermax92/qgraphflow'] ?? publishOutput;
   assert.equal(published.name, '@supermax92/qgraphflow');
   assert.equal(published.version, pkg.version);
   assert.deepEqual(published.files.map(file => file.path).sort(), [...files].sort());
