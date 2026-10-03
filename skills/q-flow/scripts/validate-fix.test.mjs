@@ -112,6 +112,133 @@ test('fix is idempotent and a no-op on a valid file', t => {
   fixGraphFile(file2, { inputOnly: true }); assert.equal(fs.readFileSync(file2, 'utf8'), once);
 });
 
+// A repository after an edit: createOrder now starts on line 30 of a 50-line file, and the schema names `orders` on
+// three separate lines.
+const drifted = t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-drift-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const text = (count, lines) => Array.from({ length: count }, (_, i) => lines[i + 1] ?? `// ${i + 1}`).join('\n') + '\n';
+  fs.mkdirSync(path.join(dir, 'src')); fs.mkdirSync(path.join(dir, 'db'));
+  fs.writeFileSync(path.join(dir, 'src/order-service.js'), text(50, { 11: '  // reorder the orders queue', 30: '  async createOrder(input) {' }));
+  fs.writeFileSync(path.join(dir, 'db/schema.sql'), text(45, { 18: 'CREATE TABLE orders (', 29: '  order_id BIGINT REFERENCES orders(id),', 39: 'CREATE INDEX orders_by_user ON orders (user_id);' }));
+  return dir;
+};
+const anchored = (...anchors) => {
+  const graph = example();
+  anchors.forEach((source, index) => { graph.nodes[index].source = { kind: 'source', ...source }; });
+  return graph;
+};
+
+test('a symbol must stay inside its recorded lines; qualified names use their last segment, partial words do not count', t => {
+  const repo = drifted(t);
+  const file = temp(t, anchored(
+    { file: 'src/order-service.js', lineStart: 30, lineEnd: 44, symbol: 'OrderService.createOrder' },
+    { file: 'src/order-service.js', lineStart: 30, symbol: 'createOrder()' },
+    { file: 'db/schema.sql', lineStart: 18, lineEnd: 24, symbol: 'orders' },
+    { file: 'db/schema.sql', lineStart: 39, symbol: 'GET /orders' },
+    { file: 'db/schema.sql', lineStart: 1, lineEnd: 45 }
+  ));
+  let result = run(file, '--input-only', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: 5, checked: 5, files: 2, symbols: 4 });
+  result = run(file, '--input-only');
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'skipped', references: 5, checked: 0, files: 0, reason: 'repository-root-not-provided' });
+  for (const [source, expected] of [
+    [{ lineStart: 10, lineEnd: 24, symbol: 'createOrder' }, /symbol "createOrder" is not in lines 10-24; found at line 30; run --fix to re-anchor a unique match/],
+    [{ lineStart: 10, lineEnd: 12, symbol: 'order' }, /symbol "order" is not in lines 10-12; not found in the file/],
+    [{ lineStart: 30, symbol: 'OrderService.cancelOrder' }, /symbol "cancelOrder" is not in line 30; not found in the file/]
+  ]) {
+    result = run(temp(t, anchored({ file: 'src/order-service.js', ...source })), '--input-only', '--repo-root', repo);
+    assert.equal(result.status, 1, source.symbol);
+    assert.match(result.stderr, /diagrams\[0\]\.nodes\[0\]\.source \(src\/order-service\.js\): /);
+    assert.match(result.stderr, expected);
+  }
+  // A small move that stays inside the recorded lines is not drift.
+  result = run(temp(t, anchored({ file: 'src/order-service.js', lineStart: 27, lineEnd: 41, symbol: 'createOrder' })), '--input-only', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('--fix re-anchors a symbol found once in its file, keeps the span, never touches other fields, and is idempotent', t => {
+  const repo = drifted(t);
+  const graph = anchored(
+    { file: 'src/order-service.js', lineStart: 10, lineEnd: 24, symbol: 'OrderService.createOrder' },
+    { file: 'src/order-service.js', lineStart: 10, symbol: 'createOrder' },
+    { file: 'src/order-service.js', lineStart: 2, lineEnd: 26, symbol: 'createOrder' }
+  );
+  const file = temp(t, graph);
+  let result = run(file, '--input-only', '--fix');
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /fixed:/, 'without --repo-root no source is read and no anchor moves');
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), graph);
+  result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /fixed: node client\.source\.lineStart 10 → 30, lineEnd 24 → 44/);
+  assert.match(result.stderr, /fixed: node order\.source\.lineStart 10 → 30\n/);
+  assert.match(result.stderr, /fixed: node inventory\.source\.lineStart 2 → 30, lineEnd 26 → 50/, 'the shifted end stops at the last line');
+  assert.doesNotMatch(result.stderr, /regenerate/, 'an input graph has no page to regenerate');
+  const written = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(written.nodes.slice(0, 3).map(node => node.source), [
+    { kind: 'source', file: 'src/order-service.js', lineStart: 30, lineEnd: 44, symbol: 'OrderService.createOrder' },
+    { kind: 'source', file: 'src/order-service.js', lineStart: 30, symbol: 'createOrder' },
+    { kind: 'source', file: 'src/order-service.js', lineStart: 30, lineEnd: 50, symbol: 'createOrder' }
+  ]);
+  assert.deepEqual({ ...written, nodes: written.nodes.map(({ source, ...node }) => node) }, { ...graph, nodes: graph.nodes.map(({ source, ...node }) => node) });
+  assert.equal(JSON.parse(result.stdout).sourceEvidence.status, 'passed');
+  const once = fs.readFileSync(file, 'utf8');
+  result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /fixed:|wrote/);
+  assert.equal(fs.readFileSync(file, 'utf8'), once);
+});
+
+test('an ambiguous symbol is left alone and its source evidence blocks the write of the other fixes', t => {
+  const repo = drifted(t);
+  const graph = anchored({ file: 'db/schema.sql', lineStart: 20, lineEnd: 22, symbol: 'orders' });
+  delete edge(graph, 'c3').order;
+  const file = temp(t, graph), original = fs.readFileSync(file, 'utf8');
+  const result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /fixed: edge c3\.order undefined → 3/, 'the applicable fix is still listed');
+  assert.match(result.stderr, /not fixed: node client\.source not re-anchored: "orders" found at lines 18, 29, 39/);
+  assert.match(result.stderr, /Invalid graph after mechanical fixes \(file left unchanged\)/);
+  assert.match(result.stderr, /symbol "orders" is not in lines 20-22; found at lines 18, 29, 39/);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+});
+
+test('without --input-only, --fix judges geometry too: a draft that still overlaps is listed but not written', t => {
+  const repo = drifted(t), anchor = { file: 'src/order-service.js', lineStart: 10, lineEnd: 24, symbol: 'createOrder' };
+  let result = run(temp(t, anchored(anchor)), '--fix', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /fixed: node client\.source\.lineStart 10 → 30, lineEnd 24 → 44/);
+  const draft = anchored(anchor);
+  draft.nodes[1].position = { ...draft.nodes[0].position };
+  const file = temp(t, draft), original = fs.readFileSync(file, 'utf8');
+  result = run(file, '--fix', '--repo-root', repo);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /fixed: node client\.source\.lineStart 10 → 30/, 'the applicable fix is still listed');
+  assert.match(result.stderr, /Invalid graph after mechanical fixes \(file left unchanged\):\n- .*overlap/);
+  assert.doesNotMatch(result.stderr, /^(wrote|regenerate)/m);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+});
+
+test('a re-anchored collection moves every copy of an anchor alike and asks to regenerate its page and SVGs', t => {
+  const repo = drifted(t), source = { file: 'src/order-service.js', lineStart: 10, lineEnd: 24, symbol: 'createOrder' };
+  const sequence = anchored(source);
+  const architecture = { meta: { title: 'Orders', sourceRef: 'test@local', diagramType: 'architecture' }, nodes: [
+    { id: 'client', label: 'Client', kind: 'external' }, { id: 'order', label: 'Order service', kind: 'service', source: { kind: 'source', ...source } }
+  ], edges: [{ id: 'create', source: 'client', target: 'order', kind: 'call', label: 'createOrder', evidence: 'source' }] };
+  const file = temp(t, { diagrams: [architecture, sequence] });
+  fs.writeFileSync(path.join(path.dirname(file), 'index.html'), '<html></html>');
+  const result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /fixed: diagrams\[0\]\.node order\.source\.lineStart 10 → 30, lineEnd 24 → 44/);
+  assert.match(result.stderr, /fixed: diagrams\[1\]\.node client\.source\.lineStart 10 → 30, lineEnd 24 → 44/);
+  const written = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(written.diagrams[0].nodes[1].source, written.diagrams[1].nodes[0].source);
+  assert.match(result.stderr, /regenerate the page and SVGs: node ".*generate-viewer\.mjs" ".*graph\.json" ".*" --layout preserve --force --repo-root ".*"/);
+});
+
 test('--help lists every option and --fix combines with --repo-root', t => {
   const help = run('--help');
   assert.equal(help.status, 0);

@@ -102,7 +102,7 @@ export default {
   };
   run(path.join(viewer, 'node_modules/vite/bin/vite.js'), ['build'], viewer);
   run(path.join(copy, 'scripts/generate-viewer.mjs'), [path.join(directory, 'model.json'), path.join(directory, 'page')], copy);
-  assert.deepEqual(fs.readdirSync(path.join(directory, 'page')).sort(), ['graph.json', 'index.html']);
+  assert.deepEqual(fs.readdirSync(path.join(directory, 'page')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
   assert.ok(fs.readFileSync(path.join(directory, 'page/index.html'), 'utf8').includes('review-flow'));
   // The only production-source differences in the temporary copy are the new module and its registration.
   for (const source of fs.readdirSync(path.join(skill, 'assets/viewer/src'), { recursive: true }).filter(name => /\.(jsx?|css)$/.test(name) && name !== 'diagrams/registry.js')) {

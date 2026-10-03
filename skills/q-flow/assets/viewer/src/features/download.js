@@ -1,5 +1,5 @@
 import { translate } from '../i18n.js';
-import { createDiagramSvg } from '../export-svg.js';
+import { createDiagramSvg, diagramSvgFiles } from '../export-svg.js';
 import { getDiagram, edgeMarkers } from '../diagrams/registry.js';
 import { createEdgeRoutes, occupiedBox, cardinalityMarks } from '../edge-routing.js';
 import { sequenceFragment } from '../sequence-fragments.js';
@@ -21,9 +21,10 @@ function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-// Rewrite the open page and its sibling graph.json in place. Chromium browsers can write both files after the user picks
-// the page's own folder once; the page on disk is re-read there, so only its embedded data changes. Other browsers
-// download graph.json so edits survive a regeneration.
+// Rewrite the open page, its sibling graph.json and the per-view SVGs in place. Chromium browsers can write them after
+// the user picks the page's own folder once; the page on disk is re-read there, so only its embedded data changes. The
+// SVGs are the generator's own (light theme, no browser glyph check), so they match a `--layout preserve` regeneration
+// byte for byte. Other browsers download graph.json so edits survive a regeneration.
 export async function saveGraphJson(input, locale, setStatus, pageName = decodeURIComponent(window.location?.pathname?.split('/').pop() || 'index.html')) {
   const t = (message, values) => translate(locale, message, values);
   const contents = `${JSON.stringify(input, null, 2)}\n`;
@@ -34,13 +35,17 @@ export async function saveGraphJson(input, locale, setStatus, pageName = decodeU
       const existing = await directory.getFileHandle(pageName, { create: false }).catch(() => null);
       if (!existing) throw Object.assign(new Error('wrong directory'), { name: 'NotFoundError' });
       const page = pageWithGraph(await (await existing.getFile()).text(), input);
-      // Write graph.json first: it is the regeneration input, so it must never lag behind the page.
-      for (const [name, text] of [['graph.json', contents], [pageName, page]]) {
+      // Every view is rendered before any write; one view outside the layout gate keeps every SVG as it was, while the
+      // page and graph.json are still saved as a draft.
+      let svgs;
+      try { svgs = diagramSvgFiles(input).map(file => [file.name, file.svg]); } catch (error) { if (!error.phases) throw error; }
+      // Write graph.json first: it is the regeneration input, so it must never lag behind the page or the SVGs.
+      for (const [name, text] of [['graph.json', contents], [pageName, page], ...svgs ?? []]) {
         const handle = await directory.getFileHandle(name, { create: true });
         writable = await handle.createWritable();
         await writable.write(text); await writable.close(); writable = null;
       }
-      setStatus(t('Saved into this page and its sibling graph.json'));
+      setStatus(t(svgs ? 'Saved into this page, its sibling graph.json and SVGs' : 'Saved into this page and its sibling graph.json; SVGs not updated: the layout needs adjustment'));
     } else if (typeof window.showSaveFilePicker === 'function') {
       const handle = await window.showSaveFilePicker({ suggestedName: 'graph.json', types: [{ description: 'Graph JSON', accept: { 'application/json': ['.json'] } }] });
       writable = await handle.createWritable();

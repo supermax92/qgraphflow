@@ -1,6 +1,6 @@
 # Viewer development and maintenance
 
-Modules are composed at build time: after source changes and a build, the generator embeds every feature in standalone HTML. There is no runtime plugin download or hot loading. Ordinary graph generation still outputs only `index.html` and `graph.json`.
+Modules are composed at build time: after source changes and a build, the generator embeds every feature in standalone HTML. There is no runtime plugin download or hot loading. Ordinary graph generation outputs `index.html`, `graph.json` and one SVG per view, drawn by the same `export-svg.js` the Viewer's in-place save uses.
 
 ## Change entry points
 

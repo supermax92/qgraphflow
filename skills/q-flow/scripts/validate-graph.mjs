@@ -14,9 +14,10 @@ export { DIAGRAM_TYPES, diagramTypeOf, graphsOf, moduleSlotName, reviewCompositi
 
 const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
   --input-only          check semantics only (no geometry); use before generating
-  --repo-root <dir>     verify every node source.file / line range against this working tree
-  --fix                 repair mechanical sequence errors in place (order numbering, opt/loop/par operand ids,
-                        unambiguous replyTo); prints each change; writes back only when the graph then passes
+  --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
+  --fix                 repair mechanical errors in place (sequence order numbering, opt/loop/par operand ids,
+                        unambiguous replyTo; with --repo-root, anchor line re-anchoring to a symbol found once in its
+                        file); prints each change; writes back only when the graph then passes
   --verbose             print the full receipt (layout composition, diagnostics) instead of one summary line
   --module-slot <name>  print the colour slot a module name hashes to (repeatable; no graph needed) — for choosing
                         the name of a module you are introducing; never rename an existing module for colour
@@ -102,18 +103,86 @@ export function applyMechanicalFixes(input) {
   return { changes, blocked };
 }
 
-// Fix in memory, judge with the ordinary validator, write back only a graph that then passes.
-export function fixGraphFile(inputPath, options = {}) {
+// Fix in memory, then judge with every check the run makes without --fix (geometry and the quality gate unless
+// --input-only, source evidence under a repository root), and write back only a graph that passes all of them.
+export function fixGraphFile(inputPath, { repoRoot, ...options } = {}) {
   const absolute = path.resolve(inputPath);
   const original = fs.readFileSync(absolute, 'utf8');
   const graph = JSON.parse(original);
-  const { changes, blocked } = applyMechanicalFixes(graph);
-  const errors = validateGraphInput(graph, { ...options, inputOnly: true });
+  const mechanical = applyMechanicalFixes(graph), anchors = repoRoot === undefined ? { changes: [], blocked: [] } : applyAnchorFixes(graph, repoRoot);
+  const changes = [...mechanical.changes, ...anchors.changes], blocked = [...mechanical.blocked, ...anchors.blocked];
+  let errors = validateGraphInput(graph, { ...options, inputOnly: true });
+  if (!errors.length && !options.inputOnly) errors = validateGraphInput(graph, options);
+  if (!errors.length && !options.inputOnly) for (const [index, item] of graphsOf(graph).entries()) {
+    const prefix = Object.hasOwn(graph, 'diagrams') ? `diagrams[${index}].` : '';
+    try { requireDiagramQuality(item); } catch (error) { errors.push(...error.message.split('\n- ').slice(1).map(message => prefix + message)); }
+  }
+  if (!errors.length && repoRoot !== undefined) {
+    try { verifySourceEvidence(graph, repoRoot); } catch (error) { errors = error.message.split('\n- ').slice(1); }
+  }
   if (errors.length) return { changes, blocked, errors, written: false };
   const text = `${JSON.stringify(graph, null, 2)}\n`;
   const written = changes.length > 0 && text !== original;
   if (written) fs.writeFileSync(absolute, text);
   return { changes, blocked, errors: [], written };
+}
+
+// Re-anchors a drifted node whose symbol occurs exactly once in its file; the range moves with it and keeps its span.
+// Several matches need a judgement about which one is the definition, so they are only reported.
+export function applyAnchorFixes(input, repoRoot) {
+  const changes = [], blocked = [], { read } = sourceReader(repoRoot);
+  for (const [index, graph] of graphsOf(input).entries()) {
+    const prefix = Object.hasOwn(input, 'diagrams') ? `diagrams[${index}].` : '';
+    for (const node of Array.isArray(graph?.nodes) ? graph.nodes : []) {
+      const source = node?.source;
+      if (typeof source?.symbol !== 'string' || !Number.isInteger(source.lineStart)) continue;
+      let lines;
+      try { lines = read(source.file); } catch { continue; } // reported by the source evidence check
+      const term = symbolTerm(source.symbol), found = term ? symbolLines(lines, term) : [];
+      if (found.some(line => line >= source.lineStart && line <= (source.lineEnd ?? source.lineStart))) continue;
+      if (found.length !== 1) { blocked.push(`${prefix}node ${node.id}.source not re-anchored: "${term ?? source.symbol}" ${foundAt(found)}`); continue; }
+      const lineEnd = source.lineEnd === undefined ? undefined : Math.min(lines.length, found[0] + source.lineEnd - source.lineStart);
+      changes.push(`${prefix}node ${node.id}.source.lineStart ${source.lineStart} → ${found[0]}${lineEnd === undefined ? '' : `, lineEnd ${source.lineEnd} → ${lineEnd}`}`);
+      source.lineStart = found[0];
+      if (lineEnd !== undefined) source.lineEnd = lineEnd;
+    }
+  }
+  return { changes, blocked };
+}
+
+// ponytail: a whole-word text match on the symbol's last segment, not a definition parser. A mention left inside the
+// range (a comment, a call) still passes after the definition moved; add per-language definition rules if that bites.
+const symbolTerm = symbol => symbol.split(/[^\p{L}\p{N}_$]+/u).filter(Boolean).at(-1);
+const symbolLines = (lines, term) => {
+  const word = new RegExp(`(?<![\\p{L}\\p{N}_$])${term.replaceAll('$', '\\$')}(?![\\p{L}\\p{N}_$])`, 'u');
+  return lines.flatMap((line, index) => word.test(line) ? [index + 1] : []);
+};
+const foundAt = lines => lines.length ? `found at line${lines.length > 1 ? 's' : ''} ${lines.slice(0, 5).join(', ')}${lines.length > 5 ? ` and ${lines.length - 5} more` : ''}` : 'not found in the file';
+
+// Reads repository files once each: repository-relative paths only, no escape through symlinks, UTF-8 text only.
+function sourceReader(repoRoot) {
+  if (typeof repoRoot !== 'string' || !repoRoot.trim()) throw new Error('--repo-root must name a directory');
+  const root = fs.realpathSync(repoRoot);
+  if (!fs.statSync(root).isDirectory()) throw new Error('--repo-root must name a directory');
+  const files = new Map();
+  const read = name => {
+    if (path.isAbsolute(name) || path.win32.isAbsolute(name) || /[\\\0]/.test(name) || name.split('/').includes('..')) {
+      throw new Error('path must be repository-relative without parent traversal');
+    }
+    const file = fs.realpathSync(path.resolve(root, name)), relative = path.relative(root, file);
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error('path resolves outside --repo-root');
+    if (!files.has(file)) {
+      if (!fs.statSync(file).isFile()) throw new Error('path must name a regular file');
+      const bytes = fs.readFileSync(file);
+      if (bytes.includes(0)) throw new Error('source must be a UTF-8 text file');
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      const lines = text ? text.split(/\r\n|\n|\r/) : [];
+      if (/[\r\n]$/.test(text)) lines.pop();
+      files.set(file, lines);
+    }
+    return files.get(file);
+  };
+  return { read, files };
 }
 
 // Checks the explicitly selected working tree, not the revision named in sourceRef or the meaning of a claim.
@@ -122,38 +191,27 @@ export function verifySourceEvidence(input, repoRoot) {
     ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source` }] : []));
   const summary = { scope: 'working-tree', references: anchors.length, checked: 0, files: 0 };
   if (repoRoot === undefined) {
-    if (anchors.length) console.warn('Source evidence not verified: pass --repo-root <repository-directory> to check files and line ranges.');
+    if (anchors.length) console.warn('Source evidence not verified: pass --repo-root <repository-directory> to check files, line ranges and symbols.');
     return { ...summary, status: anchors.length ? 'skipped' : 'not-applicable', ...(anchors.length ? { reason: 'repository-root-not-provided' } : {}) };
   }
-  if (typeof repoRoot !== 'string' || !repoRoot.trim()) throw new Error('--repo-root must name a directory');
-  const root = fs.realpathSync(repoRoot);
-  if (!fs.statSync(root).isDirectory()) throw new Error('--repo-root must name a directory');
-  const withinRoot = file => {
-    const relative = path.relative(root, file);
-    return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
-  };
-  const files = new Map(), errors = [];
+  const { read, files } = sourceReader(repoRoot), errors = [];
+  let symbols = 0;
   for (const { source, label } of anchors) {
     try {
-      if (path.isAbsolute(source.file) || path.win32.isAbsolute(source.file) || /[\\\0]/.test(source.file) || source.file.split('/').includes('..')) {
-        throw new Error('path must be repository-relative without parent traversal');
+      const lines = read(source.file), end = source.lineEnd ?? source.lineStart;
+      if (end > lines.length) throw new Error(`line ${end} exceeds file length (${lines.length} lines)`);
+      if (typeof source.symbol !== 'string') continue;
+      symbols++;
+      const term = symbolTerm(source.symbol);
+      if (!term) throw new Error(`symbol ${JSON.stringify(source.symbol)} has no name to check`);
+      const found = symbolLines(lines, term);
+      if (!found.some(line => line >= source.lineStart && line <= end)) {
+        throw new Error(`symbol "${term}" is not in line${end === source.lineStart ? ` ${end}` : `s ${source.lineStart}-${end}`}; ${foundAt(found)}; run --fix to re-anchor a unique match`);
       }
-      const file = fs.realpathSync(path.resolve(root, source.file));
-      if (!withinRoot(file)) throw new Error('path resolves outside --repo-root');
-      if (!files.has(file)) {
-        if (!fs.statSync(file).isFile()) throw new Error('path must name a regular file');
-        const bytes = fs.readFileSync(file);
-        if (bytes.includes(0)) throw new Error('source must be a UTF-8 text file');
-        const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        const lines = text ? text.split(/\r\n|\n|\r/).length - Number(/[\r\n]$/.test(text)) : 0;
-        files.set(file, lines);
-      }
-      const line = source.lineEnd ?? source.lineStart;
-      if (line > files.get(file)) throw new Error(`line ${line} exceeds file length (${files.get(file)} lines)`);
     } catch (error) { errors.push(`${label} (${source.file}): ${error.code === 'ENOENT' ? 'file does not exist' : error.message}`); }
   }
   if (errors.length) throw new Error(`Invalid source evidence:\n- ${errors.join('\n- ')}`);
-  return { ...summary, status: anchors.length ? 'passed' : 'not-applicable', checked: anchors.length, files: files.size };
+  return { ...summary, status: anchors.length ? 'passed' : 'not-applicable', checked: anchors.length, files: files.size, symbols };
 }
 
 if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
@@ -166,11 +224,16 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
     }
     if (positionals.length !== 1) throw new Error(USAGE);
     if (values.fix) {
-      const result = fixGraphFile(positionals[0], { inputOnly: values['input-only'] });
+      const result = fixGraphFile(positionals[0], { inputOnly: values['input-only'], repoRoot: values['repo-root'] });
       for (const change of result.changes) console.error(`fixed: ${change}`);
       for (const item of result.blocked) console.error(`not fixed: ${item}`);
       if (result.errors.length) throw new Error(`Invalid graph after mechanical fixes (file left unchanged):\n- ${result.errors.join('\n- ')}`);
-      if (result.written) console.error(`wrote ${path.resolve(positionals[0])} (${result.changes.length} change${result.changes.length === 1 ? '' : 's'})`);
+      const file = path.resolve(positionals[0]), directory = path.dirname(file);
+      if (result.written) console.error(`wrote ${file} (${result.changes.length} change${result.changes.length === 1 ? '' : 's'})`);
+      // A generated page and its SVGs still embed the old data: regenerate them from the fixed file, keeping the layout.
+      if (result.written && fs.existsSync(path.join(directory, 'index.html'))) {
+        console.error(`regenerate the page and SVGs: node "${path.join(import.meta.dirname, 'generate-viewer.mjs')}" "${file}" "${directory}" --layout preserve --force${values['repo-root'] === undefined ? '' : ` --repo-root "${path.resolve(values['repo-root'])}"`}`);
+      }
     }
     const graph = readAndValidateGraph(positionals[0], { inputOnly: values['input-only'] });
     const sourceEvidence = verifySourceEvidence(graph, values['repo-root']);

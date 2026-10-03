@@ -10,7 +10,7 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[クライアントへの導入](#インストールガイド) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[オンラインデモ](https://supermax92.github.io/qgraphflow/) · [クライアントへの導入](#インストールガイド) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -19,6 +19,14 @@
 *9種類の図に対応：アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
 
 QGraphFlow はソースコード、データ構造、設定、要件から対話型のソフトウェア図を生成します。関係の根拠を確認し、共有可能なオフライン HTML として届けます。
+
+**ここが違う：** 1 つのスキルで 9 種類の図、すべての関係に出典、自動レイアウト、ページ上での編集。プラグインのスクリプトと Viewer 自体はネットワーク通信を一切行いません。
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+1 つのコマンドで Claude Code、Codex、Cursor、Qoder にスキルを導入できます。プラグインとしての導入やほかのクライアントは[インストールガイド](#インストールガイド)を参照してください。
 
 - **探索：** 検索・拡大縮小・パンで、責務と上流・下流の関係を確認。
 
@@ -40,9 +48,17 @@ QGraphFlow はソースコード、データ構造、設定、要件から対話
 
 ## インストールガイド
 
-Node.js 22 と、プラグインに対応しモデルへのアクセスを設定済みのクライアントを用意してください。
+Node.js 22 以降と、プラグインに対応しモデルへのアクセスを設定済みのクライアントを用意してください。
 
-[Qoder Desktop](#qoder-desktop) ではマーケットプレイスから直接インストールできるため、手順 1 は不要です。
+### クイックインストール
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+`skills` 1.7.0 で Claude Code、Codex、Cursor、Qoder への導入を実測済みです。導入先のクライアントを尋ねられます。`-a claude-code` で直接指定でき、`-g` を付けると現在のプロジェクトではなくユーザー単位で導入します。この方法で導入したスキル名は `q-flow` で、下のプラグイン導入で付く `qgraphflow:` という接頭辞は付きません。
+
+プラグインとして導入する場合は、次の手順に従ってください。[Qoder Desktop](#qoder-desktop) ではマーケットプレイスから直接インストールできるため、手順 1 は不要です。
 
 ### 1. プラグインをダウンロード
 
@@ -110,29 +126,18 @@ qodercli plugins install .
 クライアントで対象のプロジェクトを開き、新しいセッションでスキルを選択します。下の[すぐに使う](#すぐに使う)の例を参考に依頼し、生成された HTML をブラウザで開いてください。
 
 <details>
-<summary>別のインストール方法：GitHub npm</summary>
+<summary>別のインストール方法：npm</summary>
 
-ZIP の代わりに npm からプラグインを取得することもできます。
-
-GitHub npm では、自分の GitHub **Personal access token（classic）** に `read:packages` 権限を付けて認証します。ログイン時は自分の GitHub ユーザー名を使い、パスワード欄にトークンを入力してください。
-
-トークンを共有したり、リポジトリにコミットしたりしないでください。[GitHub の認証ガイド](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)も参照できます。
-
-```bash
-npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
-npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
-```
-
-業務プロジェクトの外に専用ディレクトリを作成します。
+ZIP の代わりに npmjs.com からプラグインを取得することもできます。アカウント、ログイン、トークンは不要です。業務プロジェクトの外に専用ディレクトリを作成します。
 
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
-cd node_modules/@supermax92/qgraphflow
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-これでプラグインのルートディレクトリに移動できました。上記のクライアント別インストール手順に進んでください。**npm でダウンロードしても、クライアントへのインストールは自動では行われません。**
+これでプラグインのルートディレクトリに移動できました。上記のクライアント別インストール手順に進んでください。**npm でダウンロードしても、クライアントへのインストールは自動では行われません。** このパッケージには `qgraphflow` コマンドも含まれ、[図とコードを同期させる](#図とコードを同期させる)で使います。
 
 </details>
 
@@ -170,12 +175,14 @@ $qgraphflow:q-flow 注文作成フローを分析し、価格計算、在庫引�
 $qgraphflow:q-flow 前の図の在庫引当を掘り下げ、成功時と失敗時の処理を示す日本語のフローチャートを別に作成してください。
 ```
 
-既定の保存先は `docs/qgraphflow/` 配下です。`index.html` を開いて探索・編集・出力でき、`graph.json` に図データが残ります。
+既定の保存先は `docs/qgraphflow/` 配下です。`index.html` を開いて探索・編集・出力でき、`graph.json` に図データが残ります。各ビューは SVG（`diagram.svg`、複数ビューでは `diagram-<n>-<type>.svg`）としても書き出され、README、プルリクエスト、Wiki に画像として埋め込めます。
+
+ページで編集したあと、Chrome または Edge で「その他 → 変更を保存」を実行し、図のフォルダーを一度選ぶと、ページ、`graph.json`、SVG がその場で書き換わります。ほかのブラウザーは `graph.json` だけを保存します。そのフォルダーに置いてから `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` でページと SVG を再生成してください。
 
 <details>
 <summary>EC の9種類のサンプルを手動で実行</summary>
 
-次のコマンドはリポジトリ内のサンプル用です。導入済みプラグインの使用には、このリポジトリの複製は不要です。Node.js 22 を用意して実行します。
+次のコマンドはリポジトリ内のサンプル用です。導入済みプラグインの使用には、このリポジトリの複製は不要です。Node.js 22 以降を用意して実行します。
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
@@ -184,11 +191,41 @@ node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.ja.gra
 node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.ja.graph.json output/ecommerce-ja
 ```
 
-ブラウザーで `output/ecommerce-ja/index.html` を開き、上部の「図の種類」から切り替えます。各図で保存した文字と位置は切り替えても保持されます。「その他 → Graph JSON を保存」で全ビューを保存してください。対応ブラウザーでは JSON の保存先を選択でき、非対応ではコピーをダウンロードします。元の HTML の再読み込みでは埋め込みデータに戻ります。編集内容を再度開くには、保存した JSON から新しいディレクトリに生成します。
+ブラウザーで `output/ecommerce-ja/index.html` を開きます。9 つの SVG も同じディレクトリにあります。上部の「図の種類」から切り替えます。各図で保存した文字と位置は切り替えても保持されます。「その他 → 変更を保存」で、上で説明したとおり全ビューを保存します。同じページは[オンラインデモ](https://supermax92.github.io/qgraphflow/)でも見られます。
 
 ビルド済み Viewer からのページ生成には、依存関係のインストール、API キー、バックエンドは不要です。AI による根拠収集と図の作成には、選んだクライアントのモデルサービスを使います。
 
 </details>
+
+## 図とコードを同期させる
+
+リポジトリのルートを指定して生成した図には、各コンポーネントの定義位置が記録されます。`--repo-root` 付きで検証すると、記録したファイルがない、行範囲がファイルに収まらない、記録したシンボルが元の行範囲から外れた、のいずれかで失敗し、エラーにはシンボルの現在の行が示されます。次のジョブを CI に追加してください。ビルド、ログイン、トークンは不要です。
+
+```yaml
+name: Diagrams
+on: [push, pull_request]
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: |
+          for graph in docs/qgraphflow/*/graph.json; do
+            npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }
+          done
+          exit ${failed:-0}
+```
+
+失敗したら、スキルにその図の更新を頼みます。
+
+```text
+$qgraphflow:q-flow CI で docs/qgraphflow/order-sequence の図が古いと出ました。更新してください。
+```
+
+スキルは、ファイル内で 1 か所だけ見つかったシンボルのアンカーを移し、なお失敗するアンカーだけを修正し、編集した位置と文字を保ったままページと SVG を再生成します。図を描き直すことはしません。
 
 ## 9種類の図が答えること
 
@@ -214,7 +251,7 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-開発には Node.js 22、npm、tar、zip、unzip が必要です。問題報告には、機密情報を除いた最小限の図データ、クライアントとブラウザーのバージョン、再現手順を添えてください。
+開発には Node.js 22 以降、npm、tar、zip、unzip が必要です。問題報告には、機密情報を除いた最小限の図データ、クライアントとブラウザーのバージョン、再現手順を添えてください。
 
 リファレンス（英語）：[証拠の出典](../../skills/q-flow/references/evidence-sources.md) · [図データ形式](../../skills/q-flow/references/graph-schema.md) · [対話による要件確認](../../skills/q-flow/references/guided-intake.md) · [Viewer の開発](../../skills/q-flow/references/viewer-development.md) · [図の構成](../../skills/q-flow/references/visual-contract.md)
 

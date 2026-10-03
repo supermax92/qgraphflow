@@ -15,7 +15,7 @@ import { sequenceEndpointY, sequenceExecutions } from '../assets/viewer/src/sequ
 import { auditLayoutQuality, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileGraphLayout, migrateOwnership, aspectExcess, LAYOUT_VERSION, ASPECT_SLACK } from './compile-layout.mjs';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
-import { writeOutputPair } from './generate-viewer.mjs';
+import { writeOutputs } from './generate-viewer.mjs';
 
 const inputPath = path.resolve(import.meta.dirname, '../../../tests/fixtures/semantic-layout.graph.json');
 const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
@@ -631,6 +631,8 @@ test('the public generator compiles semantic input, preserves validated geometry
   assert.ok(report.quality.every(item => item.semantic.status === 'passed' && item.geometry.status === 'passed' && item.rendering.status === 'not-checked'));
   assert.ok(report.layout.every(item => item.semantics.preserved));
   const graph = fs.readFileSync(path.join(output, 'graph.json')), html = fs.readFileSync(path.join(output, 'index.html'));
+  const listing = fs.readdirSync(output).sort(), svg = fs.readFileSync(path.join(output, 'diagram-9-dataflow.svg'));
+  assert.equal(listing.filter(name => name.endsWith('.svg')).length, 9);
   fs.writeFileSync(source, graph);
   result = run('--layout', 'preserve', '--force'); assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(fs.readFileSync(path.join(output, 'graph.json')), graph);
@@ -641,13 +643,15 @@ test('the public generator compiles semantic input, preserves validated geometry
   assert.match(result.stderr, /does not name a node/);
   assert.deepEqual(fs.readFileSync(path.join(output, 'graph.json')), graph);
   assert.deepEqual(fs.readFileSync(path.join(output, 'index.html')), html);
-  assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
+  assert.deepEqual(fs.readFileSync(path.join(output, 'diagram-9-dataflow.svg')), svg);
+  assert.deepEqual(fs.readdirSync(output).sort(), listing);
 });
 
-test('staging and installation failures restore both outputs and remove temporary files', t => {
+test('staging and installation failures restore every output and remove temporary files', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-output-transaction-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-  const old = { 'graph.json': '{"old":true}', 'index.html': '<html>old</html>', 'snapshot.svg': '<svg/>' }, next = { 'graph.json': '{"new":true}', 'index.html': '<html>new</html>' };
+  const old = { 'graph.json': '{"old":true}', 'index.html': '<html>old</html>', 'diagram-1-architecture.svg': '<svg>old</svg>', 'diagram-3-er.svg': '<svg>stale</svg>', 'snapshot.svg': '<svg/>' };
+  const next = { 'index.html': '<html>new</html>', 'graph.json': '{"new":true}', 'diagram-1-architecture.svg': '<svg>new</svg>' }, stale = ['diagram-3-er.svg', 'snapshot.svg'];
   for (const [name, contents] of Object.entries(old)) fs.writeFileSync(path.join(directory, name), contents);
   for (const method of ['writeFileSync', 'renameSync']) {
     const original = fs[method]; let failed = false, writes = 0;
@@ -656,12 +660,12 @@ test('staging and installation failures restore both outputs and remove temporar
       if (!failed && inject) { failed = true; throw new Error(`injected ${method} failure`); }
       return original(...args);
     };
-    try { assert.throws(() => writeOutputPair(directory, next), /injected/); }
+    try { assert.throws(() => writeOutputs(directory, next, stale), /injected/); }
     finally { fs[method] = original; }
     for (const [name, contents] of Object.entries(old)) assert.equal(fs.readFileSync(path.join(directory, name), 'utf8'), contents);
     assert.deepEqual(fs.readdirSync(directory).sort(), Object.keys(old).sort());
   }
-  writeOutputPair(directory, next);
+  writeOutputs(directory, next, stale);
   for (const [name, contents] of Object.entries(next)) assert.equal(fs.readFileSync(path.join(directory, name), 'utf8'), contents);
   assert.deepEqual(fs.readdirSync(directory).sort(), Object.keys(next).sort());
 });

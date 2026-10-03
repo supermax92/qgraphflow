@@ -10,7 +10,7 @@ Sigue el recorrido. Comprueba las evidencias. Comparte un archivo sin conexión.
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[Instalación por cliente](#guía-de-instalación) · [Informar de un problema](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[Demo en línea](https://supermax92.github.io/qgraphflow/) · [Instalación por cliente](#guía-de-instalación) · [Informar de un problema](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -19,6 +19,14 @@ Sigue el recorrido. Comprueba las evidencias. Comparte un archivo sin conexión.
 *Nueve tipos: arquitectura, flujo, secuencia, ER, despliegue, clases, estados, casos de uso y flujo de datos.*
 
 QGraphFlow genera diagramas de software interactivos a partir del código, los esquemas, la configuración y los requisitos. Permite comprobar las relaciones y compartir el resultado como HTML sin conexión.
+
+**Qué lo distingue:** nueve tipos de diagrama en una sola habilidad, el origen de cada relación, diseño automático, edición en la propia página y ninguna solicitud de red de los scripts del complemento ni del propio Viewer.
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Un solo comando instala la habilidad para Claude Code, Codex, Cursor y Qoder; la instalación como complemento y los demás clientes están en la [guía de instalación](#guía-de-instalación).
 
 - **Explorar:** buscar, ampliar y desplazar el lienzo; consultar responsabilidades y relaciones entrantes y salientes.
 
@@ -40,9 +48,17 @@ La animación superior muestra arquitectura, secuencia y ER durante 1,5 segundos
 
 ## Guía de instalación
 
-Se necesitan Node.js 22 y un cliente compatible con complementos que tenga configurado el acceso al modelo.
+Se necesitan Node.js 22 o posterior y un cliente compatible con complementos que tenga configurado el acceso al modelo.
 
-En [Qoder Desktop](#qoder-desktop), puedes instalar desde el Marketplace y omitir el paso 1.
+### Instalación rápida
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Probado con `skills` 1.7.0 en Claude Code, Codex, Cursor y Qoder. El comando pregunta en qué clientes instalar; `-a claude-code` indica uno directamente y `-g` instala para el usuario en lugar del proyecto actual. La habilidad queda instalada como `q-flow`, sin el prefijo `qgraphflow:` de las instalaciones como complemento de más abajo.
+
+Para instalarla como complemento, seguir los pasos siguientes. En [Qoder Desktop](#qoder-desktop), puedes instalar desde el Marketplace y omitir el paso 1.
 
 ### 1. Descargar el complemento
 
@@ -110,29 +126,18 @@ Comprobar que allí existe `.cursor-plugin/plugin.json`, recargar la ventana y b
 Abrir el proyecto en el cliente, iniciar una sesión nueva y seleccionar la habilidad. Describir la tarea siguiendo los ejemplos de [Inicio rápido](#inicio-rápido) más abajo. Abrir el HTML generado en el navegador.
 
 <details>
-<summary>Otra forma de instalación: GitHub npm</summary>
+<summary>Otra forma de instalación: npm</summary>
 
-También se puede obtener el complemento mediante npm en lugar del ZIP.
-
-GitHub npm requiere un GitHub **Personal access token (classic)** propio con el permiso `read:packages`. Al iniciar sesión, usar el nombre de usuario de GitHub y el token como contraseña.
-
-No compartir el token ni incluirlo en commits. Consultar la [autenticación de GitHub](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry).
-
-```bash
-npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
-npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
-```
-
-Crear un directorio independiente fuera del proyecto de la aplicación:
+También se puede obtener el complemento desde npmjs.com en lugar del ZIP, sin cuenta, inicio de sesión ni token. Crear un directorio independiente fuera del proyecto de la aplicación:
 
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
-cd node_modules/@supermax92/qgraphflow
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-Ahora se está en la raíz del complemento. Continuar con los pasos de instalación del cliente indicados arriba. **La descarga mediante npm no instala automáticamente el complemento en el cliente.**
+Ahora se está en la raíz del complemento. Continuar con los pasos de instalación del cliente indicados arriba. **La descarga mediante npm no instala automáticamente el complemento en el cliente.** El paquete también ofrece el comando `qgraphflow`, que se usa en [Mantener los diagramas sincronizados con el código](#mantener-los-diagramas-sincronizados-con-el-código).
 
 </details>
 
@@ -170,12 +175,14 @@ Sustituir la creación de pedidos y sus pasos por el flujo real del proyecto. Co
 $qgraphflow:q-flow Amplía la reserva de inventario del diagrama anterior en un diagrama de flujo independiente en español, con el tratamiento de éxitos y fallos.
 ```
 
-Los resultados se guardan bajo `docs/qgraphflow/` de forma predeterminada. Abrir `index.html` para explorar, editar y exportar; `graph.json` conserva los datos.
+Los resultados se guardan bajo `docs/qgraphflow/` de forma predeterminada. Abrir `index.html` para explorar, editar y exportar; `graph.json` conserva los datos. Cada vista también se escribe como SVG (`diagram.svg`, o `diagram-<n>-<type>.svg` cuando hay varias), que puede incrustarse como imagen en un README, una pull request o una wiki.
+
+Después de editar en la página, **Más → Guardar cambios** en Chrome o Edge reescribe en su sitio la página, `graph.json` y los SVG, tras elegir una vez la carpeta del diagrama. Otros navegadores solo guardan `graph.json`: colocarlo en la carpeta y volver a generar la página y los SVG con `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
 
 <details>
 <summary>Ejecutar manualmente el ejemplo de comercio con nueve vistas</summary>
 
-Los comandos siguientes ejecutan el ejemplo del repositorio. Usar un complemento ya instalado no requiere clonarlo. Con Node.js 22:
+Los comandos siguientes ejecutan el ejemplo del repositorio. Usar un complemento ya instalado no requiere clonarlo. Con Node.js 22 o posterior:
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
@@ -184,11 +191,41 @@ node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.es.gra
 node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.es.graph.json output/ecommerce-es
 ```
 
-Abrir `output/ecommerce-es/index.html` en el navegador. Cambiar de vista desde **Tipos de diagrama** en la barra superior; cada vista conserva sus textos y posiciones guardados. **Más → Guardar Graph JSON** guarda todas las vistas en un archivo JSON elegido; los navegadores sin guardado de archivos descargan una copia. Recargar el HTML original recupera los datos incrustados. Para volver a abrir las modificaciones, generar desde el JSON guardado en un directorio nuevo.
+Abrir `output/ecommerce-es/index.html` en el navegador; los nueve SVG están al lado. Cambiar de vista desde **Tipos de diagramas** en la barra superior; cada vista conserva sus textos y posiciones guardados. **Más → Guardar cambios** guarda todas las vistas como se describe arriba. Las mismas páginas están en la [demo en línea](https://supermax92.github.io/qgraphflow/).
 
 El Viewer precompilado no necesita instalar dependencias, claves API ni servicios de backend. La búsqueda de evidencias y la creación de gráficos con IA usan el servicio de modelos del cliente elegido.
 
 </details>
+
+## Mantener los diagramas sincronizados con el código
+
+Un diagrama generado con la raíz del repositorio registra dónde se define cada componente. La validación con `--repo-root` falla cuando falta un archivo registrado, un rango de líneas ya no cabe en el archivo o un símbolo registrado salió de sus líneas, y el error indica en qué líneas está ahora el símbolo. Añadir este trabajo a la CI; no necesita compilación, inicio de sesión ni token:
+
+```yaml
+name: Diagrams
+on: [push, pull_request]
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: |
+          for graph in docs/qgraphflow/*/graph.json; do
+            npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }
+          done
+          exit ${failed:-0}
+```
+
+Si falla, pedir a la habilidad que actualice ese diagrama:
+
+```text
+$qgraphflow:q-flow La CI dice que docs/qgraphflow/order-sequence está desactualizado. Actualízalo.
+```
+
+La habilidad mueve los anclajes cuyo símbolo encuentra una sola vez en el archivo, corrige solo los que siguen fallando y vuelve a generar la página y los SVG conservando las posiciones y los textos editados. No redibuja el diagrama.
 
 ## Qué responde cada una de las nueve vistas
 
@@ -214,7 +251,7 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-Se necesitan Node.js 22, npm, tar, zip y unzip. Al informar de un problema, incluir un gráfico mínimo sin datos sensibles, versiones del cliente y navegador y pasos de reproducción.
+Se necesitan Node.js 22 o posterior, npm, tar, zip y unzip. Al informar de un problema, incluir un gráfico mínimo sin datos sensibles, versiones del cliente y navegador y pasos de reproducción.
 
 Documentación de referencia (en inglés): [Fuentes de evidencia](../../skills/q-flow/references/evidence-sources.md) · [Formato de gráficos](../../skills/q-flow/references/graph-schema.md) · [Consulta guiada](../../skills/q-flow/references/guided-intake.md) · [Desarrollo del Viewer](../../skills/q-flow/references/viewer-development.md) · [Composición de diagramas](../../skills/q-flow/references/visual-contract.md)
 

@@ -36,6 +36,7 @@ Read this file plus `types/<diagramType>.md`. Together they are the complete aut
 ## Source anchors
 
 - `source.file` is repository-relative (no `..`, no absolute paths); `lineStart` / `lineEnd` are 1-based and inclusive; `symbol` is optional. The generator checks that the file exists and the range fits when `--repo-root` is passed.
+- `symbol` is the name exactly as written at the definition (`OrderService.createOrder`, `orders`), never a description. With `--repo-root`, its last segment must appear as a whole word inside the range, so a moved, renamed or deleted definition fails validation; `--fix` re-anchors a name found once in its file.
 - Anchor the node to where it is **defined** (class, function, table, service block), not to a call site. Edges carry no anchor of their own; their endpoint nodes do.
 - Omit `source` for external actors, third-party systems and framework-owned runtime components. Never reuse an anchor from an example.
 - Prefer one node per real component. Split by responsibility only when the source does.

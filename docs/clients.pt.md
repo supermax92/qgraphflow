@@ -6,7 +6,15 @@
 
 O Qoder Desktop pode instalar o plugin pelo Marketplace, e o Claude Code diretamente do GitHub (veja as respectivas seções abaixo). Nos dois casos, você pode pular a etapa 1. Para uma instalação local, primeiro baixe o código-fonte do QGraphFlow e gere o pacote de execução.
 
-Você precisa de Node.js 22 e de um cliente com acesso ao modelo configurado. Para compilar a partir do código-fonte, também precisa de Git, npm, `tar`, `zip` e `unzip`.
+Você precisa de Node.js 22 ou posterior e de um cliente com acesso ao modelo configurado. Para compilar a partir do código-fonte, também precisa de Git, npm, `tar`, `zip` e `unzip`.
+
+## Instalação rápida
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Instala a habilidade `q-flow` no Claude Code, Codex, Cursor e Qoder (testado com `skills` 1.7.0) e pergunta em quais clientes instalar. Para instalar o plugin, siga as etapas abaixo.
 
 ## 1. Baixar e gerar o pacote para instalação local
 

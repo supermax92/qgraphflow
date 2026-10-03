@@ -21,7 +21,8 @@ import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js'
 import { sequencePairs, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { moduleColorMap, groupAppearanceMap, nodeAppearance, nodeMetrics, PALETTES, TYPOGRAPHY, isCore, sequenceGroupColor } from '../assets/viewer/src/visual-style.js';
-import { diagramLabels as labels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
+import { diagramLabels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
+import { translate } from '../assets/viewer/src/i18n.js';
 import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
@@ -30,7 +31,9 @@ const [inputDirectory, reportDirectory] = process.argv.slice(2);
 if (!inputDirectory || !reportDirectory) throw new Error('Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY');
 const inputRoot = path.resolve(inputDirectory), outputRoot = path.resolve(reportDirectory);
 const input = JSON.parse(fs.readFileSync(path.join(inputRoot, 'graph.json'), 'utf8'));
-const graphs = (input.diagrams ?? [input]).slice().sort((a, b) => Object.keys(labels).indexOf(a.meta.diagramType) - Object.keys(labels).indexOf(b.meta.diagramType));
+const graphs = (input.diagrams ?? [input]).slice().sort((a, b) => Object.keys(diagramLabels).indexOf(a.meta.diagramType) - Object.keys(diagramLabels).indexOf(b.meta.diagramType));
+// Interface strings are authored in English and shown in the page's language: compare with what the page shows.
+const labels = Object.fromEntries(Object.entries(diagramLabels).map(([type, label]) => [type, translate(graphs[0].meta.locale, label)]));
 const fixtureRoot = process.env.QA_FIXTURE_DIR ? path.resolve(process.env.QA_FIXTURE_DIR) : null;
 const fixtures = fixtureRoot ? fs.readdirSync(fixtureRoot).filter(name => fs.existsSync(path.join(fixtureRoot, name, 'index.html'))).map(name => ({ name, graph: JSON.parse(fs.readFileSync(path.join(fixtureRoot, name, 'graph.json'), 'utf8')) })) : [];
 const filtered = graphs.filter(graph => !process.env.QA_TYPES || process.env.QA_TYPES.split(',').includes(graph.meta.diagramType));
@@ -294,7 +297,7 @@ async function assertLegendLayout(page) {
   assert.equal(await count(page, '.legend'), 1, 'There is one reading legend.');
   assert.equal(await count(page, '.legend-pop .legend'), 1, 'The reading legend lives in the legend popover.');
   assert.equal(await count(page, '.board-head,.toolbar .legend,.nav .legend,.inspector .legend'), 0, 'No board header or duplicate legend remains.');
-  const bounds = await page.getByRole('group', { name: '阅读图例', exact: true }).evaluate(element => {
+  const bounds = await page.getByRole('group', { name: '图例', exact: true }).evaluate(element => {
     const pop = element.closest('.legend-pop').getBoundingClientRect(), anchor = element.closest('.legend-anchor').querySelector('.float-btn').getBoundingClientRect();
     const canvas = document.querySelector('.canvas').getBoundingClientRect(), style = getComputedStyle(element);
     const overlaps = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].filter(control => {
@@ -593,6 +596,8 @@ async function runCase(browser, name, viewport, options, run, extra = false) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: Number(process.env.QA_DPR ?? 1), acceptDownloads: true, reducedMotion: 'no-preference', ...options });
   const traced=!/motion-matrix|motion-preferences|flow-contrast/.test(name);
   if(traced)await context.tracing.start({ screenshots: false, snapshots: false });
+  // Chromium's folder picker would save in place; these cases exercise the save-file and download fallbacks.
+  await context.addInitScript(() => Object.defineProperty(window, 'showDirectoryPicker', { value: undefined, configurable: true }));
   const page = await context.newPage(); page.qaSteps = []; page.setDefaultTimeout(10000); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -695,7 +700,7 @@ async function saveFailureChecks(browser, url, graph) {
           } };
         };
       }, phase);
-      await openMore(page); await menuItem(page, '保存 Graph JSON').click();
+      await openMore(page); await menuItem(page, '保存修改').click();
       await page.waitForFunction(phase => document.querySelector('.toast')?.textContent.includes(phase === 'cancel' ? '已取消保存' : '保存失败'), phase);
       const probe = await page.evaluate(() => window.saveProbe);
       assert.equal(probe.aborted, ['write', 'close'].includes(phase));
@@ -704,7 +709,7 @@ async function saveFailureChecks(browser, url, graph) {
       failures.push({ phase, aborted: probe.aborted, message: await status(page) });
     }
     await page.evaluate(() => { window.showSaveFilePicker = undefined; });
-    await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+    await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
     const savedFile = path.join(outputRoot, 'exports', 'save-failure-recovery.json'); await downloadedFile.saveAs(savedFile);
     assert.deepEqual(JSON.parse(fs.readFileSync(savedFile, 'utf8')), expected, 'Every failed save preserves all current and unrelated model fields.');
     return { failures, savedFile, recovery: 'actual download', injection: 'native API failure substitutes; native success/cancel has separate Mac evidence' };
@@ -738,7 +743,7 @@ async function strictDraftChecks(browser, url, graph) {
       assert.equal(downloads.length, 0, 'Invalid layout does not start an image download.');
     }
     const save = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const item = downloadedFile, file = path.join(outputRoot, 'exports', `${graph.meta.diagramType}-${suffix}.json`); await item.saveAs(file);
       assert.equal(await item.failure(), null); return JSON.parse(fs.readFileSync(file, 'utf8'));
     };
@@ -806,7 +811,7 @@ async function flowDirectionChecks(browser, url, viewport, colorTheme) {
           await page.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('semantic.primary-path'));
           assert.equal(downloads.length, before, 'Horizontal main paths cannot download either image format.');
         }
-        await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+        await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
         const saved = downloadedFile, file = path.join(outputRoot, 'exports', `${suffix}.json`); await saved.saveAs(file);
         assert.equal(await saved.failure(), null);
         assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), graph, 'Rejected image exports retain the complete JSON draft.');
@@ -905,7 +910,7 @@ async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
     await page.goto(url); await chooseGraph(page, graph, mobile(page)); await theme(page, colorTheme);
     const expected = structuredClone(input), current = (expected.diagrams ?? [expected]).find(g => g.meta.diagramType === type);
     const verifyFile = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const download = downloadedFile, file = path.join(outputRoot, 'exports', `${name}-${suffix}.json`); await download.saveAs(file);
       assert.equal(await download.failure(), null); assert.deepEqual(JSON.parse(fs.readFileSync(file)), expected);
       return { path: path.relative(outputRoot, file), sha256: digest(file) };
@@ -1063,7 +1068,7 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
     const ready = async () => { await page.locator('.diagram-node').first().waitFor(); await chooseGraph(page, graph, mobile); await theme(page, colorTheme); await hidePanels(page); await fit(page); };
     const reset = async () => { await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page); };
     const saved = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const file = path.join(outputRoot, 'exports', `${type}-${viewport.width}-${colorTheme}-${suffix}.json`);
       await downloadedFile.saveAs(file); return JSON.parse(fs.readFileSync(file));
     };
@@ -1273,7 +1278,7 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
     await step('I20.03 I20.04 I24.05 I24.06 I24.07', 'Inject native capability/write failures, preserve state and recover using the actual controls', async () => {
       for(const phase of ['write','close']){
         await page.evaluate(phase=>{window.saveAborted=false;window.showSaveFilePicker=async()=>({createWritable:async()=>({write:async()=>{if(phase==='write')throw new Error('write denied');},close:async()=>{throw new Error('close denied');},abort:async()=>{window.saveAborted=true;}})});},phase);
-        await openMore(page);await menuItem(page,'保存 Graph JSON').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('保存失败'));assert.equal(await page.evaluate(()=>window.saveAborted),true);
+        await openMore(page);await menuItem(page,'保存修改').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('保存失败'));assert.equal(await page.evaluate(()=>window.saveAborted),true);
       }
       await page.evaluate(()=>{window.showSaveFilePicker=undefined;window.originalFullscreen=Element.prototype.requestFullscreen;Element.prototype.requestFullscreen=()=>Promise.reject(new Error('Denied'));});await button(page,'进入全屏').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('无法进入全屏'));assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),false);
       await page.evaluate(()=>Element.prototype.requestFullscreen=window.originalFullscreen);await button(page,'进入全屏').click();await fullscreenState(page,true);
@@ -1391,7 +1396,7 @@ async function entrypoints(browser, url, graph) {
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
     const exportCurrentDraft = async suffix => {
       const name = `${graph.meta.diagramType}-${suffix}`, savedFile = path.join(outputRoot, 'exports', name + '.json');
-      await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       await saved.saveAs(savedFile);
       const model = JSON.parse(fs.readFileSync(savedFile, 'utf8'));
       const current = (model.diagrams ?? [model]).find(item => item.meta.diagramType === graph.meta.diagramType);
@@ -1631,7 +1636,7 @@ async function editPersistenceChecks(browser, url) {
       await openMore(page);
       assert.ok(await page.locator('.menu.is-right').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight; }), 'The save action remains inside the viewport.');
       if (suffix === 'edited') await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-save-menu.png`), animations: 'disabled' });
-      const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const downloaded = downloadedFile;
       assert.equal(downloaded.suggestedFilename(), 'graph.json');
       const file = path.join(outputRoot, 'exports', `${viewport.width}-${suffix}.json`);
@@ -1926,7 +1931,8 @@ async function flowContrastChecks(browser, url, graph) {
       }
       let negativeGuard = false;
       if (sequence && checked.length) {
-        const hidden = await page.addStyleTag({ content: '.sequence-edge-flow { opacity: 0 !important; } .flow-edge--sequence.flow-edge--dashed { animation: none !important; }' });
+        // Freeze the one-shot selection glow as well: a pulse still running between the two frames would read as motion.
+        const hidden = await page.addStyleTag({ content: '.sequence-edge-flow { opacity: 0 !important; } .flow-edge--sequence.flow-edge--dashed { animation: none !important; } .selection-feedback * { animation: none !important; }' });
         await assert.rejects(() => sequenceFlowPixels(page, overviewChecked), /no visible sequence motion/);
         await hidden.evaluate(element => element.remove());
         if (checked.some(edge => edge.dashed)) {
@@ -2121,7 +2127,7 @@ async function sequenceReadingChecks(browser, url, graph) {
       await page.locator('.layout-problems').waitFor();
       assert.equal(await labelInput.count(),0,'Saving a draft closes the editor even when its layout needs repair.');
       await openMore(page);
-      const [draftDownload]=await Promise.all([page.waitForEvent('download'),menuItem(page,'保存 Graph JSON').click()]);
+      const [draftDownload]=await Promise.all([page.waitForEvent('download'),menuItem(page,'保存修改').click()]);
       const draftFile=path.join(outputRoot,'exports',`sequence-reading-${page.viewportSize().width}-draft.json`);
       await draftDownload.saveAs(draftFile);
       const draftModel=JSON.parse(fs.readFileSync(draftFile,'utf8'));
@@ -2187,21 +2193,21 @@ async function sequencePersistenceChecks(browser, url, graph) {
       await page.locator('.drawer-body').and(page.locator(`[data-node-id=${JSON.stringify(selected.id)}]`)).waitFor();
     }
     await page.evaluate(()=>{window.__nativePicker=window.showSaveFilePicker;window.showSaveFilePicker=()=>Promise.reject(new DOMException('Canceled by test','AbortError'));});
-    await openMore(page);await menuItem(page,'保存 Graph JSON').click();await page.waitForFunction(()=>document.querySelector('.toast').textContent.includes('已取消保存'));
+    await openMore(page);await menuItem(page,'保存修改').click();await page.waitForFunction(()=>document.querySelector('.toast').textContent.includes('已取消保存'));
     assert.equal(await page.locator('.drawer-body h2').innerText(),selected.label+' QA','Canceled save keeps session changes.');
     await page.evaluate(()=>{window.showSaveFilePicker=undefined;});
     const other=graphs.find(g=>g.meta.diagramType!=='sequence');
     const switchTo=async(g)=>{await dismiss(page);await page.locator('#view-menu-button').click();await page.getByRole('menuitemradio').filter({hasText:labels[g.meta.diagramType]}).click();await page.waitForFunction(label=>document.querySelector('#view-menu-button span')?.textContent===label,labels[g.meta.diagramType]);};
     if(other){await switchTo(other);await openMore(page);await menuItem(page,'重置').click();await switchTo(graph);}
     assert.ok((await nodeElement(page,selected.id).locator('.node-visual title').textContent()).includes('JSON 往返说明'));
-    const download=async(suffix)=>{await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,'保存 Graph JSON').click();const result=await pending,file=path.join(outputRoot,'exports',`sequence-${suffix}.json`);await result.saveAs(file);assert.equal(await result.failure(),null);return file;};
+    const download=async(suffix)=>{await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,'保存修改').click();const result=await pending,file=path.join(outputRoot,'exports',`sequence-${suffix}.json`);await result.saveAs(file);assert.equal(await result.failure(),null);return file;};
     const savedFile=await download('saved'),saved=JSON.parse(fs.readFileSync(savedFile,'utf8')),savedGraph=(saved.diagrams??[saved]).find(g=>g.meta.diagramType==='sequence');
     assert.deepEqual(savedGraph.groups,graph.groups);assert.deepEqual(savedGraph.edges,graph.edges.map(edge=>edge.id===editedEdge?.id?{...edge,label:'配对标签 QA'}:edge));assert.deepEqual(savedGraph.executions,graph.executions);
     assert.equal(savedGraph.nodes[0].label,selected.label+' QA');assert.equal(savedGraph.nodes[0].subtitle,'JSON 往返说明');assert.ok(Math.abs(savedGraph.nodes[0].position.x-position.x)<.001);
     for(let i=1;i<graph.nodes.length;i++)assert.deepEqual(savedGraph.nodes[i],graph.nodes[i]);
     if(other)assert.deepEqual(saved.diagrams.find(g=>g.meta.diagramType===other.meta.diagramType),other,'Reset in another view is isolated.');
     const regenerated=path.join(outputRoot,'sequence-regenerated');
-    const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force'];
+    const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force','--verbose'];
     if(process.env.QA_REPO_ROOT)args.push('--repo-root',process.env.QA_REPO_ROOT);
     const generated=spawnSync(process.execPath,args,{encoding:'utf8'});assert.equal(generated.status,0,generated.stderr);
     await openMore(page);await menuItem(page,'重置').click();const reset=JSON.parse(fs.readFileSync(await download('reset'),'utf8'));assert.deepEqual(reset,input,'Reset restores the input without dropping optional operands.');
@@ -2407,7 +2413,7 @@ async function informationLayoutChecks(browser, url, graph) {
       await searchSelect(page, longLegend, target(longLegend)); await hidePanels(page);
       const selected = await count(page, '.diagram-node.is-selected');
       await openLegend(page);
-      const legend = page.getByRole('group', { name: '阅读图例', exact: true });
+      const legend = page.getByRole('group', { name: '图例', exact: true });
       await legend.click({ position: { x: 8, y: 8 } });
       assert.equal(await count(page, '.legend-pop'), 1, 'Clicking inside the legend keeps its popover open.');
       assert.equal(await count(page, '.diagram-node.is-selected'), selected);

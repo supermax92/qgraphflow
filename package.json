@@ -9,7 +9,14 @@
   },
   "homepage": "https://github.com/supermax92/qgraphflow#readme",
   "bugs": "https://github.com/supermax92/qgraphflow/issues",
+  "bin": {
+    "qgraphflow": "bin/qgraphflow.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
+    "bin/",
     ".codex-plugin/",
     ".claude-plugin/",
     ".qoder-plugin/",
@@ -44,7 +51,9 @@
     "skills/q-flow/assets/viewer/src/layout-measure.js",
     "skills/q-flow/assets/viewer/src/layout-spacing.js",
     "skills/q-flow/assets/viewer/src/session-graph.js",
-    "skills/q-flow/assets/viewer/src/layout-quality.js"
+    "skills/q-flow/assets/viewer/src/layout-quality.js",
+    "skills/q-flow/assets/viewer/src/export-svg.js",
+    "skills/q-flow/assets/viewer/src/node-svg.js"
   ],
   "scripts": {
     "package": "node scripts/package.mjs"

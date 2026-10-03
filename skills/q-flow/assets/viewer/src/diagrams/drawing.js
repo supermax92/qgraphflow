@@ -67,6 +67,15 @@ export function paint(outline, attributes = {}) {
   return outline.map(([tag, geometry]) => `<${tag}${Object.entries({ ...geometry, ...(Object.keys(attributes).length ? { class: 'node-surface' } : {}), ...attributes, ...(geometry.fill === undefined ? {} : { fill: geometry.fill }) }).map(([key, value]) => ` ${key}="${escapeXml(value)}"`).join('')}/>`).join('');
 }
 export const rectangle = (node, x, y, radius = 10, height = node.size.height) => [['rect', { x, y, width: node.size.width, height, rx: radius }]];
+// Flat caps keep the cylinder above the card's chip row (y + 13) and well below its last text baseline (h - 21); the
+// 2px top and bottom insets are where edges attach.
+export const cylinder = (node, x, y) => {
+  const { width: w, height: h } = node.size, ry = 5, top = y + 2 + ry, bottom = y + h - 2 - ry;
+  return [
+    ['path', { d: `M${x + 12} ${top}Q${x + 12} ${y + 2} ${x + w / 2} ${y + 2}T${x + w - 12} ${top}V${bottom}Q${x + w - 12} ${y + h - 2} ${x + w / 2} ${y + h - 2}T${x + 12} ${bottom}Z` }],
+    ['ellipse', { cx: x + w / 2, cy: top, rx: w / 2 - 12, ry, fill: 'none' }]
+  ];
+};
 export const diamond = (node, x, y) => [['polygon', { points: `${x + node.size.width / 2},${y} ${x + node.size.width},${y + node.size.height / 2} ${x + node.size.width / 2},${y + node.size.height} ${x},${y + node.size.height / 2}` }]];
 export const actor = (node, x, y) => {
   const cx = x + node.size.width / 2;

@@ -30,6 +30,57 @@ test('the distributed package declares and ships its license notices', t => {
   assert.ok(standaloneViewer.includes(notices), 'Standalone viewer must embed the complete third-party notices');
 });
 
+test('the qgraphflow command forwards to the skill scripts with identical output and exit codes', t => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-cli-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const cli = (...args) => spawnSync(process.execPath, [path.join(root, 'bin/qgraphflow.mjs'), ...args], { cwd: temp, encoding: 'utf8' });
+  const direct = (script, ...args) => spawnSync(process.execPath, [path.join(root, 'skills/q-flow/scripts', script), ...args], { cwd: temp, encoding: 'utf8' });
+  const pkg = readJson(path.join(root, 'package.json'));
+  assert.deepEqual(pkg.bin, { qgraphflow: 'bin/qgraphflow.mjs' });
+  assert.deepEqual(pkg.engines, { node: '>=22' });
+  for (const args of [[], ['--help'], ['-h']]) {
+    const help = cli(...args);
+    assert.equal(help.status, 0); assert.match(help.stdout, /^Usage: qgraphflow <command>/); assert.match(help.stdout, /validate/); assert.match(help.stdout, /generate/);
+  }
+  const unknown = cli('draw');
+  assert.equal(unknown.status, 2); assert.match(unknown.stderr, /^Usage: qgraphflow <command>/);
+  const valid = path.join(root, 'examples/order-flow.graph.json'), invalid = path.join(temp, 'invalid.json');
+  fs.writeFileSync(invalid, JSON.stringify({ meta: { title: 'Broken', sourceRef: 'test' }, nodes: [{ id: 'a', label: 'A', kind: 'unknown' }], edges: [] }));
+  for (const args of [[valid, '--input-only'], [valid], [invalid, '--input-only'], ['--help']]) {
+    const forwarded = cli('validate', ...args), expected = direct('validate-graph.mjs', ...args);
+    assert.deepEqual([forwarded.status, forwarded.stdout, forwarded.stderr], [expected.status, expected.stdout, expected.stderr], args.join(' '));
+  }
+  assert.equal(direct('validate-graph.mjs', invalid, '--input-only').status, 1);
+  const generated = cli('generate', valid, path.join(temp, 'out'));
+  assert.equal(generated.status, 0, generated.stderr);
+  assert.deepEqual(fs.readdirSync(path.join(temp, 'out')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
+  assert.match(cli('generate', valid, path.join(temp, 'out')).stderr, /Refusing to overwrite/);
+});
+
+test('the npmjs job publishes the verified Release tarball through trusted publishing, never a stored token', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8');
+  const job = workflow.split('\n  npmjs:\n')[1];
+  assert.ok(job, 'The npm workflow has an npmjs job');
+  for (const line of [
+    'id-token: write', 'registry-url: https://registry.npmjs.org', '(cd release && sha256sum --check --strict SHA256SUMS)',
+    'npm publish "release/qgraphflow-$VERSION.tgz" --provenance --access public',
+    'npm pack "qgraphflow@$VERSION"', 'cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"',
+    'npx -y "qgraphflow@$VERSION" validate examples/order-flow.graph.json --input-only', 'npx -y "qgraphflow@$VERSION" generate examples/order-flow.graph.json'
+  ]) assert.ok(job.includes(line), line);
+  assert.doesNotMatch(workflow, /NPM_TOKEN|secrets\./, 'No stored npm token');
+  assert.doesNotMatch(job, /NODE_AUTH_TOKEN|packages: write/);
+  assert.ok(fs.existsSync(path.join(root, 'examples/order-flow.graph.json')));
+});
+
+test('the npm workflow verifies a version already on npmjs.com instead of publishing it again, and prefills no version', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8');
+  const job = workflow.split('\n  npmjs:\n')[1];
+  const check = job.indexOf('npm view "qgraphflow@$VERSION" version'), publish = job.indexOf('npm publish "release/');
+  assert.ok(check > 0 && check < publish, 'The npmjs job checks npmjs.com before publishing');
+  assert.ok(job.indexOf('cmp "release/qgraphflow-$VERSION.tgz"') > publish, 'The download comparison still follows the publish step');
+  assert.doesNotMatch(workflow.split('\njobs:\n')[0], /^\s+default:/m, 'An old prefilled version could be published by accident');
+});
+
 test('the distributed plugin runs independently from its installed location', t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-package-'));
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
@@ -88,7 +139,8 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/scripts/generate-viewer.mjs', 'skills/q-flow/scripts/validate-graph.mjs',
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
-    'README.md', ...guides, 'examples/order-flow.graph.json'
+    'skills/q-flow/assets/viewer/src/export-svg.js', 'skills/q-flow/assets/viewer/src/node-svg.js',
+    'README.md', ...guides, 'examples/order-flow.graph.json', 'bin/qgraphflow.mjs'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
   assert.ok(!files.has('examples/showcase/kafka.en.graph.json'), 'sample collections stay in the repository; the package ships one smoke example');
   assert.ok(!files.has('examples/sequence-execution.graph.json'));
@@ -132,6 +184,9 @@ test('the distributed plugin runs independently from its installed location', t 
       assert.deepEqual(fs.readFileSync(path.join(plugin, file)), fs.readFileSync(path.join(root, file)), file);
     }
   }
+  const installedManifest = readJson(path.join(plugin, 'package.json'));
+  assert.deepEqual([installedManifest.bin, installedManifest.engines], [pkg.bin, pkg.engines], 'npx and npm resolve the command and the Node range');
+  assert.match(run(process.execPath, ['bin/qgraphflow.mjs', 'validate', 'examples/order-flow.graph.json', '--input-only'], plugin), /"valid":true/);
   const graphPath = path.join(temp, '输入 graph.json');
   fs.copyFileSync(path.join(plugin, 'examples/order-flow.graph.json'), graphPath);
   const scripts = path.join(plugin, 'skills/q-flow/scripts');
@@ -139,7 +194,7 @@ test('the distributed plugin runs independently from its installed location', t 
   const output = path.join(temp, '项目输出');
   const args = [path.join(scripts, 'generate-viewer.mjs'), graphPath, output];
   run(process.execPath, args, temp);
-  assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
+  assert.deepEqual(fs.readdirSync(output).sort(), ['diagram.svg', 'graph.json', 'index.html'], 'the installed package renders SVG without a build');
   run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(root, 'examples/showcase/kafka.en.graph.json'), path.join(temp, 'kafka')], temp);
   assert.equal(readJson(path.join(temp, 'kafka/graph.json')).diagrams.length, 9);
   const before = fs.readdirSync(output).map(file => fs.readFileSync(path.join(output, file)));
@@ -201,5 +256,5 @@ test('the distributed plugin runs independently from its installed location', t 
     if (file !== 'package.json') assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), originalRuntime.get(file), file);
   }
   run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(npmPlugin, 'examples/order-flow.graph.json'), path.join(temp, 'npm-graph')], temp);
-  assert.deepEqual(fs.readdirSync(path.join(temp, 'npm-graph')).sort(), ['graph.json', 'index.html']);
+  assert.deepEqual(fs.readdirSync(path.join(temp, 'npm-graph')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
 });
