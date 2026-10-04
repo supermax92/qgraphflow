@@ -67,6 +67,8 @@ test('the npmjs job publishes the verified Release tarball through trusted publi
     'npm pack "qgraphflow@$VERSION"', 'cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"',
     'npx -y "qgraphflow@$VERSION" validate examples/order-flow.graph.json --input-only', 'npx -y "qgraphflow@$VERSION" generate examples/order-flow.graph.json'
   ]) assert.ok(job.includes(line), line);
+  const away = job.indexOf('cd "$RUNNER_TEMP/npx"'), npx = job.indexOf('npx -y "qgraphflow@$VERSION"');
+  assert.ok(away > 0 && away < npx, 'npx runs outside the checkout, whose own package.json would shadow the registry package');
   assert.doesNotMatch(workflow, /NPM_TOKEN|secrets\./, 'No stored npm token');
   assert.doesNotMatch(job, /NODE_AUTH_TOKEN|packages: write/);
   assert.ok(fs.existsSync(path.join(root, 'examples/order-flow.graph.json')));

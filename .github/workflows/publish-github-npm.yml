@@ -119,6 +119,9 @@ jobs:
           mkdir downloaded
           for attempt in 1 2 3 4 5 6; do npm pack "qgraphflow@$VERSION" --ignore-scripts --pack-destination downloaded && break; sleep 10; done
           cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"
+          # Run npx outside the checkout: its package.json is qgraphflow@$VERSION itself, which npx would take for an
+          # installed copy, skipping the registry and failing with "qgraphflow: not found".
+          mkdir -p "$RUNNER_TEMP/npx/examples" && cp examples/order-flow.graph.json "$RUNNER_TEMP/npx/examples/" && cd "$RUNNER_TEMP/npx"
           npx -y "qgraphflow@$VERSION" validate --help
           npx -y "qgraphflow@$VERSION" validate examples/order-flow.graph.json --input-only
           npx -y "qgraphflow@$VERSION" generate examples/order-flow.graph.json output/npmjs
