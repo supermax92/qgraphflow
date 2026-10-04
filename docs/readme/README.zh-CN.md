@@ -10,7 +10,7 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[在线演示](https://supermax92.github.io/qgraphflow/) · [客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -19,6 +19,14 @@
 *支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
+
+**差异在哪：** 一个技能覆盖九类图，每条关系都标明出处，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+一条命令即可为 Claude Code、Codex、Cursor 和 Qoder 装好技能；以插件方式安装和其他客户端见[安装指南](#安装指南)。
 
 - **探索：** 搜索定位、缩放和平移画布，查看组件职责与上下游关系。
 
@@ -40,13 +48,21 @@ QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，
 
 ## 安装指南
 
-准备 Node.js 22，以及已配置好模型访问、支持插件功能的客户端。
+准备 Node.js 22 及以上版本，以及已配置好模型访问、支持插件功能的客户端。
 
-[Qoder Desktop](#qoder-desktop) 可直接从插件商城安装，跳过第 1 步。
+### 快速安装
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+已用 `skills` 1.7.0 在 Claude Code、Codex、Cursor 和 Qoder 上实测。命令会询问装到哪些客户端；`-a claude-code` 可直接指定，`-g` 改为装到当前用户而不是当前项目。这样装上的技能名是 `q-flow`，不带下文插件安装方式里的 `qgraphflow:` 前缀。
+
+如需以插件方式安装，按以下步骤操作。[Qoder Desktop](#qoder-desktop) 可直接从插件商城安装，跳过第 1 步。
 
 ### 1. 下载插件
 
-下载 [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip)，解压到独立目录，保留隐藏文件。
+下载 [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip)，解压到独立目录，保留隐藏文件。
 
 以下终端命令均在**解压后包含 `skills/` 的插件根目录**执行。
 
@@ -110,27 +126,18 @@ qodercli plugins install .
 在客户端打开你的业务项目，新建会话并选择技能，按下方[快速使用](#快速使用)中的示例描述需求。生成后，用浏览器打开输出的 HTML。
 
 <details>
-<summary>其他安装方式：GitHub npm</summary>
+<summary>其他安装方式：npm</summary>
 
-不使用 ZIP 时，也可以通过 npm 获取插件。
-
-GitHub npm 需要使用你自己的 GitHub **Personal access token（classic）**，授予 `read:packages` 权限。登录时，用户名填写你的 GitHub 用户名，密码填写令牌。不要分享令牌或将其提交到仓库。参见 [GitHub 认证说明](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry)。
-
-```bash
-npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
-npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
-```
-
-在业务项目之外创建独立目录：
+不使用 ZIP 时，也可以从 npmjs.com 获取插件，无需账号、登录或令牌。在业务项目之外创建独立目录：
 
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
-cd node_modules/@supermax92/qgraphflow
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-此时已进入插件根目录，继续执行上面的客户端安装步骤。**npm 下载不会自动完成客户端安装。**
+此时已进入插件根目录，继续执行上面的客户端安装步骤。**npm 下载不会自动完成客户端安装。** 这个包还提供 `qgraphflow` 命令，[让图和代码保持同步](#让图和代码保持同步)一节会用到。
 
 </details>
 
@@ -168,14 +175,16 @@ $qgraphflow:q-flow 分析订单创建流程，生成中文时序图，展示价�
 $qgraphflow:q-flow 展开上一张图中的库存预占步骤，单独生成中文流程图，展示成功与失败的处理流程。
 ```
 
-结果默认保存在 `docs/qgraphflow/` 下：打开 `index.html` 即可交互查看、编辑和导出，`graph.json` 保留图数据。
+结果默认保存在 `docs/qgraphflow/` 下：打开 `index.html` 即可交互查看、编辑和导出，`graph.json` 保留图数据。每个视图还会写出一份 SVG（`diagram.svg`，多视图时为 `diagram-<n>-<type>.svg`），可以直接作为图片嵌进 README、PR 或 Wiki。
+
+在页面里编辑后，用 Chrome 或 Edge 执行「更多 → 保存修改」并选一次图所在的文件夹，即可原地重写页面、`graph.json` 和 SVG。其他浏览器只能保存 `graph.json`：把它放回该文件夹，再用 `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` 重新生成页面和 SVG。
 
 <details>
 <summary>手动运行示例：复杂电商九类图</summary>
 
 以下命令仅用于运行仓库自带示例，使用已安装的插件无需克隆本仓库。
 
-准备 Node.js 22，克隆仓库并执行：
+准备 Node.js 22 及以上版本，克隆仓库并执行：
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
@@ -184,11 +193,41 @@ node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.zh-CN.
 node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN.graph.json output/ecommerce-zh-CN
 ```
 
-用浏览器打开 `output/ecommerce-zh-CN/index.html`，在顶部工具栏的「图类型」菜单切换视图。切换图类型会保留各图已保存的文字和位置。通过「更多 → 保存 Graph JSON」保存全部视图：支持的浏览器可选择 JSON 文件写入，其他浏览器下载副本。刷新原 HTML 仍会恢复页面内嵌数据；要重新打开修改后的模型，请用保存的 JSON 生成到新目录。
+用浏览器打开 `output/ecommerce-zh-CN/index.html`，九个 SVG 就在同一目录。在顶部工具栏的「图类型」菜单切换视图，切换图类型会保留各图已保存的文字和位置。「更多 → 保存修改」按上文所述保存全部视图。同样的页面也在[在线演示](https://supermax92.github.io/qgraphflow/)里。
 
 使用预构建 Viewer 生成页面，无需安装依赖、API Key 或后端服务。让 AI 取证并编写图数据时，使用所选客户端的模型服务。
 
 </details>
+
+## 让图和代码保持同步
+
+带仓库根目录生成的图会记下每个组件定义在哪里。用 `--repo-root` 校验时，记录的文件不在了、行号超出文件，或记录的符号离开了原来的行范围，校验都会失败，并在错误里写出这个符号现在所在的行。把下面这个任务加进 CI，不需要构建、登录或令牌：
+
+```yaml
+name: Diagrams
+on: [push, pull_request]
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: |
+          for graph in docs/qgraphflow/*/graph.json; do
+            npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }
+          done
+          exit ${failed:-0}
+```
+
+失败后，让技能刷新这张图：
+
+```text
+$qgraphflow:q-flow CI 提示 docs/qgraphflow/order-sequence 的图过时了，刷新一下。
+```
+
+技能会把在文件里只找到一处的符号重新定位，只修改仍然报错的锚点，再保留你调整过的位置和文字，重新生成页面和 SVG；不会重画整张图。
 
 ## 九类图各自回答什么
 
@@ -214,7 +253,7 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-开发需要 Node.js 22、npm、tar、zip 和 unzip。反馈问题时，请附最小脱敏图数据、客户端和浏览器版本，以及复现步骤。
+开发需要 Node.js 22 及以上版本、npm、tar、zip 和 unzip。反馈问题时，请附最小脱敏图数据、客户端和浏览器版本，以及复现步骤。
 
 参考文档（英文）：[证据来源](../../skills/q-flow/references/evidence-sources.md) · [图数据格式](../../skills/q-flow/references/graph-schema.md) · [需求引导](../../skills/q-flow/references/guided-intake.md) · [Viewer 开发与验收](../../skills/q-flow/references/viewer-development.md) · [图形表达约定](../../skills/q-flow/references/visual-contract.md)
 

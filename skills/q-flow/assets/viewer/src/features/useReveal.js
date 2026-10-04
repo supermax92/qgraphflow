@@ -1,10 +1,7 @@
 import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import { appleEase } from './useGraphLayout.js';
 import { createEdgeRoutes, occupiedBox } from '../edge-routing.js';
-import { readingRect, readingViewport } from '../reading-area.js';
-
-const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12;
+import { appleEase, readingRect, readingViewport, TOOLBAR, SIDE, GUTTER, BREATH } from '../reading-area.js';
 
 // When a floating panel opens over the selected node, pan just far enough to uncover it — never re-zoom, never move
 // when nothing is hidden, and never on narrow screens where a panel is the whole width. Mirrors --tb-h, --side-w and

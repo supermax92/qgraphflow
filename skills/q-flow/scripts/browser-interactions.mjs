@@ -4,8 +4,6 @@
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
 // Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_WIDTHS (matrix only), QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1,
 // QA_EXTRAS=none|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|sequence-reading|file-url, QA_FIXTURE_DIR.
-// QA_REUSE_PASSED=REPORT reuses completed same-build cases with intact attachments; failures rerun.
-// QA_COVERAGE_ONLY=1 QA_MERGE_REPORTS=REPORT,... QA_HOST_EVIDENCE=RECEIPT QA_FULL_ACCEPTANCE=1 checks the complete evidence gate.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -21,7 +19,8 @@ import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js'
 import { sequencePairs, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { moduleColorMap, groupAppearanceMap, nodeAppearance, nodeMetrics, PALETTES, TYPOGRAPHY, isCore, sequenceGroupColor } from '../assets/viewer/src/visual-style.js';
-import { diagramLabels as labels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
+import { diagramLabels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
+import { translate } from '../assets/viewer/src/i18n.js';
 import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
@@ -30,40 +29,18 @@ const [inputDirectory, reportDirectory] = process.argv.slice(2);
 if (!inputDirectory || !reportDirectory) throw new Error('Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY');
 const inputRoot = path.resolve(inputDirectory), outputRoot = path.resolve(reportDirectory);
 const input = JSON.parse(fs.readFileSync(path.join(inputRoot, 'graph.json'), 'utf8'));
-const graphs = (input.diagrams ?? [input]).slice().sort((a, b) => Object.keys(labels).indexOf(a.meta.diagramType) - Object.keys(labels).indexOf(b.meta.diagramType));
+const graphs = (input.diagrams ?? [input]).slice().sort((a, b) => Object.keys(diagramLabels).indexOf(a.meta.diagramType) - Object.keys(diagramLabels).indexOf(b.meta.diagramType));
+// Interface strings are authored in English and shown in the page's language: compare with what the page shows.
+const labels = Object.fromEntries(Object.entries(diagramLabels).map(([type, label]) => [type, translate(graphs[0].meta.locale, label)]));
 const fixtureRoot = process.env.QA_FIXTURE_DIR ? path.resolve(process.env.QA_FIXTURE_DIR) : null;
 const fixtures = fixtureRoot ? fs.readdirSync(fixtureRoot).filter(name => fs.existsSync(path.join(fixtureRoot, name, 'index.html'))).map(name => ({ name, graph: JSON.parse(fs.readFileSync(path.join(fixtureRoot, name, 'graph.json'), 'utf8')) })) : [];
 const filtered = graphs.filter(graph => !process.env.QA_TYPES || process.env.QA_TYPES.split(',').includes(graph.meta.diagramType));
 const viewports = [{ width: 1440, height: 900 }, { width: 1920, height: 1080 }, { width: 390, height: 844 }];
 const matrixViewports = viewports.filter(viewport => !process.env.QA_WIDTHS || process.env.QA_WIDTHS.split(',').includes(String(viewport.width)));
 const digest = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const report = { startedAt: new Date().toISOString(), build: { htmlSha256: digest(path.join(inputRoot, 'index.html')), graphSha256: digest(path.join(inputRoot, 'graph.json')), runnerSha256: digest(import.meta.filename) }, environment: { platform: os.platform(), release: os.release(), arch: os.arch(), node: process.version, options: Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('QA_'))) }, cases: [], extra: [], exports: [], failures: [] };
+const report = { startedAt: new Date().toISOString(), environment: { platform: os.platform(), release: os.release(), arch: os.arch(), node: process.version, options: Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('QA_'))) }, cases: [], extra: [], exports: [], failures: [] };
 for (const directory of ['', 'screens', 'exports', 'failures', 'traces', 'steps']) fs.mkdirSync(path.join(outputRoot, directory), { recursive: true });
 const writeReport = () => fs.writeFileSync(path.join(outputRoot, 'browser-interactions-report.json'), JSON.stringify(report, null, 2) + '\n');
-function relocateEvidence(item, base) {
-  const relative = value => value ? path.relative(outputRoot, path.resolve(base, value)) : undefined;
-  const prefix = `${item.type ?? item.name.split('-')[0]}-${item.width}-${item.theme ?? (item.name.includes('-dark-') ? 'dark' : 'light')}-`;
-  const files = item.files ?? (fs.existsSync(path.join(base, 'exports')) ? fs.readdirSync(path.join(base, 'exports')).filter(name => name.startsWith(prefix)).map(name => ({ path: 'exports/' + name, sha256: digest(path.join(base, 'exports', name)) })) : []);
-  return { ...item, trace: relative(item.trace), video: relative(item.video), pixelFrames: item.pixelFrames?.map(relative), files: files.map(file => ({ ...file, path: relative(file.path) })), steps: item.steps?.map(step => ({ ...step, screenshot: relative(step.screenshot), files: step.files?.map(file => ({ ...file, path: relative(file.path) })) })) };
-}
-// Reuse only completed cases from the same build; interrupted/failed cases still run normally.
-if (process.env.QA_REUSE_PASSED) {
-  const file = path.resolve(process.env.QA_REUSE_PASSED), source = JSON.parse(fs.readFileSync(file));
-  assert.notEqual(path.dirname(file), outputRoot, 'Keep the previous report immutable.');
-  assert.equal(source.build.htmlSha256, report.build.htmlSha256, 'Reused HTML version mismatch');
-  assert.equal(source.build.graphSha256, report.build.graphSha256, 'Reused graph version mismatch');
-  assert.equal(Number(source.environment?.options?.QA_DPR ?? 1), Number(process.env.QA_DPR ?? 1), 'Reused device pixel ratio mismatch');
-  assert.ok(source.finishedAt && source.browserClosed && source.serverClosed, 'Previous run must have closed its resources.');
-  report.reusedRun = { report: path.relative(outputRoot, file), sha256: digest(file), build: source.build, failures: source.failures };
-  for (const section of ['cases', 'extra']) for (const item of source[section].filter(item => item.passed)) {
-    const relocated = { ...relocateEvidence(item, path.dirname(file)), sourceReport: report.reusedRun.report };
-    const evidence = [relocated.trace, relocated.video, ...(relocated.pixelFrames ?? []), ...(relocated.steps ?? []).map(step => step.screenshot)].filter(Boolean);
-    const complete = evidence.length && evidence.every(attachment => fs.existsSync(path.resolve(outputRoot, attachment))) && relocated.files.every(attachment => fs.existsSync(path.resolve(outputRoot, attachment.path)) && digest(path.resolve(outputRoot, attachment.path)) === attachment.sha256);
-    if (!complete) { console.log('RERUN', item.name, 'incomplete prior evidence'); continue; }
-    report[section].push(relocated);
-  }
-  report.exports.push(...source.exports);
-}
 const require = createRequire(import.meta.url);
 function playwright() {
   if (process.env.PLAYWRIGHT_MODULE) return require(process.env.PLAYWRIGHT_MODULE);
@@ -294,7 +271,7 @@ async function assertLegendLayout(page) {
   assert.equal(await count(page, '.legend'), 1, 'There is one reading legend.');
   assert.equal(await count(page, '.legend-pop .legend'), 1, 'The reading legend lives in the legend popover.');
   assert.equal(await count(page, '.board-head,.toolbar .legend,.nav .legend,.inspector .legend'), 0, 'No board header or duplicate legend remains.');
-  const bounds = await page.getByRole('group', { name: '阅读图例', exact: true }).evaluate(element => {
+  const bounds = await page.getByRole('group', { name: '图例', exact: true }).evaluate(element => {
     const pop = element.closest('.legend-pop').getBoundingClientRect(), anchor = element.closest('.legend-anchor').querySelector('.float-btn').getBoundingClientRect();
     const canvas = document.querySelector('.canvas').getBoundingClientRect(), style = getComputedStyle(element);
     const overlaps = [...document.querySelectorAll('.react-flow__controls,.react-flow__minimap')].filter(control => {
@@ -456,14 +433,13 @@ async function assertNodeDrawing(page, graph, colorTheme) {
       const b = element.getBBox(), style = getComputedStyle(element);
       return { text: element.textContent, cls: element.getAttribute('class'), font: parseFloat(style.fontSize), fill: style.fill, opacity: Number(style.opacity), x: b.x, y: b.y, width: b.width, height: b.height };
     }));
-    const compact = getDiagram(graph.meta.diagramType).cardLayout && node.size.height < 100;
     for (const text of texts) {
-      const metrics = nodeMetrics(node, graph.meta.diagramType);
+      const metrics = nodeMetrics(node);
       const neutralRow = (graph.meta.diagramType === 'er' && text.y >= metrics.erHeaderHeight) || (graph.meta.diagramType === 'class' && text.y >= metrics.classHeaderHeight);
       const background = colorChannels(neutralRow ? palette.surface2 : ['actor', 'initial', 'final'].includes(node.kind) ? palette.surface : nodeAppearance(node, palette, moduleColors).fill);
       const color = colorChannels(text.fill).map((value, index) => value * text.opacity + background[index] * (1 - text.opacity));
       assert.ok(colorContrast(color, background) >= 4.5, `Rendered text contrast: ${node.id} ${text.text}`);
-      if (!compact) assert.ok(text.font >= TYPOGRAPHY.small, `Readable shared typography: ${node.id} ${text.cls}`);
+      assert.ok(text.font >= TYPOGRAPHY.small, `Readable shared typography: ${node.id} ${text.cls}`);
       assert.ok(text.x >= -1 && text.y >= -1 && text.x + text.width <= node.size.width + 1 && text.y + text.height <= node.size.height + 1, `Node text stays inside its authored bounds: ${node.id} ${text.text}`);
       if (['title', 'shape-title', 'participant-title', 'entity-title'].includes(text.cls)) {
         const color = palette.ink;
@@ -483,9 +459,11 @@ async function download(page, format, name) {
   assert.equal(await result.failure(), null); assert.ok(fs.statSync(filename).size > 300); return filename;
 }
 function points(d) {
-  const tokens = d.match(/[MHVL]|[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi), result = []; let x = 0, y = 0;
+  const tokens = d.match(/[MHVLC]|[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi), result = []; let x = 0, y = 0;
   for (let index = 0; index < tokens.length;) {
     const command = tokens[index++];
+    // A cubic (a self-transition arc) contributes both control points and its end, so page and export arcs are compared whole.
+    if (command === 'C') { for (let k = 0; k < 3; k++) { x = +tokens[index++]; y = +tokens[index++]; result.push({ x, y }); } continue; }
     if (command === 'M' || command === 'L') { x = +tokens[index++]; y = +tokens[index++]; }
     else if (command === 'H') x = +tokens[index++]; else if (command === 'V') y = +tokens[index++]; else throw Error(`Unsupported route command ${command}`);
     result.push({ x, y });
@@ -589,10 +567,11 @@ async function exportsMatch(page, graph, name) {
 }
 async function runCase(browser, name, viewport, options, run, extra = false) {
   if (extra && process.env.QA_EXTRAS && !process.env.QA_EXTRAS.split(',').some(value => name === value || name.endsWith('-' + value))) return;
-  if ((extra ? report.extra : report.cases).some(item => item.name === name && item.passed)) { console.log('REUSE', name); return; }
   const context = await browser.newContext({ viewport, deviceScaleFactor: Number(process.env.QA_DPR ?? 1), acceptDownloads: true, reducedMotion: 'no-preference', ...options });
   const traced=!/motion-matrix|motion-preferences|flow-contrast/.test(name);
   if(traced)await context.tracing.start({ screenshots: false, snapshots: false });
+  // Chromium's folder picker would save in place; these cases exercise the save-file and download fallbacks.
+  await context.addInitScript(() => Object.defineProperty(window, 'showDirectoryPicker', { value: undefined, configurable: true }));
   const page = await context.newPage(); page.qaSteps = []; page.setDefaultTimeout(10000); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -601,7 +580,7 @@ async function runCase(browser, name, viewport, options, run, extra = false) {
     (extra ? report.extra : report.cases).push({ name, ...viewport, ...evidence, steps: page.qaSteps, trace: traced ? `traces/${name}.zip` : undefined, passed: true }); console.log('PASS', name);
   } catch (error) {
     await page.screenshot({ path: path.join(outputRoot, 'failures', name + '.png'), animations: 'disabled' }).catch(() => {});
-    (extra ? report.extra : report.cases).push({ name, ...viewport, steps: page.qaSteps, failedOperations: page.qaPending, trace: traced ? `traces/${name}.zip` : undefined, passed: false, error: error.message });
+    (extra ? report.extra : report.cases).push({ name, ...viewport, steps: page.qaSteps, trace: traced ? `traces/${name}.zip` : undefined, passed: false, error: error.message });
     report.failures.push({ name, message: error.message, stack: error.stack, console: errors }); console.error('FAIL', name, error.stack);
   } finally { try { if(traced)await context.tracing.stop({ path: path.join(outputRoot, 'traces', name + '.zip') }); } finally { await context.close(); writeReport(); } }
 }
@@ -616,7 +595,7 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
       ...(graph.meta.diagramType === 'sequence' && graph.groups?.some(group => group.operands?.length) ? [['missing-operand-guard', /文字未完整显示/], ['guard-outside-safe-area', /文字超出安全区/]] : []),
       ...(graph.meta.diagramType === 'er' ? [['missing-crowfoot', /基数标记缺失/], ['crowfoot-outside-safe-area', /基数标记越界/]] : []),
       ['context', /无法创建 PNG 画布/], ['blank', /空白 PNG/],
-      ['blob', /未能生成 PNG/], ['decode', /injected PNG decode failure/],
+      ['blob', /未能生成 PNG/],
       ['limit', /PNG 导出上限/], ['glyph', /文字越界|安全区/],
       ...([...createEdgeRoutes(graph).values()].some(route => route.label) ? [['edge-overflow', /文字越界|关系文字超出安全区/], ['missing-edge-text', /关系文字未完整显示/]] : []),
       ...(graph.edges.some(edge => Object.values(edgeMarkers(edge, graph.meta.diagramType)).some(Boolean)) ? [['oversized-marker', /关系标记越界或遮挡/], ['missing-marker', /关系标记缺失/]] : [])
@@ -624,18 +603,17 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
     for (const [mode, expected] of failures) {
       await page.evaluate(mode => {
         const originals = { getContext: HTMLCanvasElement.prototype.getContext, drawImage: CanvasRenderingContext2D.prototype.drawImage,
-          toBlob: HTMLCanvasElement.prototype.toBlob, createImageBitmap: window.createImageBitmap,
+          toBlob: HTMLCanvasElement.prototype.toBlob,
           naturalWidth: Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'naturalWidth'), getBBox: SVGGraphicsElement.prototype.getBBox, parse: DOMParser.prototype.parseFromString };
         window.restoreExportProbe = () => {
           HTMLCanvasElement.prototype.getContext = originals.getContext; CanvasRenderingContext2D.prototype.drawImage = originals.drawImage;
-          HTMLCanvasElement.prototype.toBlob = originals.toBlob; window.createImageBitmap = originals.createImageBitmap;
+          HTMLCanvasElement.prototype.toBlob = originals.toBlob;
           Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', originals.naturalWidth); SVGGraphicsElement.prototype.getBBox = originals.getBBox;
           DOMParser.prototype.parseFromString = originals.parse;
         };
         if (mode === 'context') HTMLCanvasElement.prototype.getContext = () => null;
         if (mode === 'blank') CanvasRenderingContext2D.prototype.drawImage = () => {};
         if (mode === 'blob') HTMLCanvasElement.prototype.toBlob = callback => callback(null);
-        if (mode === 'decode') window.createImageBitmap = async () => { throw new Error('injected PNG decode failure'); };
         if (mode === 'limit') Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', { configurable: true, get: () => 40000 });
         if (mode === 'glyph') SVGGraphicsElement.prototype.getBBox = function () { const box = originals.getBBox.call(this); return this.tagName === 'text' ? { ...box, x: box.x, y: box.y, width: 1e6, height: box.height } : box; };
         if (['edge-overflow', 'missing-edge-text', 'oversized-marker', 'missing-marker', 'missing-group-heading', 'missing-operand-guard', 'guard-outside-safe-area', 'missing-crowfoot', 'crowfoot-outside-safe-area'].includes(mode)) DOMParser.prototype.parseFromString = function (source, type) {
@@ -663,13 +641,13 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
         await openMore(page); await menuItem(page, `导出 ${format}`).click();
         await page.waitForFunction(source => new RegExp(source).test(document.querySelector('.toast')?.textContent), expected.source);
         assert.equal(downloads.length, before, `${mode}/${format}: no file is downloaded after failure`);
-        if(!['context','blank','blob','decode','limit'].includes(mode)){await page.locator('.layout-problems').waitFor();assert.ok(await count(page,'.layout-problems li button'),'Rendered failures expose an actionable element location');}
+        if(!['context','blank','blob','limit'].includes(mode)){await page.locator('.layout-problems').waitFor();assert.ok(await count(page,'.layout-problems li button'),'Rendered failures expose an actionable element location');}
         await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-export-failure-${mode}-${format}.png`) });
       }
       await page.evaluate(() => window.restoreExportProbe());
     }
     const recovered = await exportsMatch(page, graph, `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-export-failure-recovery`);
-    return { type: graph.meta.diagramType, theme:colorTheme, operations:['I21.10','I21.11','I21.12','I21.13'], faults: failures.map(([mode]) => mode), rejectedWithoutDownload: true, recovered };
+    return { type: graph.meta.diagramType, theme:colorTheme, faults: failures.map(([mode]) => mode), rejectedWithoutDownload: true, recovered };
   }, true);
 }
 
@@ -695,7 +673,7 @@ async function saveFailureChecks(browser, url, graph) {
           } };
         };
       }, phase);
-      await openMore(page); await menuItem(page, '保存 Graph JSON').click();
+      await openMore(page); await menuItem(page, '保存修改').click();
       await page.waitForFunction(phase => document.querySelector('.toast')?.textContent.includes(phase === 'cancel' ? '已取消保存' : '保存失败'), phase);
       const probe = await page.evaluate(() => window.saveProbe);
       assert.equal(probe.aborted, ['write', 'close'].includes(phase));
@@ -704,10 +682,10 @@ async function saveFailureChecks(browser, url, graph) {
       failures.push({ phase, aborted: probe.aborted, message: await status(page) });
     }
     await page.evaluate(() => { window.showSaveFilePicker = undefined; });
-    await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+    await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
     const savedFile = path.join(outputRoot, 'exports', 'save-failure-recovery.json'); await downloadedFile.saveAs(savedFile);
     assert.deepEqual(JSON.parse(fs.readFileSync(savedFile, 'utf8')), expected, 'Every failed save preserves all current and unrelated model fields.');
-    return { failures, savedFile, recovery: 'actual download', injection: 'native API failure substitutes; native success/cancel has separate Mac evidence' };
+    return { failures, savedFile, recovery: 'actual download' };
   }, true);
 }
 
@@ -738,7 +716,7 @@ async function strictDraftChecks(browser, url, graph) {
       assert.equal(downloads.length, 0, 'Invalid layout does not start an image download.');
     }
     const save = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const item = downloadedFile, file = path.join(outputRoot, 'exports', `${graph.meta.diagramType}-${suffix}.json`); await item.saveAs(file);
       assert.equal(await item.failure(), null); return JSON.parse(fs.readFileSync(file, 'utf8'));
     };
@@ -774,8 +752,7 @@ async function strictDraftChecks(browser, url, graph) {
     await openMore(page); await menuItem(page, '重置').click(); await page.locator('.layout-problems').waitFor({ state: 'detached' });
     assert.deepEqual(await save('reset-drag'), input, 'Reset restores all geometry after the invalid drag.');
     await exportsMatch(page, graph, `${graph.meta.diagramType}-draft-recovery`);
-    return { type: graph.meta.diagramType, theme: 'light', draftRetained: true, invalidDragRetained: true, resetComplete: true, actualDownloads: true,
-      operations: ['I13.03', 'I14.09', 'I14.10', 'I14.11', 'I14.14', 'I16.04', 'I16.06', 'I16.07', 'I16.08', 'I16.09', 'I19.01', 'I19.03', 'I19.04', 'I20.05', 'I21.05', 'I21.06'] };
+    return { type: graph.meta.diagramType, theme: 'light', draftRetained: true, invalidDragRetained: true, resetComplete: true, actualDownloads: true };
   }, true);
 }
 async function flowDirectionChecks(browser, url, viewport, colorTheme) {
@@ -806,7 +783,7 @@ async function flowDirectionChecks(browser, url, viewport, colorTheme) {
           await page.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('semantic.primary-path'));
           assert.equal(downloads.length, before, 'Horizontal main paths cannot download either image format.');
         }
-        await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+        await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
         const saved = downloadedFile, file = path.join(outputRoot, 'exports', `${suffix}.json`); await saved.saveAs(file);
         assert.equal(await saved.failure(), null);
         assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), graph, 'Rejected image exports retain the complete JSON draft.');
@@ -892,9 +869,7 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
     assert.deepEqual(await geometry(page), beforeFullscreen, 'Fullscreen preserves node geometry, routes and arrow markers for every diagram type.');
     await page.screenshot({ path: path.join(outputRoot, 'screens', name + '-fullscreen.png'), animations: 'disabled' });
     await button(page, '退出全屏').click(); await fullscreenState(page, false);
-    return { type: graph.meta.diagramType, theme: colorTheme, branding, linkedEdges: graph.edges.filter(edge => edge.source === target(graph).id || edge.target === target(graph).id).length, stableGeometry: true,
-      operations: ['I01.01', 'I03.01', 'I03.02', 'I03.08', 'I05.03', 'I09.11', 'I09.17', 'I18.01', 'I19.05', 'I19.07', 'I24.01', 'I24.02', 'I27.03',
-        ...(graphs.length > 1 ? ['I08.01', 'I08.02'] : ['I08.05']), ...(viewport.width === 1440 ? ['I21.01', 'I21.02'] : [])] };
+    return { type: graph.meta.diagramType, theme: colorTheme, branding, linkedEdges: graph.edges.filter(edge => edge.source === target(graph).id || edge.target === target(graph).id).length, stableGeometry: true };
   });
 }
 
@@ -905,7 +880,7 @@ async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
     await page.goto(url); await chooseGraph(page, graph, mobile(page)); await theme(page, colorTheme);
     const expected = structuredClone(input), current = (expected.diagrams ?? [expected]).find(g => g.meta.diagramType === type);
     const verifyFile = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const download = downloadedFile, file = path.join(outputRoot, 'exports', `${name}-${suffix}.json`); await download.saveAs(file);
       assert.equal(await download.failure(), null); assert.deepEqual(JSON.parse(fs.readFileSync(file)), expected);
       return { path: path.relative(outputRoot, file), sha256: digest(file) };
@@ -915,13 +890,13 @@ async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
       assert.ok(object, `${type} has an editable ${subject}`);
       const scope = `${subject}.${entry}`, nameInput = page.getByRole('textbox', { name: '名称', exact: true });
       const step = async (id, action, run) => {
-        const operations = id.split(' ').map(value => `${value}.${scope}`), operation = operations[0]; page.qaPending = operations;
+        const operation = `${id.split(' ')[0]}.${scope}`;
         await run(); const file = await verifyFile(operation);
         const screenshot = `steps/${name}-${operation}.jpg`; await page.screenshot({ path: path.join(outputRoot, screenshot), type: 'jpeg', quality: 65 });
-        page.qaSteps.push({ operations, objectType: subject, editorEntry: entry, objectId: object.id, action,
+        page.qaSteps.push({ objectType: subject, editorEntry: entry, objectId: object.id, action,
           expected: 'The named editor boundary preserves the complete committed model and permits correction',
           measured: { modelUnchangedExceptExplicitCommit: true, editorVisible: await nameInput.count(), viewport: page.viewportSize() }, files: [file], screenshot });
-        page.qaPending = null; console.log('EDITOR', name, operation);
+        console.log('EDITOR', name, operation);
       };
       const open = async () => {
         const selected = subject === 'node' ? nodeElement(page, object.id).locator('.is-selected') : page.locator(`.react-flow__edge.selected[data-id=${JSON.stringify(object.id)}]`);
@@ -1049,21 +1024,19 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
     const step = async (ids, action, run) => {
       if (!activeStep && ids.split(' ').includes(process.env.QA_ACCEPTANCE_FROM)) activeStep = true;
       if (!activeStep) return;
-      page.qaPending = ids.split(' ');
       const beforePositions=await positions(),beforeFiles=new Set(fs.readdirSync(path.join(outputRoot,'exports')));
       await run();
-      page.qaPending = null;
       console.log('STEP', type, viewport.width, colorTheme, ids);
       const screenshot = `steps/${type}-${viewport.width}-${colorTheme}-${page.qaSteps.length}.jpg`;
       await page.screenshot({path:path.join(outputRoot,screenshot),type:'jpeg',quality:65});
-      page.qaSteps.push({ operations: ids.split(' '), action, expected: 'Assertions in this action succeed without changing unrelated model data', measured: { beforePositions, positions: await positions(), viewport: page.viewportSize() }, files:fs.readdirSync(path.join(outputRoot,'exports')).filter(file=>!beforeFiles.has(file)&&file.startsWith(`${type}-${viewport.width}-${colorTheme}-`)).map(file=>({path:'exports/'+file,sha256:digest(path.join(outputRoot,'exports',file))})), screenshot, at: new Date().toISOString(), url: page.url() });
+      page.qaSteps.push({ step: ids, action, expected: 'Assertions in this action succeed without changing unrelated model data', measured: { beforePositions, positions: await positions(), viewport: page.viewportSize() }, files:fs.readdirSync(path.join(outputRoot,'exports')).filter(file=>!beforeFiles.has(file)&&file.startsWith(`${type}-${viewport.width}-${colorTheme}-`)).map(file=>({path:'exports/'+file,sha256:digest(path.join(outputRoot,'exports',file))})), screenshot, at: new Date().toISOString(), url: page.url() });
     };
     const positions = async () => (await geometry(page)).nodes.map(({ id, position }) => ({ id, position }));
     const transform = () => page.locator('.react-flow__viewport').evaluate(el => { const m = new DOMMatrix(getComputedStyle(el).transform); return { x: m.e, y: m.f, zoom: m.a }; });
     const ready = async () => { await page.locator('.diagram-node').first().waitFor(); await chooseGraph(page, graph, mobile); await theme(page, colorTheme); await hidePanels(page); await fit(page); };
     const reset = async () => { await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page); };
     const saved = async suffix => {
-      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const file = path.join(outputRoot, 'exports', `${type}-${viewport.width}-${colorTheme}-${suffix}.json`);
       await downloadedFile.saveAs(file); return JSON.parse(fs.readFileSync(file));
     };
@@ -1267,13 +1240,13 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
         const baseline=path.join(outputRoot,'exports',`${type}-${viewport.width}-${colorTheme}-acceptance.${format.toLowerCase()}`);if(fs.existsSync(baseline))assert.equal(digest(file),digest(baseline),'An export pending during a view/theme switch keeps the trigger snapshot');
         await chooseGraph(page,graph,mobile);await theme(page,colorTheme);await hidePanels(page);
       }
-      const native=await page.evaluate(()=>{window.nativeBitmap=createImageBitmap;window.createImageBitmap=async()=>{throw new Error('acceptance failure');};return true;});assert.ok(native);await openMore(page);await menuItem(page,'导出 PNG').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('acceptance failure'));await page.evaluate(()=>window.createImageBitmap=window.nativeBitmap);
+      await page.evaluate(()=>{window.nativeToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=callback=>callback(null);});await openMore(page);await menuItem(page,'导出 PNG').click();await page.waitForFunction(()=>/未能生成 PNG/.test(document.querySelector('.toast')?.textContent));await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=window.nativeToBlob;});
       await setLocked(page,false);await searchSelect(page,graph,target(graph));await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('editable after failure');await button(page,'取消').click();await hidePanels(page);
     });
     await step('I20.03 I20.04 I24.05 I24.06 I24.07', 'Inject native capability/write failures, preserve state and recover using the actual controls', async () => {
       for(const phase of ['write','close']){
         await page.evaluate(phase=>{window.saveAborted=false;window.showSaveFilePicker=async()=>({createWritable:async()=>({write:async()=>{if(phase==='write')throw new Error('write denied');},close:async()=>{throw new Error('close denied');},abort:async()=>{window.saveAborted=true;}})});},phase);
-        await openMore(page);await menuItem(page,'保存 Graph JSON').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('保存失败'));assert.equal(await page.evaluate(()=>window.saveAborted),true);
+        await openMore(page);await menuItem(page,'保存修改').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('保存失败'));assert.equal(await page.evaluate(()=>window.saveAborted),true);
       }
       await page.evaluate(()=>{window.showSaveFilePicker=undefined;window.originalFullscreen=Element.prototype.requestFullscreen;Element.prototype.requestFullscreen=()=>Promise.reject(new Error('Denied'));});await button(page,'进入全屏').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('无法进入全屏'));assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),false);
       await page.evaluate(()=>Element.prototype.requestFullscreen=window.originalFullscreen);await button(page,'进入全屏').click();await fullscreenState(page,true);
@@ -1293,7 +1266,7 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
       await page.locator('#search').focus();const seen=new Set();for(let i=0;i<35;i++){await page.keyboard.press('Tab');const item=await page.evaluate(()=>{const e=document.activeElement,r=e.getBoundingClientRect();return {tag:e.tagName,label:e.getAttribute('aria-label')||e.textContent||e.title,visible:(r.width>0&&r.height>0)||(e instanceof SVGElement&&(r.width>0||r.height>0))};});assert.ok(item.visible||item.tag==='BODY',JSON.stringify(item));seen.add(item.label);}assert.ok(seen.size>3);await page.keyboard.press('Shift+Tab');await page.locator('#more-menu-button').hover();assert.equal(await page.locator('#more-menu-button').getAttribute('title'),'更多');await page.locator('#more-menu-button').focus();assert.ok(await page.locator('#more-menu-button').evaluate(el=>el.matches(':focus-visible')));
     });
     await page.screenshot({path:path.join(outputRoot,'screens',`${type}-${viewport.width}-${colorTheme}-acceptance.png`)});
-    return { type, theme:colorTheme, operations:page.qaSteps.flatMap(step=>step.operations) };
+    return { type, theme:colorTheme };
   },true);
 }
 
@@ -1391,7 +1364,7 @@ async function entrypoints(browser, url, graph) {
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
     const exportCurrentDraft = async suffix => {
       const name = `${graph.meta.diagramType}-${suffix}`, savedFile = path.join(outputRoot, 'exports', name + '.json');
-      await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       await saved.saveAs(savedFile);
       const model = JSON.parse(fs.readFileSync(savedFile, 'utf8'));
       const current = (model.diagrams ?? [model]).find(item => item.meta.diagramType === graph.meta.diagramType);
@@ -1631,7 +1604,7 @@ async function editPersistenceChecks(browser, url) {
       await openMore(page);
       assert.ok(await page.locator('.menu.is-right').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight; }), 'The save action remains inside the viewport.');
       if (suffix === 'edited') await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewport.width}-save-menu.png`), animations: 'disabled' });
-      const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存 Graph JSON').click()]);
+      const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const downloaded = downloadedFile;
       assert.equal(downloaded.suggestedFilename(), 'graph.json');
       const file = path.join(outputRoot, 'exports', `${viewport.width}-${suffix}.json`);
@@ -1926,7 +1899,8 @@ async function flowContrastChecks(browser, url, graph) {
       }
       let negativeGuard = false;
       if (sequence && checked.length) {
-        const hidden = await page.addStyleTag({ content: '.sequence-edge-flow { opacity: 0 !important; } .flow-edge--sequence.flow-edge--dashed { animation: none !important; }' });
+        // Freeze the one-shot selection glow as well: a pulse still running between the two frames would read as motion.
+        const hidden = await page.addStyleTag({ content: '.sequence-edge-flow { opacity: 0 !important; } .flow-edge--sequence.flow-edge--dashed { animation: none !important; } .selection-feedback * { animation: none !important; }' });
         await assert.rejects(() => sequenceFlowPixels(page, overviewChecked), /no visible sequence motion/);
         await hidden.evaluate(element => element.remove());
         if (checked.some(edge => edge.dashed)) {
@@ -2020,7 +1994,7 @@ async function sequenceReadingChecks(browser, url, graph) {
   for (const viewport of viewports) for (const colorTheme of ['light', 'dark']) {
     const name = `${viewport.width}-${colorTheme}-sequence-reading`;
     await runCase(browser, name, viewport, { reducedMotion: 'reduce' }, async page => {
-      // Exercise the download fallback here; native picker success/cancel has separate host evidence.
+      // Exercise the download fallback here; this script does not drive the native picker.
       await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
       await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700); await theme(page, colorTheme);
       const zoom = () => page.locator('.react-flow__viewport').evaluate(el => new DOMMatrix(getComputedStyle(el).transform).a);
@@ -2121,7 +2095,7 @@ async function sequenceReadingChecks(browser, url, graph) {
       await page.locator('.layout-problems').waitFor();
       assert.equal(await labelInput.count(),0,'Saving a draft closes the editor even when its layout needs repair.');
       await openMore(page);
-      const [draftDownload]=await Promise.all([page.waitForEvent('download'),menuItem(page,'保存 Graph JSON').click()]);
+      const [draftDownload]=await Promise.all([page.waitForEvent('download'),menuItem(page,'保存修改').click()]);
       const draftFile=path.join(outputRoot,'exports',`sequence-reading-${page.viewportSize().width}-draft.json`);
       await draftDownload.saveAs(draftFile);
       const draftModel=JSON.parse(fs.readFileSync(draftFile,'utf8'));
@@ -2152,7 +2126,7 @@ async function sequenceReadingChecks(browser, url, graph) {
 async function sequenceEditorHandoffCheck(browser,url,graph){
   if(graph.meta.diagramType!=='sequence')return;
   await runCase(browser,'sequence-editor-handoff',viewports[1],{reducedMotion:'reduce'},async page=>{
-    const fixture={meta:{title:'Sequence editor handoff',diagramType:'sequence',locale:'zh-CN',sourceRef:'Browser regression fixture; no business evidence'},groups:[],nodes:[100,800,1200].map((x,i)=>({id:`n${i}`,label:`Participant ${i}`,subtitle:'Short description',kind:'participant',position:{x,y:50},size:{width:220,height:900}})),edges:[{id:'m1',source:'n1',target:'n2',kind:'sync',order:1,label:'Message',evidence:'test'}]};
+    const fixture={meta:{title:'Sequence editor handoff',diagramType:'sequence',locale:'zh-CN',sourceRef:'Browser regression fixture; no business evidence'},groups:[],nodes:[100,800,1200].map((x,i)=>({id:`n${i}`,label:`Participant ${i}`,subtitle:'Short description',kind:'participant',position:{x,y:50},size:{width:220,height:900}})),edges:[{id:'m1',source:'n1',target:'n2',kind:'sync',order:1,label:'Message',evidence:'test',route:{messageY:180}}]};
     assert.deepEqual(validateGraph(fixture),[]);await openFixture(page,fixture,viewports[1],url);await hidePanels(page);await fit(page);await setLocked(page,false);await pointerNode(page,fixture.nodes[0]);
     await page.locator('.node-card:visible').waitFor();await button(page,'编辑文字').click();
     await page.getByRole('textbox',{name:'名称',exact:true}).fill('   ');await button(page,'保存').click();assert.equal(await page.getByRole('alert').innerText(),'名称不能为空');
@@ -2187,21 +2161,21 @@ async function sequencePersistenceChecks(browser, url, graph) {
       await page.locator('.drawer-body').and(page.locator(`[data-node-id=${JSON.stringify(selected.id)}]`)).waitFor();
     }
     await page.evaluate(()=>{window.__nativePicker=window.showSaveFilePicker;window.showSaveFilePicker=()=>Promise.reject(new DOMException('Canceled by test','AbortError'));});
-    await openMore(page);await menuItem(page,'保存 Graph JSON').click();await page.waitForFunction(()=>document.querySelector('.toast').textContent.includes('已取消保存'));
+    await openMore(page);await menuItem(page,'保存修改').click();await page.waitForFunction(()=>document.querySelector('.toast').textContent.includes('已取消保存'));
     assert.equal(await page.locator('.drawer-body h2').innerText(),selected.label+' QA','Canceled save keeps session changes.');
     await page.evaluate(()=>{window.showSaveFilePicker=undefined;});
     const other=graphs.find(g=>g.meta.diagramType!=='sequence');
     const switchTo=async(g)=>{await dismiss(page);await page.locator('#view-menu-button').click();await page.getByRole('menuitemradio').filter({hasText:labels[g.meta.diagramType]}).click();await page.waitForFunction(label=>document.querySelector('#view-menu-button span')?.textContent===label,labels[g.meta.diagramType]);};
     if(other){await switchTo(other);await openMore(page);await menuItem(page,'重置').click();await switchTo(graph);}
     assert.ok((await nodeElement(page,selected.id).locator('.node-visual title').textContent()).includes('JSON 往返说明'));
-    const download=async(suffix)=>{await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,'保存 Graph JSON').click();const result=await pending,file=path.join(outputRoot,'exports',`sequence-${suffix}.json`);await result.saveAs(file);assert.equal(await result.failure(),null);return file;};
+    const download=async(suffix)=>{await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,'保存修改').click();const result=await pending,file=path.join(outputRoot,'exports',`sequence-${suffix}.json`);await result.saveAs(file);assert.equal(await result.failure(),null);return file;};
     const savedFile=await download('saved'),saved=JSON.parse(fs.readFileSync(savedFile,'utf8')),savedGraph=(saved.diagrams??[saved]).find(g=>g.meta.diagramType==='sequence');
     assert.deepEqual(savedGraph.groups,graph.groups);assert.deepEqual(savedGraph.edges,graph.edges.map(edge=>edge.id===editedEdge?.id?{...edge,label:'配对标签 QA'}:edge));assert.deepEqual(savedGraph.executions,graph.executions);
     assert.equal(savedGraph.nodes[0].label,selected.label+' QA');assert.equal(savedGraph.nodes[0].subtitle,'JSON 往返说明');assert.ok(Math.abs(savedGraph.nodes[0].position.x-position.x)<.001);
     for(let i=1;i<graph.nodes.length;i++)assert.deepEqual(savedGraph.nodes[i],graph.nodes[i]);
     if(other)assert.deepEqual(saved.diagrams.find(g=>g.meta.diagramType===other.meta.diagramType),other,'Reset in another view is isolated.');
     const regenerated=path.join(outputRoot,'sequence-regenerated');
-    const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force'];
+    const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force','--verbose'];
     if(process.env.QA_REPO_ROOT)args.push('--repo-root',process.env.QA_REPO_ROOT);
     const generated=spawnSync(process.execPath,args,{encoding:'utf8'});assert.equal(generated.status,0,generated.stderr);
     await openMore(page);await menuItem(page,'重置').click();const reset=JSON.parse(fs.readFileSync(await download('reset'),'utf8'));assert.deepEqual(reset,input,'Reset restores the input without dropping optional operands.');
@@ -2407,7 +2381,7 @@ async function informationLayoutChecks(browser, url, graph) {
       await searchSelect(page, longLegend, target(longLegend)); await hidePanels(page);
       const selected = await count(page, '.diagram-node.is-selected');
       await openLegend(page);
-      const legend = page.getByRole('group', { name: '阅读图例', exact: true });
+      const legend = page.getByRole('group', { name: '图例', exact: true });
       await legend.click({ position: { x: 8, y: 8 } });
       assert.equal(await count(page, '.legend-pop'), 1, 'Clicking inside the legend keeps its popover open.');
       assert.equal(await count(page, '.diagram-node.is-selected'), selected);
@@ -2818,7 +2792,7 @@ async function motionMatrix(browser, url, graph, viewport, colorTheme) {
     }
     for (const sample of [...overview.edges, ...selectedOverview.edges]) delete sample.profiles;
     await page.waitForTimeout(1100);
-    return { type:graph.meta.diagramType, theme:colorTheme, operations:['I23.10','I23.11','I23.12'], diagramType: graph.meta.diagramType, colorTheme, directedCount: expected.length, staticCount: graph.edges.length - expected.length, semanticResult: expected.length ? 'motion' : 'static-control', pixelFrames:fs.readdirSync(path.join(outputRoot,'screens')).filter(file=>file.startsWith(name+'-')).map(file=>'screens/'+file), overview, selectedOverview, local, reverseControl, video };
+    return { type:graph.meta.diagramType, theme:colorTheme, diagramType: graph.meta.diagramType, colorTheme, directedCount: expected.length, staticCount: graph.edges.length - expected.length, semanticResult: expected.length ? 'motion' : 'static-control', pixelFrames:fs.readdirSync(path.join(outputRoot,'screens')).filter(file=>file.startsWith(name+'-')).map(file=>'screens/'+file), overview, selectedOverview, local, reverseControl, video };
   }, true);
 }
 
@@ -2880,7 +2854,6 @@ async function detailBoundaryChecks(browser, url, graph, viewport, colorTheme) {
     fixture.meta.title = '中文文件名验收';
     node.facts = Array.from({ length: 24 }, (_, i) => `${i + 1}. 完整事实说明 ${'LongEvidenceToken'.repeat(12)}`);
     await openFixture(page, fixture, viewport, url); await theme(page, colorTheme);
-    page.qaPending = ['I05.01', 'I05.04'];
     const selections = [], positions = (await geometry(page)).nodes.map(({ id, position }) => ({ id, position }));
     for (const selected of fixture.nodes) for (const method of ['pointer', 'Enter', 'Space']) {
       await searchSelect(page, fixture, selected); const before = await pulse(page);
@@ -2893,8 +2866,8 @@ async function detailBoundaryChecks(browser, url, graph, viewport, colorTheme) {
     assert.deepEqual((await geometry(page)).nodes.map(({ id, position }) => ({ id, position })), positions);
     const selectionScreenshot = `steps/${name}-selection.jpg`;
     await page.screenshot({ path: path.join(outputRoot, selectionScreenshot), type: 'jpeg', quality: 65 });
-    page.qaSteps.push({ operations: page.qaPending, action: 'Select every node from an empty selection by pointer, Enter and Space', expected: 'Each input selects the named node exactly once without changing model positions', measured: { selections, positions }, screenshot: selectionScreenshot });
-    page.qaPending = null; await searchSelect(page, fixture, node);
+    page.qaSteps.push({ action: 'Select every node from an empty selection by pointer, Enter and Space', expected: 'Each input selects the named node exactly once without changing model positions', measured: { selections, positions }, screenshot: selectionScreenshot });
+    await searchSelect(page, fixture, node);
     const last = page.locator('.inspector-facts li').last(); await last.scrollIntoViewIfNeeded();
     const scroll = await page.locator('.inspector').evaluate(el => ({ top: el.scrollTop, height: el.clientHeight, total: el.scrollHeight, width: el.clientWidth, contentWidth: el.scrollWidth }));
     assert.ok(scroll.top > 0 && scroll.contentWidth <= scroll.width + 1, JSON.stringify(scroll));
@@ -2905,7 +2878,7 @@ async function detailBoundaryChecks(browser, url, graph, viewport, colorTheme) {
     await hidePanels(page); const exported = await exportsMatch(page, fixture, name);
     assert.deepEqual(filenames, ['中文文件名验收.svg', '中文文件名验收.png']);
     const files = Object.values(exported).map(file => ({ path: path.relative(outputRoot, file), sha256: digest(file) }));
-    page.qaSteps.push({ operations: ['I12.06', 'I21.04'], action: 'Scroll 24 long facts to the last complete item and download SVG/PNG with Chinese filenames', expected: 'Last fact visible without horizontal overflow; both suggested names retain Chinese', measured: { scroll, filenames }, files, screenshot });
+    page.qaSteps.push({ action: 'Scroll 24 long facts to the last complete item and download SVG/PNG with Chinese filenames', expected: 'Last fact visible without horizontal overflow; both suggested names retain Chinese', measured: { scroll, filenames }, files, screenshot });
     return { type, theme: colorTheme, files };
   }, true);
 }
@@ -2927,7 +2900,6 @@ const server = http.createServer((request, response) => {
 });
 let browser;
 try {
-  if(process.env.QA_COVERAGE_ONLY!=='1'){
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const url = `http://127.0.0.1:${server.address().port}/`;
   const macChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -2998,110 +2970,11 @@ try {
     await exportsMatch(page, graph, `fixture-${name}`);
     return { nodes: graph.nodes.length, selfLoops: graph.edges.filter(edge => edge.source === edge.target).length, symbolsPreserved: true };
   }, true);
-  }
 } catch (error) { report.failures.push({ name: 'fatal', message: error.message, stack: error.stack }); console.error(error); }
 finally {
   if (browser) await browser.close(); report.browserClosed = true;
   if (server.listening) await new Promise(resolve => server.close(resolve)); report.serverClosed = true;
-  if(process.env.QA_MERGE_REPORTS){
-    const cases=new Map(),extras=new Map(),exports=[],history=[];
-    report.sources=[];
-    for(const entry of process.env.QA_MERGE_REPORTS.split(',')){
-      const file=path.resolve(entry),source=JSON.parse(fs.readFileSync(file)),base=path.dirname(file);
-      assert.equal(source.build.htmlSha256,report.build.htmlSha256,`HTML version mismatch: ${file}`);
-      assert.equal(source.build.graphSha256,report.build.graphSha256,`Graph version mismatch: ${file}`);
-      assert.ok(source.finishedAt&&source.browserClosed&&source.serverClosed,`Incomplete resource cleanup: ${file}`);
-      const relative=value=>value?path.relative(outputRoot,path.resolve(base,value)):undefined;
-      report.sources.push({report:relative(file),sha256:digest(file),build:source.build,summary:source.summary});
-      const adapt=item=>({...relocateEvidence(item,base),sourceReport:relative(file)});
-      for(const item of source.cases)cases.set(item.name,adapt(item));
-      for(const item of source.extra)extras.set(item.name,adapt(item));
-      exports.push(...source.exports.map(item=>{
-        for(const format of ['svg','png']) {
-          const attachment=path.resolve(base,item[format]);
-          assert.ok(fs.existsSync(attachment),`Missing exported file: ${attachment}`);
-          if(item[`${format}Sha256`])assert.equal(digest(attachment),item[`${format}Sha256`],`Export hash mismatch: ${attachment}`);
-        }
-        return {...item,sourceReport:relative(file)};
-      }));
-      history.push(...source.failures.map(failure=>({...failure,sourceReport:relative(file)})));
-    }
-    report.cases=[...cases.values()];report.extra=[...extras.values()];report.exports=exports;
-    report.failures=history.filter(failure=>!(cases.get(failure.name)??extras.get(failure.name))?.passed);
-    report.resolvedRetries=history.filter(failure=>(cases.get(failure.name)??extras.get(failure.name))?.passed);
-  }
   report.finishedAt = new Date().toISOString();
   report.summary = { scenes: report.cases.length, passed: report.cases.filter(value => value.passed).length, extras: report.extra.length, extraPassed: report.extra.filter(value => value.passed).length, exports: report.exports.length * 2, failures: report.failures.length };
-  const inventory = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/viewer-interactions.json', import.meta.url)));
-  const coverage = { build: report.build, inventorySha256: digest(new URL('../../../tests/fixtures/viewer-interactions.json', import.meta.url)), operations: inventory.operations, cases: [], hostChecks: [], excluded: inventory.operations.filter(op=>op.scope==='deferred') };
-  const applicable = (op, graph, viewport) => {
-    if (!graph) return null;
-    const type=graph.meta.diagramType, id=op.id, arrows=graph.edges.filter(edge=>hasArrow(edge,type));
-    if (id.startsWith('I04.') && viewport.width<=700) return 'The production CSS hides MiniMap at widths <=700px; navigation is provided by fit/search.';
-    if (['I17.07','I19.04','I06.10','I11.09'].includes(id) && type!=='sequence') return 'This operation concerns sequence time-axis, call/return or safe-card fallback behavior.';
-    if (id==='I06.04' && ![...createEdgeRoutes(graph).values()].some(r=>!r.label)) return 'This graph has no relationship with an empty rendered label.';
-    if (id==='I06.05' && !graph.edges.some(e=>!isDashed(e,type))) return 'This graph has no solid relationship.';
-    if (id==='I06.06' && !graph.edges.some(e=>isDashed(e,type))) return 'This graph has no dashed relationship.';
-    if (id==='I06.07' && !graph.edges.some(e=>e.source===e.target)) return 'This graph has no self relationship.';
-    if (id==='I06.08' && !graph.edges.some((e,i)=>graph.edges.slice(i+1).some(o=>o.source===e.source&&o.target===e.target))) return 'This graph has no parallel relationship pair.';
-    if (id==='I06.09' && !graph.edges.some(e=>graph.nodes.find(n=>n.id===e.source)?.groupId!==graph.nodes.find(n=>n.id===e.target)?.groupId)) return 'This graph has no relationship crossing declared ownership groups.';
-    if (/^I23\.(02|03|04|05|06|07|08|09)$/.test(id) && !arrows.length) return 'The diagram contains no directed relationships, so no flow control is exposed.';
-    if (id==='I23.10' && !arrows.some(e=>!isDashed(e,type))) return 'No directed solid relationship to animate.';
-    if (id==='I23.11' && !arrows.some(e=>isDashed(e,type))) return 'No directed dashed relationship to animate.';
-    if (id==='I23.12' && graph.edges.every(e=>hasArrow(e,type))) return 'No undirected relationship in this model.';
-    return null;
-  };
-  const results=[...report.cases,...report.extra];
-  for (const type of Object.keys(labels)) for (const viewport of viewports) for (const theme of ['light','dark']) {
-    const scene=`${type}-${viewport.width}-${theme}`, graph=graphs.find(g=>g.meta.diagramType===type);
-    const matching=results.filter(r=>r.width===viewport.width && (r.type===type||r.name.startsWith(type+'-')) && (r.theme===theme||r.name.includes('-'+theme+'-')));
-    for(const op of inventory.operations.filter(op=>op.scope==='scene')) {
-      const reason=applicable(op,graph,viewport);
-      const found=matching.flatMap(r=>(r.steps??[]).filter(step=>step.operations.includes(op.id)).map((step,index)=>({r,step,index})));
-      const fallback=matching.find(r=>r.passed&&(r.operations??[]).includes(op.id));
-      const evidence=found.map(({r,step,index})=>({report:'browser-interactions-report.json',case:r.name,step:r.steps.indexOf(step),screenshot:step.screenshot,trace:r.trace,files:step.files??r.files}));
-      if(!evidence.length&&fallback)evidence.push({report:'browser-interactions-report.json',case:fallback.name,trace:fallback.trace,pixelFrames:fallback.pixelFrames,video:fallback.video,files:fallback.files});
-      const missingEvidence=evidence.some(e=>(e.trace?!fs.existsSync(path.join(outputRoot,e.trace)):!e.pixelFrames?.length||e.pixelFrames.some(file=>!fs.existsSync(path.join(outputRoot,file))))||e.video&&!fs.existsSync(path.join(outputRoot,e.video))||e.screenshot&&!fs.existsSync(path.join(outputRoot,e.screenshot))||e.files?.some(file=>!fs.existsSync(path.join(outputRoot,file.path))||digest(path.join(outputRoot,file.path))!==file.sha256));
-      const failed=matching.some(r=>r.failedOperations?.includes(op.id));
-      coverage.cases.push({id:`${scene}/${op.id}`,operation:op.id,entry:op.entry,expected:op.expected,
-        status:reason?'not-applicable':failed?'fail':missingEvidence?'blocked':evidence.length?'pass':'not-run',reason,evidence});
-    }
-  }
-  let host;
-  if(process.env.QA_HOST_EVIDENCE) {
-    host=JSON.parse(fs.readFileSync(process.env.QA_HOST_EVIDENCE));
-    assert.equal(host.build.htmlSha256,report.build.htmlSha256,'Native receipt must test this exact packaged HTML');
-    assert.equal(host.build.graphSha256,report.build.graphSha256,'Native receipt must test this exact model');
-  }
-  for(const op of inventory.operations.filter(op=>op.scope==='host')) {
-    const receipt=host?.operations?.find(item=>item.id===op.id);
-    const evidenceExists=receipt?.evidence?.length && receipt.evidence.every(file=>fs.existsSync(path.resolve(path.dirname(process.env.QA_HOST_EVIDENCE),file)));
-    coverage.hostChecks.push({id:op.id,entry:op.entry,expected:op.expected,status:receipt?.status==='pass'&&evidenceExists?'pass':'blocked',evidence:receipt??null});
-  }
-  coverage.requiredRuns = [];
-  for (const type of Object.keys(labels)) for (const viewport of viewports) for (const theme of ['light', 'dark']) for (const suffix of ['', '-acceptance', '-editor-boundaries', '-acceptance-details', '-motion-matrix', '-export-failures']) {
-    const name = `${type}-${viewport.width}-${theme}${suffix}`, result = results.find(item => item.name === name);
-    const attachments = [result?.trace, result?.video, ...(result?.pixelFrames ?? []), ...(result?.steps ?? []).map(step => step.screenshot)].filter(Boolean);
-    const files = [...(result?.files ?? []), ...(result?.steps ?? []).flatMap(step => step.files ?? [])];
-    const complete = result && attachments.length && attachments.every(file => fs.existsSync(path.resolve(outputRoot, file))) && files.every(file => fs.existsSync(path.resolve(outputRoot, file.path)) && digest(path.resolve(outputRoot, file.path)) === file.sha256)
-      && (suffix === '-motion-matrix' ? result.pixelFrames?.length >= 3 && (viewport.width !== 1440 || result.video) : result.trace)
-      && (!['-acceptance', '-editor-boundaries', '-acceptance-details', '-export-failures'].includes(suffix) || files.length > 0);
-    coverage.requiredRuns.push({ name, status: !result ? 'not-run' : !result.passed ? 'fail' : complete ? 'pass' : 'blocked' });
-  }
-  const all=[...coverage.cases,...coverage.hostChecks];
-  coverage.summary={total:all.length,passed:all.filter(x=>x.status==='pass').length,notApplicable:all.filter(x=>x.status==='not-applicable').length,notRun:all.filter(x=>x.status==='not-run').length,blocked:all.filter(x=>x.status==='blocked').length,failed:all.filter(x=>x.status==='fail').length,failedScenes:report.failures.length,requiredRuns:coverage.requiredRuns.length,incompleteRuns:coverage.requiredRuns.filter(item=>item.status!=='pass').length,userDeferred:coverage.excluded.length};
-  coverage.status=all.some(x=>!['pass','not-applicable'].includes(x.status))||report.failures.length||coverage.summary.incompleteRuns?'incomplete':'passed';
-  fs.writeFileSync(path.join(outputRoot,'interaction-coverage.json'),JSON.stringify(coverage,null,2)+'\n');
-  const groups = [...new Set(inventory.operations.map(op => op.group))].map(group => {
-    const entries = all.filter(item => (item.operation ?? item.id).startsWith(group + '.'));
-    return `| ${group} | ${entries.length} | ${entries.filter(item => item.status === 'pass').length} | ${entries.filter(item => item.status === 'not-applicable').length} | ${entries.filter(item => !['pass','not-applicable'].includes(item.status)).length} |`;
-  });
-  const sceneLinks = coverage.requiredRuns.filter(item => item.name.endsWith('-acceptance')).map(item => {
-    const result = results.find(value => value.name === item.name);
-    return `| ${item.name} | ${item.status} | ${result?.steps?.length ?? 0} | ${result?.trace ? `[trace](${result.trace})` : 'missing'} | ${result?.sourceReport ? `[source report](${result.sourceReport})` : '[report](browser-interactions-report.json)'} |`;
-  });
-  fs.writeFileSync(path.join(outputRoot,'interaction-coverage.md'),`# Interaction coverage\n\nStatus: ${coverage.status}. ${JSON.stringify(coverage.summary)}\n\n[Detailed operations, expected results and evidence](interaction-coverage.json). [Measured steps, model positions and files](browser-interactions-report.json). Not-applicable entries state the source/model capability. Physical touch and soft keyboard are explicitly deferred by the user and never counted as passed. Native evidence must match this exact HTML and graph.\n\n## Operation groups\n\n| Group | Records | Pass | Not applicable | Incomplete |\n| --- | ---: | ---: | ---: | ---: |\n${groups.join('\n')}\n\n## Complete scene workflows\n\n| Scene | Status | Steps | Pointer/keyboard trace | Measurements and screenshots |\n| --- | --- | ---: | --- | --- |\n${sceneLinks.join('\n')}\n\n## Remaining gaps\n\n`+[...all.filter(x=>!['pass','not-applicable'].includes(x.status)).map(x=>`- ${x.id}: ${x.status} — ${x.entry}`),...coverage.requiredRuns.filter(x=>x.status!=='pass').map(x=>`- ${x.name}: ${x.status}`)].join('\n')+'\n');
-  report.acceptance={status:coverage.status,coverage:'interaction-coverage.json'};
-  if(process.env.QA_FULL_ACCEPTANCE==='1'&&coverage.status!=='passed')process.exitCode=1;
   writeReport(); console.log(JSON.stringify(report.summary)); if (report.failures.length) process.exitCode = 1;
 }

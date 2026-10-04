@@ -6,7 +6,15 @@
 
 Qoder Desktop 可从插件商城安装，Claude Code 可直接从 GitHub 安装（见下方对应小节），两者均可跳过第 1 步。采用本地安装时，先下载 QGraphFlow 源码并构建运行包。
 
-准备 Node.js 22，以及已配置好模型访问的客户端。从源码构建还需 Git、npm、`tar`、`zip` 和 `unzip`。
+准备 Node.js 22 及以上版本，以及已配置好模型访问的客户端。从源码构建还需 Git、npm、`tar`、`zip` 和 `unzip`。
+
+## 快速安装
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+为 Claude Code、Codex、Cursor 和 Qoder 安装技能 `q-flow`（已用 `skills` 1.7.0 实测），命令会询问装到哪些客户端。如需以插件方式安装，按以下步骤操作。
 
 ## 1. 下载并构建（用于本地安装）
 
@@ -14,7 +22,7 @@ Qoder Desktop 可从插件商城安装，Claude Code 可直接从 GitHub 安装�
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
 ```
 
 已有 QGraphFlow 源码可跳过克隆，并进入其根目录。ZIP 文件名以 QGraphFlow 的 `package.json` 版本为准；使用新的输出和解压目录，不覆盖旧文件。Git 下载只包含已推送的代码，不包含尚未提交的本地修改。

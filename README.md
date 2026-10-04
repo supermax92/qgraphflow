@@ -10,7 +10,7 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 [English](README.md) · [中文](docs/readme/README.zh-CN.md) · [Русский](docs/readme/README.ru.md) · [Português](docs/readme/README.pt.md) · [日本語](docs/readme/README.ja.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
-[Client installation](#installation-guide) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
+[Live demo](https://supermax92.github.io/qgraphflow/) · [Client installation](#installation-guide) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
 
 </div>
 
@@ -19,6 +19,14 @@ Follow the path. Inspect the evidence. Share one offline file.
 *Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
+
+**What sets it apart:** nine diagram types from one skill, a source for every relationship, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+One command installs the skill for Claude Code, Codex, Cursor and Qoder; the [installation guide](#installation-guide) covers the plugin installations and the other clients.
 
 - **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
 
@@ -40,13 +48,21 @@ The top animation shows the architecture, sequence and ER views for 1.5 seconds 
 
 ## Installation guide
 
-You need Node.js 22 and a plugin-capable client with model access configured.
+You need Node.js 22 or later and a plugin-capable client with model access configured.
 
-[Qoder Desktop](#qoder-desktop) users can install from the marketplace and skip step 1.
+### Quick install
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Tested with `skills` 1.7.0 for Claude Code, Codex, Cursor and Qoder. It asks which clients to install to; `-a claude-code` names one, and `-g` installs for your user instead of the current project. The skill installs as `q-flow`, without the `qgraphflow:` prefix of the plugin installations below.
+
+To install it as a plugin instead, follow the steps below. [Qoder Desktop](#qoder-desktop) users can install from the marketplace and skip step 1.
 
 ### 1. Download the plugin
 
-Download [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) and extract it into a separate directory, keeping hidden files.
+Download [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) and extract it into a separate directory, keeping hidden files.
 
 Run the following terminal commands from **the extracted plugin root containing `skills/`**.
 
@@ -110,29 +126,18 @@ Confirm that `.cursor-plugin/plugin.json` exists there, reload the window, and f
 Open your project in the client, start a new session, and select the skill. Describe your task using the [Quick start](#quick-start) examples below. Open the generated HTML in your browser.
 
 <details>
-<summary>Alternative installation: GitHub npm</summary>
+<summary>Alternative installation: npm</summary>
 
-You can also get the plugin through npm instead of the ZIP.
-
-GitHub npm requires your own GitHub **Personal access token (classic)** with `read:packages` permission. Log in with your GitHub username and use the token as the password.
-
-Do not share the token or commit it to a repository. See [GitHub authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry).
-
-```bash
-npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
-npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
-```
-
-Create a separate directory outside your application project:
+You can also get the plugin from npmjs.com instead of the ZIP; no account, login or token is needed. Create a separate directory outside your application project:
 
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
-cd node_modules/@supermax92/qgraphflow
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-You are now in the plugin root. Continue with the client installation steps above. **Downloading through npm does not automatically install the plugin in your client.**
+You are now in the plugin root. Continue with the client installation steps above. **Downloading through npm does not automatically install the plugin in your client.** The package also provides the `qgraphflow` command used in [Keep diagrams in sync with code](#keep-diagrams-in-sync-with-code).
 
 </details>
 
@@ -170,12 +175,14 @@ Replace order creation and its steps with your project's actual flow. Continue i
 $qgraphflow:q-flow Expand stock reservation from the previous diagram into a separate flowchart in English, showing success and failure handling.
 ```
 
-Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, edit and export; `graph.json` retains the graph data.
+Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, edit and export; `graph.json` retains the graph data. Each view is also written as an SVG (`diagram.svg`, or `diagram-<n>-<type>.svg` for several views) that you can embed as an image in a README, pull request or wiki.
+
+After editing in the page, **More → Save changes** in Chrome or Edge rewrites the page, `graph.json` and the SVGs in place once you pick the diagram's folder. Other browsers save `graph.json` only: put it in the folder and regenerate the page and SVGs with `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
 
 <details>
 <summary>Run the nine-view e-commerce example manually</summary>
 
-These commands run the repository example. An installed plugin does not require cloning this repository. With Node.js 22:
+These commands run the repository example. An installed plugin does not require cloning this repository. With Node.js 22 or later:
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
@@ -184,11 +191,41 @@ node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.en.gra
 node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.en.graph.json output/ecommerce-en
 ```
 
-Open `output/ecommerce-en/index.html` in a browser. Switch views with **Diagram types** in the top toolbar; saved text and positions survive switching. Use **More → Save Graph JSON** to save all views to a chosen JSON file, or download a copy in browsers without file saving. Refreshing the original HTML restores embedded data; regenerate from the saved JSON into a new directory to reopen edits.
+Open `output/ecommerce-en/index.html` in a browser; the nine SVGs sit next to it. Switch views with **Diagram types** in the top toolbar; saved text and positions survive switching. **More → Save changes** saves all views as described above. The same pages are online in the [live demo](https://supermax92.github.io/qgraphflow/).
 
 The prebuilt Viewer needs no dependency installation, API key or backend service. AI-assisted evidence gathering and graph authoring use your chosen client's model service.
 
 </details>
+
+## Keep diagrams in sync with code
+
+A diagram generated with a repository root records where each component is defined. Validating it with `--repo-root` fails when a recorded file is gone, a line range no longer fits, or a recorded symbol has left its lines, and the error names the lines where the symbol is now. Add this job to your CI; it needs no build, login or token:
+
+```yaml
+name: Diagrams
+on: [push, pull_request]
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: |
+          for graph in docs/qgraphflow/*/graph.json; do
+            npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }
+          done
+          exit ${failed:-0}
+```
+
+When it fails, ask the skill to refresh that diagram:
+
+```text
+$qgraphflow:q-flow CI says docs/qgraphflow/order-sequence is out of date. Refresh it.
+```
+
+The skill moves anchors whose symbol it finds once, corrects only the anchors still reported, and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
 
 ## What each of the nine views answers
 
@@ -214,7 +251,7 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-Development needs Node.js 22, npm, tar, zip and unzip. Include a minimal redacted graph, client/browser versions and reproduction steps in issue reports.
+Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minimal redacted graph, client/browser versions and reproduction steps in issue reports.
 
 [Evidence sources](skills/q-flow/references/evidence-sources.md) · [Graph format](skills/q-flow/references/graph-schema.md) · [Guided intake](skills/q-flow/references/guided-intake.md) · [Viewer development](skills/q-flow/references/viewer-development.md) · [Diagram composition](skills/q-flow/references/visual-contract.md)
 

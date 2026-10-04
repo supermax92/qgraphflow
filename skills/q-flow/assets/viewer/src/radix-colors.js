@@ -1,5 +1,5 @@
 // Selected Radix Colors scales, copied verbatim from @radix-ui/colors@3.0.0: https://github.com/radix-ui/colors
-// neutral = slate, accent = iris, data = cyan, warn = red (light and dark variants; index 0 is a placeholder, steps 1–12).
+// neutral = slate, accent = iris, data = cyan, warn = red, guard = amber (light and dark variants; index 0 is a placeholder, steps 1–12).
 // MIT notice is retained in generated HTML and SVG.
 export const RADIX = {
   light: {
@@ -7,12 +7,14 @@ export const RADIX = {
     accent: [null, "#fdfdff", "#f8f8ff", "#f0f1fe", "#e6e7ff", "#dadcff", "#cbcdff", "#b8baf8", "#9b9ef0", "#5b5bd6", "#5151cd", "#5753c6", "#272962"],
     data: [null, "#fafdfe", "#f2fafb", "#def7f9", "#caf1f6", "#b5e9f0", "#9ddde7", "#7dcedc", "#3db9cf", "#00a2c7", "#0797b9", "#107d98", "#0d3c48"],
     warn: [null, "#fffcfc", "#fff7f7", "#feebec", "#ffdbdc", "#ffcdce", "#fdbdbe", "#f4a9aa", "#eb8e90", "#e5484d", "#dc3e42", "#ce2c31", "#641723"],
+    guard: [null, "#fefdfb", "#fefbe9", "#fff7c2", "#ffee9c", "#fbe577", "#f3d673", "#e9c162", "#e2a336", "#ffc53d", "#ffba18", "#ab6400", "#4f3422"],
   },
   dark: {
     neutral: [null, "#111113", "#18191b", "#212225", "#272a2d", "#2e3135", "#363a3f", "#43484e", "#5a6169", "#696e77", "#777b84", "#b0b4ba", "#edeef0"],
     accent: [null, "#13131e", "#171625", "#202248", "#262a65", "#303374", "#3d3e82", "#4a4a95", "#5958b1", "#5b5bd6", "#6e6ade", "#b1a9ff", "#e0dffe"],
     data: [null, "#0b161a", "#101b20", "#082c36", "#003848", "#004558", "#045468", "#12677e", "#11809c", "#00a2c7", "#23afd0", "#4ccce6", "#b6ecf7"],
     warn: [null, "#191111", "#201314", "#3b1219", "#500f1c", "#611623", "#72232d", "#8c333a", "#b54548", "#e5484d", "#ec5d5e", "#ff9592", "#ffd1d9"],
+    guard: [null, "#16120c", "#1d180f", "#302008", "#3f2700", "#4d3000", "#5c3d05", "#714f19", "#8f6424", "#ffc53d", "#ffd60a", "#ffca16", "#ffe7b3"],
   },
 };
 

@@ -1,23 +1,20 @@
 import { genericCard } from './card.js';
-import { polygonAnchor, rectAnchor, roundedRectAnchor, rectangle } from './drawing.js';
+import { cylinder, polygonAnchor, rectAnchor, roundedRectAnchor, rectangle, HEXAGON, polygon } from './drawing.js';
 
-const HEXAGON = [[.08, 0], [.92, 0], [1, .5], [.92, 1], [.08, 1], [0, .5]];
 const CUBE = [[0, .1], [.06, 0], [1, 0], [1, .9], [.94, 1], [0, 1]];
-const polygon = (node, x, y, points) => [['polygon', { points: points.map(([px, py]) => `${x + px * node.size.width},${y + py * node.size.height}`).join(' ') }]];
 
 export function deploymentOutline(node, x, y) {
   const { width: w, height: h } = node.size;
+  // Notation stays clear of the card text: the stand sits under the last line, whose baseline is 21px above the bottom,
+  // and the container's stacked boxes take the top-right corner, opposite the chip.
   if (node.kind === 'device') return [
     ['rect', { x: x + 16, y, width: w - 32, height: h, rx: 10 }],
-    ['path', { d: `M${x + w / 2} ${y + h - 16}V${y + h - 7}M${x + w / 2 - 30} ${y + h - 7}H${x + w / 2 + 30}`, fill: 'none' }]
+    ['path', { d: `M${x + w / 2} ${y + h - 10}V${y + h - 5}M${x + w / 2 - 30} ${y + h - 5}H${x + w / 2 + 30}`, fill: 'none' }]
   ];
   if (node.kind === 'node') return [...polygon(node, x, y, CUBE), ['path', { d: `M${x} ${y + h * .1}L${x + w * .94} ${y + h * .1}L${x + w} ${y}M${x + w * .94} ${y + h * .1}V${y + h}`, fill: 'none' }]];
-  if (node.kind === 'container') return [...rectangle(node, x, y, 10), ['rect', { x: x + 14, y: y + 16, width: 16, height: 11, rx: 2, fill: 'none' }], ['rect', { x: x + 10, y: y + 20, width: 16, height: 11, rx: 2, fill: 'none' }]];
+  if (node.kind === 'container') return [...rectangle(node, x, y, 10), ['rect', { x: x + w - 30, y: y + 13, width: 16, height: 11, rx: 2, fill: 'none' }], ['rect', { x: x + w - 34, y: y + 17, width: 16, height: 11, rx: 2, fill: 'none' }]];
   if (node.kind === 'artifact') return [['path', { d: `M${x} ${y}H${x + w - 28}L${x + w} ${y + 28}V${y + h}H${x}Z` }], ['path', { d: `M${x + w - 28} ${y}V${y + 28}H${x + w}`, fill: 'none' }]];
-  if (node.kind === 'database') return [
-    ['path', { d: `M${x + 12} ${y + 18}Q${x + 12} ${y + 2} ${x + w / 2} ${y + 2}T${x + w - 12} ${y + 18}V${y + h - 18}Q${x + w - 12} ${y + h - 2} ${x + w / 2} ${y + h - 2}T${x + 12} ${y + h - 18}Z` }],
-    ['ellipse', { cx: x + w / 2, cy: y + 18, rx: w / 2 - 12, ry: 16, fill: 'none' }]
-  ];
+  if (node.kind === 'database') return cylinder(node, x, y);
   if (node.kind === 'external') return polygon(node, x, y, HEXAGON);
   if (node.kind === 'service') return rectangle(node, x, y, 16);
   return rectangle(node, x, y, 10);

@@ -1,0 +1,772 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "KRaft 元数据记录 ER：Topic · Partition · Broker · Config",
+        "sourceRef": "tests/fixtures/edge-crossings.graph.json",
+        "diagramType": "er",
+        "locale": "zh-CN"
+      },
+      "nodes": [
+        {
+          "id": "topic-record",
+          "label": "TopicRecord",
+          "kind": "entity",
+          "module": "metadata",
+          "fields": [
+            {
+              "name": "Name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "TopicId",
+              "type": "uuid",
+              "key": "PK",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "partition-record",
+          "label": "PartitionRecord",
+          "kind": "entity",
+          "module": "metadata",
+          "fields": [
+            {
+              "name": "PartitionId",
+              "type": "int32",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "TopicId",
+              "type": "uuid",
+              "key": "FK",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "partition-change-record",
+          "label": "PartitionChangeRecord",
+          "kind": "entity",
+          "module": "metadata",
+          "fields": [
+            {
+              "name": "PartitionId",
+              "type": "int32",
+              "key": "FK",
+              "nullable": false
+            },
+            {
+              "name": "TopicId",
+              "type": "uuid",
+              "key": "FK",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "broker-record",
+          "label": "RegisterBrokerRecord",
+          "kind": "entity",
+          "module": "metadata",
+          "fields": [
+            {
+              "name": "BrokerId",
+              "type": "int32",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "IsMigratingZkBroker",
+              "type": "bool",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "config-record",
+          "label": "ConfigRecord",
+          "kind": "entity",
+          "module": "metadata",
+          "fields": [
+            {
+              "name": "ResourceType",
+              "type": "int8",
+              "nullable": false
+            },
+            {
+              "name": "ResourceName",
+              "type": "string",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "r1",
+          "source": "topic-record",
+          "target": "partition-record",
+          "kind": "relationship",
+          "label": "has partitions",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "source"
+        },
+        {
+          "id": "r2",
+          "source": "broker-record",
+          "target": "partition-record",
+          "kind": "relationship",
+          "label": "hosts replicas",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "source"
+        },
+        {
+          "id": "r3",
+          "source": "partition-record",
+          "target": "partition-change-record",
+          "kind": "relationship",
+          "label": "is changed by",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "source"
+        },
+        {
+          "id": "r4",
+          "source": "topic-record",
+          "target": "config-record",
+          "kind": "relationship",
+          "label": "configured by",
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Broker 生命周期状态机：BrokerState",
+        "sourceRef": "tests/fixtures/edge-crossings.graph.json",
+        "diagramType": "state",
+        "locale": "zh-CN"
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "start",
+          "kind": "initial"
+        },
+        {
+          "id": "not-running",
+          "label": "NOT_RUNNING",
+          "kind": "state",
+          "module": "broker"
+        },
+        {
+          "id": "starting",
+          "label": "STARTING",
+          "kind": "state",
+          "module": "broker"
+        },
+        {
+          "id": "recovery",
+          "label": "RECOVERY",
+          "kind": "state",
+          "module": "broker"
+        },
+        {
+          "id": "running",
+          "label": "RUNNING",
+          "kind": "state",
+          "module": "broker"
+        },
+        {
+          "id": "pending-shutdown",
+          "label": "PENDING_CONTROLLED_SHUTDOWN",
+          "kind": "state",
+          "module": "broker"
+        },
+        {
+          "id": "shutting-down",
+          "label": "SHUTTING_DOWN",
+          "kind": "state",
+          "module": "broker"
+        }
+      ],
+      "edges": [
+        {
+          "id": "s0",
+          "source": "initial",
+          "target": "not-running",
+          "kind": "transition",
+          "label": "new BrokerLifecycleManager",
+          "evidence": "source"
+        },
+        {
+          "id": "s1",
+          "source": "not-running",
+          "target": "starting",
+          "kind": "transition",
+          "label": "start",
+          "action": "channelManager.start()；发送 BrokerRegistration",
+          "evidence": "source"
+        },
+        {
+          "id": "s2",
+          "source": "starting",
+          "target": "recovery",
+          "kind": "transition",
+          "label": "BrokerHeartbeatResponse",
+          "guard": "isCaughtUp",
+          "action": "initialCatchUpFuture.complete",
+          "evidence": "source"
+        },
+        {
+          "id": "s3",
+          "source": "recovery",
+          "target": "running",
+          "kind": "transition",
+          "label": "BrokerHeartbeatResponse",
+          "guard": "!isFenced",
+          "action": "initialUnfenceFuture.complete",
+          "evidence": "source"
+        },
+        {
+          "id": "s4",
+          "source": "running",
+          "target": "pending-shutdown",
+          "kind": "transition",
+          "label": "beginControlledShutdown",
+          "action": "立即发送下一次心跳",
+          "evidence": "source"
+        },
+        {
+          "id": "s5",
+          "source": "pending-shutdown",
+          "target": "shutting-down",
+          "kind": "transition",
+          "label": "BrokerHeartbeatResponse",
+          "guard": "shouldShutDown",
+          "action": "beginShutdown()",
+          "evidence": "source"
+        },
+        {
+          "id": "s6",
+          "source": "starting",
+          "target": "shutting-down",
+          "kind": "transition",
+          "label": "beginControlledShutdown",
+          "guard": "当前状态不是 RUNNING",
+          "action": "跳过受控关闭，beginShutdown()",
+          "evidence": "source"
+        },
+        {
+          "id": "s7",
+          "source": "recovery",
+          "target": "shutting-down",
+          "kind": "transition",
+          "label": "beginControlledShutdown",
+          "guard": "当前状态不是 RUNNING",
+          "action": "跳过受控关闭，beginShutdown()",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka 数据流：记录 → 日志 → 副本 → 消费者，位移回写 __consumer_offsets",
+        "sourceRef": "tests/fixtures/edge-crossings.graph.json",
+        "diagramType": "dataflow",
+        "locale": "zh-CN"
+      },
+      "nodes": [
+        {
+          "id": "app-p",
+          "label": "Producer 应用",
+          "kind": "external",
+          "module": "producer-client"
+        },
+        {
+          "id": "accum",
+          "label": "RecordAccumulator",
+          "kind": "process",
+          "module": "producer-client"
+        },
+        {
+          "id": "append",
+          "label": "Partition.appendRecordsToLeader",
+          "kind": "process",
+          "module": "broker-storage"
+        },
+        {
+          "id": "leader-log",
+          "label": "Leader 分区日志（段文件）",
+          "kind": "dataStore",
+          "module": "broker-storage"
+        },
+        {
+          "id": "serve",
+          "label": "ReplicaManager.fetchMessages",
+          "kind": "process",
+          "module": "broker-storage"
+        },
+        {
+          "id": "replicate",
+          "label": "ReplicaFetcherThread.processPartitionData",
+          "kind": "process",
+          "module": "replication"
+        },
+        {
+          "id": "follower-log",
+          "label": "Follower 分区日志",
+          "kind": "dataStore",
+          "module": "replication"
+        },
+        {
+          "id": "app-c",
+          "label": "Consumer 应用",
+          "kind": "external",
+          "module": "consumer-client"
+        },
+        {
+          "id": "commit",
+          "label": "GroupCoordinatorService.commitOffsets",
+          "kind": "process",
+          "module": "coordinator"
+        },
+        {
+          "id": "offsets",
+          "label": "__consumer_offsets",
+          "kind": "dataStore",
+          "module": "coordinator"
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "app-p",
+          "target": "accum",
+          "kind": "data",
+          "label": "ProducerRecord（key, value, headers）",
+          "evidence": "source"
+        },
+        {
+          "id": "d2",
+          "source": "accum",
+          "target": "append",
+          "kind": "data",
+          "label": "ProducerBatch → ProduceRequest(MemoryRecords)",
+          "evidence": "source"
+        },
+        {
+          "id": "d3",
+          "source": "append",
+          "target": "leader-log",
+          "kind": "data",
+          "label": "追加批次（分配 offset、leaderEpoch）",
+          "evidence": "source"
+        },
+        {
+          "id": "d4",
+          "source": "leader-log",
+          "target": "serve",
+          "kind": "data",
+          "label": "fetchOffset 之后的记录",
+          "evidence": "source"
+        },
+        {
+          "id": "d5",
+          "source": "serve",
+          "target": "replicate",
+          "kind": "data",
+          "label": "FetchResponse(records, highWatermark)",
+          "evidence": "source"
+        },
+        {
+          "id": "d6",
+          "source": "replicate",
+          "target": "follower-log",
+          "kind": "data",
+          "label": "副本记录",
+          "evidence": "source"
+        },
+        {
+          "id": "d7",
+          "source": "serve",
+          "target": "app-c",
+          "kind": "data",
+          "label": "FetchResponse(HW / LSO 以内的记录)",
+          "evidence": "source"
+        },
+        {
+          "id": "d8",
+          "source": "app-c",
+          "target": "commit",
+          "kind": "data",
+          "label": "OffsetCommitRequest（group, topic, partition, offset）",
+          "evidence": "source"
+        },
+        {
+          "id": "d9",
+          "source": "commit",
+          "target": "offsets",
+          "kind": "data",
+          "label": "位移记录（经 CoordinatorPartitionWriter 追加）",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka 客户端用例：Producer · Consumer · 管理员",
+        "sourceRef": "tests/fixtures/edge-crossings.graph.json",
+        "diagramType": "usecase",
+        "locale": "zh-CN"
+      },
+      "groups": [
+        {
+          "id": "system",
+          "label": "Kafka 集群",
+          "kind": "system"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "producer-app",
+          "label": "Producer 应用",
+          "kind": "actor",
+          "module": "producer-client"
+        },
+        {
+          "id": "consumer-app",
+          "label": "Consumer 应用",
+          "kind": "actor",
+          "module": "consumer-client"
+        },
+        {
+          "id": "admin",
+          "label": "集群管理员",
+          "kind": "actor"
+        },
+        {
+          "id": "uc-send",
+          "label": "发布记录",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "producer-client"
+        },
+        {
+          "id": "uc-txn",
+          "label": "事务性写入",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "producer-client"
+        },
+        {
+          "id": "uc-metadata",
+          "label": "获取集群元数据",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "client-metadata"
+        },
+        {
+          "id": "uc-subscribe",
+          "label": "订阅主题",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "consumer-client"
+        },
+        {
+          "id": "uc-poll",
+          "label": "拉取记录",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "consumer-client"
+        },
+        {
+          "id": "uc-group",
+          "label": "加入消费组并获得分区分配",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "coordinator"
+        },
+        {
+          "id": "uc-commit",
+          "label": "提交位移",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "coordinator"
+        },
+        {
+          "id": "uc-topic",
+          "label": "创建与删除主题",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "admin-client"
+        },
+        {
+          "id": "uc-config",
+          "label": "修改资源配置",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "admin-client"
+        },
+        {
+          "id": "uc-acl",
+          "label": "管理 ACL",
+          "kind": "usecase",
+          "groupId": "system",
+          "module": "admin-client"
+        }
+      ],
+      "edges": [
+        {
+          "id": "u1",
+          "source": "producer-app",
+          "target": "uc-send",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u2",
+          "source": "consumer-app",
+          "target": "uc-subscribe",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u3",
+          "source": "consumer-app",
+          "target": "uc-poll",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u4",
+          "source": "consumer-app",
+          "target": "uc-commit",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u5",
+          "source": "admin",
+          "target": "uc-topic",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u6",
+          "source": "admin",
+          "target": "uc-config",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u7",
+          "source": "admin",
+          "target": "uc-acl",
+          "kind": "association",
+          "evidence": "source"
+        },
+        {
+          "id": "u8",
+          "source": "uc-send",
+          "target": "uc-metadata",
+          "kind": "include",
+          "evidence": "source"
+        },
+        {
+          "id": "u9",
+          "source": "uc-poll",
+          "target": "uc-group",
+          "kind": "include",
+          "evidence": "source"
+        },
+        {
+          "id": "u10",
+          "source": "uc-txn",
+          "target": "uc-send",
+          "kind": "extend",
+          "label": "配置了 transactional.id",
+          "evidence": "source"
+        },
+        {
+          "id": "u11",
+          "source": "uc-commit",
+          "target": "uc-poll",
+          "kind": "extend",
+          "label": "enable.auto.commit=true 时随 poll 自动触发",
+          "evidence": "source"
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Kafka KRaft 集群部署：3 Controller + 3 Broker（isolated）",
+        "sourceRef": "tests/fixtures/edge-crossings.graph.json",
+        "diagramType": "deployment",
+        "locale": "zh-CN"
+      },
+      "groups": [
+        {
+          "id": "compose",
+          "label": "Compose 项目：isolated / plaintext",
+          "kind": "cluster"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "client",
+          "label": "Kafka 客户端（宿主机）",
+          "kind": "external"
+        },
+        {
+          "id": "controller-1",
+          "label": "controller-1",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "controller"
+        },
+        {
+          "id": "controller-2",
+          "label": "controller-2",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "controller"
+        },
+        {
+          "id": "controller-3",
+          "label": "controller-3",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "controller"
+        },
+        {
+          "id": "kafka-1",
+          "label": "kafka-1",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "broker"
+        },
+        {
+          "id": "kafka-2",
+          "label": "kafka-2",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "broker"
+        },
+        {
+          "id": "kafka-3",
+          "label": "kafka-3",
+          "kind": "container",
+          "groupId": "compose",
+          "module": "broker"
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "client",
+          "target": "kafka-1",
+          "kind": "network",
+          "label": "29092 → 9092",
+          "evidence": "source"
+        },
+        {
+          "id": "d2",
+          "source": "client",
+          "target": "kafka-2",
+          "kind": "network",
+          "label": "39092 → 9092",
+          "evidence": "source"
+        },
+        {
+          "id": "d3",
+          "source": "client",
+          "target": "kafka-3",
+          "kind": "network",
+          "label": "49092 → 9092",
+          "evidence": "source"
+        },
+        {
+          "id": "d4",
+          "source": "kafka-1",
+          "target": "controller-1",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d5",
+          "source": "kafka-1",
+          "target": "controller-2",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d6",
+          "source": "kafka-1",
+          "target": "controller-3",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d7",
+          "source": "kafka-2",
+          "target": "controller-1",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d8",
+          "source": "kafka-2",
+          "target": "controller-2",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d9",
+          "source": "kafka-2",
+          "target": "controller-3",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d10",
+          "source": "kafka-3",
+          "target": "controller-1",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d11",
+          "source": "kafka-3",
+          "target": "controller-2",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        },
+        {
+          "id": "d12",
+          "source": "kafka-3",
+          "target": "controller-3",
+          "kind": "network",
+          "label": "9093 CONTROLLER",
+          "evidence": "source"
+        }
+      ]
+    }
+  ]
+}

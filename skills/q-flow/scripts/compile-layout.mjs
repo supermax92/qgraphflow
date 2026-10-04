@@ -4,21 +4,36 @@ import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
 import { getDiagram, canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
 import { stateSymbolX } from '../assets/viewer/src/diagrams/state.js';
 import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
-import { graphBounds, occupiedBox, visibleEdgeLabel, estimateLabelSize, groupHeadingBoxes, segmentCrossesBox, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
-import { groupHeadingLayout } from '../assets/viewer/src/text-layout.js';
-import { ASPECT_BAND, ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
+import { graphBounds, occupiedBox, visibleEdgeLabel, groupHeadingBoxes, segmentCrossesBox, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
+import { groupHeadingLayout, estimateLabelSize } from '../assets/viewer/src/text-layout.js';
+import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
 
 export const LAYOUT_VERSION = 'adaptive-v2-elkjs-0.11.0';
 export const CANDIDATE_COUNT = 6;
+// Hang guard for one ELK solve, not a budget for a compile: a slow or busy machine only takes longer.
 export const LAYOUT_TIMEOUT_MS = 30_000;
 // A layered result whose width/height ratio leaves the band [1/ASPECT_BAND, ASPECT_BAND] by more than ASPECT_SLACK is folded:
 // a top-down layout into columns when too tall, a left-to-right one into rows when too wide. The fewest segments that bring
 // the shape back within the slack win, so the graph's own shape decides between landscape and portrait. Ranked layouts and
 // branching state charts never fold.
-export { ASPECT_BAND, ASPECT_SLACK };
 export const FOLD_MAX = 5;
+// Fixed-position ports keep the order their relations were created in, so edge order alone decides which relations cross at
+// a node. When the best candidates still have crossings, a bounded local search moves only the relations that cross: it
+// swaps their ports within a node side, swaps which branch of a decision leaves on which side, and swaps their lanes across
+// fold cuts. A move is kept only when the candidate scores better, so it is deterministic and never worse than the plain
+// result; it stops with no crossings, no gain, or when its evaluation budget is spent. The budget counts evaluations, never
+// time, so a slow or busy machine lays out the same graph the same way; only LAYOUT_TIMEOUT_MS can end a compile, and that
+// is an error, not a different layout.
+export const REFINE_CANDIDATES = 2;
+export const REFINE_EVALUATIONS = 60;
+// Candidates whose width/height ratio is within this factor of the accepted band rank equal on shape, so a crossing is never
+// traded for a slightly better aspect ratio; only a shape beyond it (a long strip) outranks the crossings, and only by a
+// whole SHAPE_STEP, so a strip does not take on crossings for a marginally better ratio.
+export const SHAPE_TIE = 1.3;
+export const SHAPE_STEP = .25;
+export const shapeRank = excess => excess <= SHAPE_TIE ? 1 : Math.ceil(excess / SHAPE_STEP) * SHAPE_STEP;
 const stable = items => [...items].sort((a, b) => (a.layout?.rank ?? 0) - (b.layout?.rank ?? 0) || (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 const round = value => +value.toFixed(3);
 const box = item => ({ ...item.position, ...item.size });
@@ -57,7 +72,7 @@ export function migrateOwnership(graph) {
   return migrated;
 }
 
-function elkInput(graph, candidate) {
+function elkInput(graph, candidate, hints = {}) {
   const type = diagramTypeOf(graph), diagram = getDiagram(type), down = !['er', 'deployment', 'dataflow', 'usecase'].includes(type);
   const spacing = LAYOUT_TARGETS.layerGap + [0, 16, 48][candidate % 3];
   const portGap = candidate < 3 ? 24 : 48;
@@ -84,9 +99,10 @@ function elkInput(graph, candidate) {
     'elk.spacing.nodeNode': String(LAYOUT_TARGETS.nodeGap), 'elk.spacing.componentComponent': String(LAYOUT_TARGETS.nodeGap), 'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing),
     'elk.spacing.portPort': '24',
     'elk.spacing.edgeEdge': String(portGap), 'elk.layered.spacing.edgeEdgeBetweenLayers': String(portGap),
-    'elk.spacing.edgeNode': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? 12)), 'elk.layered.spacing.edgeNodeBetweenLayers': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? 12)), 'elk.spacing.edgeLabel': String(LAYOUT_LIMITS.labelGap), 'elk.spacing.labelNode': String(LAYOUT_LIMITS.labelGap),
+    'elk.spacing.edgeNode': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? LAYOUT_LIMITS.endpoint)), 'elk.layered.spacing.edgeNodeBetweenLayers': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? LAYOUT_LIMITS.endpoint)), 'elk.spacing.edgeLabel': String(LAYOUT_LIMITS.labelGap), 'elk.spacing.labelNode': String(LAYOUT_LIMITS.labelGap),
     'elk.padding': '[top=32,left=32,bottom=32,right=32]',
-    ...(graph.nodes.some(node => node.layout?.rank !== undefined) ? { 'elk.partitioning.activate': 'true' } : {})
+    ...(graph.nodes.some(node => node.layout?.rank !== undefined) ? { 'elk.partitioning.activate': 'true' } : {}),
+    ...(diagram.curvedSelfLoops ? { 'elk.spacing.nodeSelfLoop': '44' } : {})
   };
   const root = { id: '$root', layoutOptions: options, children: [], edges: [] };
   const groups = new Map(stable(graph.groups ?? []).map(group => {
@@ -95,14 +111,15 @@ function elkInput(graph, candidate) {
       'elk.padding': `[top=${heading.height + LAYOUT_LIMITS.groupHeadingGap},left=32,bottom=32,right=32]`,
       'elk.nodeSize.constraints': 'MINIMUM_SIZE', 'elk.nodeSize.minimum': `(${heading.width + 64},0)` } }];
   }));
-  const nodes = new Map(stable(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...minimumNodeSize(node, type, graph.meta.locale), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
+  const ordered = items => hints.nodes ? [...items].sort((a, b) => hints.nodes.indexOf(a.id) - hints.nodes.indexOf(b.id)) : stable(items);
+  const nodes = new Map(ordered(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...minimumNodeSize(node, type, graph.meta.locale), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
   if (type === 'state') for (const node of graph.nodes) {
     if (node.kind === 'initial' || node.kind === 'final') nodes.get(node.id).layoutOptions['elk.layered.layering.layerConstraint'] = node.kind === 'initial' ? 'FIRST_SEPARATE' : 'LAST_SEPARATE';
     if (node.kind === 'initial') for (const edge of graph.edges.filter(edge => edge.source === node.id)) {
       if (graph.nodes.find(item => item.id === edge.target).kind === 'state') nodes.get(edge.target).layoutOptions['elk.layered.layering.layerConstraint'] = 'FIRST';
     }
   }
-  const portRoles = new Map(), reversed = new Set();
+  const portRoles = new Map(), reversed = new Set(), buckets = new Map();
   const actorPorts = new Map();
   for (const edge of stable(graph.edges)) {
     const reverse = type === 'class' && ['inheritance', 'implementation'].includes(edge.kind);
@@ -111,18 +128,18 @@ function elkInput(graph, candidate) {
     const ports = roles.map((role, i) => {
       let side = edge.source === edge.target ? 'EAST' : down ? i ? 'NORTH' : 'SOUTH' : i ? 'WEST' : 'EAST';
       if (type === 'usecase' && graph.nodes.find(node => node.id === edge[role]).kind === 'actor') {
-        const index = actorPorts.get(edge[role]) ?? 0;
-        side = graph.edges.filter(item => item.source === edge[role] || item.target === edge[role]).length === 1 ? 'EAST' : ['NORTH', 'EAST', 'SOUTH', 'WEST'][index % 4];
+        const index = actorPorts.get(edge[role]) ?? 0, incident = hints.sides?.get(edge[role]);
+        side = graph.edges.filter(item => item.source === edge[role] || item.target === edge[role]).length === 1 ? 'EAST' : ['NORTH', 'EAST', 'SOUTH', 'WEST'][(incident ? incident.indexOf(edge.id) : index) % 4];
         actorPorts.set(edge[role], index + 1);
       }
       if (role === 'source' && ['flowchart', 'state'].includes(type) && ['decision', 'choice'].includes(graph.nodes.find(node => node.id === edge.source).kind)) {
-        const branches = stable(graph.edges.filter(item => item.source === edge.source && item.target !== edge.source));
-        if (branches.length >= 2) side = ['WEST', 'EAST', 'SOUTH'][branches.findIndex(item => item.id === edge.id) % 3];
+        const branches = hints.sides?.get(edge.source) ?? stable(graph.edges.filter(item => item.source === edge.source && item.target !== edge.source)).map(item => item.id);
+        if (branches.length >= 2) side = ['WEST', 'EAST', 'SOUTH'][branches.indexOf(edge.id) % 3];
       }
       const port = { id: `p:${edge.id}:${role}`, width: 0, height: 0, layoutOptions: { 'elk.port.side': side } };
       nodes.get(edge[role]).ports.push(port); portRoles.set(port.id, { side, edge, role }); return port.id;
     });
-    const label = visibleEdgeLabel(edge, type), size = estimateLabelSize(label);
+    const label = visibleEdgeLabel(edge, type, graph.meta.locale), size = estimateLabelSize(label);
     root.edges.push({ id: `e:${edge.id}`, sources: [ports[0]], targets: [ports[1]],
       layoutOptions: { 'elk.layered.priority.direction': String(feedback.has(edge.id) ? 1 : 100) },
       // Labels sit on their own line: ELK routes the edge through the label and reserves its size in the layer gap.
@@ -135,6 +152,9 @@ function elkInput(graph, candidate) {
     }
     for (const side of ['NORTH', 'EAST', 'SOUTH', 'WEST']) {
     const ports = node.ports.filter(port => portRoles.get(port.id).side === side), horizontal = ['NORTH', 'SOUTH'].includes(side);
+    buckets.set(`${node.id}:${side}`, ports.map(port => port.id));
+    const order = hints.ports?.get(`${node.id}:${side}`);
+    if (order) ports.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     const dimension = horizontal ? 'width' : 'height';
     ports.forEach((port, i) => {
       const original = graph.nodes.find(item => `n:${item.id}` === node.id);
@@ -146,8 +166,8 @@ function elkInput(graph, candidate) {
     }
   }
   for (const group of stable(graph.groups ?? [])) (groups.get(group.parentId) ?? root).children.push(groups.get(group.id));
-  for (const node of stable(graph.nodes)) (groups.get(node.groupId) ?? root).children.push(nodes.get(node.id));
-  return { root, reversed, stub: diagram.endpointStub ?? 12, portGap };
+  for (const node of ordered(graph.nodes)) (groups.get(node.groupId) ?? root).children.push(nodes.get(node.id));
+  return { root, reversed, stub: diagram.endpointStub ?? LAYOUT_LIMITS.endpoint, portGap, portRoles, buckets };
 }
 
 function applyElk(graph, result, prepared) {
@@ -253,7 +273,7 @@ function stateChain(graph) {
 // keep reading rightward. Geometry and ELK routes inside a segment are kept. An edge across a cut runs through the channel
 // between the segments, or through the corridors before and after all segments when a neighbour stands in its way.
 // Boundaries whose members end up in several segments are rebuilt around them and must not cover foreign nodes.
-function foldSegments(graph, layers, breaks, { spacing, portGap }, down) {
+function foldSegments(graph, layers, breaks, { spacing, portGap, laneOrder }, down) {
   const [M, C, mExtent, cExtent] = down ? ['y', 'x', 'height', 'width'] : ['x', 'y', 'width', 'height'];
   const output = structuredClone(graph), type = diagramTypeOf(graph), byId = new Map(output.nodes.map(node => [node.id, node]));
   const routes = createEdgeRoutes(graph), ranges = [0, ...breaks, layers.length];
@@ -285,10 +305,10 @@ function foldSegments(graph, layers, breaks, { spacing, portGap }, down) {
     first[C] -= room(group); first[cExtent] += room(group); last[cExtent] += LAYOUT_LIMITS.groupInset;
   }
   // Crossing edges take the channel right after the earlier of their two segments; lanes there are spaced for their labels.
-  const crossing = stable(output.edges.filter(edge => !internal(edge)));
+  const crossing = laneOrder ? output.edges.filter(edge => !internal(edge)).sort((a, b) => laneOrder.indexOf(a.id) - laneOrder.indexOf(b.id)) : stable(output.edges.filter(edge => !internal(edge)));
   const gapOf = edge => Math.min(segmentOf.get(edge.source), segmentOf.get(edge.target));
   const lanes = segments.slice(1).map(() => []), labelSpan = segments.slice(1).map(() => 0);
-  for (const edge of crossing) { lanes[gapOf(edge)].push(edge.id); labelSpan[gapOf(edge)] = Math.max(labelSpan[gapOf(edge)], estimateLabelSize(visibleEdgeLabel(edge, type))[cExtent]); }
+  for (const edge of crossing) { lanes[gapOf(edge)].push(edge.id); labelSpan[gapOf(edge)] = Math.max(labelSpan[gapOf(edge)], estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta.locale))[cExtent]); }
   // A channel keeps label clearance from both segments and leaves every endpoint its straight stub.
   const margin = Math.max(LAYOUT_LIMITS.labelGap, (getDiagram(type).endpointStub ?? LAYOUT_LIMITS.endpoint) + LAYOUT_LIMITS.labelEdgeGap);
   const step = g => LAYOUT_LIMITS.parallelGap + labelSpan[g];
@@ -350,7 +370,7 @@ function foldSegments(graph, layers, breaks, { spacing, portGap }, down) {
     const via = exit === 'side' ? [point(channel, centre(source, M, mExtent))] : [point(centre(source, C, cExtent), corridorAt(exit, source)), point(channel, corridorAt(exit, source))];
     via.push(...(entry === 'side' ? [point(channel, centre(target, M, mExtent))] : [point(channel, corridorAt(entry, target)), point(centre(target, C, cExtent), corridorAt(entry, target))]));
     const from = via[exit === 'side' ? 0 : 1][M], to = via[exit === 'side' ? 1 : 2][M];
-    edge.route = { via: via.map(item => ({ x: round(item.x), y: round(item.y) })), ...(visibleEdgeLabel(edge, type) && from !== to ? { labelAt: { x: round(point(channel, (from + to) / 2).x), y: round(point(channel, (from + to) / 2).y) } } : {}) };
+    edge.route = { via: via.map(item => ({ x: round(item.x), y: round(item.y) })), ...(visibleEdgeLabel(edge, type, graph.meta.locale) && from !== to ? { labelAt: { x: round(point(channel, (from + to) / 2).x), y: round(point(channel, (from + to) / 2).y) } } : {}) };
   });
   // Keep the ELK canvas padding around nodes, boundaries and the new corridors.
   const everything = [...output.nodes.map(box), ...groups.filter(group => group.position && group.size).map(box), ...output.edges.flatMap(edge => (edge.route?.via ?? []).map(item => ({ ...item, width: 0, height: 0 })))];
@@ -391,10 +411,10 @@ function candidateScore(graph, audit, index) {
   const bends = routes.reduce((sum, route) => sum + route.points.length - 2, 0);
   // Normalize by content, so a small routing improvement cannot justify unlimited whitespace.
   const cost = bounds.width * bounds.height / area + length / (count * unit) + .25 * bends / count + 4 * crossings / count;
-  // Shapes within the band's slack tie and compete on compactness; beyond it, the shape nearer the band wins first. The
-  // type's budget ratio only breaks ties towards its preferred orientation.
-  const excess = +aspectExcess(graph, audit.routes).toFixed(2), shape = excess <= ASPECT_SLACK ? 1 : excess;
-  return [audit.errors.length, shape, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
+  // Shapes of one rank compete on crossings, then on the exact distance from the band (every in-band shape scores 1), then
+  // on compactness; a better rank wins first. The type's budget ratio only breaks ties towards its preferred orientation.
+  const excess = +aspectExcess(graph, audit.routes).toFixed(2);
+  return [audit.errors.length, shapeRank(excess), crossings, excess, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 
@@ -418,7 +438,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     requireDiagramQuality(graph);
     return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
   }
-  const sequence = getDiagram(diagramTypeOf(graph)).sequence, started = performance.now();
+  const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });
   let pending, expired = false;
   const fail = error => pending?.reject(error);
@@ -426,54 +446,114 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   worker.on('exit', code => { if (code !== 0) fail(new Error(`Layout worker exited (${code})`)); });
   worker.on('message', message => message.error ? fail(new Error(message.error)) : pending?.resolve(message.graph));
   const timeout = Math.min(LAYOUT_TIMEOUT_MS, Math.max(1, timeoutMs));
-  const timer = setTimeout(() => { expired = true; fail(new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`)); worker.terminate(); }, timeout);
   const candidates = [];
   try {
-    for (let index = 0; index < CANDIDATE_COUNT; index++) {
-      const prepared = sequence ? null : elkInput(graph, index);
-      try {
-        const result = sequence ? null : await new Promise((resolve, reject) => { pending = { resolve, reject }; worker.postMessage(prepared.root); });
-        const layered = sequence ? compileSequence(graph, index) : applyElk(graph, result, prepared);
-        const evaluate = (candidate, errors = []) => {
-          let audit = auditLayoutQuality(candidate);
-          if (errors.length) audit = { ...audit, errors: [...errors, ...audit.errors] };
-          // ELK can put a label at a legal point crossing. Slide only that label along its own nearest segment.
-          if (!sequence) for (const id of [...new Set(audit.diagnostics.filter(item => item.ruleId === 'spacing.label-edge').map(item => item.elementIds[0]))].sort()) {
-            const edge = candidate.edges.find(item => item.id === id), route = audit.routes.get(id), origin = edge.route?.labelAt;
-            if (!origin) continue;
-            const segment = route.points.slice(1).map((b, i) => {
-              const a = route.points[i], x = Math.max(Math.min(a.x, b.x), Math.min(Math.max(a.x, b.x), origin.x)), y = Math.max(Math.min(a.y, b.y), Math.min(Math.max(a.y, b.y), origin.y));
-              return { a, b, distance: Math.hypot(x - origin.x, y - origin.y) };
-            }).sort((a, b) => a.distance - b.distance)[0];
-            const axis = segment.a.x === segment.b.x ? 'y' : 'x', step = (axis === 'y' ? route.labelBox.height : route.labelBox.width) + 24;
-            let best = origin;
-            for (const offset of [-1, 1, -2, 2]) {
-              const point = { ...origin, [axis]: round(origin[axis] + step * offset) };
-              if (point[axis] < Math.min(segment.a[axis], segment.b[axis]) + step / 2 || point[axis] > Math.max(segment.a[axis], segment.b[axis]) - step / 2) continue;
-              edge.route.labelAt = point;
-              const checked = auditLayoutQuality(candidate);
-              if (checked.errors.length < audit.errors.length) { best = point; audit = checked; }
-            }
-            edge.route.labelAt = best;
-          }
-          return { graph: candidate, errors: audit.errors, diagnostics: audit.diagnostics, score: candidateScore(candidate, audit, index), crossings: audit.crossings, excess: +aspectExcess(candidate, audit.routes).toFixed(2) };
-        };
-        const unfolded = { ...evaluate(layered), fold: 0, axis: null };
-        // Fold only a shape beyond the band's slack; the unfolded result stays available as the fallback.
-        const variants = !sequence && unfolded.excess > ASPECT_SLACK
-          ? foldedVariants(layered, { spacing: LAYOUT_TARGETS.layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap }).map(variant => ({ ...evaluate(variant.graph, variant.errors), fold: variant.count, axis: variant.axis })) : [];
-        if (performance.now() - started > timeout) { expired = true; throw new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`); }
-        // Folding exists to fix the shape: the fewest rows or columns that pass the quality gate within the fold slack of the
-        // band win; a fold the gate rejects is skipped for the next one, and otherwise the nearest valid shape competes with
-        // the unfolded result.
-        const valid = variants.filter(variant => !variant.errors.length);
-        const fold = valid.find(variant => variant.excess <= ASPECT_SLACK) ?? valid.sort((a, b) => a.excess - b.excess || compare(a, b))[0];
-        const chosen = fold && compare(fold, unfolded) < 0 ? fold : unfolded;
-        candidates.push({ index, ...chosen, folds: variants.map(variant => ({ axis: variant.axis, count: variant.fold, errors: variant.errors, excess: variant.excess, score: variant.score })) });
-      } catch (error) {
-        if (expired) throw error;
-        candidates.push({ index, errors: [error.message], diagnostics: qualityFailure(graph, 'geometry', error.message).diagnostics, score: [Infinity, 0, 0, 0, 0, 0, 0, index] });
+    const extras = new WeakMap();
+    // Each solve has its own limit; the compile as a whole has none, so load can slow it but never fail it or change its result.
+    const post = root => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { expired = true; fail(new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`)); worker.terminate(); }, timeout);
+      pending = { resolve: value => { clearTimeout(timer); resolve(value); }, reject: error => { clearTimeout(timer); reject(error); } };
+      worker.postMessage(root);
+    });
+    const evaluate = (candidate, index, errors = []) => {
+      let audit = auditLayoutQuality(candidate);
+      if (errors.length) audit = { ...audit, errors: [...errors, ...audit.errors] };
+      // ELK can put a label at a legal point crossing. Slide only that label along its own nearest segment.
+      if (!sequence) for (const id of [...new Set(audit.diagnostics.filter(item => item.ruleId === 'spacing.label-edge').map(item => item.elementIds[0]))].sort()) {
+        const edge = candidate.edges.find(item => item.id === id), route = audit.routes.get(id), origin = edge.route?.labelAt;
+        if (!origin) continue;
+        const segment = route.points.slice(1).map((b, i) => {
+          const a = route.points[i], x = Math.max(Math.min(a.x, b.x), Math.min(Math.max(a.x, b.x), origin.x)), y = Math.max(Math.min(a.y, b.y), Math.min(Math.max(a.y, b.y), origin.y));
+          return { a, b, distance: Math.hypot(x - origin.x, y - origin.y) };
+        }).sort((a, b) => a.distance - b.distance)[0];
+        const axis = segment.a.x === segment.b.x ? 'y' : 'x', step = (axis === 'y' ? route.labelBox.height : route.labelBox.width) + 24;
+        let best = origin;
+        for (const offset of [-1, 1, -2, 2]) {
+          const point = { ...origin, [axis]: round(origin[axis] + step * offset) };
+          if (point[axis] < Math.min(segment.a[axis], segment.b[axis]) + step / 2 || point[axis] > Math.max(segment.a[axis], segment.b[axis]) - step / 2) continue;
+          edge.route.labelAt = point;
+          const checked = auditLayoutQuality(candidate);
+          if (checked.errors.length < audit.errors.length) { best = point; audit = checked; }
+        }
+        edge.route.labelAt = best;
       }
+      return { graph: candidate, errors: audit.errors, diagnostics: audit.diagnostics, score: candidateScore(candidate, audit, index), crossings: audit.crossings, excess: +aspectExcess(candidate, audit.routes).toFixed(2) };
+    };
+    const finish = (index, layered, prepared, hints) => {
+      const unfolded = { ...evaluate(layered, index), fold: 0, axis: null };
+      // Fold only a shape beyond the band's slack; the unfolded result stays available as the fallback.
+      const variants = !sequence && unfolded.excess > ASPECT_SLACK
+        ? foldedVariants(layered, { spacing: LAYOUT_TARGETS.layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap, laneOrder: hints.lanes }).map(variant => ({ ...evaluate(variant.graph, index, variant.errors), fold: variant.count, axis: variant.axis })) : [];
+      // Folding exists to fix the shape: among the folds the quality gate accepts within the fold slack of the band, the one
+      // with the fewest crossings wins, then the fewest segments; otherwise the nearest valid shape competes with the
+      // unfolded result.
+      const valid = variants.filter(variant => !variant.errors.length), within = valid.filter(variant => variant.excess <= ASPECT_SLACK);
+      const fold = within.length ? within.reduce((a, b) => b.score[2] < a.score[2] ? b : a) : valid.sort((a, b) => a.excess - b.excess || compare(a, b))[0];
+      const chosen = fold && compare(fold, unfolded) < 0 ? fold : unfolded;
+      const candidate = { index, ...chosen, folds: variants.map(variant => ({ axis: variant.axis, count: variant.fold, errors: variant.errors, excess: variant.excess, score: variant.score })) };
+      extras.set(candidate, { layered, prepared, hints });
+      return candidate;
+    };
+    const solve = async (index, hints = {}) => {
+      const prepared = sequence ? null : elkInput(graph, index, hints);
+      return finish(index, sequence ? compileSequence(graph, index) : applyElk(graph, await post(prepared.root), prepared), prepared, hints);
+    };
+    // Crossing-directed local search over port order, decision branch sides and fold lanes (see REFINE_EVALUATIONS).
+    const swapped = (list, i, j) => { const next = [...list]; [next[i], next[j]] = [next[j], next[i]]; return next; };
+    const refine = async base => {
+      let best = base, evaluations = 0;
+      const first = extras.get(base);
+      let hints = { ports: new Map(first.prepared.buckets), lanes: stable(graph.edges).map(edge => edge.id), sides: new Map(), nodes: graph.nodes.some(node => node.layout?.order !== undefined) ? undefined : stable(graph.nodes).map(node => node.id) };
+      if (['flowchart', 'state'].includes(diagramTypeOf(graph))) for (const node of stable(graph.nodes.filter(node => ['decision', 'choice'].includes(node.kind)))) {
+        const branches = stable(graph.edges.filter(edge => edge.source === node.id && edge.target !== node.id)).map(edge => edge.id);
+        if (branches.length >= 2) hints.sides.set(node.id, branches);
+      }
+      if (diagramTypeOf(graph) === 'usecase') for (const node of stable(graph.nodes.filter(node => node.kind === 'actor'))) {
+        const incident = stable(graph.edges.filter(edge => edge.source === node.id || edge.target === node.id)).map(edge => edge.id);
+        if (incident.length >= 2) hints.sides.set(node.id, incident);
+      }
+      while (best.score[2] && evaluations < REFINE_EVALUATIONS) {
+        const here = extras.get(best), crossing = [...new Set(best.crossings.flatMap(item => item.elementIds))].sort();
+        const moves = [];
+        for (const id of crossing) {
+          for (const [portId, role] of here.prepared.portRoles) {
+            if (role.edge.id !== id) continue;
+            const key = `n:${role.edge[role.role]}:${role.side}`, list = hints.ports.get(key) ?? [], at = list.indexOf(portId);
+            for (let other = 0; other < list.length; other++) if (other !== at) moves.push({ rerun: true, hints: { ...hints, ports: new Map(hints.ports).set(key, swapped(list, at, other)) } });
+          }
+          for (const [node, branches] of hints.sides) {
+            const at = branches.indexOf(id);
+            if (at >= 0) for (let other = 0; other < branches.length; other++) if (other !== at) moves.push({ rerun: true, hints: { ...hints, sides: new Map(hints.sides).set(node, swapped(branches, at, other)) } });
+          }
+        }
+        if (hints.nodes) {
+          const ends = [...new Set(graph.edges.filter(edge => crossing.includes(edge.id)).flatMap(edge => [edge.source, edge.target]))].sort();
+          for (const a of ends) for (const b of ends) if (a < b && graph.nodes.find(node => node.id === a).groupId === graph.nodes.find(node => node.id === b).groupId) moves.push({ rerun: true, hints: { ...hints, nodes: swapped(hints.nodes, hints.nodes.indexOf(a), hints.nodes.indexOf(b)) } });
+        }
+        if (best.fold) for (const a of crossing) for (const b of crossing) if (a < b) moves.push({ rerun: false, hints: { ...hints, lanes: swapped(hints.lanes, hints.lanes.indexOf(a), hints.lanes.indexOf(b)) } });
+        let improved = false;
+        for (const move of moves) {
+          if (evaluations >= REFINE_EVALUATIONS) break;
+          evaluations++;
+          let next;
+          try { next = move.rerun ? await solve(base.index, move.hints) : finish(base.index, here.layered, here.prepared, move.hints); }
+          catch (error) { if (expired) throw error; continue; }
+          if (compare(next, best) < 0) { best = Object.assign(next, { refined: true }); hints = move.hints; improved = true; break; }
+        }
+        if (!improved) break;
+      }
+      return best;
+    };
+    for (let index = 0; index < CANDIDATE_COUNT; index++) {
+      try { candidates.push(await solve(index)); }
+      catch (error) {
+        if (expired) throw error;
+        candidates.push({ index, errors: [error.message], diagnostics: qualityFailure(graph, 'geometry', error.message).diagnostics, score: [Infinity, 0, 0, 0, 0, 0, 0, 0, index] });
+      }
+    }
+    candidates.sort(compare);
+    if (!sequence) for (const base of candidates.filter(candidate => !candidate.errors.length && candidate.score[2] > 0).slice(0, REFINE_CANDIDATES)) {
+      candidates[candidates.indexOf(base)] = await refine(base);
     }
     candidates.sort(compare);
     const best = candidates[0];
@@ -481,5 +561,5 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     best.graph.layout = { ...best.graph.layout, version: LAYOUT_VERSION, strategy: `${sequence ? 'sequence' : 'layered'}-${best.index}${best.fold ? `-fold${best.fold}${best.axis === 'columns' ? 'c' : ''}` : ''}` };
     return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
   } catch (error) { throw error.phases ? error : qualityFailure(graph, 'geometry', error.message); }
-  finally { clearTimeout(timer); await worker.terminate(); }
+  finally { await worker.terminate(); }
 }

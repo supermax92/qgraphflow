@@ -1,5 +1,6 @@
-import { createEdgeRoutes, graphBounds, pathFromPoints, layoutText, cardinalityMarks } from './edge-routing.js';
-import { getDiagram, edgeMarkers, isDashed } from './diagrams/registry.js';
+import { createEdgeRoutes, graphBounds, pathFromRoute, cardinalityMarks } from './edge-routing.js';
+import { layoutText } from './text-layout.js';
+import { DIAGRAM_TYPES, diagramTypeOf, getDiagram, edgeMarkers, isDashed, labelRoleColors } from './diagrams/registry.js';
 import { renderNode } from './node-svg.js';
 import { text, fit, escapeXml, svgStyles, groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
 import { PALETTES, dataKinds, edgeColor, sequenceGroupColor, moduleColorMap, groupAppearanceMap, TYPOGRAPHY } from './visual-style.js';
@@ -7,11 +8,6 @@ import { RADIX_COLORS_NOTICE } from './radix-colors.js';
 import { sequencePairs, sequenceExecutions } from './sequence-executions.js';
 import { sequenceFragment, renderFragment, fragmentDepth, fragmentSurfaceAt } from './sequence-fragments.js';
 import { requireDiagramQuality } from './layout-quality.js';
-export { cardinalityMarks } from './edge-routing.js';
-
-function diagramType(graph) {
-  return graph.meta.diagramType ?? 'architecture';
-}
 
 function edgeMarker(edge, type, target, moduleColors, source, pair) {
   const { end } = edgeMarkers(edge, type);
@@ -47,7 +43,7 @@ function renderEdge(edge, route, type, offsetX, offsetY, palette, target, module
     cardinalityMarks(edge.targetCardinality, route.points.at(-1), route.points.at(-2))
   ].map((mark, index) => `<g data-cardinality-endpoint="${index ? 'target' : 'source'}" transform="translate(${offsetX} ${offsetY})" fill="none" stroke="${palette.accent}" stroke-width="1.5"><path d="${mark.path}"/>${mark.circle ? `<circle cx="${mark.circle.cx}" cy="${mark.circle.cy}" r="${mark.circle.r}" fill="${palette.surface}"/>` : ''}</g>`).join('') : '';
   const multiplicities = (route.endpointLabels ?? []).map(item => `<g class="edge-multiplicity" data-endpoint="${item.role}"><rect x="${item.labelBox.x + offsetX}" y="${item.labelBox.y + offsetY}" width="${item.labelBox.width}" height="${item.labelBox.height}" rx="4" class="edge-bg"/>${text(item.labelPoint.x + offsetX, item.labelBox.y + offsetY + 3 + TYPOGRAPHY.body, item.label, 'edge', ' text-anchor="middle"')}</g>`).join('');
-  return `<g data-diagram-edge-id="${escapeXml(edge.id)}"><path d="${pathFromPoints(route.points, offsetX, offsetY)}" fill="none" stroke="${stroke}" stroke-width="1.5"${dash}${edgeMarker(edge, type, target, moduleColors, source, pair)}${edgeStartMarker(edge, type)}/>${cardinalities}${background}${pairLine}${label ? route.labelLines.map((line, index) => text(labelX, labelY - labelSize.height / 2 + 3 + TYPOGRAPHY.body + index * TYPOGRAPHY.edgeLineHeight, line, 'edge', ' text-anchor="middle"')).join('') : ''}${multiplicities}</g>`;
+  return `<g data-diagram-edge-id="${escapeXml(edge.id)}"><path d="${pathFromRoute(route, offsetX, offsetY)}" fill="none" stroke="${stroke}" stroke-width="1.5"${dash}${edgeMarker(edge, type, target, moduleColors, source, pair)}${edgeStartMarker(edge, type)}/>${cardinalities}${background}${pairLine}${label ? route.labelLines.map((line, index) => text(labelX, labelY - labelSize.height / 2 + 3 + TYPOGRAPHY.body + index * TYPOGRAPHY.edgeLineHeight, route.labelRuns ? { runs: route.labelRuns[index], colors: labelRoleColors(type, palette) } : line, 'edge', ' text-anchor="middle"')).join('') : ''}${multiplicities}</g>`;
 }
 
 export function createDiagramSvg(graph, theme = 'light', moduleColors) {
@@ -55,7 +51,7 @@ export function createDiagramSvg(graph, theme = 'light', moduleColors) {
   const palette = PALETTES[theme] ?? PALETTES.light;
   moduleColors ??= moduleColorMap([graph], palette);
   const groupAppearances = groupAppearanceMap(graph.groups ?? [], palette);
-  const type = diagramType(graph);
+  const type = diagramTypeOf(graph);
   const routes = createEdgeRoutes(graph);
   const pairs = sequencePairs(graph), executions = sequenceExecutions(graph);
   const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
@@ -81,4 +77,14 @@ export function createDiagramSvg(graph, theme = 'light', moduleColors) {
   const boardHeight = height - header - 24;
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Radix Colors\n${RADIX_COLORS_NOTICE}-->\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" data-graph-offset-x="${offsetX}" data-graph-offset-y="${offsetY}" role="img" aria-labelledby="title desc"><title id="title">${escapeXml(graph.meta.title)}</title><desc id="desc">${escapeXml(type)} diagram for ${escapeXml(graph.meta.sourceRef)}</desc><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="${palette.ink}" flood-opacity=".045"/></filter><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${palette.edge}"/></marker><marker id="arrow-module" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="context-stroke"/></marker><marker id="arrow-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${palette.warn}"/></marker><marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${palette.accent}"/></marker><marker id="arrow-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${palette.data}"/></marker><marker id="arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"/></marker><marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="${palette.surface}" stroke="context-stroke"/></marker><marker id="diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="${palette.surface}" stroke="context-stroke"/></marker><style>${svgStyles(palette)}</style></defs><rect width="100%" height="100%" fill="${palette.paper}"/><rect x="${boardX}" y="${boardY}" width="${boardWidth}" height="${boardHeight}" rx="16" fill="${palette.surface}" stroke="${palette.rule}"/>${titleLayout.lines.map((line, index) => text(margin, 43 + index * titleLayout.lineHeight, line, 'heading')).join('')}${subtitleLayout.lines.map((line, index) => text(margin, subtitleY + index * subtitleLayout.lineHeight, line, 'meta')).join('')}${groups}${type === 'sequence' ? nodes + edges : edges + nodes}${fragmentText}</svg>\n`;
+}
+
+// The generator and the Viewer's in-place save both write these files, so names and bytes come from one place: light
+// theme whatever the screen shows, and one module colour map shared by every view, as the Viewer computes it.
+export const SVG_FILE = new RegExp(`^diagram(-\\d+-(${DIAGRAM_TYPES.join('|')}))?\\.svg$`);
+
+export function diagramSvgFiles(input) {
+  const collection = Array.isArray(input.diagrams), views = collection ? input.diagrams : [input];
+  const moduleColors = moduleColorMap(views, PALETTES.light);
+  return views.map((view, index) => ({ name: collection ? `diagram-${index + 1}-${diagramTypeOf(view)}.svg` : 'diagram.svg', svg: createDiagramSvg(view, 'light', moduleColors) }));
 }

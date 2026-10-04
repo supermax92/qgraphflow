@@ -1,4 +1,4 @@
-/* Palette variables (--bg … --group, --font-*) are written by visual-style.js and shared with SVG / PNG export.
+/* Palette variables (--bg … --warm, --font-*) are written by visual-style.js and shared with SVG / PNG export.
  * Every chrome token below derives from them, so light and dark stay one system: four label levels, one separator,
  * one fill scale, three materials, one easing. Node drawings keep reading the palette and --font-* directly. */
 :root {
@@ -14,20 +14,10 @@
   --line: #d9d9e0;
   --accent: #5753c6;
   --accent-soft: #f8f8ff;
-  --hero: #f0f1fe;
-  --hero-ink: #272962;
-  --good: #107d98;
   --warm: #c44b00;
-  --warm-soft: #ffefd6;
-  --edge: #8b8d98;
-  --button: #f9f9fb;
-  --button-line: #d9d9e0;
-  --group: #f9f9fb;
-  --font-title: 20px;
   --font-body: 16px;
   --font-small: 14px;
   --edge-line-height: 24px;
-  --hero-border: #9b9ef0;
   /* Four label levels (100 / 62 / 34 / 18 %) — every grey in the chrome is one of these. */
   --label: var(--ink);
   --label-2: color-mix(in srgb, var(--ink) 62%, transparent);
@@ -156,10 +146,15 @@ button:disabled { cursor: not-allowed; }
 .relation-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 .canvas { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--canvas); }
 
-.sidebar { position: absolute; top: calc(var(--tb-h) + var(--gutter)); bottom: var(--gutter); z-index: 20; width: min(var(--side-w), calc(100% - 2 * var(--gutter))); padding: 14px; display: flex; flex-direction: column; border-radius: var(--r-card); background: var(--material-thick); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-2); overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--label-4) transparent; }
+.sidebar { position: absolute; top: calc(var(--tb-h) + var(--gutter)); bottom: var(--gutter); z-index: 20; width: min(var(--side-w), calc(100% - 2 * var(--gutter))); padding: 14px; display: flex; flex-direction: column; border-radius: var(--r-card); background: var(--material-thick); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-2); overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--label-4) transparent; transition: transform var(--base) var(--ease); }
 .sidebar:focus-visible { outline-offset: -3px; }
-.nav { left: var(--gutter); }
-.inspector { right: var(--gutter); }
+.nav { left: var(--gutter); --off: -115%; }
+.inspector { right: var(--gutter); --off: 115%; }
+/* A panel slides from its own edge; one that opens with the page, or under reduced motion, starts at rest. */
+.sidebar.is-closing { transform: translateX(var(--off)); }
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style { .sidebar:not(.is-still) { transform: translateX(var(--off)); } }
+}
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .side-head .panel-title { margin: 0; }
 .side-close { width: 24px; height: 24px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: var(--r-control); color: var(--label-2); background: transparent; cursor: pointer; transition: background var(--fast) var(--ease), transform 100ms ease-out; }
@@ -361,6 +356,7 @@ button:disabled { cursor: not-allowed; }
 .legend i:is(.legend-solid, .legend-dashed) { width: 18px; height: 0; border: 0; border-top: 1px solid; border-radius: 0; }
 .legend i.legend-dashed { border-top-style: dashed; }
 .legend i.legend-module { width: 10px; height: 10px; border-radius: 50%; }
+.legend i.legend-ramp { width: 28px; height: 10px; border-width: 0; }
 
 @keyframes edge-flow { to { stroke-dashoffset: -20px; } }
 @keyframes sequence-edge-flow { from { stroke-dashoffset: 0px; } to { stroke-dashoffset: calc(-10 * var(--sequence-flow-unit, 1px)); } }
@@ -407,3 +403,14 @@ button:disabled { cursor: not-allowed; }
 .layout-problems summary { cursor:pointer; }
 .layout-problems button { text-align:left; overflow-wrap:anywhere; }
 .layout-problems pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
+
+/* Keep permanent surfaces quiet; selection and moving strokes supply local emphasis. */
+.edge-flow { stroke-width: 2.8px; filter: none; }
+.flow-edge--sequence .edge-flow { stroke-width: 3.2px; }
+.selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .12; }
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .diagram-node .node-surface, .edge-flow { filter: none !important; }
+  .edge-flow { stroke-width: 2px; }
+  .selection-node-halo, .selection-edge-halo { display: none; filter: none; }
+}

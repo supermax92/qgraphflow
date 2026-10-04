@@ -6,7 +6,15 @@
 
 Qoder Desktop ではマーケットプレイスから、Claude Code では GitHub から直接インストールできます（下記の各項を参照）。どちらも手順 1 は不要です。ローカルインストールの場合は、先に QGraphFlow のソースコードをダウンロードして実行用パッケージを作成してください。
 
-Node.js 22 と、モデルへのアクセスを設定済みのクライアントが必要です。ソースからビルドする場合は、Git、npm、`tar`、`zip`、`unzip` も必要です。
+Node.js 22 以降と、モデルへのアクセスを設定済みのクライアントが必要です。ソースからビルドする場合は、Git、npm、`tar`、`zip`、`unzip` も必要です。
+
+## クイックインストール
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Claude Code、Codex、Cursor、Qoder にスキル `q-flow` を導入します（`skills` 1.7.0 で実測済み）。導入先のクライアントを尋ねられます。プラグインとして導入する場合は、次の手順に従ってください。
 
 ## 1. ローカルインストール用のダウンロードとパッケージ作成
 
@@ -14,7 +22,7 @@ Node.js 22 と、モデルへのアクセスを設定済みのクライアント
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
 ```
 
 QGraphFlow のソースコードが手元にある場合はクローンを省略し、そのルートディレクトリに移動してください。ZIP 名は QGraphFlow の `package.json` のバージョンに合わせます。出力先と展開先には新しいディレクトリを使い、既存ファイルを上書きしないでください。Git で取得できるのはプッシュ済みのコードのみで、未コミットのローカル変更は含まれません。

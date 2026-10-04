@@ -9,7 +9,7 @@ The steps and decisions of one function, use case or job, top to bottom. Read wi
 ## Rules
 
 - Exactly one `start`; one or more `end` nodes (success and failure endings may be separate nodes). Every other node lies on a path from `start` to an `end`.
-- A `decision` asks one question in its label (`payment.ok?`) and has at least two outgoing edges: `yes` / `no` (label them `yes` / `no`, the locale's words, or the actual condition). Other kinds use `flow`; use `success` / `failure` for outcome edges into an `end`.
+- A `decision` asks one question in its label (`payment.ok?`) and has at least two outgoing edges: `yes` / `no` (label them with the locale's words for yes / no, or with the actual condition). Other kinds use `flow`; use `success` / `failure` for outcome edges into an `end`.
 - `process` is a step that changes state; `input` / `output` read or emit data; `subprocess` is a call into another flow you are not expanding.
 - The main path must read downward. When the happy path is not obvious from the edges, list it in `layout.primaryPath` (node ids in order, each pair joined by a directed edge). Feedback / retry edges are allowed and route around the outside.
 - `module` per step is the subsystem whose work the step performs: a call into inventory is inventory's work, a payment check is payment's, a pure control decision keeps the owning component, `start` / `end` take the caller. A flow that really lives inside one subsystem keeps one module; `module.single-tone` only asks you to check.

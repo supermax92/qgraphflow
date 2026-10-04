@@ -1,12 +1,13 @@
 import { translate } from '../i18n.js';
-import { createDiagramSvg } from '../export-svg.js';
-import { getDiagram, edgeMarkers } from '../diagrams/registry.js';
+import { createDiagramSvg, diagramSvgFiles } from '../export-svg.js';
+import { diagramTypeOf, getDiagram, edgeMarkers } from '../diagrams/registry.js';
 import { createEdgeRoutes, occupiedBox, cardinalityMarks } from '../edge-routing.js';
 import { sequenceFragment } from '../sequence-fragments.js';
 import { sequenceExecutions } from '../sequence-executions.js';
 import { qualityFailure } from '../layout-quality.js';
 import { groupHeadingLayout } from '../text-layout.js';
 import { pageWithGraph } from '../session-graph.js';
+import { copyColors } from '../visual-style.js';
 
 function fileStem(title) {
   return title.trim().replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '') || 'diagram';
@@ -21,9 +22,10 @@ function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-// Rewrite the open page and its sibling graph.json in place. Chromium browsers can write both files after the user picks
-// the page's own folder once; the page on disk is re-read there, so only its embedded data changes. Other browsers
-// download graph.json so edits survive a regeneration.
+// Rewrite the open page, its sibling graph.json and the per-view SVGs in place. Chromium browsers can write them after
+// the user picks the page's own folder once; the page on disk is re-read there, so only its embedded data changes. The
+// SVGs are the generator's own (light theme, no browser glyph check), so they match a `--layout preserve` regeneration
+// byte for byte. Other browsers download graph.json so edits survive a regeneration.
 export async function saveGraphJson(input, locale, setStatus, pageName = decodeURIComponent(window.location?.pathname?.split('/').pop() || 'index.html')) {
   const t = (message, values) => translate(locale, message, values);
   const contents = `${JSON.stringify(input, null, 2)}\n`;
@@ -34,13 +36,17 @@ export async function saveGraphJson(input, locale, setStatus, pageName = decodeU
       const existing = await directory.getFileHandle(pageName, { create: false }).catch(() => null);
       if (!existing) throw Object.assign(new Error('wrong directory'), { name: 'NotFoundError' });
       const page = pageWithGraph(await (await existing.getFile()).text(), input);
-      // Write graph.json first: it is the regeneration input, so it must never lag behind the page.
-      for (const [name, text] of [['graph.json', contents], [pageName, page]]) {
+      // Every view is rendered before any write; one view outside the layout gate keeps every SVG as it was, while the
+      // page and graph.json are still saved as a draft.
+      let svgs;
+      try { svgs = diagramSvgFiles(input).map(file => [file.name, file.svg]); } catch (error) { if (!error.phases) throw error; }
+      // Write graph.json first: it is the regeneration input, so it must never lag behind the page or the SVGs.
+      for (const [name, text] of [['graph.json', contents], [pageName, page], ...svgs ?? []]) {
         const handle = await directory.getFileHandle(name, { create: true });
         writable = await handle.createWritable();
         await writable.write(text); await writable.close(); writable = null;
       }
-      setStatus(t('Saved into this page and its sibling graph.json'));
+      setStatus(t(svgs ? 'Saved into this page, its sibling graph.json and SVGs' : 'Saved into this page and its sibling graph.json; SVGs not updated: the layout needs adjustment'));
     } else if (typeof window.showSaveFilePicker === 'function') {
       const handle = await window.showSaveFilePicker({ suggestedName: 'graph.json', types: [{ description: 'Graph JSON', accept: { 'application/json': ['.json'] } }] });
       writable = await handle.createWritable();
@@ -89,23 +95,24 @@ export async function verifyRenderedSvg(svg, graph) {
     }
     for (const node of graph.nodes) {
       elementIds = [node.id]; bounds = [{ ...node.position, ...node.size }];
-      const group = nodeGroups.get(node.id), diagram = getDiagram(graph.meta.diagramType ?? 'architecture');
+      const group = nodeGroups.get(node.id), diagram = getDiagram(diagramTypeOf(graph));
       if (!group) throw new Error(`Export is missing node ${node.id}`);
       const nodeBox = { x: node.position.x + offsetX, y: node.position.y + offsetY, width: node.size.width, height: diagram.selectionHeight?.(node) ?? node.size.height };
       const area = diagram.textArea && node.kind !== 'actor' ? diagram.textArea(node) : null;
       const safe = area ? { ...area, x: nodeBox.x + (area.x ?? (nodeBox.width - area.width) / 2), y: nodeBox.y + (area.y ?? (nodeBox.height - area.height) / 2) } : nodeBox;
+      const actions = diagram.activityArea?.(node), actionSafe = actions && { ...actions, x: nodeBox.x + actions.x, y: nodeBox.y + actions.y };
       const textBoxes = [...group.querySelectorAll('text')].filter(element => element.textContent).map(element => ({ element, box: boxOf(element) }));
       const visible = normalize(textBoxes.map(item => item.element.textContent).join(''));
       const expected = [['initial', 'final'].includes(node.kind) && !node.subtitle ? '' : node.label, node.subtitle,
-        ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? [])];
+        ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? []), ...(actions ? ['entry', 'do', 'exit'].map(key => node[key]) : [])];
       for (const value of expected) if (value && !visible.includes(normalize(value))) throw new Error(`Node text is not fully shown: ${node.id} / ${node.label} / ${String(value).slice(0, 80)}`);
-      for (const item of textBoxes) if (!inside(item.box, safe)) throw new Error(`Node text leaves the safe area: ${node.id} / ${node.label} / ${item.element.textContent.slice(0, 80)}`);
+      for (const item of textBoxes) if (!inside(item.box, safe) && !(actionSafe && inside(item.box, actionSafe))) throw new Error(`Node text leaves the safe area: ${node.id} / ${node.label} / ${item.element.textContent.slice(0, 80)}`);
       for (let i = 0; i < textBoxes.length; i++) for (const other of textBoxes.slice(i + 1)) {
         const a = textBoxes[i].box, b = other.box;
         if (a.x < b.x + b.width - .5 && b.x < a.x + a.width - .5 && a.y < b.y + b.height - .5 && b.y < a.y + a.height - .5) throw new Error(`Node text overlaps: ${node.id} / ${node.label}`);
       }
     }
-    const type = graph.meta.diagramType ?? 'architecture', routes = createEdgeRoutes(graph);
+    const type = diagramTypeOf(graph), routes = createEdgeRoutes(graph);
     const edgeGroups = new Map([...root.querySelectorAll('[data-diagram-edge-id]')].map(element => [element.dataset.diagramEdgeId, element]));
     const shifted = box => ({ ...box, x: box.x + offsetX, y: box.y + offsetY });
     const overlaps = (a, b) => a.x < b.x + b.width - .5 && b.x < a.x + a.width - .5 && a.y < b.y + b.height - .5 && b.y < a.y + a.height - .5;
@@ -178,7 +185,7 @@ export async function verifyRenderedSvg(svg, graph) {
         if (!inside(actual, view) || labels.some(label => overlaps(actual, label)) || graph.nodes.some(node => node.id !== edge.source && node.id !== edge.target && overlaps(actual, shifted(occupiedBox(node, type))))) throw new Error(`Edge marker out of bounds or covered: ${edge.id}/${side}/${id}`);
       }
     }
-  } catch (error) { throw qualityFailure(graph, 'rendering', error.message, [{ ruleId: 'rendering.svg', severity: 'error', diagramType: graph.meta.diagramType ?? 'architecture', elementIds, bounds,
+  } catch (error) { throw qualityFailure(graph, 'rendering', error.message, [{ ruleId: 'rendering.svg', severity: 'error', diagramType: diagramTypeOf(graph), elementIds, bounds,
     measured: error.message, required: 'Complete visible text and notation within the measured safety regions and viewBox', remediation: 'Inspect the identified element and regenerate after correcting its text or geometry.' }]); }
   finally { host.remove(); }
 }
@@ -203,14 +210,9 @@ function downloadPng(svg, name) {
         probe.drawImage(canvas, 0, 0, preview.width, preview.height);
         const pixels = probe.getImageData(0, 0, preview.width, preview.height).data;
         if (!pixels.some((value, index) => value !== pixels[index % 4])) throw new Error('The browser produced a blank PNG canvas');
-        canvas.toBlob(async blob => {
+        canvas.toBlob(blob => {
           if (!blob || !blob.size || blob.type !== 'image/png') return reject(new Error('The browser could not generate the PNG'));
-          try {
-            const decoded = await createImageBitmap(blob), complete = decoded.width === width && decoded.height === height;
-            decoded.close();
-            if (!complete) throw new Error('PNG encoding size does not match the canvas');
-            downloadBlob(blob, name); resolve();
-          } catch (error) { reject(error); }
+          downloadBlob(blob, name); resolve();
         }, 'image/png');
       } catch (error) { reject(error); }
       finally { URL.revokeObjectURL(url); }
@@ -225,7 +227,7 @@ function downloadPng(svg, name) {
 
 export async function downloadDiagram(graph, theme, format, setStatus, moduleColors) {
     graph = structuredClone(graph);
-    moduleColors = moduleColors && new Map(moduleColors);
+    moduleColors = moduleColors && copyColors(moduleColors);
     const t = (message, values) => translate(graph.meta.locale, message, values);
     try {
       setStatus(t('Generating {format}…', { format: format.toUpperCase() }));

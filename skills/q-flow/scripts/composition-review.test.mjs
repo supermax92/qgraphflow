@@ -4,10 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
-import { moduleSlotName, reviewComposition, validateGraphInput } from './validate-graph.mjs';
+import { reviewComposition, validateGraphInput } from './validate-graph.mjs';
 import { compileViews } from './generate-viewer.mjs';
-import { moduleColorMap, PALETTES } from '../assets/viewer/src/visual-style.js';
-import { IDENTITY_SCALES } from '../assets/viewer/src/radix-colors.js';
 
 const script = path.join(import.meta.dirname, 'validate-graph.mjs');
 const skillDir = path.join(import.meta.dirname, '..');
@@ -21,13 +19,6 @@ const temp = (t, graph) => {
   return file;
 };
 const rules = warnings => warnings.map(warning => warning.ruleId);
-
-// Two names the Viewer hashes into one slot, and one that lands elsewhere; the test derives them, never assumes them.
-const collidingPair = () => {
-  const names = ['core', 'redis', 'memory', 'pigeon', 'starter', 'sdk', 'api', 'app', 'kafka', 'hub', 'ledger', 'lock'];
-  for (const a of names) for (const b of names) if (a < b && moduleSlotName(a) === moduleSlotName(b)) return [a, b];
-  throw new Error('no colliding pair among candidates');
-};
 
 const flowchart = (module, count = 6) => {
   const nodes = [{ id: 'start', label: 'start', kind: 'start', module }];
@@ -95,31 +86,6 @@ test('module.single-tone fires for a flowchart or data flow painted in one modul
   assert.deepEqual(rules(reviewComposition(state)), []);
 });
 
-test('module.slot-collision predicts the Viewer palette exactly and stays informational', () => {
-  const [a, b] = collidingPair();
-  const graph = { meta: meta('architecture'), nodes: [{ id: 'x', label: 'X', kind: 'service', module: a }, { id: 'y', label: 'Y', kind: 'service', module: b }],
-    edges: [{ id: 'e', source: 'x', target: 'y', kind: 'call', evidence: 'source' }] };
-  const warnings = reviewComposition(graph);
-  assert.deepEqual(rules(warnings), ['module.slot-collision']);
-  assert.deepEqual(warnings[0].elementIds, ['x', 'y']);
-  assert.match(warnings[0].message, new RegExp(`share colour slot ${moduleSlotName(a)}`));
-  const tones = moduleColorMap([graph], PALETTES.light);
-  assert.equal(tones.get(a).name, tones.get(b).name, 'the Viewer really paints both modules alike');
-  assert.equal(tones.get(a).name, moduleSlotName(a));
-  const free = IDENTITY_SCALES.filter(name => name !== moduleSlotName(a));
-  assert.match(warnings[0].remediation, /never rename a module for colour/);
-  assert.match(warnings[0].remediation, new RegExp(`free: ${free.join(', ')}`));
-  const apart = { ...graph, nodes: [graph.nodes[0], { ...graph.nodes[1], module: IDENTITY_SCALES.map(() => null).map((_, i) => `${b}${i}`).find(name => moduleSlotName(name) !== moduleSlotName(a)) }] };
-  assert.deepEqual(rules(reviewComposition(apart)), []);
-});
-
-test('modules that never meet in one view may share a slot without a warning', () => {
-  const [a, b] = collidingPair();
-  const one = { meta: meta('architecture'), nodes: [{ id: 'x', label: 'X', kind: 'service', module: a }], edges: [] };
-  const two = { meta: meta('class'), nodes: [{ id: 'y', label: 'Y', kind: 'class', module: b }], edges: [] };
-  assert.deepEqual(rules(reviewComposition({ diagrams: [one, two] })), []);
-});
-
 test('flowchart.process-branch flags a non-decision with two outgoing edges', () => {
   const graph = flowchart('a', 6); graph.nodes[1].module = 'b';
   graph.edges.push({ id: 'extra', source: 'p1', target: 'end', kind: 'flow', evidence: 'source' });
@@ -154,14 +120,6 @@ test('the validator CLI prints composition warnings to stderr, counts them in th
   assert.equal(JSON.parse(checked.stdout).warnings, 1);
 });
 
-test('--module-slot prints where candidate names land and needs no graph', () => {
-  const [a, b] = collidingPair();
-  const result = run('--module-slot', a, '--module-slot', b);
-  assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), [`${a} → ${moduleSlotName(a)}`, `${b} → ${moduleSlotName(b)}`]);
-  assert.equal(moduleSlotName(a), moduleSlotName(b));
-});
-
 test('compileViews compiles every view before failing and names each failing view once', async () => {
   const views = ['architecture', 'class', 'state'].map(type => ({ meta: meta(type), nodes: [], edges: [] }));
   const failing = new Set(['class', 'state']);
@@ -190,12 +148,10 @@ test('compileViews compiles every view before failing and names each failing vie
 test('the authoring pages and the skill carry the card-identity rules the review enforces', () => {
   const read = file => fs.readFileSync(path.join(skillDir, file), 'utf8');
   assert.match(read('references/graph-common.md'), /without `module` renders on the plain surface/);
-  assert.match(read('references/graph-common.md'), /module\.slot-collision/);
   assert.match(read('references/types/flowchart.md'), /subsystem whose work the step performs/);
   assert.match(read('references/types/flowchart.md'), /module\.single-tone/);
   assert.match(read('references/types/flowchart.md'), /only a `decision` branches/);
   assert.match(read('references/types/state.md'), /`choice` takes the module/);
-  assert.match(read('SKILL.md'), /module\.slot-collision/);
   assert.match(read('SKILL.md'), /never rename a module for colour/);
   assert.match(read('references/graph-common.md'), /never renamed for colour/);
 });

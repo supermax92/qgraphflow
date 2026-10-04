@@ -1,4 +1,13 @@
-const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12;
+export const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12;
+
+// cubic-bezier(.32,.72,0,1) as an easing function, so viewport moves share the chrome's curve (--ease in styles.css):
+// bisect the x curve for the progress that reaches t, then read the y curve there.
+const bezier = (s, p1, p2) => 3 * p1 * s * (1 - s) ** 2 + 3 * p2 * s * s * (1 - s) + s ** 3;
+export function appleEase(t) {
+  let low = 0, high = 1;
+  for (let i = 0; i < 20; i++) { const mid = (low + high) / 2; if (bezier(mid, .32, 0) < t) low = mid; else high = mid; }
+  return bezier((low + high) / 2, .72, 1);
+}
 
 export function readingRect(canvas, navOpen, drawerOpen) {
   const width = canvas?.clientWidth ?? 0, height = canvas?.clientHeight ?? 0;

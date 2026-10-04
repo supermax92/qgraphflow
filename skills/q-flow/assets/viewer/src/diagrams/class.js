@@ -1,4 +1,5 @@
-import { text, fit, TYPOGRAPHY, coreNode, nodeMetrics, rectangle, paint } from './drawing.js';
+import { translate } from '../i18n.js';
+import { text, fit, TYPOGRAPHY, nodeMetrics, rectangle, paint } from './drawing.js';
 import { estimateLabelSize } from '../text-layout.js';
 
 const outline = (node, x, y) => rectangle(node, x, y, 9);
@@ -6,11 +7,10 @@ const outline = (node, x, y) => rectangle(node, x, y, 9);
 function classNode(node, x, y, fill, stroke, palette) {
   const attributes = node.attributes ?? [];
   const methods = node.methods ?? [];
-  const { classHeaderHeight: header, classRowHeight: rowHeight } = nodeMetrics(node, 'class');
+  const { classHeaderHeight: header, classRowHeight: rowHeight } = nodeMetrics(node);
   const attributeHeight = attributes.length ? attributes.length * rowHeight + 13 : 30;
   const attrY = y + header;
   const methodY = attrY + attributeHeight;
-  const core = coreNode(node);
   const stereotype = node.kind === 'interface' ? '«interface»' : node.kind === 'abstract' ? '«abstract»' : '';
   const textWidth = node.size.width - 26;
   const attrText = attributes.map((item, index) => text(x + 13, attrY + 6 + rowHeight / 2 + TYPOGRAPHY.body * .35 + index * rowHeight, fit(item, textWidth), 'member')).join('');
@@ -28,7 +28,7 @@ export default {
   render: classNode, outline, compartments: true,
   undirected: ['association', 'composition', 'aggregation'],
   markers: { inheritance: { end: 'triangle' }, implementation: { end: 'triangle' }, composition: { start: 'diamond-filled' }, aggregation: { start: 'diamond-open' }, dependency: { end: 'arrow-open' } },
-  edgeLabel: edge => edge.label ?? (['composition', 'aggregation', 'inheritance', 'implementation'].includes(edge.kind) ? edge.kind : ''),
+  edgeLabel: (edge, locale) => edge.label ?? (['composition', 'aggregation', 'inheritance', 'implementation'].includes(edge.kind) ? translate(locale, edge.kind) : ''),
   validateEdge(edge, label, errors) {
     for (const role of ['source', 'target']) {
       const value = edge[`${role}Multiplicity`];

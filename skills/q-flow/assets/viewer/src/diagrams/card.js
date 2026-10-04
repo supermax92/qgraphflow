@@ -1,9 +1,7 @@
 import { translate } from '../i18n.js';
-import { cardTextLayout, text, fit, coreNode, dataKinds, kindLabels, nodeMetrics, rectangle, paint } from './drawing.js';
+import { cardTextLayout, text, coreNode, dataKinds, kindLabels, paint } from './drawing.js';
 
-export function genericCard(node, x, y, fill, stroke, palette, locale, outline = cardOutline, contentInset = 0) {
-  const { compact } = nodeMetrics(node, 'architecture');
-  const width = node.size.width - (compact ? 20 : 30) - contentInset * 2;
+export function genericCard(node, x, y, fill, stroke, palette, locale, outline, contentInset = 0) {
   const { title, subtitle } = cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - contentInset * 2 } });
   const titleText = title.lines.map((line, index) => text(x + 15 + contentInset, y + 68 + index * title.lineHeight, line, 'title')).join('');
   const subtitleText = subtitle.lines.map((line, index) => text(x + 15 + contentInset, y + 68 + title.height + index * subtitle.lineHeight, line, 'body')).join('');
@@ -18,10 +16,6 @@ export function genericCard(node, x, y, fill, stroke, palette, locale, outline =
     : ['external', 'actor'].includes(node.kind) ? '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/>'
     : ['security', 'config'].includes(node.kind) ? '<path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6Z"/><path d="m8 12 3 3 5-6"/>'
     : '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/>';
-  if (compact) return `<g>${paint(outline(node, x, y), { fill, stroke })}<svg x="${x + 12 + contentInset}" y="${y + 10}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${chip ?? tone}" stroke-width="1.5">${icon}</svg>${text(x + 33 + contentInset, y + 20, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype', ' style="font-size:8px"')}${text(x + 10 + contentInset, y + 41, fit(node.label, width), 'compact-title')}${text(x + 10 + contentInset, y + 57, fit(node.subtitle ?? '', width), 'compact-body')}</g>`;
   const frameWidth = node.appearance?.moduleColor || node.appearance?.ring ? 1.5 : 1;
   return `<g filter="url(#node-shadow)">${paint(outline(node, x, y), { fill, stroke, 'stroke-width': frameWidth })}<rect x="${x + 15 + contentInset}" y="${y + 13}" width="25" height="25" rx="7" fill="${badge}"/><svg x="${x + 20 + contentInset}" y="${y + 18}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${tone}" stroke-width="${chip ? 1.75 : 1.5}">${icon}</svg>${text(x + 47 + contentInset, y + 29, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype')}${titleText}${subtitleText}</g>`;
 }
-
-
-export const cardOutline = (node, x, y) => rectangle(node, x, y, node.kind === 'artifact' ? 3 : ['device', 'container'].includes(node.kind) ? 7 : 10);

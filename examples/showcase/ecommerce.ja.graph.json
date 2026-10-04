@@ -1303,17 +1303,17 @@
           "label": "購入者",
           "module": "チャネル",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "カートを送信して注文番号を受け取る。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "取引の統括",
           "module": "決済処理",
           "kind": "service",
-          "position": {
-            "x": 692,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "価格・在庫・リスク・支払い・注文を統括。"
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 420,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "価格と割引",
           "module": "価格",
           "kind": "participant",
-          "position": {
-            "x": 2662,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "不変の価格スナップショットを生成。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 696,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "在庫引当",
           "module": "在庫",
           "kind": "participant",
-          "position": {
-            "x": 1480,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "SKU を引当しトークンを返す。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 920,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "取引リスク判定",
           "module": "リスク",
           "kind": "participant",
-          "position": {
-            "x": 3056,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "PASS・REVIEW・REJECT を返す。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1144,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "支払い承認",
           "module": "支払い",
           "kind": "external",
-          "position": {
-            "x": 2268,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "価格スナップショット金額を承認。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1368,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "注文と Outbox",
           "module": "注文",
           "kind": "database",
-          "position": {
-            "x": 1873,
-            "y": 48
-          },
-          "size": {
-            "width": 162,
-            "height": 1672
-          },
           "facts": [
             "注文と Outbox を原子的に保存。"
-          ]
+          ],
+          "size": {
+            "width": 162,
+            "height": 1212
+          },
+          "position": {
+            "x": 1592,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "出荷・配送",
           "module": "出荷",
           "kind": "participant",
-          "position": {
-            "x": 1086,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "OrderPaid を非同期処理。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1909,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "在庫結果",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 3642,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 305,
+            "y": 534
+          },
+          "size": {
+            "width": 1716,
+            "height": 604
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 282
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "価格",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "戻り：PriceSnapshot",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 348
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 414
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "在庫",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "戻り：reservationToken",
+            "戻り：reservationToken | OUT_OF_STOCK",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "在庫",
-          "order": 6,
-          "facts": [
-            "戻り：OUT_OF_STOCK",
-            "このメッセージは在庫不足の分岐を示す。"
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 504
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 672
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "リスク",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "戻り：PASS",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 738
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 804
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "支払い",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "戻り：paymentConfirmed",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 870
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 936
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "注文",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "戻り：orderId",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1002
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1068
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "注文番号を返す",
+          "label": "注文番号 | OUT_OF_STOCK",
           "kind": "return",
           "module": "決済処理",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "戻り：注文番号を返す",
+            "戻り：注文番号 | OUT_OF_STOCK",
             "番号順に読む。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1198
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },
@@ -3097,8 +3161,8 @@
           "module": "注文",
           "kind": "initial",
           "position": {
-            "x": 252,
-            "y": 100
+            "x": 132,
+            "y": 32
           },
           "size": {
             "width": 64,
@@ -3111,17 +3175,18 @@
           "subtitle": "在庫引当済み",
           "module": "支払い",
           "kind": "state",
+          "tags": [
+            "core"
+          ],
+          "entry": "在庫引当",
           "position": {
-            "x": 164,
-            "y": 414
+            "x": 44,
+            "y": 250
           },
           "size": {
             "width": 240,
-            "height": 100
-          },
-          "tags": [
-            "core"
-          ]
+            "height": 110
+          }
         },
         {
           "id": "paid",
@@ -3130,8 +3195,8 @@
           "module": "注文",
           "kind": "state",
           "position": {
-            "x": 504,
-            "y": 800
+            "x": 336,
+            "y": 550
           },
           "size": {
             "width": 240,
@@ -3145,8 +3210,8 @@
           "module": "出荷",
           "kind": "state",
           "position": {
-            "x": 492,
-            "y": 1186
+            "x": 324,
+            "y": 840
           },
           "size": {
             "width": 240,
@@ -3160,8 +3225,8 @@
           "module": "出荷",
           "kind": "state",
           "position": {
-            "x": 492,
-            "y": 1572
+            "x": 324,
+            "y": 1130
           },
           "size": {
             "width": 240,
@@ -3175,8 +3240,8 @@
           "module": "出荷",
           "kind": "state",
           "position": {
-            "x": 492,
-            "y": 1958
+            "x": 324,
+            "y": 1420
           },
           "size": {
             "width": 240,
@@ -3190,8 +3255,8 @@
           "module": "出荷",
           "kind": "state",
           "position": {
-            "x": 492,
-            "y": 2344
+            "x": 324,
+            "y": 1710
           },
           "size": {
             "width": 240,
@@ -3205,8 +3270,8 @@
           "module": "注文",
           "kind": "state",
           "position": {
-            "x": 152,
-            "y": 800
+            "x": 32,
+            "y": 550
           },
           "size": {
             "width": 240,
@@ -3220,8 +3285,8 @@
           "module": "支払い",
           "kind": "state",
           "position": {
-            "x": 504,
-            "y": 2730
+            "x": 336,
+            "y": 2000
           },
           "size": {
             "width": 240,
@@ -3234,8 +3299,8 @@
           "module": "注文",
           "kind": "final",
           "position": {
-            "x": 240,
-            "y": 3116
+            "x": 120,
+            "y": 2290
           },
           "size": {
             "width": 88,
@@ -3254,17 +3319,17 @@
           "route": {
             "via": [
               {
-                "x": 284,
-                "y": 140
+                "x": 164,
+                "y": 72
               },
               {
-                "x": 284,
-                "y": 402
+                "x": 164,
+                "y": 238
               }
             ],
             "labelAt": {
-              "x": 222,
-              "y": 271
+              "x": 164,
+              "y": 155
             }
           }
         },
@@ -3279,25 +3344,59 @@
           "route": {
             "via": [
               {
-                "x": 296,
-                "y": 526
+                "x": 176,
+                "y": 372
               },
               {
-                "x": 296,
-                "y": 562
+                "x": 176,
+                "y": 384
               },
               {
-                "x": 624,
-                "y": 562
+                "x": 456,
+                "y": 384
               },
               {
-                "x": 624,
-                "y": 788
+                "x": 456,
+                "y": 538
               }
             ],
             "labelAt": {
-              "x": 741,
-              "y": 657
+              "x": 456,
+              "y": 455
+            }
+          }
+        },
+        {
+          "id": "pay-retry",
+          "source": "pending",
+          "target": "pending",
+          "kind": "transition",
+          "label": "支払い失敗",
+          "guard": "再試行可能",
+          "action": "再試行を案内",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 296,
+                "y": 293
+              },
+              {
+                "x": 328,
+                "y": 293
+              },
+              {
+                "x": 328,
+                "y": 317
+              },
+              {
+                "x": 296,
+                "y": 317
+              }
+            ],
+            "labelAt": {
+              "x": 513.5,
+              "y": 305
             }
           }
         },
@@ -3311,17 +3410,17 @@
           "route": {
             "via": [
               {
-                "x": 612,
-                "y": 912
+                "x": 444,
+                "y": 662
               },
               {
-                "x": 612,
-                "y": 1174
+                "x": 444,
+                "y": 828
               }
             ],
             "labelAt": {
-              "x": 542,
-              "y": 1043
+              "x": 444,
+              "y": 745
             }
           }
         },
@@ -3335,17 +3434,17 @@
           "route": {
             "via": [
               {
-                "x": 612,
-                "y": 1298
+                "x": 444,
+                "y": 952
               },
               {
-                "x": 612,
-                "y": 1560
+                "x": 444,
+                "y": 1118
               }
             ],
             "labelAt": {
-              "x": 526,
-              "y": 1429
+              "x": 444,
+              "y": 1035
             }
           }
         },
@@ -3359,17 +3458,17 @@
           "route": {
             "via": [
               {
-                "x": 612,
-                "y": 1684
+                "x": 444,
+                "y": 1242
               },
               {
-                "x": 612,
-                "y": 1946
+                "x": 444,
+                "y": 1408
               }
             ],
             "labelAt": {
-              "x": 526,
-              "y": 1815
+              "x": 444,
+              "y": 1325
             }
           }
         },
@@ -3383,17 +3482,17 @@
           "route": {
             "via": [
               {
-                "x": 612,
-                "y": 2070
+                "x": 444,
+                "y": 1532
               },
               {
-                "x": 612,
-                "y": 2332
+                "x": 444,
+                "y": 1698
               }
             ],
             "labelAt": {
-              "x": 550,
-              "y": 2201
+              "x": 444,
+              "y": 1615
             }
           }
         },
@@ -3408,17 +3507,17 @@
           "route": {
             "via": [
               {
-                "x": 272,
-                "y": 526
+                "x": 152,
+                "y": 372
               },
               {
-                "x": 272,
-                "y": 788
+                "x": 152,
+                "y": 538
               }
             ],
             "labelAt": {
-              "x": 140,
-              "y": 657
+              "x": 152,
+              "y": 455
             }
           }
         },
@@ -3433,33 +3532,33 @@
           "route": {
             "via": [
               {
-                "x": 636,
-                "y": 912
+                "x": 468,
+                "y": 662
               },
               {
-                "x": 636,
-                "y": 948
+                "x": 468,
+                "y": 674
               },
               {
-                "x": 813,
-                "y": 948
+                "x": 606,
+                "y": 674
               },
               {
-                "x": 813,
-                "y": 2650
+                "x": 606,
+                "y": 1944
               },
               {
-                "x": 636,
-                "y": 2650
+                "x": 468,
+                "y": 1944
               },
               {
-                "x": 636,
-                "y": 2718
+                "x": 468,
+                "y": 1988
               }
             ],
             "labelAt": {
-              "x": 713,
-              "y": 1815
+              "x": 606,
+              "y": 1325
             }
           }
         },
@@ -3474,17 +3573,17 @@
           "route": {
             "via": [
               {
-                "x": 612,
-                "y": 2456
+                "x": 444,
+                "y": 1822
               },
               {
-                "x": 612,
-                "y": 2718
+                "x": 444,
+                "y": 1988
               }
             ],
             "labelAt": {
-              "x": 496,
-              "y": 2587
+              "x": 444,
+              "y": 1905
             }
           }
         },
@@ -3498,17 +3597,17 @@
           "route": {
             "via": [
               {
-                "x": 272,
-                "y": 912
+                "x": 152,
+                "y": 662
               },
               {
-                "x": 272,
-                "y": 3104
+                "x": 152,
+                "y": 2278
               }
             ],
             "labelAt": {
-              "x": 178,
-              "y": 2008
+              "x": 152,
+              "y": 1470
             }
           }
         },
@@ -3522,31 +3621,31 @@
           "route": {
             "via": [
               {
-                "x": 624,
-                "y": 2842
+                "x": 456,
+                "y": 2112
               },
               {
-                "x": 624,
-                "y": 3036
+                "x": 456,
+                "y": 2234
               },
               {
-                "x": 296,
-                "y": 3036
+                "x": 176,
+                "y": 2234
               },
               {
-                "x": 296,
-                "y": 3104
+                "x": 176,
+                "y": 2278
               }
             ],
             "labelAt": {
-              "x": 703,
-              "y": 2973
+              "x": 456,
+              "y": 2195
             }
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "layered-0"
       }
     },

@@ -109,7 +109,6 @@ export function fragmentSurfaceAt(box, groups = [], appearances) {
 }
 
 export const fragmentHeadingLayout = group => layoutText(group.label, Math.min(LAYOUT_TARGETS.headingWidth, Math.max(1, (group.size?.width ?? Infinity) - 88)), 15.12, 22);
-export const fragmentHeadingWidth = group => fragmentHeadingLayout(group).width + 16;
 
 function fragmentHeading(group, executions) {
   const frame = { ...group.position, ...group.size };
@@ -118,59 +117,33 @@ function fragmentHeading(group, executions) {
   return [frame.x + 16, ...executions.map(item => item.x + item.width + 12)].map(x => ({ x, y: frame.y + 6, ...size })).find(box => box.x >= frame.x + 16 && box.x + box.width <= frame.x + frame.width - 64 && !executions.some(item => intersects(box, item, 4)));
 }
 
-// The authored frame stays fixed. Conditions use free space beside messages; impossible frames are rejected.
+// An alt without operands (older graphs) keeps its authored frame: one placeholder condition goes into free space beside
+// the messages the frame encloses, and a warning says the real conditions are missing.
 function legacyFragment(group, routes, locale, executions, heading) {
-  const errors = [], warnings = [], guards = [], separators = [];
-  if (group.kind !== 'alt') return { errors, warnings, guards, separators };
-  const frame = { ...group.position, ...group.size };
+  const frame = { ...group.position, ...group.size }, end = frame.y + frame.height;
   const all = [...routes.entries()];
   const inside = route => route.points.some(p => p.x >= frame.x && p.x <= frame.x + frame.width && p.y > frame.y && p.y < frame.y + frame.height);
-  const enclosed = all.filter(([, route]) => inside(route));
-  const legacy = group.operands === undefined;
-  const operands = legacy ? [{ guard: translate(locale, 'Branch conditions unspecified'), edgeIds: enclosed.map(([id]) => id) }] : group.operands;
-  if (legacy) warnings.push(`group ${group.id}: alt branch conditions are unspecified (operands missing)`);
-  if (!Array.isArray(operands) || !operands.length) return { errors, warnings, guards, separators };
-  const members = new Set(operands.flatMap(operand => operand.edgeIds ?? []));
-  if (!legacy) for (const [id] of enclosed) if (!members.has(id)) errors.push(`layout: group ${group.id} omits enclosed message ${id}`);
-  const sections = operands.map(operand => {
-    const selected = (operand.edgeIds ?? []).map(id => routes.get(id)).filter(Boolean);
-    return { operand, selected, top: Math.min(...selected.map(r => Math.min(r.labelBox.y, ...r.points.map(p => p.y)))), bottom: Math.max(...selected.map(r => Math.max(r.labelBox.y + r.labelBox.height, ...r.points.map(p => p.y)))) };
-  });
-  for (let i = 1; i < sections.length; i++) {
-    const previous = sections[i - 1], next = sections[i];
-    if (next.top - previous.bottom < 12) errors.push(`layout: group ${group.id} needs 12px between operands ${i} and ${i + 1}; adjust message order spacing`);
-    separators.push((previous.bottom + next.top) / 2);
-  }
+  const selected = all.filter(([, route]) => inside(route)).map(([, route]) => route);
+  const warnings = [`group ${group.id}: alt branch conditions are unspecified (operands missing)`];
   const obstacles = [
     ...(heading ? [heading] : []),
     { x: frame.x + frame.width - 52, y: frame.y, width: 52, height: 36 },
     ...all.flatMap(([, r]) => [r.labelBox, ...segmentBoxes(r)]), ...executions
   ];
-  sections.forEach(({ operand, selected, top }, i) => {
-    const begin = i ? separators[i - 1] : frame.y, end = separators[i] ?? frame.y + frame.height;
-    if (!legacy) for (const route of selected) {
-      if (route.points.some(p => p.x < frame.x || p.x > frame.x + frame.width || p.y <= begin || p.y >= end) || route.labelBox.x < frame.x || route.labelBox.x + route.labelBox.width > frame.x + frame.width || route.labelBox.y < begin || route.labelBox.y + route.labelBox.height > end) errors.push(`layout: group ${group.id} cannot contain operand ${i + 1}; enlarge or reposition its frame`);
-    }
-    const label = legacy ? operand.guard : `[${operand.guard}]`;
-    const layout = layoutText(label, Math.max(1, frame.width - 32), 14, 20);
-    const size = { width: layout.width + 8, height: layout.height + 4 };
-    const xs = [frame.x + 16, ...obstacles.map(box => box.x + box.width + 8), frame.x + frame.width - size.width - 16];
-    const ys = [begin + 6, top, ...selected.map(r => r.points[0].y - size.height - 6)];
-    const candidates = ys.flatMap(y => xs.map(x => ({ x, y, ...size })));
-    const box = candidates.find(b => b.x >= frame.x + 8 && b.x + b.width <= frame.x + frame.width - 8 && b.y >= begin + 6 && b.y + b.height <= end - 6 && !obstacles.some(o => intersects(b, o, 2)));
-    if (!box) {
-      (legacy ? warnings : errors).push(`layout: group ${group.id} has no room for guard ${i + 1}; shorten the guard or adjust the frame/participant spacing`);
-      if (!legacy) return;
-    }
-    guards.push({ ...(box ?? { x: frame.x + 16, y: frame.y + 38, ...size }), lines: layout.lines, operandId: operandId(operand, i) });
-  });
-  return { errors, warnings, guards, separators };
+  const layout = layoutText(translate(locale, 'Branch conditions unspecified'), Math.max(1, frame.width - 32), 14, 20);
+  const size = { width: layout.width + 8, height: layout.height + 4 };
+  const xs = [frame.x + 16, ...obstacles.map(box => box.x + box.width + 8), frame.x + frame.width - size.width - 16];
+  const top = Math.min(...selected.map(r => Math.min(r.labelBox.y, ...r.points.map(p => p.y))));
+  const ys = [frame.y + 6, top, ...selected.map(r => r.points[0].y - size.height - 6)];
+  const box = ys.flatMap(y => xs.map(x => ({ x, y, ...size }))).find(b => b.x >= frame.x + 8 && b.x + b.width <= frame.x + frame.width - 8 && b.y >= frame.y + 6 && b.y + b.height <= end - 6 && !obstacles.some(o => intersects(b, o, 2)));
+  if (!box) warnings.push(`layout: group ${group.id} has no room for guard 1; shorten the guard or adjust the frame/participant spacing`);
+  return { warnings, guards: [{ ...(box ?? { x: frame.x + 16, y: frame.y + 38, ...size }), lines: layout.lines, operandId: operandId(null, 0) }] };
 }
 
 export function sequenceFragment(group, routes, locale, groups = [], executions = []) {
   const errors = [], warnings = [], guards = [], bodies = [], separators = [];
   const frame = { ...group.position, ...group.size }, bottom = frame.y + frame.height;
-  // Frame relationships apply before either compact/legacy or nested layout can return.
+  // Frame relationships apply before either the operand-less or the operand layout can return.
   const parent = groups.find(item => item.id === group.parentId);
   if (parent && !(frame.x >= parent.position.x + 8 && frame.x + frame.width <= parent.position.x + parent.size.width - 8 && frame.y >= parent.position.y + 36 && bottom <= parent.position.y + parent.size.height - 8)) errors.push(`layout: group ${group.id} exceeds parent ${parent.id}`);
   const ancestors = new Set(); let ancestor = parent;
@@ -185,9 +158,9 @@ export function sequenceFragment(group, routes, locale, groups = [], executions 
   const heading = fragmentHeading(group, executions);
   if (!heading) errors.push(`layout: group ${group.id} has no room for heading; adjust its frame`);
   const children = groups.filter(child => child.parentId === group.id);
-  if (group.kind === 'alt' && !group.parentId && !children.length && !(group.operands ?? []).some(item => item.body || !item.edgeIds?.length)) {
+  if (group.kind === 'alt' && group.operands === undefined && !group.parentId && !children.length) {
     const fragment = legacyFragment(group, routes, locale, executions, heading);
-    return { ...fragment, heading, errors: [...errors, ...fragment.errors] };
+    return { errors, warnings: fragment.warnings, guards: fragment.guards, separators: [], heading };
   }
   if (!group.operands) return { errors, warnings, guards, bodies, separators };
   const headingBottom = Math.max(frame.y + 36, heading ? heading.y + heading.height + 6 : 0);

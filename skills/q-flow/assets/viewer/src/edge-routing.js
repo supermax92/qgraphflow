@@ -1,25 +1,21 @@
 import { TYPOGRAPHY } from './visual-style.js';
-import { layoutText, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout } from './text-layout.js';
+import { cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine } from './text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
-export { layoutText, cardTextLayout, estimateLabelSize } from './text-layout.js';
-import { getDiagram } from './diagrams/registry.js';
+import { diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { actorTop } from './diagrams/usecase.js';
 import { stateSymbolX } from './diagrams/state.js';
 import { sequencePairs, sequenceExecutions, sequenceEndpointY, executionAt, sequenceMessageLabel } from './sequence-executions.js';
 import { sequenceFragment, fragmentHeadingLayout, intersects, segmentBoxes, operandScopes } from './sequence-fragments.js';
 
-export const ENDPOINT_STUB = 12;
-export const ER_ENDPOINT_STUB = 28;
-export const LANE_GAP = 24;
-export { FLOW_SLANT } from './diagrams/flowchart.js';
 
 const center = node => ({
   x: node.position.x + node.size.width / 2,
   y: node.position.y + node.size.height / 2
 });
 
-export const visibleEdgeLabel = (edge, type) => getDiagram(type)?.edgeLabel?.(edge) ?? edge.label ?? '';
+// A missing label falls back to interface words (a class relation's kind, a branch's yes / no) in the graph's locale.
+export const visibleEdgeLabel = (edge, type, locale) => getDiagram(type)?.edgeLabel?.(edge, locale) ?? edge.label ?? '';
 
 export function cardinalityMarks(cardinality, point, neighbor) {
   const length = Math.hypot(neighbor.x - point.x, neighbor.y - point.y);
@@ -71,7 +67,7 @@ function anchor(node, side, offset = 0, type = 'architecture') {
   return { x: middle.x + offset, y: node.position.y + node.size.height };
 }
 
-function outward(point, side, distance = ENDPOINT_STUB) {
+function outward(point, side, distance = LAYOUT_LIMITS.endpoint) {
   if (side === 'left') return { x: point.x - distance, y: point.y };
   if (side === 'right') return { x: point.x + distance, y: point.y };
   if (side === 'top') return { x: point.x, y: point.y - distance };
@@ -152,12 +148,12 @@ function waypointEndpoint(node, point, fallbackSide, type) {
     : dx > dy ? (point.x < x ? 'left' : 'right') : (point.y < y ? 'top' : 'bottom');
   const horizontal = side === 'left' || side === 'right';
   const middle = center(node);
-  const limit = Math.max(0, (horizontal ? height : width) / 2 - ENDPOINT_STUB);
+  const limit = Math.max(0, (horizontal ? height : width) / 2 - LAYOUT_LIMITS.endpoint);
   const offset = Math.max(-limit, Math.min(limit, horizontal ? point.y - middle.y : point.x - middle.x));
   return { side, point: anchor(node, side, ['decision', 'choice'].includes(node.kind) ? 0 : offset, type) };
 }
 
-function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints, stub = ENDPOINT_STUB) {
+function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints, stub = LAYOUT_LIMITS.endpoint) {
   const points = [start, outward(start, sourceSide, stub)];
   // A shaped endpoint can sit inside its layout box. Turn at the real stub before joining its allocated channel.
   if (['left', 'right'].includes(sourceSide) && waypoints.length && points[1].y !== waypoints[0].y) points.push({ x: points[1].x, y: waypoints[0].y });
@@ -167,7 +163,7 @@ function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints,
   return compact(points);
 }
 
-function routeBetween(source, target, sides, sourceOffset, targetOffset, stub = ENDPOINT_STUB, type = 'architecture') {
+function routeBetween(source, target, sides, sourceOffset, targetOffset, stub = LAYOUT_LIMITS.endpoint, type = 'architecture') {
   const start = anchor(source, sides.sourceSide, sourceOffset, type);
   const end = anchor(target, sides.targetSide, targetOffset, type);
   const sourceStub = outward(start, sides.sourceSide, stub);
@@ -192,10 +188,27 @@ export function pathFromPoints(points, offsetX = 0, offsetY = 0) {
   }, `M ${shifted[0].x} ${shifted[0].y}`);
 }
 
+// A self-transition leaves and re-enters one side as a single arc. Its points stay the laid-out polyline, so every audit
+// sees the bounding box the arc stays inside; the arc only smooths it, reaching as far out as that polyline does. Ends on
+// two sides (a moved waypoint) or on one point (a choice) keep the polyline: no single arc on one side can draw them.
+function arcPath(route, offsetX, offsetY) {
+  if (route.sourceSide !== route.targetSide) return null;
+  const [start, ...rest] = route.points.map(point => ({ x: point.x + offsetX, y: point.y + offsetY })), end = rest.at(-1);
+  const [nx, ny] = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] }[route.sourceSide] ?? [1, 0], [tx, ty] = [-ny, nx];
+  const reach = Math.max(...rest.map(point => (point.x - start.x) * nx + (point.y - start.y) * ny)) * 4 / 3;
+  const span = (end.x - start.x) * tx + (end.y - start.y) * ty, lift = Math.abs(span) * .35, direction = Math.sign(span);
+  if (!(reach > 0) || Math.abs(span) < 1) return null;
+  const c1 = { x: start.x + nx * reach - tx * direction * lift, y: start.y + ny * reach - ty * direction * lift };
+  const c2 = { x: end.x + nx * reach + tx * direction * lift, y: end.y + ny * reach + ty * direction * lift };
+  return `M ${start.x} ${start.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`;
+}
+
+export const pathFromRoute = (route, offsetX = 0, offsetY = 0) => (route.curved && arcPath(route, offsetX, offsetY)) || pathFromPoints(route.points, offsetX, offsetY);
+
 function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const { graph, executions, scopes, pairs } = context;
-  const y = sequenceEndpointY(graph, edge, 'send');
-  const endY = sequenceEndpointY(graph, edge, 'receive');
+  const y = sequenceEndpointY(edge, 'send');
+  const endY = sequenceEndpointY(edge, 'receive');
   const sourceExecution = executionAt(executions, source.id, edge, 'send', y, scopes.get(edge.id));
   const targetExecution = executionAt(executions, target.id, edge, 'receive', endY, scopes.get(edge.id));
   const forward = source.id === target.id || center(source).x <= center(target).x;
@@ -206,7 +219,7 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const layout = edgeLabelLayout(label, available);
   const labelSize = { width: layout.width, height: layout.height };
   if (source.id === target.id) {
-    const extent = 48 + selfIndex * LANE_GAP;
+    const extent = 48 + selfIndex * LAYOUT_LIMITS.parallelGap;
     const start = { x: sourceX, y };
     const end = { x: targetX, y: endY };
     const points = edge.route?.via?.length
@@ -221,8 +234,8 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
 }
 
 export function createEdgeRoutes(graph) {
-  const type = graph.meta.diagramType ?? 'architecture';
-  const stub = getDiagram(type).endpointStub ?? ENDPOINT_STUB;
+  const type = diagramTypeOf(graph);
+  const stub = getDiagram(type).endpointStub ?? LAYOUT_LIMITS.endpoint;
   const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
   const prepared = graph.edges.map(edge => {
     const source = nodeById.get(edge.source);
@@ -245,7 +258,7 @@ export function createEdgeRoutes(graph) {
   const offsets = new Map();
   for (const bucket of endpointBuckets.values()) {
     bucket.sort((a, b) => a.coordinate - b.coordinate || a.id.localeCompare(b.id) || a.role.localeCompare(b.role));
-    bucket.forEach((item, index) => offsets.set(`${item.id}:${item.role}`, (index - (bucket.length - 1) / 2) * LANE_GAP));
+    bucket.forEach((item, index) => offsets.set(`${item.id}:${item.role}`, (index - (bucket.length - 1) / 2) * LAYOUT_LIMITS.parallelGap));
   }
   const selfCounts = new Map();
   const selfOrdinals = new Map();
@@ -263,8 +276,8 @@ export function createEdgeRoutes(graph) {
       const selfIndex = selfOrdinals.get(item.edge.id);
       const right = item.source.position.x + item.source.size.width;
       const middleY = center(item.source).y;
-      const extent = 48 + selfIndex * LANE_GAP;
-      const label = visibleEdgeLabel(item.edge, type);
+      const extent = 48 + selfIndex * LAYOUT_LIMITS.parallelGap;
+      const label = visibleEdgeLabel(item.edge, type, graph.meta?.locale);
       const labelSize = estimateLabelSize(label);
       const waypoints = item.edge.route?.via;
       const sourceEndpoint = waypoints?.length && waypointEndpoint(item.source, waypoints[0], 'right', type);
@@ -278,7 +291,8 @@ export function createEdgeRoutes(graph) {
           : [start, { x: right + extent, y: start.y }, { x: right + extent, y: end.y }, end],
         label,
         labelPoint: item.edge.route?.labelAt ?? { x: right + extent + 8 + labelSize.width / 2, y: middleY },
-        sourceSide, targetSide
+        sourceSide, targetSide,
+        curved: Boolean(getDiagram(type).curvedSelfLoops)
       };
     } else {
       const waypoints = item.edge.route?.via;
@@ -296,11 +310,12 @@ export function createEdgeRoutes(graph) {
       const points = item.edge.route?.via?.length
         ? routePointsWithWaypoints(sourceEndpoint.point, targetEndpoint.point, sourceSide, targetSide, routedWaypoints, stub)
         : routeBetween(item.source, item.target, item, offsets.get(`${item.edge.id}:source`) ?? 0, offsets.get(`${item.edge.id}:target`) ?? 0, stub, type);
-      const label = visibleEdgeLabel(item.edge, type);
+      const label = visibleEdgeLabel(item.edge, type, graph.meta?.locale);
       route = { points, label, labelPoint: item.edge.route?.labelAt ?? bestLabelPoint(points, estimateLabelSize(label), item.source, item.target), sourceSide, targetSide };
     }
     const labelSize = route.labelSize ?? estimateLabelSize(route.label);
-    routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines: route.labelLines ?? edgeLabelLayout(route.label).lines, path: pathFromPoints(route.points), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
+    const labelLines = route.labelLines ?? edgeLabelLayout(route.label).lines, labelParts = getDiagram(type).edgeLabelParts?.(item.edge);
+    routes.set(item.edge.id, { ...route, endpointLabels: getDiagram(type).endpointLabels?.(item.edge, route.points) ?? [], labelLines, ...(labelParts ? { labelRuns: labelRunsByLine(labelLines, labelParts) ?? undefined } : {}), path: pathFromRoute(route), labelBox: { x: route.labelPoint.x - labelSize.width / 2, y: route.labelPoint.y - labelSize.height / 2, ...labelSize } });
   }
   return routes;
 }
@@ -436,7 +451,7 @@ export function routeCrossings(first, firstPoints, second, secondPoints) {
 }
 
 export function auditGraphLayout(graph) {
-  const type = graph.meta.diagramType ?? 'architecture';
+  const type = diagramTypeOf(graph);
   const crossings = [];
   const routes = createEdgeRoutes(graph);
   const errors = [];
@@ -481,10 +496,6 @@ export function auditGraphLayout(graph) {
       const firstBox = occupiedBox(first, type);
       const secondBox = occupiedBox(second, type);
       if (boxesIntersect(firstBox, secondBox)) fail('shape.node-overlap', [first.id, second.id], `layout: nodes ${first.id} and ${second.id} overlap`);
-      else {
-        const distance = boxDistance(firstBox, secondBox);
-        if (distance < LAYOUT_LIMITS.nodeGap) warnings.push(`nodes ${first.id} and ${second.id} are only ${Math.round(distance)}px apart`);
-      }
     }
   }
   const labeledEdges = graph.edges.filter(edge => routes.get(edge.id).label);
@@ -507,7 +518,7 @@ export function auditGraphLayout(graph) {
           longest = Math.max(longest, sharedSegmentLength(firstPoints[firstIndex - 1], firstPoints[firstIndex], secondPoints[secondIndex - 1], secondPoints[secondIndex]));
         }
       }
-      if (longest > ENDPOINT_STUB) fail('route.shared-segment', [first.id, second.id], `layout: edges ${first.id} and ${second.id} share a route segment longer than ${ENDPOINT_STUB}px`);
+      if (longest > LAYOUT_LIMITS.endpoint) fail('route.shared-segment', [first.id, second.id], `layout: edges ${first.id} and ${second.id} share a route segment longer than ${LAYOUT_LIMITS.endpoint}px`);
       const points = routeCrossings(first, firstPoints, second, secondPoints);
       if (points.length) {
         crossings.push({ ruleId: 'route.point-crossing', severity: 'info', diagramType: type, elementIds: [first.id, second.id].sort(), measured: points.length, required: null, bounds: points.map(point => ({ ...point, width: 0, height: 0 })), repeated: Math.max(0, points.length - 1), remediation: 'Keep each relation traceable; prefer fewer repeated crossings without overlapping channels.' });
@@ -522,14 +533,15 @@ export function auditGraphLayout(graph) {
       fail('route.anchor', [edge.id, edge.source, edge.target], `layout: edge ${edge.id} exceeds an endpoint side; enlarge the node or add route hints`);
     }
     if (getDiagram(type).cardinalities) {
+      const erStub = getDiagram(type).endpointStub;
       for (const [role, point, neighbor, side, cardinality, hint] of [
         ['source', route.points[0], route.points[1], route.sourceSide, edge.sourceCardinality, edge.route?.via?.[0]],
         ['target', route.points.at(-1), route.points.at(-2), route.targetSide, edge.targetCardinality, edge.route?.via?.at(-1)]
       ]) {
         const direction = outward(point, side, 1);
         const projection = other => (other.x - point.x) * (direction.x - point.x) + (other.y - point.y) * (direction.y - point.y);
-        if (projection(neighbor) < ER_ENDPOINT_STUB || (hint && projection(hint) < ER_ENDPOINT_STUB)) {
-          fail('route.er-stub', [edge.id], `layout: ER edge ${edge.id} ${role} needs a ${ER_ENDPOINT_STUB}px outward straight segment; move the route hint or enlarge the gap`);
+        if (projection(neighbor) < erStub || (hint && projection(hint) < erStub)) {
+          fail('route.er-stub', [edge.id], `layout: ER edge ${edge.id} ${role} needs a ${erStub}px outward straight segment; move the route hint or enlarge the gap`);
         }
         const mark = cardinalityMarks(cardinality, point, neighbor);
         for (const node of graph.nodes) {
@@ -541,13 +553,12 @@ export function auditGraphLayout(graph) {
         const after = route.points[index + 2];
         return before.x === point.x && point.x === after.x && (point.y - before.y) * (after.y - point.y) < 0
           || before.y === point.y && point.y === after.y && (point.x - before.x) * (after.x - point.x) < 0;
-      })) fail('route.er-reversal', [edge.id], `layout: ER edge ${edge.id} reverses within its route; reserve ${ER_ENDPOINT_STUB}px endpoint segments or move the route hints`);
+      })) fail('route.er-reversal', [edge.id], `layout: ER edge ${edge.id} reverses within its route; reserve ${erStub}px endpoint segments or move the route hints`);
     }
     if (getDiagram(type).sequence && edge.source !== edge.target) {
       const available = Math.abs(center(source).x - center(target).x);
       const required = Math.max(160, route.labelBox.width + 32);
       if (available < required) fail('sequence.participant-gap', [edge.id, edge.source, edge.target], `layout: sequence edge ${edge.id} needs ${Math.ceil(required)}px between participants; found ${Math.round(available)}px`);
-      if (edge.route?.messageY === undefined && route.labelBox.height > 54) fail('sequence.legacy-pitch', [edge.id], `layout: sequence edge ${edge.id} wrapped label needs ${route.labelBox.height}px height; enlarge participant spacing to fit the 54px message pitch`);
     }
     for (const node of graph.nodes) {
       for (let index = 1; index < route.points.length; index += 1) {
@@ -566,12 +577,7 @@ export function auditGraphLayout(graph) {
       if (borders.some(([start, end]) => segmentCrossesBox(start, end, route.labelBox))) fail('label.group-boundary', [edge.id, group.id], `layout: edge ${edge.id} label overlaps group ${group.id} boundary`);
     }
     for (const node of graph.nodes) {
-      const nodeBox = routingBounds(node, type);
-      if (boxesIntersect(route.labelBox, nodeBox)) {
-        fail('label.node', [edge.id, node.id], `layout: edge ${edge.id} label overlaps node ${node.id}`);
-      } else if (boxDistance(route.labelBox, nodeBox) < 12) {
-        warnings.push(`edge ${edge.id} label has less than 12px clearance from node ${node.id}`);
-      }
+      if (boxesIntersect(route.labelBox, routingBounds(node, type))) fail('label.node', [edge.id, node.id], `layout: edge ${edge.id} label overlaps node ${node.id}`);
     }
   }
   for (const edge of graph.edges) {
@@ -582,7 +588,7 @@ export function auditGraphLayout(graph) {
         const start = route.points[index - 1];
         const end = route.points[index];
         if (groupHeadingBoxes(group).some(heading => segmentCrossesBox(start, end, heading))) fail('route.group-heading', [edge.id, group.id], `layout: edge ${edge.id} crosses group ${group.id} heading`);
-        if (borders.some(([borderStart, borderEnd]) => sharedSegmentLength(start, end, borderStart, borderEnd) > ENDPOINT_STUB)) fail('route.group-boundary', [edge.id, group.id], `layout: edge ${edge.id} overlaps group ${group.id} boundary`);
+        if (borders.some(([borderStart, borderEnd]) => sharedSegmentLength(start, end, borderStart, borderEnd) > LAYOUT_LIMITS.endpoint)) fail('route.group-boundary', [edge.id, group.id], `layout: edge ${edge.id} overlaps group ${group.id} boundary`);
       }
     }
   }

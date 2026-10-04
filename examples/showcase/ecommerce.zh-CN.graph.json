@@ -1303,17 +1303,17 @@
           "label": "买家",
           "module": "渠道",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "提交购物车并接收订单号。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "交易编排",
           "module": "结算",
           "kind": "service",
-          "position": {
-            "x": 648,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "编排价格、库存、风控、支付与订单。"
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 404,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "价格与优惠",
           "module": "价格",
           "kind": "participant",
-          "position": {
-            "x": 2398,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "产生不可变价格快照。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 680,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "库存预占",
           "module": "库存",
           "kind": "participant",
-          "position": {
-            "x": 1348,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "预占 SKU 并返回令牌。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 904,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "交易风控",
           "module": "风控",
           "kind": "participant",
-          "position": {
-            "x": 2748,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "返回 PASS、REVIEW 或 REJECT。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1128,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "支付授权",
           "module": "支付",
           "kind": "external",
-          "position": {
-            "x": 2048,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "对价格快照金额进行授权。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1352,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "订单与 Outbox",
           "module": "订单",
           "kind": "database",
-          "position": {
-            "x": 1697,
-            "y": 48
-          },
-          "size": {
-            "width": 162,
-            "height": 1672
-          },
           "facts": [
             "原子保存订单与 Outbox。"
-          ]
+          ],
+          "size": {
+            "width": 162,
+            "height": 1212
+          },
+          "position": {
+            "x": 1576,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "仓配履约",
           "module": "履约",
           "kind": "participant",
-          "position": {
-            "x": 998,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "异步消费 OrderPaid。"
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1212
+          },
+          "position": {
+            "x": 1861,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "库存结果",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 3290,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 289,
+            "y": 534
+          },
+          "size": {
+            "width": 1684,
+            "height": 604
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 282
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "价格",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "返回：PriceSnapshot",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 348
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 414
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "库存",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "返回：reservationToken",
+            "返回：reservationToken | OUT_OF_STOCK",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "库存",
-          "order": 6,
-          "facts": [
-            "返回：OUT_OF_STOCK",
-            "该消息表示库存不足分支。"
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 504
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 672
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "风控",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "返回：PASS",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 738
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 804
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "支付",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "返回：paymentConfirmed",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 870
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 936
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "订单",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "返回：orderId",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1002
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1068
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "返回订单号",
+          "label": "订单号 | OUT_OF_STOCK",
           "kind": "return",
           "module": "结算",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "返回：返回订单号",
+            "返回：订单号 | OUT_OF_STOCK",
             "按编号顺序阅读。"
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1198
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },
@@ -3097,8 +3161,8 @@
           "module": "订单",
           "kind": "initial",
           "position": {
-            "x": 220,
-            "y": 100
+            "x": 132,
+            "y": 32
           },
           "size": {
             "width": 64,
@@ -3111,17 +3175,18 @@
           "subtitle": "库存已预占",
           "module": "支付",
           "kind": "state",
+          "tags": [
+            "core"
+          ],
+          "entry": "预占库存",
           "position": {
-            "x": 132,
-            "y": 414
+            "x": 44,
+            "y": 250
           },
           "size": {
             "width": 240,
-            "height": 100
-          },
-          "tags": [
-            "core"
-          ]
+            "height": 110
+          }
         },
         {
           "id": "paid",
@@ -3130,8 +3195,8 @@
           "module": "订单",
           "kind": "state",
           "position": {
-            "x": 472,
-            "y": 800
+            "x": 336,
+            "y": 550
           },
           "size": {
             "width": 240,
@@ -3145,8 +3210,8 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 460,
-            "y": 1186
+            "x": 324,
+            "y": 840
           },
           "size": {
             "width": 240,
@@ -3160,8 +3225,8 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 460,
-            "y": 1572
+            "x": 324,
+            "y": 1130
           },
           "size": {
             "width": 240,
@@ -3175,8 +3240,8 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 460,
-            "y": 1958
+            "x": 324,
+            "y": 1420
           },
           "size": {
             "width": 240,
@@ -3190,8 +3255,8 @@
           "module": "履约",
           "kind": "state",
           "position": {
-            "x": 460,
-            "y": 2344
+            "x": 324,
+            "y": 1710
           },
           "size": {
             "width": 240,
@@ -3205,8 +3270,8 @@
           "module": "订单",
           "kind": "state",
           "position": {
-            "x": 120,
-            "y": 800
+            "x": 32,
+            "y": 550
           },
           "size": {
             "width": 240,
@@ -3220,8 +3285,8 @@
           "module": "支付",
           "kind": "state",
           "position": {
-            "x": 472,
-            "y": 2730
+            "x": 336,
+            "y": 2000
           },
           "size": {
             "width": 240,
@@ -3234,8 +3299,8 @@
           "module": "订单",
           "kind": "final",
           "position": {
-            "x": 208,
-            "y": 3116
+            "x": 120,
+            "y": 2290
           },
           "size": {
             "width": 88,
@@ -3254,17 +3319,17 @@
           "route": {
             "via": [
               {
-                "x": 252,
-                "y": 140
+                "x": 164,
+                "y": 72
               },
               {
-                "x": 252,
-                "y": 402
+                "x": 164,
+                "y": 238
               }
             ],
             "labelAt": {
-              "x": 190,
-              "y": 271
+              "x": 164,
+              "y": 155
             }
           }
         },
@@ -3279,25 +3344,59 @@
           "route": {
             "via": [
               {
-                "x": 264,
-                "y": 526
+                "x": 176,
+                "y": 372
               },
               {
-                "x": 264,
-                "y": 562
+                "x": 176,
+                "y": 384
               },
               {
-                "x": 592,
-                "y": 562
+                "x": 456,
+                "y": 384
               },
               {
-                "x": 592,
-                "y": 788
+                "x": 456,
+                "y": 538
               }
             ],
             "labelAt": {
-              "x": 701,
-              "y": 657
+              "x": 456,
+              "y": 455
+            }
+          }
+        },
+        {
+          "id": "pay-retry",
+          "source": "pending",
+          "target": "pending",
+          "kind": "transition",
+          "label": "支付失败",
+          "guard": "仍有重试次数",
+          "action": "提示买家重试",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 296,
+                "y": 293
+              },
+              {
+                "x": 328,
+                "y": 293
+              },
+              {
+                "x": 328,
+                "y": 317
+              },
+              {
+                "x": 296,
+                "y": 317
+              }
+            ],
+            "labelAt": {
+              "x": 513.5,
+              "y": 305
             }
           }
         },
@@ -3311,17 +3410,17 @@
           "route": {
             "via": [
               {
-                "x": 580,
-                "y": 912
+                "x": 444,
+                "y": 662
               },
               {
-                "x": 580,
-                "y": 1174
+                "x": 444,
+                "y": 828
               }
             ],
             "labelAt": {
-              "x": 518,
-              "y": 1043
+              "x": 444,
+              "y": 745
             }
           }
         },
@@ -3335,17 +3434,17 @@
           "route": {
             "via": [
               {
-                "x": 580,
-                "y": 1298
+                "x": 444,
+                "y": 952
               },
               {
-                "x": 580,
-                "y": 1560
+                "x": 444,
+                "y": 1118
               }
             ],
             "labelAt": {
-              "x": 518,
-              "y": 1429
+              "x": 444,
+              "y": 1035
             }
           }
         },
@@ -3359,17 +3458,17 @@
           "route": {
             "via": [
               {
-                "x": 580,
-                "y": 1684
+                "x": 444,
+                "y": 1242
               },
               {
-                "x": 580,
-                "y": 1946
+                "x": 444,
+                "y": 1408
               }
             ],
             "labelAt": {
-              "x": 510,
-              "y": 1815
+              "x": 444,
+              "y": 1325
             }
           }
         },
@@ -3383,17 +3482,17 @@
           "route": {
             "via": [
               {
-                "x": 580,
-                "y": 2070
+                "x": 444,
+                "y": 1532
               },
               {
-                "x": 580,
-                "y": 2332
+                "x": 444,
+                "y": 1698
               }
             ],
             "labelAt": {
-              "x": 518,
-              "y": 2201
+              "x": 444,
+              "y": 1615
             }
           }
         },
@@ -3408,17 +3507,17 @@
           "route": {
             "via": [
               {
-                "x": 240,
-                "y": 526
+                "x": 152,
+                "y": 372
               },
               {
-                "x": 240,
-                "y": 788
+                "x": 152,
+                "y": 538
               }
             ],
             "labelAt": {
-              "x": 124,
-              "y": 657
+              "x": 152,
+              "y": 455
             }
           }
         },
@@ -3433,33 +3532,33 @@
           "route": {
             "via": [
               {
-                "x": 604,
-                "y": 912
+                "x": 468,
+                "y": 662
               },
               {
-                "x": 604,
-                "y": 948
+                "x": 468,
+                "y": 674
               },
               {
-                "x": 797,
-                "y": 948
+                "x": 598,
+                "y": 674
               },
               {
-                "x": 797,
-                "y": 2650
+                "x": 598,
+                "y": 1944
               },
               {
-                "x": 604,
-                "y": 2650
+                "x": 468,
+                "y": 1944
               },
               {
-                "x": 604,
-                "y": 2718
+                "x": 468,
+                "y": 1988
               }
             ],
             "labelAt": {
-              "x": 689,
-              "y": 1815
+              "x": 598,
+              "y": 1325
             }
           }
         },
@@ -3474,17 +3573,17 @@
           "route": {
             "via": [
               {
-                "x": 580,
-                "y": 2456
+                "x": 444,
+                "y": 1822
               },
               {
-                "x": 580,
-                "y": 2718
+                "x": 444,
+                "y": 1988
               }
             ],
             "labelAt": {
-              "x": 472,
-              "y": 2587
+              "x": 444,
+              "y": 1905
             }
           }
         },
@@ -3498,17 +3597,17 @@
           "route": {
             "via": [
               {
-                "x": 240,
-                "y": 912
+                "x": 152,
+                "y": 662
               },
               {
-                "x": 240,
-                "y": 3104
+                "x": 152,
+                "y": 2278
               }
             ],
             "labelAt": {
-              "x": 162,
-              "y": 2008
+              "x": 152,
+              "y": 1470
             }
           }
         },
@@ -3522,31 +3621,31 @@
           "route": {
             "via": [
               {
-                "x": 592,
-                "y": 2842
+                "x": 456,
+                "y": 2112
               },
               {
-                "x": 592,
-                "y": 3036
+                "x": 456,
+                "y": 2234
               },
               {
-                "x": 264,
-                "y": 3036
+                "x": 176,
+                "y": 2234
               },
               {
-                "x": 264,
-                "y": 3104
+                "x": 176,
+                "y": 2278
               }
             ],
             "labelAt": {
-              "x": 655,
-              "y": 2973
+              "x": 456,
+              "y": 2195
             }
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "layered-0"
       }
     },

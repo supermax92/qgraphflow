@@ -1,0 +1,70 @@
+name: Pages
+
+# The online demo is generated from the repository examples with the committed prebuilt Viewer, the same one an
+# installed plugin uses. The site is uploaded as a Pages artifact and never committed to any branch.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'skills/q-flow/scripts/**'
+      - 'skills/q-flow/assets/**'
+      - 'docs/pages/**'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    paths:
+      - 'examples/**'
+      - 'skills/q-flow/scripts/**'
+      - 'skills/q-flow/assets/**'
+      - 'docs/pages/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Generate and validate every demo
+        run: |
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.en.graph.json site/ecommerce/en
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN.graph.json site/ecommerce/zh-CN
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/architecture.graph.json site/agent-desk/en/architecture --repo-root examples/showcase/agent-desk
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/sequence.graph.json site/agent-desk/en/sequence --repo-root examples/showcase/agent-desk
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/er.graph.json site/agent-desk/en/er --repo-root examples/showcase/agent-desk
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/architecture.graph.json site/agent-desk/zh-CN/architecture --repo-root examples/showcase/agent-desk
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/sequence.graph.json site/agent-desk/zh-CN/sequence --repo-root examples/showcase/agent-desk
+          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/er.graph.json site/agent-desk/zh-CN/er --repo-root examples/showcase/agent-desk
+          for graph in site/ecommerce/*/graph.json; do node skills/q-flow/scripts/validate-graph.mjs "$graph"; done
+          for graph in site/agent-desk/*/*/graph.json; do node skills/q-flow/scripts/validate-graph.mjs "$graph" --repo-root examples/showcase/agent-desk; done
+          cp docs/pages/index.html site/index.html
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -9,22 +9,25 @@ import { diagramTypeOf, graphsOf, printCompositionReview, readAndValidateGraph, 
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
+import { SVG_FILE, diagramSvgFiles } from '../assets/viewer/src/export-svg.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const shellPath = path.resolve(scriptDir, '../assets/viewer-dist/index.html');
-const OUTPUTS = ['index.html', 'graph.json'];
-const LEGACY_OUTPUT = 'snapshot.svg';
+const PAGE_OUTPUTS = ['index.html', 'graph.json'];
 
-export function writeOutputPair(outputDir, contents) {
+// Every output is staged first; the old ones and the stale ones (removed by this run) move into the staging backup,
+// and any failure puts all of them back.
+export function writeOutputs(outputDir, contents, stale = []) {
+  const names = Object.keys(contents);
   fs.mkdirSync(outputDir, { recursive: true });
   const staging = fs.mkdtempSync(path.join(outputDir, '.qgraphflow-')), backedUp = [], installed = [];
   let keepBackup = false;
   try {
-    for (const name of OUTPUTS) fs.writeFileSync(path.join(staging, name), contents[name]);
-    for (const name of [...OUTPUTS, LEGACY_OUTPUT]) if (fs.existsSync(path.join(outputDir, name))) {
+    for (const name of names) fs.writeFileSync(path.join(staging, name), contents[name]);
+    for (const name of [...names, ...stale]) if (fs.existsSync(path.join(outputDir, name))) {
       fs.renameSync(path.join(outputDir, name), path.join(staging, `${name}.backup`)); backedUp.push(name);
     }
-    for (const name of OUTPUTS) { fs.renameSync(path.join(staging, name), path.join(outputDir, name)); installed.push(name); }
+    for (const name of names) { fs.renameSync(path.join(staging, name), path.join(outputDir, name)); installed.push(name); }
   } catch (error) {
     const rollbackErrors = [];
     for (const name of installed) try { fs.unlinkSync(path.join(outputDir, name)); } catch (failure) { rollbackErrors.push(failure); }
@@ -55,13 +58,13 @@ export async function compileViews(graphs, compile) {
 }
 
 const USAGE = `Usage: node generate-viewer.mjs <graph.json> <output-directory> [options]
-  --repo-root <dir>     verify every node source.file / line range against this working tree
+  --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
   --layout auto|preserve  auto (default) computes positions; preserve keeps authored geometry under the same gate
-  --force               replace an existing index.html / graph.json in the output directory (needs approval)
+  --force               replace existing index.html / graph.json / diagram*.svg in the output directory (needs approval)
   --verbose             print the full receipt (layout candidates, folds, diagnostics) instead of one summary line
   -h, --help            this text
-Writes exactly index.html and graph.json. Success prints one JSON line; failure prints the failing elements with
-rule, measurement and remediation.`;
+Writes index.html, graph.json and one SVG per view (diagram.svg, or diagram-<n>-<type>.svg for a collection).
+Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.`;
 
 async function main() {
   const { positionals: positional, values } = parseArgs({ allowPositionals: true, options: { force: { type: 'boolean' }, 'repo-root': { type: 'string' }, layout: { type: 'string', default: 'auto' }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
@@ -81,19 +84,22 @@ async function main() {
   if (!fs.existsSync(shellPath)) throw new Error(`Viewer shell missing: ${shellPath}`);
 
   const inputAbsolute = path.resolve(inputPath);
-  const existing = OUTPUTS.filter(name => {
+  // Every SVG named by this tool is either rewritten or, when this run no longer produces it, removed: both need --force.
+  const svgs = fs.existsSync(outputDir) ? fs.readdirSync(outputDir).filter(name => SVG_FILE.test(name)).sort() : [];
+  const existing = [...PAGE_OUTPUTS.filter(name => {
     const outputPath = path.join(outputDir, name);
     return fs.existsSync(outputPath) && path.resolve(outputPath) !== inputAbsolute;
-  });
+  }), ...svgs];
   if (existing.length && !force) throw new Error(`Refusing to overwrite: ${existing.join(', ')}; rerun with --force after approval`);
-  const legacyPath = path.join(outputDir, LEGACY_OUTPUT);
-  if (fs.existsSync(legacyPath) && !force) throw new Error(`Refusing to remove legacy ${LEGACY_OUTPUT}; rerun with --force after approval`);
   const shell = fs.readFileSync(shellPath, 'utf8');
   if (!shell.includes('__CODEGRAPH_FLOW_DATA__')) throw new Error('Viewer shell data marker is missing');
   const compiled = await compileViews(graphsOf(input), item => compileGraphLayout(item, { layout: values.layout }));
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
-  writeOutputPair(outputDir, { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` });
+  const contents = { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
+  for (const { name, svg } of diagramSvgFiles(graph)) contents[name] = svg;
+  writeOutputs(outputDir, contents, svgs.filter(name => !Object.hasOwn(contents, name)));
+  const files = Object.keys(contents);
   const graphs = graphsOf(graph);
   // One line on success: what was made and whether each gate passed. Candidates, folds and diagnostics stay out of the
   // model's context unless asked for with --verbose; failures still print their diagnostics through the catch below.
@@ -107,8 +113,8 @@ async function main() {
   };
   const detail = values.verbose ? { layoutComposition: graphs.map(layoutComposition), layout: compiled.map(item => item.report), quality } : {};
   console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')
-    ? { generated: true, diagramType: diagramTypeOf(graphs[0]), outputDir, files: OUTPUTS, ...summary, ...detail, sourceEvidence }
-    : { generated: true, diagramTypes: graphs.map(diagramTypeOf), diagrams: graphs.length, outputDir, files: OUTPUTS, ...summary, ...detail, sourceEvidence }));
+    ? { generated: true, diagramType: diagramTypeOf(graphs[0]), outputDir, files, ...summary, ...detail, sourceEvidence }
+    : { generated: true, diagramTypes: graphs.map(diagramTypeOf), diagrams: graphs.length, outputDir, files, ...summary, ...detail, sourceEvidence }));
 }
 
 if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) try {

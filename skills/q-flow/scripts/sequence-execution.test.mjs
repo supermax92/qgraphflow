@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateGraph } from './validate-graph.mjs';
+import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 import { validateExecutions, sequenceExecutions, sequencePairs } from '../assets/viewer/src/sequence-executions.js';
 import { validateOperands, sequenceFragment, intersects } from '../assets/viewer/src/sequence-fragments.js';
 import { createEdgeRoutes, graphBounds } from '../assets/viewer/src/edge-routing.js';
@@ -12,11 +12,11 @@ import { isDashed } from '../assets/viewer/src/diagrams/registry.js';
 
 const fixture = () => JSON.parse(fs.readFileSync(new URL('../../../examples/sequence-execution.graph.json', import.meta.url)));
 
-test('compact and legacy fragments share crossing checks and the final heading obstacle', () => {
+test('fragments with and without operands share crossing checks and the final heading obstacle', () => {
   const graph = {
     meta: { title: 'Fragment regression', sourceRef: 'Conceptual test fixture', diagramType: 'sequence' },
     nodes: [100, 700].map((x, i) => ({ id: i ? 'b' : 'a', label: i ? 'B' : 'A', kind: 'participant', position: { x, y: 0 }, size: { width: 120, height: 900 } })),
-    edges: [1, 2, 3, 4].map(n => ({ id: `e${n}`, source: 'a', target: 'b', label: `m${n}`, kind: 'sync', order: n * 2, evidence: 'test' })),
+    edges: [1, 2, 3, 4].map(n => ({ id: `e${n}`, source: 'a', target: 'b', label: `m${n}`, kind: 'sync', order: n * 2, evidence: 'test', route: { messageY: [200, 292, 400, 508][n - 1] } })),
     groups: [
       { id: 'first', label: 'First', kind: 'alt', position: { x: 60, y: 120 }, size: { width: 760, height: 210 }, operands: [{ guard: 'p', edgeIds: ['e1'] }, { guard: 'else', edgeIds: ['e2'] }] },
       { id: 'second', label: 'Second', kind: 'alt', position: { x: 60, y: 310 }, size: { width: 760, height: 230 }, operands: [{ guard: 'q', edgeIds: ['e3'] }, { guard: 'else', edgeIds: ['e4'] }] }
@@ -29,7 +29,7 @@ test('compact and legacy fragments share crossing checks and the final heading o
     crossing.groups[0].size.height = 180;
     assert.deepEqual(validateGraph(crossing), [], 'Disjoint frames remain valid.');
   }
-  graph.groups = [{ ...graph.groups[0], label: 'First branch', position: { x: 60, y: 230 }, size: { width: 760, height: 230 }, operands: [{ guard: 'p', edgeIds: ['e2'] }, { guard: 'else', edgeIds: ['e3'] }] }];
+  graph.groups = [{ ...graph.groups[0], label: 'First branch', position: { x: 60, y: 210 }, size: { width: 760, height: 230 }, operands: [{ guard: 'p', edgeIds: ['e2'] }, { guard: 'else', edgeIds: ['e3'] }] }];
   graph.executions = [{ id: 'a-work', participantId: 'a', start: { edgeId: 'e1', at: 'send' }, end: { edgeId: 'e4', at: 'send' } }];
   for (const legacy of [false, true]) {
     const candidate = structuredClone(graph);
@@ -157,6 +157,40 @@ test('group colors and explicit metadata survive edits, themes and static export
   }
   const old = fixture(); delete old.executions; old.edges.forEach(edge => delete edge.replyTo); old.groups = [];
   assert.deepEqual(validateGraph(old), []); assert.equal(sequencePairs(old).size, 0);
+});
+
+test('the CLI asks for the callee bar of every answered sync call; the Viewer, legacy graphs and async pairs do not', () => {
+  const graph = fixture(); graph.executions = graph.executions.filter(bar => bar.id !== 'exec-6');
+  assert.deepEqual(validateGraph(graph), [], 'The Viewer still renders a graph without that bar.');
+  assert.deepEqual(validateGraphInput(graph), ['edge c6 sync call answered by r6 needs an execution on audit from c6 receive to r6 send; --fix adds it']);
+  graph.edges.find(edge => edge.id === 'c6').kind = 'async';
+  assert.deepEqual(validateGraphInput(graph), [], 'An async caller does not wait, so its pair needs no bar.');
+  const old = fixture(); delete old.executions; old.edges.forEach(edge => delete edge.replyTo); old.groups = [];
+  assert.deepEqual(validateGraphInput(old), [], 'Legacy graphs without replyTo are not asked for bars.');
+});
+
+test('two answered calls to one callee that interleave are not asked for bars no nesting could draw', () => {
+  const graph = { meta: { title: 'Interleave', sourceRef: 'test', diagramType: 'sequence' },
+    nodes: ['a', 'b', 'c'].map(id => ({ id, label: id, kind: 'service' })),
+    edges: [
+      { id: 'c1', source: 'a', target: 'b', kind: 'sync', label: 'first()', order: 1, evidence: 'test' },
+      { id: 'c2', source: 'c', target: 'b', kind: 'sync', label: 'second()', order: 2, evidence: 'test' },
+      { id: 'r1', source: 'b', target: 'a', kind: 'return', label: 'ok', order: 3, replyTo: 'c1', evidence: 'test' },
+      { id: 'r2', source: 'b', target: 'c', kind: 'return', label: 'ok', order: 4, replyTo: 'c2', evidence: 'test' }] };
+  assert.deepEqual(validateGraphInput(graph, { inputOnly: true }), []);
+  graph.edges[2].order = 5; // r1 now closes after r2, so c2 nests inside c1
+  assert.equal(validateGraphInput(graph, { inputOnly: true }).length, 2, 'nested calls are asked for both bars');
+});
+
+test('messages without route.messageY (or without a route) are stacked by order and the quality gate names the gap', () => {
+  for (const strip of [edge => { delete edge.route; }, edge => { edge.route = {}; }]) {
+    const graph = fixture(); graph.edges.forEach(strip);
+    const routes = createEdgeRoutes(graph);   // used to throw "Cannot read properties of undefined (reading 'messageY')"
+    const ys = [...graph.edges].sort((a, b) => a.order - b.order).map(edge => routes.get(edge.id).points[0].y);
+    assert.ok(ys.every(Number.isFinite), 'every message gets a finite position');
+    assert.ok(ys.every((y, i) => !i || y > ys[i - 1]), 'in message order');
+    assert.match(validateGraph(graph).join('\n'), /route\.messageY is required for a positioned sequence message/);
+  }
 });
 
 test('pair numbers follow message order even when call ids sort differently as strings', () => {

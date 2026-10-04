@@ -10,7 +10,7 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[Client-Installation](#installationsanleitung) · [Problem melden](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[Online-Demo](https://supermax92.github.io/qgraphflow/) · [Client-Installation](#installationsanleitung) · [Problem melden](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -19,6 +19,14 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 *Neun Diagrammarten: Architektur, Flussdiagramm, Sequenz, ER, Bereitstellung, Klasse, Zustand, Anwendungsfall und Datenfluss.*
 
 QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen, Konfiguration und Anforderungen. Beziehungen bleiben überprüfbar; das Ergebnis lässt sich als Offline-HTML teilen.
+
+**Was es auszeichnet:** neun Diagrammarten in einem Skill, eine Quelle für jede Beziehung, automatisches Layout, Bearbeiten direkt auf der Seite und keine Netzwerkanfragen von den Plugin-Skripten oder dem Viewer selbst.
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Ein Befehl installiert den Skill für Claude Code, Codex, Cursor und Qoder; die Installation als Plugin und weitere Clients beschreibt die [Installationsanleitung](#installationsanleitung).
 
 - **Erkunden:** suchen, zoomen und verschieben; Verantwortlichkeiten sowie ein- und ausgehende Beziehungen verstehen.
 
@@ -40,13 +48,21 @@ Die obere Animation zeigt Architektur, Sequenz und ER je 1,5 Sekunden (4,5 Sekun
 
 ## Installationsanleitung
 
-Benötigt werden Node.js 22 und ein Client mit Plugin-Unterstützung und eingerichtetem Modellzugriff.
+Benötigt werden Node.js 22 oder neuer und ein Client mit Plugin-Unterstützung und eingerichtetem Modellzugriff.
 
-[Qoder Desktop](#qoder-desktop) kann das Plugin direkt aus dem Marketplace installieren; Schritt 1 entfällt.
+### Schnellinstallation
+
+```bash
+npx skills add supermax92/qgraphflow
+```
+
+Getestet mit `skills` 1.7.0 für Claude Code, Codex, Cursor und Qoder. Der Befehl fragt, in welche Clients installiert werden soll; `-a claude-code` gibt einen direkt an, `-g` installiert für den eigenen Benutzer statt für das aktuelle Projekt. Der Skill heißt danach `q-flow`, ohne das Präfix `qgraphflow:` der Plugin-Installationen unten.
+
+Für die Installation als Plugin den folgenden Schritten folgen. [Qoder Desktop](#qoder-desktop) kann das Plugin direkt aus dem Marketplace installieren; Schritt 1 entfällt.
 
 ### 1. Plugin herunterladen
 
-[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
+[qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
 
 Alle folgenden Terminalbefehle im **entpackten Plugin-Stammverzeichnis mit `skills/`** ausführen.
 
@@ -110,29 +126,18 @@ Prüfen, ob dort `.cursor-plugin/plugin.json` vorhanden ist, das Fenster neu lad
 Das eigene Projekt im Client öffnen, eine neue Sitzung starten und den Skill wählen. Die Aufgabe anhand der Beispiele unter [Schnellstart](#schnellstart) beschreiben. Das erzeugte HTML im Browser öffnen.
 
 <details>
-<summary>Alternative Installation: GitHub npm</summary>
+<summary>Alternative Installation: npm</summary>
 
-Statt der ZIP-Datei kann das Plugin auch über npm bezogen werden.
-
-GitHub npm benötigt einen eigenen GitHub **Personal access token (classic)** mit der Berechtigung `read:packages`. Beim Anmelden den eigenen GitHub-Benutzernamen und das Token als Passwort verwenden.
-
-Das Token nicht weitergeben oder ins Repository committen. Siehe [GitHub-Authentifizierung](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry).
-
-```bash
-npm config set @supermax92:registry=https://npm.pkg.github.com --location=user
-npm login --scope=@supermax92 --auth-type=legacy --registry=https://npm.pkg.github.com
-```
-
-Ein eigenes Verzeichnis außerhalb des Anwendungsprojekts erstellen:
+Statt der ZIP-Datei kann das Plugin auch von npmjs.com bezogen werden, ohne Konto, Anmeldung oder Token. Ein eigenes Verzeichnis außerhalb des Anwendungsprojekts erstellen:
 
 ```bash
 mkdir qgraphflow-install
 cd qgraphflow-install
-npm install @supermax92/qgraphflow@0.0.5 --ignore-scripts
-cd node_modules/@supermax92/qgraphflow
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-Nun im Plugin-Stammverzeichnis mit den Installationsschritten für den gewünschten Client oben fortfahren. **Der Download über npm installiert das Plugin nicht automatisch im Client.**
+Nun im Plugin-Stammverzeichnis mit den Installationsschritten für den gewünschten Client oben fortfahren. **Der Download über npm installiert das Plugin nicht automatisch im Client.** Das Paket stellt außerdem den Befehl `qgraphflow` bereit, den [Diagramme mit dem Code synchron halten](#diagramme-mit-dem-code-synchron-halten) verwendet.
 
 </details>
 
@@ -170,12 +175,14 @@ Bestellerstellung und Schritte durch den tatsächlichen Projektablauf ersetzen. 
 $qgraphflow:q-flow Vertiefe die Bestandsreservierung aus dem letzten Diagramm als separates deutsches Flussdiagramm mit Erfolgs- und Fehlerbehandlung.
 ```
 
-Ergebnisse landen standardmäßig unter `docs/qgraphflow/`. `index.html` zum Erkunden, Bearbeiten und Exportieren öffnen; `graph.json` enthält die Diagrammdaten.
+Ergebnisse landen standardmäßig unter `docs/qgraphflow/`. `index.html` zum Erkunden, Bearbeiten und Exportieren öffnen; `graph.json` enthält die Diagrammdaten. Jede Ansicht wird außerdem als SVG geschrieben (`diagram.svg`, bei mehreren Ansichten `diagram-<n>-<type>.svg`), das sich als Bild in eine README, einen Pull Request oder ein Wiki einbinden lässt.
+
+Nach Änderungen auf der Seite schreibt **Mehr → Änderungen speichern** in Chrome oder Edge Seite, `graph.json` und SVGs direkt zurück, sobald der Diagrammordner einmal gewählt ist. Andere Browser speichern nur `graph.json`: die Datei in den Ordner legen und Seite und SVGs mit `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` neu erzeugen.
 
 <details>
 <summary>Das E-Commerce-Beispiel mit neun Ansichten manuell ausführen</summary>
 
-Diese Befehle dienen dem Repository-Beispiel. Für ein installiertes Plugin muss dieses Repository nicht geklont werden. Mit Node.js 22:
+Diese Befehle dienen dem Repository-Beispiel. Für ein installiertes Plugin muss dieses Repository nicht geklont werden. Mit Node.js 22 oder neuer:
 
 ```bash
 git clone https://github.com/supermax92/qgraphflow.git
@@ -184,11 +191,41 @@ node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.de.gra
 node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.de.graph.json output/ecommerce-de
 ```
 
-`output/ecommerce-de/index.html` im Browser öffnen. Über **Diagrammarten** in der oberen Werkzeugleiste wechseln; gespeicherte Texte und Positionen bleiben je Ansicht erhalten. **Mehr → Graph JSON speichern** sichert alle Ansichten in einer gewählten JSON-Datei; Browser ohne Dateispeicherung laden eine Kopie herunter. Beim Neuladen des ursprünglichen HTML gelten wieder die eingebetteten Daten. Zum erneuten Öffnen der Änderungen aus dem gespeicherten JSON in ein neues Verzeichnis generieren.
+`output/ecommerce-de/index.html` im Browser öffnen; die neun SVGs liegen daneben. Über **Diagrammtypen** in der oberen Werkzeugleiste wechseln; gespeicherte Texte und Positionen bleiben je Ansicht erhalten. **Mehr → Änderungen speichern** sichert alle Ansichten wie oben beschrieben. Dieselben Seiten gibt es in der [Online-Demo](https://supermax92.github.io/qgraphflow/).
 
 Der vorgebaute Viewer benötigt weder zusätzliche Abhängigkeiten noch API-Schlüssel oder Backend. Die KI-gestützte Belegsuche und Diagrammerstellung verwenden den Modelldienst des gewählten Clients.
 
 </details>
+
+## Diagramme mit dem Code synchron halten
+
+Ein mit Repository-Wurzel erzeugtes Diagramm hält fest, wo jede Komponente definiert ist. Die Prüfung mit `--repo-root` schlägt fehl, wenn eine erfasste Datei fehlt, ein Zeilenbereich nicht mehr in die Datei passt oder ein erfasstes Symbol seine Zeilen verlassen hat; die Meldung nennt die Zeilen, in denen das Symbol jetzt steht. Diesen Job in die CI aufnehmen; er braucht keinen Build, keine Anmeldung und kein Token:
+
+```yaml
+name: Diagrams
+on: [push, pull_request]
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: |
+          for graph in docs/qgraphflow/*/graph.json; do
+            npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }
+          done
+          exit ${failed:-0}
+```
+
+Schlägt er fehl, den Skill bitten, dieses Diagramm zu aktualisieren:
+
+```text
+$qgraphflow:q-flow Laut CI ist docs/qgraphflow/order-sequence veraltet. Bitte aktualisieren.
+```
+
+Der Skill verschiebt Anker, deren Symbol er genau einmal in der Datei findet, korrigiert nur die weiterhin gemeldeten Anker und erzeugt Seite und SVGs neu, wobei bearbeitete Positionen und Texte erhalten bleiben. Er zeichnet das Diagramm nicht neu.
 
 ## Welche Fragen die neun Ansichten beantworten
 
@@ -214,7 +251,7 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-Erforderlich sind Node.js 22, npm, tar, zip und unzip. Fehlerberichte sollten ein minimales anonymisiertes Diagramm, Client- und Browserversion sowie Reproduktionsschritte enthalten.
+Erforderlich sind Node.js 22 oder neuer, npm, tar, zip und unzip. Fehlerberichte sollten ein minimales anonymisiertes Diagramm, Client- und Browserversion sowie Reproduktionsschritte enthalten.
 
 Referenzdokumentation (Englisch): [Belegquellen](../../skills/q-flow/references/evidence-sources.md) · [Diagrammformat](../../skills/q-flow/references/graph-schema.md) · [Geführte Bedarfsklärung](../../skills/q-flow/references/guided-intake.md) · [Viewer-Entwicklung](../../skills/q-flow/references/viewer-development.md) · [Diagrammgestaltung](../../skills/q-flow/references/visual-contract.md)
 

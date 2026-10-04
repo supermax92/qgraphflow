@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { validateGraph } from '../skills/q-flow/scripts/validate-graph.mjs';
+import { validateGraph, verifySourceEvidence } from '../skills/q-flow/scripts/validate-graph.mjs';
 import { auditGraphLayout } from '../skills/q-flow/assets/viewer/src/edge-routing.js';
 import { renderNode } from '../skills/q-flow/assets/viewer/src/node-svg.js';
 import { PALETTES } from '../skills/q-flow/assets/viewer/src/visual-style.js';
@@ -52,15 +52,18 @@ test('Chinese ecommerce showcase covers all nine views with clean layouts', () =
     byType.architecture.nodes.length, byType.architecture.edges.length,
     byType.flowchart.nodes.length, byType.flowchart.edges.length,
     byType.sequence.nodes.length, byType.sequence.edges.length
-  ], [11, 10, 15, 15, 8, 14], 'The three core views retain the reviewed demo content.');
-  assert.ok(byType.sequence.groups?.some(group => group.kind === 'alt'), 'The sequence view retains its inventory alt fragment.');
+  ], [11, 10, 15, 15, 8, 13], 'The three core views retain the reviewed demo content.');
+  assert.ok(byType.sequence.groups?.some(group => group.kind === 'opt' && group.operands[0].edgeIds.length === 7), 'The sequence view wraps the post-reservation path in its inventory opt fragment.');
+  assert.ok(byType.sequence.edges.filter(edge => edge.kind === 'return').every(edge => edge.replyTo), 'Every return in the sequence view is paired with its call.');
+  assert.deepEqual(byType.sequence.executions.map(bar => bar.participantId), ['checkout', 'pricing', 'inventory', 'risk', 'payment', 'order'], 'Each called participant shows its activation bar.');
   assert.ok(byType.er.nodes.every(node => node.fields.every(field => typeof field.nullable === 'boolean')));
   assert.ok(byType.class.nodes.every(node => node.attributes?.length || node.methods?.length));
   assert.deepEqual(byType.sequence.edges.filter(edge => edge.kind === 'return').map(edge => [edge.source, edge.target]), [
-    ['pricing', 'checkout'], ['inventory', 'checkout'], ['inventory', 'checkout'], ['risk', 'checkout'],
+    ['pricing', 'checkout'], ['inventory', 'checkout'], ['risk', 'checkout'],
     ['payment', 'checkout'], ['order', 'checkout'], ['checkout', 'buyer']
   ]);
   assert.ok(byType.state.edges.some(edge => edge.guard) && byType.state.edges.some(edge => edge.action));
+  assert.ok(byType.state.nodes.some(node => node.entry) && byType.state.edges.some(edge => edge.source === edge.target), 'The state view shows an entry action and a self-transition.');
   assert.ok(byType.architecture.groups.length > 0 && byType.deployment.groups.length > 0);
 });
 
@@ -89,6 +92,35 @@ test('localized ecommerce preserves domain structure and renders complete node t
   }
 });
 
+test('every agent-desk graph in every locale keeps its source anchors and symbols on the example code', () => {
+  for (const locale of readmeLocales) for (const type of ['architecture', 'sequence', 'er']) {
+    const graph = JSON.parse(read(`examples/showcase/agent-desk-graphs/${locale}/${type}.graph.json`));
+    const evidence = verifySourceEvidence(graph, path.join(root, 'examples/showcase/agent-desk'));
+    assert.equal(evidence.status, 'passed', `${locale}/${type}`);
+    assert.equal(evidence.symbols, graph.nodes.filter(node => node.source?.symbol).length, `${locale}/${type}`);
+    assert.ok(evidence.symbols > 0, `${locale}/${type}`);
+  }
+  assert.deepEqual(fs.readdirSync(path.join(root, 'examples/showcase/agent-desk-graphs')).sort(), [...readmeLocales].sort());
+});
+
+test('the online demo builds every linked page from repository examples and its home page loads nothing else', () => {
+  const workflow = read('.github/workflows/pages.yml'), home = read('docs/pages/index.html');
+  const generated = [...workflow.matchAll(/generate-viewer\.mjs (\S+) site\/(\S+)(.*)$/gm)].map(([, input, output, options]) => ({ input, output, options }));
+  assert.equal(generated.length, 8);
+  for (const { input, output, options } of generated) {
+    assert.ok(fs.existsSync(path.join(root, input)), input);
+    if (output.startsWith('agent-desk/')) assert.match(options, /--repo-root examples\/showcase\/agent-desk$/, output);
+  }
+  const links = [...home.matchAll(/href="([^"]+)"/g)].map(match => match[1]);
+  const demos = links.filter(link => !link.startsWith('https://github.com/supermax92/qgraphflow'));
+  assert.deepEqual(demos.sort(), generated.map(item => `${item.output}/`).sort(), 'one link per generated page, and none without a page');
+  assert.deepEqual([...home.matchAll(/https?:\/\/[^\s"'<>)]+/g)].map(match => match[0]), ['https://github.com/supermax92/qgraphflow']);
+  assert.doesNotMatch(home, /<(script|img|iframe|link)\b|@import|url\(/i, 'no external or extra resources');
+  assert.match(workflow, /cp docs\/pages\/index\.html site\/index\.html/);
+  assert.doesNotMatch(workflow, /npm (ci|run build)|vite/, 'the committed prebuilt Viewer is used as installed');
+  assert.match(workflow.split('\n  deploy:\n')[1], /if: github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/main'/);
+});
+
 test('each README links to its inline installation guide, English references and its own showcase-v2 media', () => {
   const documents = readmeLocales.map(locale => locale === 'en' ? 'README.md' : `docs/readme/README.${locale}.md`);
   const installationHeadings = {
@@ -115,6 +147,20 @@ test('each README links to its inline installation guide, English references and
       'claude plugin marketplace add .', 'claude plugin install qgraphflow@supermax92 --scope user',
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
+    // First screen, before the installation guide: the live demo, the verified one-line install and the pitch.
+    const firstScreen = markdown.split(`\n## ${heading}\n`)[0];
+    assert.ok(firstScreen.includes('(https://supermax92.github.io/qgraphflow/)'), `${file}: live demo link`);
+    assert.ok(firstScreen.includes('\nnpx skills add supermax92/qgraphflow\n'), `${file}: one-line install on the first screen`);
+    const pitch = { en: 'What sets it apart:', 'zh-CN': '差异在哪：', ru: 'Чем отличается:', pt: 'O que o diferencia:', ja: 'ここが違う：', de: 'Was es auszeichnet:', es: 'Qué lo distingue:' }[locale];
+    assert.ok(firstScreen.includes(`\n**${pitch}** `), `${file}: one-sentence differentiator on the first screen`);
+    assert.ok(installation.indexOf('\nnpx skills add supermax92/qgraphflow\n') < installation.indexOf('#### Codex App / CLI\n'), `${file}: installation starts with it`);
+    assert.ok(installation.includes('`skills` 1.7.0'), `${file}: tested skills version`);
+    assert.ok(markdown.includes('npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }'), `${file}: CI drift check names the failing graph`);
+    assert.ok(markdown.includes('\nnpm install qgraphflow --ignore-scripts\n'), `${file}: npmjs installation`);
+    assert.doesNotMatch(markdown, /npm\.pkg\.github\.com|@supermax92\/qgraphflow|read:packages/, `${file}: no GitHub npm token login`);
+    assert.doesNotMatch(markdown, /Node\.js 22(?!\s*(or later|及以上|или новее|ou posterior|以降|oder neuer|o posterior))/, `${file}: Node.js 22 or later`);
+    const slugs = new Set([...markdown.matchAll(/^#+ (.+)$/gm)].map(match => match[1].trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-')));
+    for (const anchor of links.filter(link => link.startsWith('#'))) assert.ok(slugs.has(decodeURIComponent(anchor.slice(1))), `${file}: ${anchor}`);
     for (const reference of ['evidence-sources', 'graph-schema', 'guided-intake', 'viewer-development', 'visual-contract']) {
       assert.ok(local.includes(path.join(root, 'skills/q-flow/references', `${reference}.md`)));
     }

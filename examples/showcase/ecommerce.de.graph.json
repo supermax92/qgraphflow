@@ -1303,17 +1303,17 @@
           "label": "Käufer",
           "module": "Kanäle",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "Warenkorb senden und Bestell-ID erhalten."
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1308
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "Transaktionssteuerung",
           "module": "Kaufabschluss",
           "kind": "service",
-          "position": {
-            "x": 722.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Preise, Bestand, Risiko, Zahlung und Bestellungen koordinieren."
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1308
+          },
+          "position": {
+            "x": 287.5,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "Preise und Rabatte",
           "module": "Preise",
           "kind": "participant",
-          "position": {
-            "x": 3091.5,
-            "y": 48
-          },
-          "size": {
-            "width": 225,
-            "height": 1672
-          },
           "facts": [
             "Unveränderlichen Preissnapshot erzeugen."
-          ]
+          ],
+          "size": {
+            "width": 225,
+            "height": 1308
+          },
+          "position": {
+            "x": 643.5,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "Bestandsreservierung",
           "module": "Bestand",
           "kind": "participant",
-          "position": {
-            "x": 1670,
-            "y": 48
-          },
-          "size": {
-            "width": 242,
-            "height": 1672
-          },
           "facts": [
             "SKUs reservieren und Token zurückgeben."
-          ]
+          ],
+          "size": {
+            "width": 242,
+            "height": 1308
+          },
+          "position": {
+            "x": 932.5,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "Transaktionsrisiko",
           "module": "Risiko",
           "kind": "participant",
-          "position": {
-            "x": 3564.5,
-            "y": 48
-          },
-          "size": {
-            "width": 221,
-            "height": 1672
-          },
           "facts": [
             "PASS, REVIEW oder REJECT zurückgeben."
-          ]
+          ],
+          "size": {
+            "width": 221,
+            "height": 1308
+          },
+          "position": {
+            "x": 1238.5,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "Zahlungsautorisierung",
           "module": "Zahlung",
           "kind": "external",
-          "position": {
-            "x": 2606.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Snapshot-Betrag autorisieren."
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1308
+          },
+          "position": {
+            "x": 1523.5,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "Bestellung und Outbox",
           "module": "Bestellungen",
           "kind": "database",
-          "position": {
-            "x": 2134,
-            "y": 48
-          },
-          "size": {
-            "width": 256,
-            "height": 1672
-          },
           "facts": [
             "Bestellung und Outbox atomar speichern."
-          ]
+          ],
+          "size": {
+            "width": 256,
+            "height": 1308
+          },
+          "position": {
+            "x": 1840.5,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "Auftragsabwicklung",
           "module": "Versand",
           "kind": "participant",
-          "position": {
-            "x": 1205.5,
-            "y": 48
-          },
-          "size": {
-            "width": 229,
-            "height": 1672
-          },
           "facts": [
             "OrderPaid asynchron verarbeiten."
-          ]
+          ],
+          "size": {
+            "width": 229,
+            "height": 1308
+          },
+          "position": {
+            "x": 2219,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "Bestandsergebnis",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 4289,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 209,
+            "y": 558
+          },
+          "size": {
+            "width": 2157,
+            "height": 652
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 306
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "Preise",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "Rückgabe: PriceSnapshot",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 372
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 438
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "Bestand",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "Rückgabe: reservationToken",
+            "Rückgabe: reservationToken | OUT_OF_STOCK",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "Bestand",
-          "order": 6,
-          "facts": [
-            "Rückgabe: OUT_OF_STOCK",
-            "Diese Nachricht steht für den Fehlbestandspfad."
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 528
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 720
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "Risiko",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "Rückgabe: PASS",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 786
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 852
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "Zahlung",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "Rückgabe: paymentConfirmed",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 918
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 1008
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "Bestellungen",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "Rückgabe: orderId",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1074
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1140
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "Bestell-ID zurückgeben",
+          "label": "Bestell-ID | OUT_OF_STOCK",
           "kind": "return",
           "module": "Kaufabschluss",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "Rückgabe: Bestell-ID zurückgeben",
+            "Rückgabe: Bestell-ID | OUT_OF_STOCK",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1294
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },
@@ -3097,8 +3161,8 @@
           "module": "Bestellungen",
           "kind": "initial",
           "position": {
-            "x": 324,
-            "y": 100
+            "x": 166.5,
+            "y": 32
           },
           "size": {
             "width": 64,
@@ -3111,17 +3175,18 @@
           "subtitle": "Bestand reserviert",
           "module": "Zahlung",
           "kind": "state",
+          "tags": [
+            "core"
+          ],
+          "entry": "Bestand reservieren",
           "position": {
-            "x": 205.5,
-            "y": 438
+            "x": 48,
+            "y": 274
           },
           "size": {
             "width": 301,
-            "height": 100
-          },
-          "tags": [
-            "core"
-          ]
+            "height": 110
+          }
         },
         {
           "id": "paid",
@@ -3130,8 +3195,8 @@
           "module": "Bestellungen",
           "kind": "state",
           "position": {
-            "x": 610.5,
-            "y": 848
+            "x": 405,
+            "y": 598
           },
           "size": {
             "width": 322,
@@ -3145,8 +3210,8 @@
           "module": "Versand",
           "kind": "state",
           "position": {
-            "x": 607,
-            "y": 1234
+            "x": 401.5,
+            "y": 888
           },
           "size": {
             "width": 305,
@@ -3160,8 +3225,8 @@
           "module": "Versand",
           "kind": "state",
           "position": {
-            "x": 624,
-            "y": 1620
+            "x": 418.5,
+            "y": 1178
           },
           "size": {
             "width": 271,
@@ -3175,8 +3240,8 @@
           "module": "Versand",
           "kind": "state",
           "position": {
-            "x": 622.5,
-            "y": 2006
+            "x": 417,
+            "y": 1468
           },
           "size": {
             "width": 274,
@@ -3190,8 +3255,8 @@
           "module": "Versand",
           "kind": "state",
           "position": {
-            "x": 531.5,
-            "y": 2416
+            "x": 326,
+            "y": 1782
           },
           "size": {
             "width": 456,
@@ -3205,8 +3270,8 @@
           "module": "Bestellungen",
           "kind": "state",
           "position": {
-            "x": 189.5,
-            "y": 848
+            "x": 32,
+            "y": 598
           },
           "size": {
             "width": 309,
@@ -3220,8 +3285,8 @@
           "module": "Zahlung",
           "kind": "state",
           "position": {
-            "x": 592,
-            "y": 2826
+            "x": 386.5,
+            "y": 2096
           },
           "size": {
             "width": 359,
@@ -3234,8 +3299,8 @@
           "module": "Bestellungen",
           "kind": "final",
           "position": {
-            "x": 312,
-            "y": 3236
+            "x": 154.5,
+            "y": 2410
           },
           "size": {
             "width": 88,
@@ -3254,17 +3319,17 @@
           "route": {
             "via": [
               {
-                "x": 356,
-                "y": 140
+                "x": 198.5,
+                "y": 72
               },
               {
-                "x": 356,
-                "y": 426
+                "x": 198.5,
+                "y": 262
               }
             ],
             "labelAt": {
-              "x": 278.5,
-              "y": 283
+              "x": 198.5,
+              "y": 167
             }
           }
         },
@@ -3279,25 +3344,59 @@
           "route": {
             "via": [
               {
-                "x": 368,
-                "y": 550
+                "x": 210.5,
+                "y": 396
               },
               {
-                "x": 368,
+                "x": 210.5,
+                "y": 408
+              },
+              {
+                "x": 566,
+                "y": 408
+              },
+              {
+                "x": 566,
                 "y": 586
-              },
-              {
-                "x": 771.5,
-                "y": 586
-              },
-              {
-                "x": 771.5,
-                "y": 836
               }
             ],
             "labelAt": {
-              "x": 890.5,
-              "y": 693
+              "x": 566,
+              "y": 491
+            }
+          }
+        },
+        {
+          "id": "pay-retry",
+          "source": "pending",
+          "target": "pending",
+          "kind": "transition",
+          "label": "Zahlung fehlgeschlagen",
+          "guard": "Versuche übrig",
+          "action": "Neuen Versuch anstoßen",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 361,
+                "y": 317
+              },
+              {
+                "x": 393,
+                "y": 317
+              },
+              {
+                "x": 393,
+                "y": 341
+              },
+              {
+                "x": 361,
+                "y": 341
+              }
+            ],
+            "labelAt": {
+              "x": 576.5,
+              "y": 329
             }
           }
         },
@@ -3311,17 +3410,17 @@
           "route": {
             "via": [
               {
-                "x": 759.5,
-                "y": 960
+                "x": 554,
+                "y": 710
               },
               {
-                "x": 759.5,
-                "y": 1222
+                "x": 554,
+                "y": 876
               }
             ],
             "labelAt": {
-              "x": 657,
-              "y": 1091
+              "x": 554,
+              "y": 793
             }
           }
         },
@@ -3335,17 +3434,17 @@
           "route": {
             "via": [
               {
-                "x": 759.5,
-                "y": 1346
+                "x": 554,
+                "y": 1000
               },
               {
-                "x": 759.5,
-                "y": 1608
+                "x": 554,
+                "y": 1166
               }
             ],
             "labelAt": {
-              "x": 657,
-              "y": 1477
+              "x": 554,
+              "y": 1083
             }
           }
         },
@@ -3359,17 +3458,17 @@
           "route": {
             "via": [
               {
-                "x": 759.5,
-                "y": 1732
+                "x": 554,
+                "y": 1290
               },
               {
-                "x": 759.5,
-                "y": 1994
+                "x": 554,
+                "y": 1456
               }
             ],
             "labelAt": {
-              "x": 650.5,
-              "y": 1863
+              "x": 554,
+              "y": 1373
             }
           }
         },
@@ -3383,17 +3482,17 @@
           "route": {
             "via": [
               {
-                "x": 759.5,
-                "y": 2118
+                "x": 554,
+                "y": 1580
               },
               {
-                "x": 759.5,
-                "y": 2404
+                "x": 554,
+                "y": 1770
               }
             ],
             "labelAt": {
-              "x": 684,
-              "y": 2261
+              "x": 554,
+              "y": 1675
             }
           }
         },
@@ -3408,17 +3507,17 @@
           "route": {
             "via": [
               {
-                "x": 344,
-                "y": 550
+                "x": 186.5,
+                "y": 396
               },
               {
-                "x": 344,
-                "y": 836
+                "x": 186.5,
+                "y": 586
               }
             ],
             "labelAt": {
-              "x": 176,
-              "y": 693
+              "x": 186.5,
+              "y": 491
             }
           }
         },
@@ -3433,33 +3532,33 @@
           "route": {
             "via": [
               {
-                "x": 783.5,
-                "y": 960
+                "x": 578,
+                "y": 710
               },
               {
-                "x": 783.5,
-                "y": 996
+                "x": 578,
+                "y": 722
               },
               {
-                "x": 1091.5,
-                "y": 996
+                "x": 806,
+                "y": 722
               },
               {
-                "x": 1091.5,
-                "y": 2746
+                "x": 806,
+                "y": 2040
               },
               {
-                "x": 783.5,
-                "y": 2746
+                "x": 578,
+                "y": 2040
               },
               {
-                "x": 783.5,
-                "y": 2814
+                "x": 578,
+                "y": 2084
               }
             ],
             "labelAt": {
-              "x": 926,
-              "y": 1863
+              "x": 806,
+              "y": 1373
             }
           }
         },
@@ -3474,17 +3573,17 @@
           "route": {
             "via": [
               {
-                "x": 759.5,
-                "y": 2528
+                "x": 554,
+                "y": 1894
               },
               {
-                "x": 759.5,
-                "y": 2814
+                "x": 554,
+                "y": 2084
               }
             ],
             "labelAt": {
-              "x": 580.5,
-              "y": 2671
+              "x": 554,
+              "y": 1989
             }
           }
         },
@@ -3498,17 +3597,17 @@
           "route": {
             "via": [
               {
-                "x": 344,
-                "y": 960
+                "x": 186.5,
+                "y": 710
               },
               {
-                "x": 344,
-                "y": 3224
+                "x": 186.5,
+                "y": 2398
               }
             ],
             "labelAt": {
-              "x": 264,
-              "y": 2056
+              "x": 186.5,
+              "y": 1518
             }
           }
         },
@@ -3522,31 +3621,31 @@
           "route": {
             "via": [
               {
-                "x": 771.5,
-                "y": 2938
+                "x": 566,
+                "y": 2208
               },
               {
-                "x": 771.5,
-                "y": 3156
+                "x": 566,
+                "y": 2354
               },
               {
-                "x": 368,
-                "y": 3156
+                "x": 210.5,
+                "y": 2354
               },
               {
-                "x": 368,
-                "y": 3224
+                "x": 210.5,
+                "y": 2398
               }
             ],
             "labelAt": {
-              "x": 852.5,
-              "y": 3081
+              "x": 566,
+              "y": 2303
             }
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "layered-0"
       }
     },

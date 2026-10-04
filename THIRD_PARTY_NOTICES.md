@@ -19,23 +19,18 @@ and https://github.com/eclipse-elk/elk. QGraphFlow does not modify ELK;
 
 - `@xyflow/react` 12.11.5 and `@xyflow/system` 0.0.81
 - `classcat` 5.0.5
-- `motion` 13.1.1, `framer-motion` 13.1.1, `motion-dom` 13.1.1, and
-  `motion-utils` 13.0.0
 - `react` 19.2.8, `react-dom` 19.2.8, `scheduler` 0.27.0, and
   `use-sync-external-store` 1.6.0
 - `zustand` 4.5.7
-- Selected color scales derived from Radix Colors (Slate, Iris, Cyan, and
-  Orange, light and dark)
+- Selected color scales derived from Radix Colors (Slate, Iris, Cyan, Red,
+  Amber, Blue, Orange, Teal, Crimson, Violet, Grass, Plum and Indigo, light
+  and dark)
 
 MIT License
 
 Copyright (c) 2019-2025 webkid GmbH
 
 Copyright © Jorge Bucaran <<https://jorgebucaran.com>>
-
-Copyright (c) 2018 Framer B.V.
-
-Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 
 Copyright (c) Meta Platforms, Inc. and affiliates.
 
@@ -67,7 +62,6 @@ Upstream sources:
 
 - https://github.com/xyflow/xyflow
 - https://github.com/jorgebucaran/classcat
-- https://github.com/motiondivision/motion
 - https://github.com/facebook/react
 - https://github.com/pmndrs/zustand
 - https://github.com/radix-ui/colors
@@ -194,22 +188,3 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Upstream source: https://github.com/d3/d3-ease
-
-## 0BSD component
-
-- `tslib` 2.8.1
-
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-
-Upstream source: https://github.com/microsoft/tslib

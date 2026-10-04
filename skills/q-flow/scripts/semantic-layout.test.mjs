@@ -6,16 +6,17 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, layoutComposition } from './validate-graph.mjs';
-import { minimumNodeSize, measureFragmentText } from '../assets/viewer/src/layout-measure.js';
+import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { getDiagram, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
 import { PALETTES } from '../assets/viewer/src/visual-style.js';
 import { layoutText } from '../assets/viewer/src/text-layout.js';
 import { routeCrossings, createEdgeRoutes, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { sequenceEndpointY, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { auditLayoutQuality, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
-import { compileGraphLayout, migrateOwnership, aspectExcess, LAYOUT_VERSION, ASPECT_SLACK } from './compile-layout.mjs';
+import { ASPECT_SLACK } from '../assets/viewer/src/layout-spacing.js';
+import { compileGraphLayout, migrateOwnership, aspectExcess, LAYOUT_VERSION } from './compile-layout.mjs';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
-import { writeOutputPair } from './generate-viewer.mjs';
+import { writeOutputs } from './generate-viewer.mjs';
 
 const inputPath = path.resolve(import.meta.dirname, '../../../tests/fixtures/semantic-layout.graph.json');
 const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
@@ -72,6 +73,15 @@ test('sequence: fragment tags clear activation bars and message-less fragments s
   const lifelines = graph.nodes.map(node => node.position.x + node.size.width / 2);
   for (const group of graph.groups) assert.ok(lifelines.some(x => x > group.position.x && x < group.position.x + group.size.width), `${group.id}: a fragment must cover at least one lifeline`);
   assert.deepEqual(auditLayoutQuality(graph).errors, []);
+});
+
+test('sequence: a top-level alt with operands lays out a long guard like any operand fragment', async () => {
+  const guard = 'inventory reserved and payment authorised and fraud score below threshold';
+  const { graph } = await compileGraphLayout({ meta: { title: 'Alt guard', diagramType: 'sequence', sourceRef: 'conceptual:alt' },
+    nodes: ['a', 'b'].map(id => ({ id, label: id, kind: 'participant' })),
+    edges: [1, 2].map(order => ({ id: `m${order}`, source: 'a', target: 'b', label: `m${order}`, kind: 'sync', order, evidence: 'inference' })),
+    groups: [{ id: 'choice', label: 'Choice', kind: 'alt', operands: [{ guard, edgeIds: ['m1'] }, { guard: 'else', edgeIds: ['m2'] }] }] });
+  assert.deepEqual(requireDiagramQuality(graph).diagnostics, []);
 });
 
 test('adaptive spacing: nine types retain facts and regenerate at three scales', async t => {
@@ -332,13 +342,8 @@ test('full bilingual content fits the same shape safety regions used by drawing'
       assert.ok(area.height >= required, `${type}/${kind} content must fit its safety area`);
     }
     assert.ok(svg.includes('完整结果') || svg.includes('完整') && svg.includes('结果'), `${type}/${kind} preserves the subtitle`);
-    assert.doesNotMatch(svg, /font-size:1[0-3](?:\D)|compact-title|compact-body/);
+    assert.doesNotMatch(svg, /font-size:1[0-3](?:\D)/);
   }
-  const group = { label: title, operands: [{ guard: title, body: subtitle }] };
-  const measured = measureFragmentText(group);
-  assert.equal(measured.heading.lines.join(''), title);
-  assert.equal(measured.operands[0].heading.lines.join(''), title);
-  assert.equal(measured.operands[0].body.lines.join(''), subtitle);
   const russian = { kind: 'usecase', label: 'Обработать проблемные заказы', subtitle: 'Проверить, закрыть, компенсировать', size: { width: 480, height: 196 } };
   const russianSvg = getDiagram('usecase').render(russian, 0, 0, '#fff', '#000', PALETTES.light);
   assert.doesNotMatch(russianSvg, /…/, 'Already wrapped lines must not be truncated again by rounded width estimates.');
@@ -482,8 +487,8 @@ test('messageY moves routes, activation endpoints and fragments without renumber
   for (const edge of graph.edges) assert.equal(routes.get(edge.id).points[0].y, edge.route.messageY);
   for (const execution of graph.executions) {
     const rect = executions.find(item => item.id === execution.id), start = graph.edges.find(edge => edge.id === execution.start.edgeId), end = graph.edges.find(edge => edge.id === execution.end.edgeId);
-    assert.equal(rect.y, sequenceEndpointY(graph, start, execution.start.at));
-    assert.equal(rect.y + rect.height, sequenceEndpointY(graph, end, execution.end.at));
+    assert.equal(rect.y, sequenceEndpointY(start, execution.start.at));
+    assert.equal(rect.y + rect.height, sequenceEndpointY(end, execution.end.at));
   }
   assert.deepEqual(validateGraph(graph), []);
   const invalid = structuredClone(graph);
@@ -631,6 +636,8 @@ test('the public generator compiles semantic input, preserves validated geometry
   assert.ok(report.quality.every(item => item.semantic.status === 'passed' && item.geometry.status === 'passed' && item.rendering.status === 'not-checked'));
   assert.ok(report.layout.every(item => item.semantics.preserved));
   const graph = fs.readFileSync(path.join(output, 'graph.json')), html = fs.readFileSync(path.join(output, 'index.html'));
+  const listing = fs.readdirSync(output).sort(), svg = fs.readFileSync(path.join(output, 'diagram-9-dataflow.svg'));
+  assert.equal(listing.filter(name => name.endsWith('.svg')).length, 9);
   fs.writeFileSync(source, graph);
   result = run('--layout', 'preserve', '--force'); assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(fs.readFileSync(path.join(output, 'graph.json')), graph);
@@ -641,13 +648,15 @@ test('the public generator compiles semantic input, preserves validated geometry
   assert.match(result.stderr, /does not name a node/);
   assert.deepEqual(fs.readFileSync(path.join(output, 'graph.json')), graph);
   assert.deepEqual(fs.readFileSync(path.join(output, 'index.html')), html);
-  assert.deepEqual(fs.readdirSync(output).sort(), ['graph.json', 'index.html']);
+  assert.deepEqual(fs.readFileSync(path.join(output, 'diagram-9-dataflow.svg')), svg);
+  assert.deepEqual(fs.readdirSync(output).sort(), listing);
 });
 
-test('staging and installation failures restore both outputs and remove temporary files', t => {
+test('staging and installation failures restore every output and remove temporary files', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-output-transaction-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-  const old = { 'graph.json': '{"old":true}', 'index.html': '<html>old</html>', 'snapshot.svg': '<svg/>' }, next = { 'graph.json': '{"new":true}', 'index.html': '<html>new</html>' };
+  const old = { 'graph.json': '{"old":true}', 'index.html': '<html>old</html>', 'diagram-1-architecture.svg': '<svg>old</svg>', 'diagram-3-er.svg': '<svg>stale</svg>', 'snapshot.svg': '<svg/>' };
+  const next = { 'index.html': '<html>new</html>', 'graph.json': '{"new":true}', 'diagram-1-architecture.svg': '<svg>new</svg>' }, stale = ['diagram-3-er.svg', 'snapshot.svg'];
   for (const [name, contents] of Object.entries(old)) fs.writeFileSync(path.join(directory, name), contents);
   for (const method of ['writeFileSync', 'renameSync']) {
     const original = fs[method]; let failed = false, writes = 0;
@@ -656,12 +665,12 @@ test('staging and installation failures restore both outputs and remove temporar
       if (!failed && inject) { failed = true; throw new Error(`injected ${method} failure`); }
       return original(...args);
     };
-    try { assert.throws(() => writeOutputPair(directory, next), /injected/); }
+    try { assert.throws(() => writeOutputs(directory, next, stale), /injected/); }
     finally { fs[method] = original; }
     for (const [name, contents] of Object.entries(old)) assert.equal(fs.readFileSync(path.join(directory, name), 'utf8'), contents);
     assert.deepEqual(fs.readdirSync(directory).sort(), Object.keys(old).sort());
   }
-  writeOutputPair(directory, next);
+  writeOutputs(directory, next, stale);
   for (const [name, contents] of Object.entries(next)) assert.equal(fs.readFileSync(path.join(directory, name), 'utf8'), contents);
   assert.deepEqual(fs.readdirSync(directory).sort(), Object.keys(next).sort());
 });

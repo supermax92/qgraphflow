@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PALETTES } from '../visual-style.js';
 import { useGraphLayout } from './useGraphLayout.js';
-import { hasArrow } from '../diagrams/registry.js';
+import { diagramTypeOf, hasArrow } from '../diagrams/registry.js';
 import { useSelection } from './useSelection.js';
 import { usePresentation } from './usePresentation.js';
 import { useFullscreen } from './useFullscreen.js';
@@ -38,10 +38,8 @@ export function useViewerController(graph, theme, panels, moduleColors, original
     setStatus('Reset: original positions and reading view restored');
   };
   return { ...layout, ...selection, ...presentation, ...panels, ...fullscreen,
-    diagramType: graph.meta.diagramType ?? 'architecture', palette, moduleColors, reduceMotion, exportStatus, exportDiagram, saveGraph, reset,
-    inspectedNode: selection.selected, inspectedEdge: selection.selectedEdge, hasFlow: graph.edges.some(edge => hasArrow(edge, graph.meta.diagramType ?? 'architecture')), flowRunning, setFlowEnabled,
-    nudgeLayout: () => layout.nudgeLayout(selection.selectedId),
-    // Apple's default spring: critically damped (no bounce) with a ~0.36s visible duration. Reduced motion lands immediately.
-    panelTransition: reduceMotion ? { duration: 0 } : { type: 'spring', visualDuration: .36, bounce: 0 }
+    diagramType: diagramTypeOf(graph), palette, moduleColors, reduceMotion, exportStatus, exportDiagram, saveGraph, reset,
+    inspectedNode: selection.selected, inspectedEdge: selection.selectedEdge, hasFlow: graph.edges.some(edge => hasArrow(edge, diagramTypeOf(graph))), flowRunning, setFlowEnabled,
+    nudgeLayout: () => layout.nudgeLayout(selection.selectedId)
   };
 }

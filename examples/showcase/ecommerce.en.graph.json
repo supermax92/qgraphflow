@@ -1303,17 +1303,17 @@
           "label": "Buyer",
           "module": "Channels",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "Submit cart and receive order ID."
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1308
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "Transaction orchestration",
           "module": "Checkout",
           "kind": "service",
-          "position": {
-            "x": 702,
-            "y": 48
-          },
-          "size": {
-            "width": 294,
-            "height": 1672
-          },
           "facts": [
             "Coordinate pricing, stock, risk, payment and orders."
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 294,
+            "height": 1308
+          },
+          "position": {
+            "x": 324,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "Pricing and discounts",
           "module": "Pricing",
           "kind": "participant",
-          "position": {
-            "x": 3077.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Produce an immutable price snapshot."
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1308
+          },
+          "position": {
+            "x": 682.5,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "Stock reservation",
           "module": "Inventory",
           "kind": "participant",
-          "position": {
-            "x": 1686,
-            "y": 48
-          },
-          "size": {
-            "width": 210,
-            "height": 1672
-          },
           "facts": [
             "Reserve SKUs and return a token."
-          ]
+          ],
+          "size": {
+            "width": 210,
+            "height": 1308
+          },
+          "position": {
+            "x": 999.5,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "Transaction risk",
           "module": "Risk",
           "kind": "participant",
-          "position": {
-            "x": 3575,
-            "y": 48
-          },
-          "size": {
-            "width": 200,
-            "height": 1672
-          },
           "facts": [
             "Return PASS, REVIEW or REJECT."
-          ]
+          ],
+          "size": {
+            "width": 200,
+            "height": 1308
+          },
+          "position": {
+            "x": 1273.5,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "Payment authorization",
           "module": "Payment",
           "kind": "external",
-          "position": {
-            "x": 2602.5,
-            "y": 48
-          },
-          "size": {
-            "width": 261,
-            "height": 1672
-          },
           "facts": [
             "Authorize the snapshot amount."
-          ]
+          ],
+          "size": {
+            "width": 261,
+            "height": 1308
+          },
+          "position": {
+            "x": 1537.5,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "Order and Outbox",
           "module": "Orders",
           "kind": "database",
-          "position": {
-            "x": 2160,
-            "y": 48
-          },
-          "size": {
-            "width": 204,
-            "height": 1672
-          },
           "facts": [
             "Save order and Outbox atomically."
-          ]
+          ],
+          "size": {
+            "width": 204,
+            "height": 1308
+          },
+          "position": {
+            "x": 1862.5,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "Fulfillment",
           "module": "Fulfillment",
           "kind": "participant",
-          "position": {
-            "x": 1226.5,
-            "y": 48
-          },
-          "size": {
-            "width": 187,
-            "height": 1672
-          },
           "facts": [
             "Consume OrderPaid asynchronously."
-          ]
+          ],
+          "size": {
+            "width": 187,
+            "height": 1308
+          },
+          "position": {
+            "x": 2167,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "Stock result",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 4278,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 276,
+            "y": 558
+          },
+          "size": {
+            "width": 2017,
+            "height": 652
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 306
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "Pricing",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "Return: PriceSnapshot",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 372
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 438
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "Inventory",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "Return: reservationToken",
+            "Return: reservationToken | OUT_OF_STOCK",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "Inventory",
-          "order": 6,
-          "facts": [
-            "Return: OUT_OF_STOCK",
-            "This message represents the out-of-stock branch."
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 528
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 720
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "Risk",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "Return: PASS",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 786
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 852
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "Payment",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "Return: paymentConfirmed",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 918
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 984
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "Orders",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "Return: orderId",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1050
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1140
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "Return order ID",
+          "label": "order ID | OUT_OF_STOCK",
           "kind": "return",
           "module": "Checkout",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "Return: Return order ID",
+            "Return: order ID | OUT_OF_STOCK",
             "Read in numbered order."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1294
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },
@@ -3097,8 +3161,8 @@
           "module": "Orders",
           "kind": "initial",
           "position": {
-            "x": 268,
-            "y": 100
+            "x": 158.5,
+            "y": 32
           },
           "size": {
             "width": 64,
@@ -3111,17 +3175,18 @@
           "subtitle": "Stock reserved",
           "module": "Payment",
           "kind": "state",
+          "tags": [
+            "core"
+          ],
+          "entry": "Reserve stock",
           "position": {
-            "x": 152.5,
-            "y": 414
+            "x": 43,
+            "y": 250
           },
           "size": {
             "width": 295,
-            "height": 100
-          },
-          "tags": [
-            "core"
-          ]
+            "height": 110
+          }
         },
         {
           "id": "paid",
@@ -3130,8 +3195,8 @@
           "module": "Orders",
           "kind": "state",
           "position": {
-            "x": 546.5,
-            "y": 824
+            "x": 389,
+            "y": 574
           },
           "size": {
             "width": 384,
@@ -3145,8 +3210,8 @@
           "module": "Fulfillment",
           "kind": "state",
           "position": {
-            "x": 545,
-            "y": 1234
+            "x": 387.5,
+            "y": 888
           },
           "size": {
             "width": 363,
@@ -3160,8 +3225,8 @@
           "module": "Fulfillment",
           "kind": "state",
           "position": {
-            "x": 570,
-            "y": 1644
+            "x": 412.5,
+            "y": 1202
           },
           "size": {
             "width": 313,
@@ -3175,8 +3240,8 @@
           "module": "Fulfillment",
           "kind": "state",
           "position": {
-            "x": 606.5,
-            "y": 2054
+            "x": 449,
+            "y": 1516
           },
           "size": {
             "width": 240,
@@ -3190,8 +3255,8 @@
           "module": "Fulfillment",
           "kind": "state",
           "position": {
-            "x": 554,
-            "y": 2440
+            "x": 396.5,
+            "y": 1806
           },
           "size": {
             "width": 345,
@@ -3205,8 +3270,8 @@
           "module": "Orders",
           "kind": "state",
           "position": {
-            "x": 141.5,
-            "y": 824
+            "x": 32,
+            "y": 574
           },
           "size": {
             "width": 293,
@@ -3220,8 +3285,8 @@
           "module": "Payment",
           "kind": "state",
           "position": {
-            "x": 535,
-            "y": 2850
+            "x": 377.5,
+            "y": 2120
           },
           "size": {
             "width": 407,
@@ -3234,8 +3299,8 @@
           "module": "Orders",
           "kind": "final",
           "position": {
-            "x": 256,
-            "y": 3236
+            "x": 146.5,
+            "y": 2410
           },
           "size": {
             "width": 88,
@@ -3254,17 +3319,17 @@
           "route": {
             "via": [
               {
-                "x": 300,
-                "y": 140
+                "x": 190.5,
+                "y": 72
               },
               {
-                "x": 300,
-                "y": 402
+                "x": 190.5,
+                "y": 238
               }
             ],
             "labelAt": {
-              "x": 213.5,
-              "y": 271
+              "x": 190.5,
+              "y": 155
             }
           }
         },
@@ -3279,25 +3344,59 @@
           "route": {
             "via": [
               {
-                "x": 312,
-                "y": 526
+                "x": 202.5,
+                "y": 372
               },
               {
-                "x": 312,
+                "x": 202.5,
+                "y": 384
+              },
+              {
+                "x": 581,
+                "y": 384
+              },
+              {
+                "x": 581,
                 "y": 562
-              },
-              {
-                "x": 738.5,
-                "y": 562
-              },
-              {
-                "x": 738.5,
-                "y": 812
               }
             ],
             "labelAt": {
-              "x": 843,
-              "y": 669
+              "x": 581,
+              "y": 467
+            }
+          }
+        },
+        {
+          "id": "pay-retry",
+          "source": "pending",
+          "target": "pending",
+          "kind": "transition",
+          "label": "Payment failed",
+          "guard": "Retries left",
+          "action": "Ask buyer to retry",
+          "evidence": "inference",
+          "route": {
+            "via": [
+              {
+                "x": 350,
+                "y": 293
+              },
+              {
+                "x": 382,
+                "y": 293
+              },
+              {
+                "x": 382,
+                "y": 317
+              },
+              {
+                "x": 350,
+                "y": 317
+              }
+            ],
+            "labelAt": {
+              "x": 564.5,
+              "y": 305
             }
           }
         },
@@ -3311,17 +3410,17 @@
           "route": {
             "via": [
               {
-                "x": 726.5,
-                "y": 936
+                "x": 569,
+                "y": 686
               },
               {
-                "x": 726.5,
-                "y": 1222
+                "x": 569,
+                "y": 876
               }
             ],
             "labelAt": {
-              "x": 652,
-              "y": 1079
+              "x": 569,
+              "y": 781
             }
           }
         },
@@ -3335,17 +3434,17 @@
           "route": {
             "via": [
               {
-                "x": 726.5,
-                "y": 1346
+                "x": 569,
+                "y": 1000
               },
               {
-                "x": 726.5,
-                "y": 1632
+                "x": 569,
+                "y": 1190
               }
             ],
             "labelAt": {
-              "x": 656.5,
-              "y": 1489
+              "x": 569,
+              "y": 1095
             }
           }
         },
@@ -3359,17 +3458,17 @@
           "route": {
             "via": [
               {
-                "x": 726.5,
-                "y": 1756
+                "x": 569,
+                "y": 1314
               },
               {
-                "x": 726.5,
-                "y": 2042
+                "x": 569,
+                "y": 1504
               }
             ],
             "labelAt": {
-              "x": 631,
-              "y": 1899
+              "x": 569,
+              "y": 1409
             }
           }
         },
@@ -3383,17 +3482,17 @@
           "route": {
             "via": [
               {
-                "x": 726.5,
-                "y": 2166
+                "x": 569,
+                "y": 1628
               },
               {
-                "x": 726.5,
-                "y": 2428
+                "x": 569,
+                "y": 1794
               }
             ],
             "labelAt": {
-              "x": 623,
-              "y": 2297
+              "x": 569,
+              "y": 1711
             }
           }
         },
@@ -3408,17 +3507,17 @@
           "route": {
             "via": [
               {
-                "x": 288,
-                "y": 526
+                "x": 178.5,
+                "y": 372
               },
               {
-                "x": 288,
-                "y": 812
+                "x": 178.5,
+                "y": 562
               }
             ],
             "labelAt": {
-              "x": 148,
-              "y": 669
+              "x": 178.5,
+              "y": 467
             }
           }
         },
@@ -3433,33 +3532,33 @@
           "route": {
             "via": [
               {
-                "x": 750.5,
-                "y": 936
+                "x": 593,
+                "y": 686
               },
               {
-                "x": 750.5,
-                "y": 972
+                "x": 593,
+                "y": 698
               },
               {
-                "x": 982.5,
-                "y": 972
+                "x": 774.5,
+                "y": 698
               },
               {
-                "x": 982.5,
-                "y": 2770
+                "x": 774.5,
+                "y": 2064
               },
               {
-                "x": 750.5,
-                "y": 2770
+                "x": 593,
+                "y": 2064
               },
               {
-                "x": 750.5,
-                "y": 2838
+                "x": 593,
+                "y": 2108
               }
             ],
             "labelAt": {
-              "x": 855,
-              "y": 1899
+              "x": 774.5,
+              "y": 1409
             }
           }
         },
@@ -3474,17 +3573,17 @@
           "route": {
             "via": [
               {
-                "x": 726.5,
-                "y": 2552
+                "x": 569,
+                "y": 1918
               },
               {
-                "x": 726.5,
-                "y": 2838
+                "x": 569,
+                "y": 2108
               }
             ],
             "labelAt": {
-              "x": 582,
-              "y": 2695
+              "x": 569,
+              "y": 2013
             }
           }
         },
@@ -3498,17 +3597,17 @@
           "route": {
             "via": [
               {
-                "x": 288,
-                "y": 936
+                "x": 178.5,
+                "y": 686
               },
               {
-                "x": 288,
-                "y": 3224
+                "x": 178.5,
+                "y": 2398
               }
             ],
             "labelAt": {
-              "x": 215,
-              "y": 2104
+              "x": 178.5,
+              "y": 1566
             }
           }
         },
@@ -3522,31 +3621,31 @@
           "route": {
             "via": [
               {
-                "x": 738.5,
-                "y": 2962
+                "x": 581,
+                "y": 2232
               },
               {
-                "x": 738.5,
-                "y": 3156
+                "x": 581,
+                "y": 2354
               },
               {
-                "x": 312,
-                "y": 3156
+                "x": 202.5,
+                "y": 2354
               },
               {
-                "x": 312,
-                "y": 3224
+                "x": 202.5,
+                "y": 2398
               }
             ],
             "labelAt": {
-              "x": 839.5,
-              "y": 3093
+              "x": 581,
+              "y": 2315
             }
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "layered-0"
       }
     },

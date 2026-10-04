@@ -17,7 +17,7 @@ export default function NodeCard({ node, edge, source, target, others = [], canv
   const viewport = useViewport();
   const t = (message, values) => translate(locale, message, values);
   const relation = Boolean(edge);
-  const label = relation ? (createEdgeRoutes(graph).get(edge.id)?.label ?? visibleEdgeLabel(edge, edge.diagramType)) || edge.kind : node.label;
+  const label = relation ? (createEdgeRoutes(graph).get(edge.id)?.label ?? visibleEdgeLabel(edge, edge.diagramType, locale)) || edge.kind : node.label;
   const ref = useRef(null), attemptedFallback = useRef(false);
   const [cardHeight, setCardHeight] = useState(CARD_HEIGHT);
   const [, setCanvasSize] = useState('');
