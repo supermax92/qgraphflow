@@ -63,6 +63,7 @@ test('Chinese ecommerce showcase covers all nine views with clean layouts', () =
     ['payment', 'checkout'], ['order', 'checkout'], ['checkout', 'buyer']
   ]);
   assert.ok(byType.state.edges.some(edge => edge.guard) && byType.state.edges.some(edge => edge.action));
+  assert.ok(byType.state.nodes.some(node => node.entry) && byType.state.edges.some(edge => edge.source === edge.target), 'The state view shows an entry action and a self-transition.');
   assert.ok(byType.architecture.groups.length > 0 && byType.deployment.groups.length > 0);
 });
 
