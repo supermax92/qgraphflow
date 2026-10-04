@@ -66,6 +66,11 @@ test('label runs follow the wrapped lines and give up when the lines do not spel
   assert.deepEqual(runs[0].map(run => run.role), ['trigger', 'guard', 'effect']);
   assert.deepEqual(runs[1].map(run => run.role), ['effect']);
   assert.equal(labelRunsByLine(['tick', '[!done]'], parts), null);
+  // A hand-wrapped label keeps its roles: the break is skipped, not drawn.
+  const wrapped = labelRunsByLine(['Confirm', 'payment [Valid]'], [{ text: 'Confirm\npayment', role: 'trigger' }, { text: '[Valid]', role: 'guard' }]);
+  assert.deepEqual(wrapped, [[{ text: 'Confirm', role: 'trigger' }], [{ text: 'payment ', role: 'trigger' }, { text: '[Valid]', role: 'guard' }]]);
+  assert.deepEqual(labelRunsByLine(['a', '', 'b'], [{ text: 'a\n\nb', role: 'trigger' }]).map(line => line.map(run => run.text).join('')), ['a', '', 'b']);
+  assert.equal(labelRunsByLine(['Confirm'], [{ text: 'Confirm\npayment', role: 'trigger' }]), null, 'a missing paragraph is not guessed');
 });
 
 test('the state legend names states and transitions; other types keep the neutral wording', () => {

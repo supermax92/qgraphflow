@@ -48,12 +48,15 @@ export function edgeLabelLayout(value, maxWidth = LAYOUT_TARGETS.labelWidth) {
 }
 
 // Each character of the joined label keeps the role of its part (the space between two parts keeps the role it follows);
-// the wrapped lines are cut along those roles. Null when the lines do not spell the label (multi-paragraph text).
+// the wrapped lines are cut along those roles. Paragraph breaks inside a part are not drawn, so they are skipped between
+// lines. Null when the lines do not spell the label.
 export function labelRunsByLine(lines, parts) {
-  if (lines.join('') !== parts.map(part => part.text).join(' ')) return null;
+  const label = parts.map(part => part.text).join(' ');
   const roles = parts.flatMap((part, index) => [...(index ? [parts[index - 1].role] : []), ...Array.from({ length: part.text.length }, () => part.role)]);
   let offset = 0;
-  return lines.map(line => {
+  const runsByLine = lines.map(line => {
+    while (label[offset] === '\r' || label[offset] === '\n') offset++;
+    if (!label.startsWith(line, offset)) return null;
     const runs = [];
     for (let i = 0; i < line.length; i++) {
       const role = roles[offset + i];
@@ -62,6 +65,8 @@ export function labelRunsByLine(lines, parts) {
     offset += line.length;
     return runs;
   });
+  while (label[offset] === '\r' || label[offset] === '\n') offset++;
+  return offset === label.length && runsByLine.every(Boolean) ? runsByLine : null;
 }
 
 export function estimateLabelSize(value, maxWidth) {
