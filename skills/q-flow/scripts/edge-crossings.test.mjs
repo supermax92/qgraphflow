@@ -65,3 +65,16 @@ test('a long strip outranks crossings only by a whole shape step', () => {
   assert.equal(shapeRank(1.52), shapeRank(1.64), 'a marginally better strip does not beat a crossing');
   assert.ok(shapeRank(2.2) > shapeRank(1.6), 'a clearly better shape still wins');
 });
+
+// A slow or busy machine must neither change a layout nor fail it: the search ends on its evaluation budget, and the timeout
+// only guards one solve against a hang. The fake clock tells every read after the first that two minutes have passed.
+test('the layout does not depend on the clock', async () => {
+  const real = performance.now;
+  for (const type of ['state', 'er']) {
+    const view = fixture(type), expected = geometry(await compileGraphLayout(structuredClone(view)));
+    let reads = 0;
+    performance.now = () => real.call(performance) + (reads++ ? 120_000 : 0);
+    try { assert.deepEqual(geometry(await compileGraphLayout(structuredClone(view))), expected, `${type}: layout under a clock that reads past the limit`); }
+    finally { performance.now = real; }
+  }
+});

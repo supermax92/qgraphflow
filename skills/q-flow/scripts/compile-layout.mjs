@@ -12,6 +12,7 @@ import { compileSequence } from './compile-sequence.mjs';
 
 export const LAYOUT_VERSION = 'adaptive-v2-elkjs-0.11.0';
 export const CANDIDATE_COUNT = 6;
+// Hang guard for one ELK solve, not a budget for a compile: a slow or busy machine only takes longer.
 export const LAYOUT_TIMEOUT_MS = 30_000;
 // A layered result whose width/height ratio leaves the band [1/ASPECT_BAND, ASPECT_BAND] by more than ASPECT_SLACK is folded:
 // a top-down layout into columns when too tall, a left-to-right one into rows when too wide. The fewest segments that bring
@@ -22,10 +23,11 @@ export const FOLD_MAX = 5;
 // a node. When the best candidates still have crossings, a bounded local search moves only the relations that cross: it
 // swaps their ports within a node side, swaps which branch of a decision leaves on which side, and swaps their lanes across
 // fold cuts. A move is kept only when the candidate scores better, so it is deterministic and never worse than the plain
-// result; it stops with no crossings, no gain, or when its evaluation or time budget is spent.
+// result; it stops with no crossings, no gain, or when its evaluation budget is spent. The budget counts evaluations, never
+// time, so a slow or busy machine lays out the same graph the same way; only LAYOUT_TIMEOUT_MS can end a compile, and that
+// is an error, not a different layout.
 export const REFINE_CANDIDATES = 2;
 export const REFINE_EVALUATIONS = 60;
-export const REFINE_TIME_SHARE = .4;
 // Candidates whose width/height ratio is within this factor of the accepted band rank equal on shape, so a crossing is never
 // traded for a slightly better aspect ratio; only a shape beyond it (a long strip) outranks the crossings, and only by a
 // whole SHAPE_STEP, so a strip does not take on crossings for a marginally better ratio.
@@ -436,7 +438,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     requireDiagramQuality(graph);
     return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
   }
-  const sequence = getDiagram(diagramTypeOf(graph)).sequence, started = performance.now();
+  const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });
   let pending, expired = false;
   const fail = error => pending?.reject(error);
@@ -444,11 +446,15 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   worker.on('exit', code => { if (code !== 0) fail(new Error(`Layout worker exited (${code})`)); });
   worker.on('message', message => message.error ? fail(new Error(message.error)) : pending?.resolve(message.graph));
   const timeout = Math.min(LAYOUT_TIMEOUT_MS, Math.max(1, timeoutMs));
-  const timer = setTimeout(() => { expired = true; fail(new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`)); worker.terminate(); }, timeout);
   const candidates = [];
   try {
-    const extras = new WeakMap(), softLimit = started + timeout * REFINE_TIME_SHARE;
-    const post = root => new Promise((resolve, reject) => { pending = { resolve, reject }; worker.postMessage(root); });
+    const extras = new WeakMap();
+    // Each solve has its own limit; the compile as a whole has none, so load can slow it but never fail it or change its result.
+    const post = root => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { expired = true; fail(new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`)); worker.terminate(); }, timeout);
+      pending = { resolve: value => { clearTimeout(timer); resolve(value); }, reject: error => { clearTimeout(timer); reject(error); } };
+      worker.postMessage(root);
+    });
     const evaluate = (candidate, index, errors = []) => {
       let audit = auditLayoutQuality(candidate);
       if (errors.length) audit = { ...audit, errors: [...errors, ...audit.errors] };
@@ -478,7 +484,6 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       // Fold only a shape beyond the band's slack; the unfolded result stays available as the fallback.
       const variants = !sequence && unfolded.excess > ASPECT_SLACK
         ? foldedVariants(layered, { spacing: LAYOUT_TARGETS.layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap, laneOrder: hints.lanes }).map(variant => ({ ...evaluate(variant.graph, index, variant.errors), fold: variant.count, axis: variant.axis })) : [];
-      if (performance.now() - started > timeout) { expired = true; throw new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`); }
       // Folding exists to fix the shape: among the folds the quality gate accepts within the fold slack of the band, the one
       // with the fewest crossings wins, then the fewest segments; otherwise the nearest valid shape competes with the
       // unfolded result.
@@ -507,7 +512,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
         const incident = stable(graph.edges.filter(edge => edge.source === node.id || edge.target === node.id)).map(edge => edge.id);
         if (incident.length >= 2) hints.sides.set(node.id, incident);
       }
-      while (best.score[2] && evaluations < REFINE_EVALUATIONS && performance.now() < softLimit) {
+      while (best.score[2] && evaluations < REFINE_EVALUATIONS) {
         const here = extras.get(best), crossing = [...new Set(best.crossings.flatMap(item => item.elementIds))].sort();
         const moves = [];
         for (const id of crossing) {
@@ -528,7 +533,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
         if (best.fold) for (const a of crossing) for (const b of crossing) if (a < b) moves.push({ rerun: false, hints: { ...hints, lanes: swapped(hints.lanes, hints.lanes.indexOf(a), hints.lanes.indexOf(b)) } });
         let improved = false;
         for (const move of moves) {
-          if (evaluations >= REFINE_EVALUATIONS || performance.now() >= softLimit) break;
+          if (evaluations >= REFINE_EVALUATIONS) break;
           evaluations++;
           let next;
           try { next = move.rerun ? await solve(base.index, move.hints) : finish(base.index, here.layered, here.prepared, move.hints); }
@@ -548,7 +553,6 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     }
     candidates.sort(compare);
     if (!sequence) for (const base of candidates.filter(candidate => !candidate.errors.length && candidate.score[2] > 0).slice(0, REFINE_CANDIDATES)) {
-      if (performance.now() >= softLimit) break;
       candidates[candidates.indexOf(base)] = await refine(base);
     }
     candidates.sort(compare);
@@ -557,5 +561,5 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     best.graph.layout = { ...best.graph.layout, version: LAYOUT_VERSION, strategy: `${sequence ? 'sequence' : 'layered'}-${best.index}${best.fold ? `-fold${best.fold}${best.axis === 'columns' ? 'c' : ''}` : ''}` };
     return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
   } catch (error) { throw error.phases ? error : qualityFailure(graph, 'geometry', error.message); }
-  finally { clearTimeout(timer); await worker.terminate(); }
+  finally { await worker.terminate(); }
 }
