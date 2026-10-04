@@ -1,3 +1,5 @@
+import { diagramTypeOf } from './diagrams/registry.js';
+
 // The generator embeds the graph as escaped JSON inside this script element; saving from the page rewrites the same
 // element, so the saved page reopens with its edits and the generator and the page never disagree about the encoding.
 const DATA_ELEMENT = /(<script\b[^>]*\bid="graph-data"[^>]*>)([\s\S]*?)(<\/script>)/;
@@ -9,8 +11,7 @@ export function pageWithGraph(html, graph) {
 }
 
 export function graphInputWithEdits(input, drafts, currentGraph) {
-  const typeOf = graph => graph.meta.diagramType ?? 'architecture';
-  const edited = graph => typeOf(graph) === typeOf(currentGraph) ? currentGraph : drafts.get(typeOf(graph)) ?? graph;
+  const edited = graph => diagramTypeOf(graph) === diagramTypeOf(currentGraph) ? currentGraph : drafts.get(diagramTypeOf(graph)) ?? graph;
   return Array.isArray(input.diagrams) ? { ...input, diagrams: input.diagrams.map(edited) } : currentGraph;
 }
 

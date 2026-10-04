@@ -26,8 +26,12 @@ export function text(x, y, value, className, extra = '') {
   const fontSize = Number(extra.match(/font-size:([\d.]+)px/)?.[1]) || {
     title: TYPOGRAPHY.title, 'shape-title': TYPOGRAPHY.title, 'participant-title': TYPOGRAPHY.title,
     body: TYPOGRAPHY.body, 'field-name': TYPOGRAPHY.body, 'field-type': TYPOGRAPHY.body,
-    member: TYPOGRAPHY.body, 'entity-title': TYPOGRAPHY.title, 'compact-title': 14, 'compact-body': 10
+    member: TYPOGRAPHY.body, 'entity-title': TYPOGRAPHY.title
   }[className] || TYPOGRAPHY.small;
+  if (value && typeof value === 'object' && 'runs' in value) {
+    const spans = value.runs.map(run => { const color = value.colors[run.role]; return color ? `<tspan style="fill:${color}">${escapeXml(run.text)}</tspan>` : escapeXml(run.text); }).join('');
+    return `<text x="${x}" y="${y}" class="${className}"${extra}>${spans}</text>`;
+  }
   let content = fitted ? value.value : value;
   if (fitted && layoutText(content, Infinity, fontSize).width > value.width) {
     const available = Math.max(0, value.width - layoutText('…', Infinity, fontSize).width);
@@ -55,13 +59,6 @@ export function centeredTitle(cx, cy, value, width, height = Infinity, subtitle 
 }
 
 
-export function mix(first, second, ratio) {
-  const rgb = hex => hex.slice(1).match(/../g).map(value => parseInt(value, 16));
-  const b = rgb(second);
-  return '#' + rgb(first).map((value, index) => Math.round(value * ratio + b[index] * (1 - ratio)).toString(16).padStart(2, '0')).join('');
-}
-
-
 // Geometry is declared once by each diagram and painted by both node rendering and selection.
 export function paint(outline, attributes = {}) {
   return outline.map(([tag, geometry]) => `<${tag}${Object.entries({ ...geometry, ...(Object.keys(attributes).length ? { class: 'node-surface' } : {}), ...attributes, ...(geometry.fill === undefined ? {} : { fill: geometry.fill }) }).map(([key, value]) => ` ${key}="${escapeXml(value)}"`).join('')}/>`).join('');
@@ -76,6 +73,8 @@ export const cylinder = (node, x, y) => {
     ['ellipse', { cx: x + w / 2, cy: top, rx: w / 2 - 12, ry, fill: 'none' }]
   ];
 };
+export const HEXAGON = [[.08, 0], [.92, 0], [1, .5], [.92, 1], [.08, 1], [0, .5]];
+export const polygon = (node, x, y, points) => [['polygon', { points: points.map(([px, py]) => `${x + px * node.size.width},${y + py * node.size.height}`).join(' ') }]];
 export const diamond = (node, x, y) => [['polygon', { points: `${x + node.size.width / 2},${y} ${x + node.size.width},${y + node.size.height / 2} ${x + node.size.width / 2},${y + node.size.height} ${x},${y + node.size.height / 2}` }]];
 export const actor = (node, x, y) => {
   const cx = x + node.size.width / 2;
@@ -167,8 +166,6 @@ ${scope}.edge,${scope}.cardinality{font:500 ${TYPOGRAPHY.body}px -apple-system,B
 ${scope}.edge-bg{fill:${palette.surface};stroke:none}
 ${scope}.field-key{font:700 ${TYPOGRAPHY.small}px ui-monospace,monospace;fill:${palette.accent}}
 ${scope}.field-name{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}
-${scope}.compact-title{font:650 14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
-${scope}.compact-body{font:400 10px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
 ${scope}.entity-title{font:650 ${TYPOGRAPHY.title}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink}}
 ${scope}.entity-meta{font:500 ${TYPOGRAPHY.small}px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;fill:${palette.ink2}}
 ${scope}.member{font:500 ${TYPOGRAPHY.body}px ui-monospace,monospace;fill:${palette.ink2}}

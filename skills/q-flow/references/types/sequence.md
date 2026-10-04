@@ -19,7 +19,7 @@ Calls and returns along one flow, with activation bars and fragments. Read with 
 
 ## Activation bars (`executions`)
 
-Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end": { "edgeId", "at" }, "parentId"? }`. `at` is `send` (participant is the edge's source) or `receive` (its target); start precedes end in `order`; a bar usually runs from the call's `receive` to the return's `send`. Bars on one participant either nest (`parentId`, child inside parent) or do not overlap in time; start and end lie in the same operand. Nothing is inferred: no `executions`, no bars.
+Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end": { "edgeId", "at" }, "parentId"? }`. `at` is `send` (participant is the edge's source) or `receive` (its target); start precedes end in `order`. Bars come only from this array: each `sync` call answered by a `return` needs a callee bar from its `receive` to the return's `send`. Bars on one participant nest (`parentId`, child inside parent) or do not overlap; start and end lie in the same operand.
 
 ## Fragments (`groups` with `operands`)
 

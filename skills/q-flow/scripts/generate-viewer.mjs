@@ -14,7 +14,6 @@ import { SVG_FILE, diagramSvgFiles } from '../assets/viewer/src/export-svg.js';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const shellPath = path.resolve(scriptDir, '../assets/viewer-dist/index.html');
 const PAGE_OUTPUTS = ['index.html', 'graph.json'];
-const LEGACY_OUTPUT = 'snapshot.svg';
 
 // Every output is staged first; the old ones and the stale ones (removed by this run) move into the staging backup,
 // and any failure puts all of them back.
@@ -92,8 +91,6 @@ async function main() {
     return fs.existsSync(outputPath) && path.resolve(outputPath) !== inputAbsolute;
   }), ...svgs];
   if (existing.length && !force) throw new Error(`Refusing to overwrite: ${existing.join(', ')}; rerun with --force after approval`);
-  const legacyPath = path.join(outputDir, LEGACY_OUTPUT);
-  if (fs.existsSync(legacyPath) && !force) throw new Error(`Refusing to remove legacy ${LEGACY_OUTPUT}; rerun with --force after approval`);
   const shell = fs.readFileSync(shellPath, 'utf8');
   if (!shell.includes('__CODEGRAPH_FLOW_DATA__')) throw new Error('Viewer shell data marker is missing');
   const compiled = await compileViews(graphsOf(input), item => compileGraphLayout(item, { layout: values.layout }));
@@ -101,7 +98,7 @@ async function main() {
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
   const contents = { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
   for (const { name, svg } of diagramSvgFiles(graph)) contents[name] = svg;
-  writeOutputs(outputDir, contents, [...svgs.filter(name => !Object.hasOwn(contents, name)), LEGACY_OUTPUT]);
+  writeOutputs(outputDir, contents, svgs.filter(name => !Object.hasOwn(contents, name)));
   const files = Object.keys(contents);
   const graphs = graphsOf(graph);
   // One line on success: what was made and whether each gate passed. Candidates, folds and diagnostics stay out of the

@@ -1,21 +1,18 @@
 import { translate } from '../i18n.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
-import { cubicBezier } from 'motion';
+import { diagramTypeOf } from '../diagrams/registry.js';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { graphBounds, occupiedBox } from '../edge-routing.js';
 import { requireDiagramQuality } from '../layout-quality.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
-import { readingPadding, readingRect, locateViewport } from '../reading-area.js';
+import { appleEase, readingPadding, readingRect, locateViewport } from '../reading-area.js';
 import { isCore } from '../visual-style.js';
 import { constrainNodeChanges, currentGraphFromFlow } from '../session-graph.js';
 
-// cubic-bezier(.32,.72,0,1) as an easing function, so viewport moves share the chrome's curve (--ease in styles.css).
-export const appleEase = cubicBezier(.32, .72, 0, 1);
-
 export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = graph) {
   const t = (message, values) => translate(graph.meta.locale, message, values);
-  const diagramType = graph.meta.diagramType ?? 'architecture';
+  const diagramType = diagramTypeOf(graph);
   const [nodes, setNodes, applyNodeChanges] = useNodesState(initialNodes(graph, diagramType));
   const [edges, setEdges] = useEdgesState(initialEdges(graph, diagramType));
   const [locked, setLocked] = useState(true);

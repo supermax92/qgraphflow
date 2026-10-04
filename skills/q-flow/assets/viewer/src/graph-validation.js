@@ -1,11 +1,8 @@
 import { SUPPORTED_LOCALES } from './i18n.js';
 import { auditGraphLayout } from './edge-routing.js';
-import { validateExecutions } from './sequence-executions.js';
+import { missingCallExecutions, validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
-import { DIAGRAM_TYPES, getDiagram } from './diagrams/registry.js';
-export { DIAGRAM_TYPES };
-import { IDENTITY_SCALES } from './radix-colors.js';
-import { colorSlot } from './visual-style.js';
+import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 
 const EVIDENCE_KINDS = new Set(['source', 'code', 'config', 'schema', 'test', 'document', 'framework', 'inference']);
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -47,10 +44,6 @@ function validateStringArray(value, label, errors) {
   if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || item.trim() === '')) {
     errors.push(`${label} must be an array of non-empty strings`);
   }
-}
-
-export function diagramTypeOf(graph) {
-  return graph?.meta?.diagramType ?? 'architecture';
 }
 
 export function graphsOf(input) {
@@ -154,6 +147,7 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
         if (edge.route.messageY !== undefined && (diagramType !== 'sequence' || !Number.isFinite(edge.route.messageY) || edge.route.messageY < 0)) errors.push(`${label}.route.messageY must be a non-negative finite number for sequence`);
       }
     }
+    if (diagramType === 'sequence' && !inputOnly && edge.route?.messageY === undefined) errors.push(`${label}.route.messageY is required for a positioned sequence message; regenerate with --layout auto`);
     rules.validateEdge?.(edge, label, errors, { requireString, sequenceOrders });
   }
   if (errors.length === 0) errors.push(...validateLayoutSemantics(graph));
@@ -218,9 +212,12 @@ function validateLayoutSemantics(graph) {
   return errors;
 }
 
+// The CLI's entry point (validate, generate, --fix). On top of what the Viewer renders, it asks for the callee bar of
+// every answered sync call, so pages generated earlier still open while new and refreshed graphs carry their bars.
 export function validateGraphInput(input, options = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return ['graph must be an object'];
-  if (!Object.hasOwn(input, 'diagrams')) return validateGraph(input, options);
+  const authored = graph => { const errors = validateGraph(graph, options); return errors.length ? errors : missingCallExecutions(graph); };
+  if (!Object.hasOwn(input, 'diagrams')) return authored(input);
   if (!Array.isArray(input.diagrams) || input.diagrams.length < 1 || input.diagrams.length > DIAGRAM_TYPES.length) {
     return [`diagrams must contain between 1 and ${DIAGRAM_TYPES.length} graphs`];
   }
@@ -231,16 +228,15 @@ export function validateGraphInput(input, options = {}) {
     const type = diagramTypeOf(graph);
     if (types.has(type)) errors.push(`diagrams[${index}].meta.diagramType duplicates ${type}`);
     types.add(type);
-    errors.push(...validateGraph(graph, options).map(error => `diagrams[${index}].${error}`));
+    errors.push(...authored(graph).map(error => `diagrams[${index}].${error}`));
   });
   return errors;
 }
 
 // Advisory review of an authored graph or collection: warnings, never errors, so every graph that validated before
 // still validates. It reads the card-identity contract back to the author: a node without `module` renders on the
-// plain surface, one module for a whole flow deserves a second look, two module names can hash to one colour slot
-// (informational: slots repeat by design), and only a decision branches in a flowchart. The Viewer's own slot hash predicts collisions exactly. Outsiders
-// (`external`, `actor`, `device`) may stay plain; what is flagged for them is inconsistency across views.
+// plain surface, one module for a whole flow deserves a second look, and only a decision branches in a flowchart.
+// Outsiders (`external`, `actor`, `device`) may stay plain; what is flagged for them is inconsistency across views.
 const PLAIN_KINDS = new Set(['initial', 'final']);
 const OUTSIDER_KINDS = new Set(['external', 'actor', 'device']);
 const moduleOf = item => (typeof item?.module === 'string' && item.module.trim() ? item.module : undefined);
@@ -250,9 +246,6 @@ export function reviewComposition(input) {
   const graphs = graphsOf(input), warnings = [];
   const members = graph => [...graph.nodes, ...graph.edges];
   const modules = new Set(graphs.flatMap(graph => members(graph).map(moduleOf).filter(Boolean)));
-  const slotOf = module => colorSlot(module, IDENTITY_SCALES.length);
-  const taken = new Set([...modules].map(slotOf));
-  const free = IDENTITY_SCALES.filter((name, index) => !taken.has(index));
   // The same label across views is the same component: its module must be present everywhere and be the same one.
   const byLabel = new Map();
   for (const graph of graphs) for (const node of graph.nodes) if (typeof node.label === 'string' && !PLAIN_KINDS.has(node.kind)) {
@@ -280,13 +273,6 @@ export function reviewComposition(input) {
         `${diagramType} gives all ${washed.length} nodes the module "${moduleOf(washed[0])}", so the wash tells the reader nothing`,
         'Check whether the steps really are one subsystem\'s work: a step performed by another subsystem (a store, a cache layer, a queue) takes that subsystem\'s module, start and end take the caller. If everything truly belongs to one subsystem, leave it.');
     }
-    const bySlot = new Map();
-    for (const module of new Set(members(graph).map(moduleOf).filter(Boolean))) bySlot.set(slotOf(module), [...(bySlot.get(slotOf(module)) ?? []), module]);
-    for (const [slot, names] of bySlot) if (names.length > 1) {
-      warn('module.slot-collision', graph.nodes.filter(node => names.includes(moduleOf(node))).map(node => node.id),
-        `modules ${names.map(name => `"${name}"`).join(' and ')} share colour slot ${IDENTITY_SCALES[slot]} in this view`,
-        `Informational: eight slots repeat by design and the module label stays authoritative — never rename a module for colour. Merge the two only if they are the same subsystem; for a module you are introducing now, --module-slot shows its slot${free.length ? ` (free: ${free.join(', ')})` : ''}.`);
-    }
     if (diagramType === 'flowchart') {
       const outgoing = new Map();
       for (const edge of graph.edges) outgoing.set(edge.source, (outgoing.get(edge.source) ?? 0) + 1);
@@ -297,8 +283,4 @@ export function reviewComposition(input) {
     }
   }
   return warnings;
-}
-
-export function moduleSlotName(module) {
-  return IDENTITY_SCALES[colorSlot(module, IDENTITY_SCALES.length)];
 }

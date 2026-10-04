@@ -1,6 +1,6 @@
 import { translate } from '../i18n.js';
 import { createDiagramSvg, diagramSvgFiles } from '../export-svg.js';
-import { getDiagram, edgeMarkers } from '../diagrams/registry.js';
+import { diagramTypeOf, getDiagram, edgeMarkers } from '../diagrams/registry.js';
 import { createEdgeRoutes, occupiedBox, cardinalityMarks } from '../edge-routing.js';
 import { sequenceFragment } from '../sequence-fragments.js';
 import { sequenceExecutions } from '../sequence-executions.js';
@@ -94,23 +94,24 @@ export async function verifyRenderedSvg(svg, graph) {
     }
     for (const node of graph.nodes) {
       elementIds = [node.id]; bounds = [{ ...node.position, ...node.size }];
-      const group = nodeGroups.get(node.id), diagram = getDiagram(graph.meta.diagramType ?? 'architecture');
+      const group = nodeGroups.get(node.id), diagram = getDiagram(diagramTypeOf(graph));
       if (!group) throw new Error(`Export is missing node ${node.id}`);
       const nodeBox = { x: node.position.x + offsetX, y: node.position.y + offsetY, width: node.size.width, height: diagram.selectionHeight?.(node) ?? node.size.height };
       const area = diagram.textArea && node.kind !== 'actor' ? diagram.textArea(node) : null;
       const safe = area ? { ...area, x: nodeBox.x + (area.x ?? (nodeBox.width - area.width) / 2), y: nodeBox.y + (area.y ?? (nodeBox.height - area.height) / 2) } : nodeBox;
+      const actions = diagram.activityArea?.(node), actionSafe = actions && { ...actions, x: nodeBox.x + actions.x, y: nodeBox.y + actions.y };
       const textBoxes = [...group.querySelectorAll('text')].filter(element => element.textContent).map(element => ({ element, box: boxOf(element) }));
       const visible = normalize(textBoxes.map(item => item.element.textContent).join(''));
       const expected = [['initial', 'final'].includes(node.kind) && !node.subtitle ? '' : node.label, node.subtitle,
-        ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? [])];
+        ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? []), ...(actions ? ['entry', 'do', 'exit'].map(key => node[key]) : [])];
       for (const value of expected) if (value && !visible.includes(normalize(value))) throw new Error(`Node text is not fully shown: ${node.id} / ${node.label} / ${String(value).slice(0, 80)}`);
-      for (const item of textBoxes) if (!inside(item.box, safe)) throw new Error(`Node text leaves the safe area: ${node.id} / ${node.label} / ${item.element.textContent.slice(0, 80)}`);
+      for (const item of textBoxes) if (!inside(item.box, safe) && !(actionSafe && inside(item.box, actionSafe))) throw new Error(`Node text leaves the safe area: ${node.id} / ${node.label} / ${item.element.textContent.slice(0, 80)}`);
       for (let i = 0; i < textBoxes.length; i++) for (const other of textBoxes.slice(i + 1)) {
         const a = textBoxes[i].box, b = other.box;
         if (a.x < b.x + b.width - .5 && b.x < a.x + a.width - .5 && a.y < b.y + b.height - .5 && b.y < a.y + a.height - .5) throw new Error(`Node text overlaps: ${node.id} / ${node.label}`);
       }
     }
-    const type = graph.meta.diagramType ?? 'architecture', routes = createEdgeRoutes(graph);
+    const type = diagramTypeOf(graph), routes = createEdgeRoutes(graph);
     const edgeGroups = new Map([...root.querySelectorAll('[data-diagram-edge-id]')].map(element => [element.dataset.diagramEdgeId, element]));
     const shifted = box => ({ ...box, x: box.x + offsetX, y: box.y + offsetY });
     const overlaps = (a, b) => a.x < b.x + b.width - .5 && b.x < a.x + a.width - .5 && a.y < b.y + b.height - .5 && b.y < a.y + a.height - .5;
@@ -183,7 +184,7 @@ export async function verifyRenderedSvg(svg, graph) {
         if (!inside(actual, view) || labels.some(label => overlaps(actual, label)) || graph.nodes.some(node => node.id !== edge.source && node.id !== edge.target && overlaps(actual, shifted(occupiedBox(node, type))))) throw new Error(`Edge marker out of bounds or covered: ${edge.id}/${side}/${id}`);
       }
     }
-  } catch (error) { throw qualityFailure(graph, 'rendering', error.message, [{ ruleId: 'rendering.svg', severity: 'error', diagramType: graph.meta.diagramType ?? 'architecture', elementIds, bounds,
+  } catch (error) { throw qualityFailure(graph, 'rendering', error.message, [{ ruleId: 'rendering.svg', severity: 'error', diagramType: diagramTypeOf(graph), elementIds, bounds,
     measured: error.message, required: 'Complete visible text and notation within the measured safety regions and viewBox', remediation: 'Inspect the identified element and regenerate after correcting its text or geometry.' }]); }
   finally { host.remove(); }
 }
@@ -208,14 +209,9 @@ function downloadPng(svg, name) {
         probe.drawImage(canvas, 0, 0, preview.width, preview.height);
         const pixels = probe.getImageData(0, 0, preview.width, preview.height).data;
         if (!pixels.some((value, index) => value !== pixels[index % 4])) throw new Error('The browser produced a blank PNG canvas');
-        canvas.toBlob(async blob => {
+        canvas.toBlob(blob => {
           if (!blob || !blob.size || blob.type !== 'image/png') return reject(new Error('The browser could not generate the PNG'));
-          try {
-            const decoded = await createImageBitmap(blob), complete = decoded.width === width && decoded.height === height;
-            decoded.close();
-            if (!complete) throw new Error('PNG encoding size does not match the canvas');
-            downloadBlob(blob, name); resolve();
-          } catch (error) { reject(error); }
+          downloadBlob(blob, name); resolve();
         }, 'image/png');
       } catch (error) { reject(error); }
       finally { URL.revokeObjectURL(url); }

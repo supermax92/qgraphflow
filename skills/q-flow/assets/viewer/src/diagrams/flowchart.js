@@ -1,3 +1,4 @@
+import { translate } from '../i18n.js';
 import { centeredTitle, rectangle, diamond, paint, polygonAnchor, rectAnchor, roundedRectAnchor } from './drawing.js';
 
 export const FLOW_SLANT = .12;
@@ -32,5 +33,5 @@ export default {
   groupKinds: [],
   edgeKinds: ["flow", "yes", "no", "success", "failure"],
   render: flowNode, outline, anchor, textArea,
-  edgeLabel: edge => edge.label ?? ({ yes: 'yes', no: 'no' }[edge.kind] ?? ''),
+  edgeLabel: (edge, locale) => edge.label ?? (['yes', 'no'].includes(edge.kind) ? translate(locale, edge.kind) : ''),
 };

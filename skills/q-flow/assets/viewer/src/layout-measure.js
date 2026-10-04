@@ -3,6 +3,7 @@ import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { cardTextLayout, layoutText } from './text-layout.js';
 import { TYPOGRAPHY, kindLabels } from './visual-style.js';
 import { translate } from './i18n.js';
+import { STATE_ACTIONS, STATE_ACTION_INSET, stateActivities } from './diagrams/state.js';
 
 // System fonts vary: reserve width beyond the estimate, then verify actual glyphs in the browser.
 const singleLineWidth = (text, font) => Math.ceil(layoutText(String(text ?? '').replace(/\r?\n/g, ' '), Infinity, font).width * 1.15);
@@ -14,6 +15,12 @@ export function minimumNodeSize(node, type, locale = 'en') {
     if (!node.subtitle) return { width: 28, height: 28 };
     const width = Math.max(title, body);
     return rounded({ width: width + 50, height: Math.max(80, layoutText(node.label, width, TYPOGRAPHY.title, 29).height + 5 + layoutText(node.subtitle, width, TYPOGRAPHY.body, 23.2).height + 16) });
+  }
+  if (type === 'state' && STATE_ACTIONS.some(key => node.kind === 'state' && typeof node[key] === 'string' && node[key].trim())) {
+    // Title compartment (at least 72) above the action compartment, whose height follows the width it wraps at.
+    const width = Math.max(240, Math.min(480, Math.max(Math.max(title, body) + 60, ...STATE_ACTIONS.filter(key => node[key]).map(key => singleLineWidth(node[key], TYPOGRAPHY.small) + STATE_ACTION_INSET))));
+    const heading = layoutText(node.label, width - 24, TYPOGRAPHY.title, 29), subtitle = layoutText(node.subtitle, width - 24, TYPOGRAPHY.body, 23.2);
+    return rounded({ width, height: Math.max(72, heading.height + (subtitle.height ? 5 + subtitle.height : 0) + 16) + stateActivities({ ...node, size: { width, height: 0 } }).height });
   }
   if (diagram.sequence || node.kind === 'actor') return { width: Math.max(160, title + 28, body + 28), height: diagram.sequence ? sequenceHeaderHeight(node) + 48 : 104 + (node.subtitle ? 24 : 0) };
   if (diagram.cardinalities) {
@@ -45,14 +52,4 @@ export function minimumNodeSize(node, type, locale = 'en') {
     size.height += Math.ceil((required - area.height) * 2 + 2);
   }
   throw new Error(`Cannot measure full text for ${type} node ${node.id}`);
-}
-
-export function measureFragmentText(group) {
-  return {
-    heading: layoutText(group.label, Infinity, TYPOGRAPHY.small),
-    operands: (group.operands ?? []).map(operand => ({
-      heading: layoutText(operand.label ?? operand.guard, 640, TYPOGRAPHY.small),
-      body: layoutText(operand.body, 640, TYPOGRAPHY.body)
-    }))
-  };
 }

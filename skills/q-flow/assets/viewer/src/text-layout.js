@@ -47,6 +47,23 @@ export function edgeLabelLayout(value, maxWidth = LAYOUT_TARGETS.labelWidth) {
   return { ...layout, width: layout.lines.length ? Math.max(24, layout.width + 12) : 0, height: layout.lines.length ? layout.height + 6 : 0 };
 }
 
+// Each character of the joined label keeps the role of its part (the space between two parts keeps the role it follows);
+// the wrapped lines are cut along those roles. Null when the lines do not spell the label (multi-paragraph text).
+export function labelRunsByLine(lines, parts) {
+  if (lines.join('') !== parts.map(part => part.text).join(' ')) return null;
+  const roles = parts.flatMap((part, index) => [...(index ? [parts[index - 1].role] : []), ...Array.from({ length: part.text.length }, () => part.role)]);
+  let offset = 0;
+  return lines.map(line => {
+    const runs = [];
+    for (let i = 0; i < line.length; i++) {
+      const role = roles[offset + i];
+      if (runs.at(-1)?.role === role) runs.at(-1).text += line[i]; else runs.push({ text: line[i], role });
+    }
+    offset += line.length;
+    return runs;
+  });
+}
+
 export function estimateLabelSize(value, maxWidth) {
   const { width, height } = edgeLabelLayout(value, maxWidth);
   return { width, height };

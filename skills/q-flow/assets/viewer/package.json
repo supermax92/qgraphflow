@@ -10,7 +10,6 @@
   "dependencies": {
     "@xyflow/react": "12.11.5",
     "d3-force": "3.0.0",
-    "motion": "13.1.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

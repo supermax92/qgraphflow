@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import { MarkerType } from '@xyflow/react';
 import { createEdgeRoutes } from '../edge-routing.js';
-import { getDiagram, isDashed } from '../diagrams/registry.js';
+import { diagramTypeOf, getDiagram, isDashed, labelRoleColors } from '../diagrams/registry.js';
 import { sequencePairs, sequenceExecutions } from '../sequence-executions.js';
 import { edgeColor, sequenceGroupColor, groupAppearanceMap } from '../visual-style.js';
 import { searchRank } from '../search.js';
 import { sequenceFragment, fragmentSurfaceAt } from '../sequence-fragments.js';
 
 export function usePresentation(graph, layout, selection, flowRunning, palette, moduleColors) {
-  const diagramType = graph.meta.diagramType ?? 'architecture';
+  const diagramType = diagramTypeOf(graph);
   const { nodes, edges, locked, currentGraph } = layout;
   const { selectedId, selectedEdgeId, selectEdge, selectionPulse, normalizedQuery } = selection;
   const routes = useMemo(() => createEdgeRoutes(currentGraph), [currentGraph]);
@@ -50,7 +50,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
         ariaLabel: route.label || `${source.label} → ${target.label}`,
         markerEnd: edge.markerEnd ? { type: MarkerType.ArrowClosed, color } : undefined,
         selected: edge.id === selectedEdgeId,
-        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: palette.ink3, labelSurface: sequence && route.label ? fragmentSurfaceAt(route.labelBox, currentGraph.groups ?? [], groupAppearances) : undefined, onSelect: () => selectEdge(edge.data) }
+        data: { ...edge.data, pair, selectionLinked, selectionId: selectedEdgeId ?? selectedId, selectionPulse, selectionColor, route, relationColor: palette.accent, directed: Boolean(edge.markerEnd), flowRunning, dashed, labelColor: palette.ink3, roleColors: labelRoleColors(diagramType, palette), labelSurface: sequence && route.label ? fragmentSurfaceAt(route.labelBox, currentGraph.groups ?? [], groupAppearances) : undefined, onSelect: () => selectEdge(edge.data) }
       };
     });
   }, [diagramType, edges, graph, currentGraph, palette, moduleColors, flowRunning, selectEdge, selectedEdgeId, selectedId, selectionPulse, routes, pairs, groupAppearances]);

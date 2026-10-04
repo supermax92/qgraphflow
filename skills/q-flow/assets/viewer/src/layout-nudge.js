@@ -1,6 +1,7 @@
 import { getDiagram } from './diagrams/registry.js';
 import { forceSimulation, forceX, forceY } from 'd3-force';
-import { LAYOUT_LIMITS, requireDiagramQuality } from './layout-quality.js';
+import { LAYOUT_LIMITS } from './layout-spacing.js';
+import { requireDiagramQuality } from './layout-quality.js';
 import { groupHeadingLayout } from './text-layout.js';
 
 const CLEARANCE = LAYOUT_LIMITS.nodeGap + 1;

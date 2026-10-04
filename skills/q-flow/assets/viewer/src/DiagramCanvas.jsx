@@ -5,7 +5,7 @@ import { renderNode } from './node-svg.js';
 import { getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
 import { cardinalityMarks } from './edge-routing.js';
 import { renderFragment, fragmentDepth } from './sequence-fragments.js';
-import { isCore, nodeMetrics, TYPOGRAPHY } from './visual-style.js';
+import { isCore, TYPOGRAPHY } from './visual-style.js';
 import { groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
 
 function NodeHandles({ sequence = false }) {
@@ -26,10 +26,9 @@ function NodeHandles({ sequence = false }) {
 }
 
 function DiagramNode({ data, selected }) {
-  const { compact } = nodeMetrics(data, data.diagramType);
   const moduleColor = data.moduleColors?.get(data.module);
   const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
-  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${compact ? 'is-compact' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''}`} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
+  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''}`} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
     <NodeHandles sequence={getDiagram(data.diagramType).sequence} />
     <svg className="node-visual" viewBox={`0 0 ${data.size.width} ${data.size.height}`} aria-label={data.label} dangerouslySetInnerHTML={{ __html: markup }} />
     {selected && <SelectionOutline key={data.selectionPulse} data={data} pulse={data.selectionPulse} />}
@@ -77,7 +76,7 @@ function RoutedEdge({ id, markerEnd, style, data }) {
       <rect {...label.labelBox} rx="4" fill="var(--canvas)" />
       <text x={label.labelPoint.x} y={label.labelBox.y + 3 + TYPOGRAPHY.body} fontSize={TYPOGRAPHY.body} fontWeight="500" textAnchor="middle" fill={data.labelColor}>{label.label}</text>
     </g>)}
-    {route.label && <EdgeLabelRenderer><button type="button" className="edge-label nodrag nopan" data-edge-id={id} onClick={event => { event.stopPropagation(); data.onSelect(); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.stopPropagation(); if (event.repeat) event.preventDefault(); } }} style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, background: data.labelSurface, fontWeight: data.selectionLinked ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{index === 0 && data.pair && line.startsWith(data.pair.label) ? <><b className="pair-label" style={{ borderColor: style.stroke }}>{data.pair.label}</b>{line.slice(data.pair.label.length)}</> : line}</span>)}</button></EdgeLabelRenderer>}
+    {route.label && <EdgeLabelRenderer><button type="button" className="edge-label nodrag nopan" data-edge-id={id} onClick={event => { event.stopPropagation(); data.onSelect(); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.stopPropagation(); if (event.repeat) event.preventDefault(); } }} style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, background: data.labelSurface, fontWeight: data.selectionLinked ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{route.labelRuns ? route.labelRuns[index].map((run, k) => <span key={k} style={{ color: data.roleColors?.[run.role] }}>{run.text}</span>) : index === 0 && data.pair && line.startsWith(data.pair.label) ? <><b className="pair-label" style={{ borderColor: style.stroke }}>{data.pair.label}</b>{line.slice(data.pair.label.length)}</> : line}</span>)}</button></EdgeLabelRenderer>}
   </>;
 }
 

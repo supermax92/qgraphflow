@@ -9,14 +9,15 @@ export function graphLegend(graph, palette, moduleColors) {
     const appearance = nodeAppearance(node, palette, moduleColors);
     const shape = node.kind === 'actor' ? 'actor' : ['initial', 'final'].includes(node.kind) ? node.kind : definition.compartments ? 'compartment' : 'box';
     const id = `${appearance.role}-${shape}`;
-    entries.set(id, { id, ...appearance, shape });
+    entries.set(id, { id, ...appearance, label: definition.legend?.[appearance.role] ?? appearance.label, shape });
   }
   for (const module of [...new Set([...graph.nodes.map(node => node.module), ...graph.edges.map(edge => edge.module)].filter(Boolean))].sort()) {
     const tone = moduleColors?.get(module);
     if (tone) entries.set(`module-${module}`, { id: `module-${module}`, role: 'module', label: module, shape: 'module', fill: tone.chip, stroke: tone.accent });
   }
-  if (graph.edges.some(edge => !isDashed(edge, graph.meta.diagramType))) entries.set('solid', { id: 'solid', label: 'Solid relation', shape: 'solid', stroke: palette.edge });
+  if (graph.edges.some(edge => !isDashed(edge, graph.meta.diagramType))) entries.set('solid', { id: 'solid', label: definition.legend?.solid ?? 'Solid relation', shape: 'solid', stroke: palette.edge });
   if (graph.edges.some(edge => isDashed(edge, graph.meta.diagramType))) entries.set('dashed', { id: 'dashed', label: 'Dashed: notation / convention / inference', shape: 'dashed', stroke: palette.edge });
+  if (definition.curvedSelfLoops && graph.edges.some(edge => edge.source === edge.target)) entries.set('self', { id: 'self', label: 'Self-transition: handled without leaving the state', shape: 'self', stroke: palette.edge });
   if (definition.sequence) for (const [kind, label] of [['sync', 'Synchronous message'], ['async', 'Asynchronous message'], ['return', 'Return message']]) {
     if (graph.edges.some(edge => edge.kind === kind)) entries.set(kind, { id: kind, label, shape: kind, stroke: palette.edge });
   }

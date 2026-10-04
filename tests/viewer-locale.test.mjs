@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { validateGraph } from '../skills/q-flow/scripts/validate-graph.mjs';
 import { createDiagramSvg } from '../skills/q-flow/assets/viewer/src/export-svg.js';
+import { visibleEdgeLabel } from '../skills/q-flow/assets/viewer/src/edge-routing.js';
 import { graphLegend } from '../skills/q-flow/assets/viewer/src/legend.js';
 import { PALETTES } from '../skills/q-flow/assets/viewer/src/visual-style.js';
 import { translate } from '../skills/q-flow/assets/viewer/src/i18n.js';
@@ -31,6 +32,13 @@ test('omitting locale preserves the existing Chinese rendering', () => {
   delete legacy.meta.locale;
   assert.deepEqual(validateGraph(legacy), []);
   assert.match(createDiagramSvg(legacy), />服务<\/text>/);
+});
+
+test('a missing edge label falls back to interface words in the graph locale; an authored label stays as written', () => {
+  assert.equal(visibleEdgeLabel({ kind: 'inheritance' }, 'class', 'zh-CN'), '继承');
+  assert.equal(visibleEdgeLabel({ kind: 'inheritance' }, 'class', 'en'), 'inheritance');
+  assert.equal(visibleEdgeLabel({ kind: 'yes' }, 'flowchart', 'ja'), 'はい');
+  assert.equal(visibleEdgeLabel({ kind: 'composition', label: 'localLog' }, 'class', 'zh-CN'), 'localLog');
 });
 
 test('unsupported locale is rejected before generation', () => {

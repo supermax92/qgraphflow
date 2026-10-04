@@ -1,10 +1,9 @@
 import { translate } from './i18n.js';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Background, ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
-import { AnimatePresence, motion } from 'motion/react';
 import { nodeTypes, edgeTypes } from './DiagramCanvas.jsx';
 import { renderMiniMapNode } from './node-svg.js';
-import { diagramLabels } from './diagrams/registry.js';
+import { diagramLabels, diagramTypeOf } from './diagrams/registry.js';
 import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { kindLabels, nodeAppearance } from './visual-style.js';
@@ -21,12 +20,27 @@ const evidenceLabels = { source: 'Source code', code: 'Code', config: 'Configura
 const APPEARANCES = ['system', 'light', 'dark'];
 const appearanceLabels = { system: 'Follow system', light: 'Light', dark: 'Dark' };
 
+// Keeps a closing panel mounted until its slide-out animation has finished; a panel that opens with the page, or that
+// closes under reduced motion, skips the animation. A panel closed before its first frame has nothing to animate, so it
+// has no animations and unmounts at once (transitionend would never come).
+function usePresence(open, reduceMotion, ref) {
+  const [shown, setShown] = useState(open ? 'still' : '');
+  if (open && !shown) setShown('in'); else if (!open && shown && reduceMotion) setShown('');
+  useEffect(() => {
+    if (open || !shown) return undefined;
+    let live = true;
+    Promise.allSettled((ref.current?.getAnimations() ?? []).map(animation => animation.finished)).then(() => { if (live) setShown(''); });
+    return () => { live = false; };
+  }, [open, shown, ref]);
+  return [shown, `${shown === 'still' ? ' is-still' : ''}${open ? '' : ' is-closing'}`];
+}
+
 export default function ViewerShell({ graph, originalGraph, graphForSave, allDiagrams, moduleColors, wash, setWash, onDiagramChange, theme, appearance, setAppearance, panels, flowControl }) {
   const zoom = useStore(state => state.transform[2]);
   const { setCenter } = useReactFlow();
   const t = (message, values) => translate(graph.meta.locale, message, values);
   const {
-    diagramType, palette, reduceMotion, panelTransition,
+    diagramType, palette, reduceMotion,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
     locked, setLocked, canvasRef, currentGraph, nodes, onNodesChange, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
@@ -34,6 +48,9 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
   } = useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave, flowControl);
+  const [navShown, navState] = usePresence(toolbarOpen, reduceMotion, panelRef);
+  const [drawerShown, drawerState] = usePresence(drawerOpen, reduceMotion, inspectorRef);
+  const drawerFrozen = useRef(null);
   const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale);
   const { open, toggle, close } = usePopover();
   const reveal = useReveal(canvasRef, nodes, currentGraph, diagramType, reduceMotion);
@@ -69,9 +86,32 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const edgeTarget = cardEdge ? currentGraph.nodes.find(node => node.id === cardEdge.target) : null;
   const inspectedSource = inspectedEdge ? currentGraph.nodes.find(node => node.id === inspectedEdge.source) : null;
   const inspectedTarget = inspectedEdge ? currentGraph.nodes.find(node => node.id === inspectedEdge.target) : null;
-  // Panels slide in from their own edge; under reduced motion they mount already at rest so no frame ever shows them off-screen.
-  const slideFrom = offset => reduceMotion ? false : { x: offset };
   const directoryEntry = (node, index) => <button key={node.id} onClick={() => selectNode(node)}><span><i>{String(index + 1).padStart(2, '0')}</i>{node.label}</span><small>{node.subtitle ?? t(kindLabels[node.kind] ?? node.kind)}</small></button>;
+
+  // The details panel keeps its last open content while it slides out, so closing it never flashes the empty state.
+  const drawerBody = <>
+    <div className="side-head"><p className="panel-title">{t('Details')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('Close details')} title={t('Close details')}><Icon name="close" /></button></div>
+    <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
+        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
+        <h2>{inspectedNode.label}</h2>
+        <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
+        {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
+        {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
+        {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
+        {inspectedNode.source && <><h3>{t('Source')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
+        {inspectedNode.tags?.length > 0 && <div className="tags">{inspectedNode.tags.map(tag => <span key={tag}>{tag}</span>)}</div>}
+      </> : inspectedEdge ? <>
+        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: visibleEdges.find(edge => edge.id === inspectedEdge.id)?.style.stroke ?? palette.edge }} />{t('Edges')} · {inspectedEdge.kind}</div>
+        <h2>{(createEdgeRoutes(currentGraph).get(inspectedEdge.id)?.label ?? visibleEdgeLabel(inspectedEdge, diagramType, graph.meta.locale)) || inspectedEdge.kind}</h2>
+        <p className="drawer-subtitle">{inspectedSource?.label} → {inspectedTarget?.label}</p>
+        <h3>{t('Evidence')}</h3><p>{inspectedEdge.evidence}</p>
+        {inspectedEdge.facts?.length > 0 && <><h3>{t('Evidence facts')}</h3><ul>{inspectedEdge.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></>}
+      </> : <div className="drawer-empty"><span className="empty-icon"><Icon name="fit" /></span><span>{t('Start with a node')}</span><p>{t('Select a component or a list entry to explore its role, fields, methods and source.')}</p></div>}
+    </section>
+    {(inspectedNode || inspectedEdge) && <section className="inspector-card"><div className={editor.editing ? '' : 'card-actions'}><TextEditor editor={editor} relation={Boolean(inspectedEdge)} locked={locked} locale={graph.meta.locale} /></div></section>}
+    {inspectedNode?.facts?.length > 0 && <section className="inspector-card inspector-facts" data-node-id={inspectedNode.id}><h3>{inspectedNode.source ? t('Evidence facts') : t('Node notes')}</h3><ul>{inspectedNode.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></section>}
+  </>;
+  if (drawerOpen) drawerFrozen.current = drawerBody;
 
   return <main className="app-shell">
     <header className="toolbar">
@@ -80,7 +120,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
           <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
           {open === 'views' && <div className="popover menu" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
-            const type = item.meta.diagramType ?? 'architecture';
+            const type = diagramTypeOf(item);
             return <button key={type} role="menuitemradio" aria-checked={type === diagramType} className={type === diagramType ? 'is-current' : ''} onClick={() => { onDiagramChange(type, currentGraph); close(); panels.closeMobile(); }}>
               <span className="menu-mark">{type === diagramType ? <Icon name="check" /> : null}</span>{t(diagramLabels[type])}<small>{t('{count} relations', { count: item.edges.length })}</small>
             </button>;
@@ -128,14 +168,12 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     </header>
 
     <section className={`workspace ${toolbarOpen ? 'nav-open' : ''} ${drawerOpen ? 'drawer-open' : ''}`}>
-      <AnimatePresence initial={false}>
-        {toolbarOpen && <motion.aside key="nav" id="graph-tools" ref={panelRef} tabIndex={-1} className="sidebar nav" aria-label={t('Graph navigation')} initial={slideFrom('-115%')} animate={{ x: 0 }} exit={{ x: '-115%' }} transition={panelTransition}>
-          <div className="side-head"><p className="panel-title">{t('Graph navigation')}</p><button className="side-close" onClick={toggleToolbar} aria-label={t('Close')} title={t('Close')}><Icon name="close" /></button></div>
-          <div className="project-summary"><p className="panel-title">{t('Overview')}</p>{graph.meta.scope && <p>{graph.meta.scope}</p>}<div className="stat-grid"><span><strong>{graph.nodes.length}</strong>{t('Nodes')}</span><span><strong>{graph.edges.length}</strong>{t('Edges')}</span><span><strong>{graph.groups?.length ?? 0}</strong>{t('Groups')}</span></div></div>
-          <p className="result-heading">{t('Nodes · {count}', { count: graph.nodes.length })}</p>
-          <div className="search-results">{currentGraph.nodes.map(directoryEntry)}</div>
-        </motion.aside>}
-      </AnimatePresence>
+      {navShown && <aside id="graph-tools" ref={panelRef} tabIndex={-1} className={`sidebar nav${navState}`} aria-label={t('Graph navigation')}>
+        <div className="side-head"><p className="panel-title">{t('Graph navigation')}</p><button className="side-close" onClick={toggleToolbar} aria-label={t('Close')} title={t('Close')}><Icon name="close" /></button></div>
+        <div className="project-summary"><p className="panel-title">{t('Overview')}</p>{graph.meta.scope && <p>{graph.meta.scope}</p>}<div className="stat-grid"><span><strong>{graph.nodes.length}</strong>{t('Nodes')}</span><span><strong>{graph.edges.length}</strong>{t('Edges')}</span><span><strong>{graph.groups?.length ?? 0}</strong>{t('Groups')}</span></div></div>
+        <p className="result-heading">{t('Nodes · {count}', { count: graph.nodes.length })}</p>
+        <div className="search-results">{currentGraph.nodes.map(directoryEntry)}</div>
+      </aside>}
 
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
@@ -175,7 +213,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             <button className="float-btn" onClick={() => toggle('legend')} aria-expanded={open === 'legend'} aria-haspopup="true" title={t('Legend')}><Icon name="legend" /><span>{t('Legend')}</span></button>
             {open === 'legend' && <div className="popover legend-pop">
               <p className="pop-title">{t('Legend')}</p>
-              <div className="legend" role="group" aria-label={t('Legend')}>{graphLegend(currentGraph, palette, moduleColors).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}>{['sync', 'async', 'return'].includes(entry.shape) ? <svg style={{ color: entry.stroke }} width="28" height="14" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 7H25" stroke="currentColor" strokeDasharray={entry.shape === 'return' ? '4 3' : undefined} /><path d={entry.shape === 'sync' ? 'M19 2L26 7L19 12Z' : 'M19 2L26 7L19 12'} fill={entry.shape === 'sync' ? 'currentColor' : 'none'} stroke="currentColor" /></svg> : <i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />}{entry.label}</span>)}</div>
+              <div className="legend" role="group" aria-label={t('Legend')}>{graphLegend(currentGraph, palette, moduleColors).map(entry => <span key={entry.id} data-legend-role={entry.role} data-legend-shape={entry.shape}>{entry.shape === 'self' ? <svg style={{ color: entry.stroke }} width="28" height="14" viewBox="0 0 28 14" aria-hidden="true"><path d="M5 3C22 0 22 13 6 11" fill="none" stroke="currentColor" /><path d="M10 8L5.5 11L10.5 13.4" fill="none" stroke="currentColor" /></svg> : ['sync', 'async', 'return'].includes(entry.shape) ? <svg style={{ color: entry.stroke }} width="28" height="14" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 7H25" stroke="currentColor" strokeDasharray={entry.shape === 'return' ? '4 3' : undefined} /><path d={entry.shape === 'sync' ? 'M19 2L26 7L19 12Z' : 'M19 2L26 7L19 12'} fill={entry.shape === 'sync' ? 'currentColor' : 'none'} stroke="currentColor" /></svg> : <i className={`legend-${entry.shape}`} style={{ backgroundColor: entry.fill ?? 'transparent', borderColor: entry.stroke, color: entry.stroke, '--legend-body': palette.surface2 }} />}{entry.label}</span>)}</div>
               {hasFlow && <div className="pop-opt"><span>{t('Edge animation')}</span><button className="switch" role="switch" aria-checked={flowRunning} disabled={Boolean(reduceMotion)} onClick={() => setFlowEnabled(value => !value)} aria-label={t('Edge animation')}><i /></button></div>}
               {reduceMotion && <p className="pop-note">{t('System reduced-motion preference is respected')}</p>}
             </div>}
@@ -200,30 +238,9 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         </div>
       </figure>
 
-      <AnimatePresence initial={false}>
-        {drawerOpen && <motion.aside key="drawer" id="node-inspector" ref={inspectorRef} tabIndex={-1} className={`sidebar drawer inspector ${inspectedNode || inspectedEdge ? 'is-open' : ''}`} aria-label={t('Details')} initial={slideFrom('115%')} animate={{ x: 0 }} exit={{ x: '115%' }} transition={panelTransition}>
-          <div className="side-head"><p className="panel-title">{t('Details')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('Close details')} title={t('Close details')}><Icon name="close" /></button></div>
-          <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
-              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
-              <h2>{inspectedNode.label}</h2>
-              <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
-              {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
-              {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
-              {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
-              {inspectedNode.source && <><h3>{t('Source')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
-              {inspectedNode.tags?.length > 0 && <div className="tags">{inspectedNode.tags.map(tag => <span key={tag}>{tag}</span>)}</div>}
-            </> : inspectedEdge ? <>
-              <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: visibleEdges.find(edge => edge.id === inspectedEdge.id)?.style.stroke ?? palette.edge }} />{t('Edges')} · {inspectedEdge.kind}</div>
-              <h2>{(createEdgeRoutes(currentGraph).get(inspectedEdge.id)?.label ?? visibleEdgeLabel(inspectedEdge, diagramType)) || inspectedEdge.kind}</h2>
-              <p className="drawer-subtitle">{inspectedSource?.label} → {inspectedTarget?.label}</p>
-              <h3>{t('Evidence')}</h3><p>{inspectedEdge.evidence}</p>
-              {inspectedEdge.facts?.length > 0 && <><h3>{t('Evidence facts')}</h3><ul>{inspectedEdge.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></>}
-            </> : <div className="drawer-empty"><span className="empty-icon"><Icon name="fit" /></span><span>{t('Start with a node')}</span><p>{t('Select a component or a list entry to explore its role, fields, methods and source.')}</p></div>}
-          </section>
-          {(inspectedNode || inspectedEdge) && <section className="inspector-card"><div className={editor.editing ? '' : 'card-actions'}><TextEditor editor={editor} relation={Boolean(inspectedEdge)} locked={locked} locale={graph.meta.locale} /></div></section>}
-          {inspectedNode?.facts?.length > 0 && <section className="inspector-card inspector-facts" data-node-id={inspectedNode.id}><h3>{inspectedNode.source ? t('Evidence facts') : t('Node notes')}</h3><ul>{inspectedNode.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></section>}
-        </motion.aside>}
-      </AnimatePresence>
+      {drawerShown && <aside id="node-inspector" ref={inspectorRef} tabIndex={-1} className={`sidebar drawer inspector${inspectedNode || inspectedEdge ? ' is-open' : ''}${drawerState}`} aria-label={t('Details')}>
+        {drawerFrozen.current}
+      </aside>}
     </section>
   </main>;
 }

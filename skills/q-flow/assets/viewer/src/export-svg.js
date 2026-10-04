@@ -1,5 +1,6 @@
-import { createEdgeRoutes, graphBounds, pathFromPoints, layoutText, cardinalityMarks } from './edge-routing.js';
-import { DIAGRAM_TYPES, getDiagram, edgeMarkers, isDashed } from './diagrams/registry.js';
+import { createEdgeRoutes, graphBounds, pathFromRoute, cardinalityMarks } from './edge-routing.js';
+import { layoutText } from './text-layout.js';
+import { DIAGRAM_TYPES, diagramTypeOf, getDiagram, edgeMarkers, isDashed, labelRoleColors } from './diagrams/registry.js';
 import { renderNode } from './node-svg.js';
 import { text, fit, escapeXml, svgStyles, groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
 import { PALETTES, dataKinds, edgeColor, sequenceGroupColor, moduleColorMap, groupAppearanceMap, TYPOGRAPHY } from './visual-style.js';
@@ -7,11 +8,6 @@ import { RADIX_COLORS_NOTICE } from './radix-colors.js';
 import { sequencePairs, sequenceExecutions } from './sequence-executions.js';
 import { sequenceFragment, renderFragment, fragmentDepth, fragmentSurfaceAt } from './sequence-fragments.js';
 import { requireDiagramQuality } from './layout-quality.js';
-export { cardinalityMarks } from './edge-routing.js';
-
-function diagramType(graph) {
-  return graph.meta.diagramType ?? 'architecture';
-}
 
 function edgeMarker(edge, type, target, moduleColors, source, pair) {
   const { end } = edgeMarkers(edge, type);
@@ -47,7 +43,7 @@ function renderEdge(edge, route, type, offsetX, offsetY, palette, target, module
     cardinalityMarks(edge.targetCardinality, route.points.at(-1), route.points.at(-2))
   ].map((mark, index) => `<g data-cardinality-endpoint="${index ? 'target' : 'source'}" transform="translate(${offsetX} ${offsetY})" fill="none" stroke="${palette.accent}" stroke-width="1.5"><path d="${mark.path}"/>${mark.circle ? `<circle cx="${mark.circle.cx}" cy="${mark.circle.cy}" r="${mark.circle.r}" fill="${palette.surface}"/>` : ''}</g>`).join('') : '';
   const multiplicities = (route.endpointLabels ?? []).map(item => `<g class="edge-multiplicity" data-endpoint="${item.role}"><rect x="${item.labelBox.x + offsetX}" y="${item.labelBox.y + offsetY}" width="${item.labelBox.width}" height="${item.labelBox.height}" rx="4" class="edge-bg"/>${text(item.labelPoint.x + offsetX, item.labelBox.y + offsetY + 3 + TYPOGRAPHY.body, item.label, 'edge', ' text-anchor="middle"')}</g>`).join('');
-  return `<g data-diagram-edge-id="${escapeXml(edge.id)}"><path d="${pathFromPoints(route.points, offsetX, offsetY)}" fill="none" stroke="${stroke}" stroke-width="1.5"${dash}${edgeMarker(edge, type, target, moduleColors, source, pair)}${edgeStartMarker(edge, type)}/>${cardinalities}${background}${pairLine}${label ? route.labelLines.map((line, index) => text(labelX, labelY - labelSize.height / 2 + 3 + TYPOGRAPHY.body + index * TYPOGRAPHY.edgeLineHeight, line, 'edge', ' text-anchor="middle"')).join('') : ''}${multiplicities}</g>`;
+  return `<g data-diagram-edge-id="${escapeXml(edge.id)}"><path d="${pathFromRoute(route, offsetX, offsetY)}" fill="none" stroke="${stroke}" stroke-width="1.5"${dash}${edgeMarker(edge, type, target, moduleColors, source, pair)}${edgeStartMarker(edge, type)}/>${cardinalities}${background}${pairLine}${label ? route.labelLines.map((line, index) => text(labelX, labelY - labelSize.height / 2 + 3 + TYPOGRAPHY.body + index * TYPOGRAPHY.edgeLineHeight, route.labelRuns ? { runs: route.labelRuns[index], colors: labelRoleColors(type, palette) } : line, 'edge', ' text-anchor="middle"')).join('') : ''}${multiplicities}</g>`;
 }
 
 export function createDiagramSvg(graph, theme = 'light', moduleColors) {
@@ -55,7 +51,7 @@ export function createDiagramSvg(graph, theme = 'light', moduleColors) {
   const palette = PALETTES[theme] ?? PALETTES.light;
   moduleColors ??= moduleColorMap([graph], palette);
   const groupAppearances = groupAppearanceMap(graph.groups ?? [], palette);
-  const type = diagramType(graph);
+  const type = diagramTypeOf(graph);
   const routes = createEdgeRoutes(graph);
   const pairs = sequencePairs(graph), executions = sequenceExecutions(graph);
   const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
@@ -90,5 +86,5 @@ export const SVG_FILE = new RegExp(`^diagram(-\\d+-(${DIAGRAM_TYPES.join('|')}))
 export function diagramSvgFiles(input) {
   const collection = Array.isArray(input.diagrams), views = collection ? input.diagrams : [input];
   const moduleColors = moduleColorMap(views, PALETTES.light);
-  return views.map((view, index) => ({ name: collection ? `diagram-${index + 1}-${diagramType(view)}.svg` : 'diagram.svg', svg: createDiagramSvg(view, 'light', moduleColors) }));
+  return views.map((view, index) => ({ name: collection ? `diagram-${index + 1}-${diagramTypeOf(view)}.svg` : 'diagram.svg', svg: createDiagramSvg(view, 'light', moduleColors) }));
 }

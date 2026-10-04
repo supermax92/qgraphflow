@@ -5,12 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { auditGraphLayout, graphBounds } from '../assets/viewer/src/edge-routing.js';
-import { canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
+import { canvasBudgetFor, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 import { ASPECT_BAND, ASPECT_SLACK, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
-import { diagramTypeOf, graphsOf, moduleSlotName, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
+import { graphsOf, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
-export { DIAGRAM_TYPES, diagramTypeOf, graphsOf, moduleSlotName, reviewComposition, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
+export { DIAGRAM_TYPES, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
+export { graphsOf, reviewComposition, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 
 const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
   --input-only          check semantics only (no geometry); use before generating
@@ -19,13 +20,11 @@ const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
                         unambiguous replyTo; with --repo-root, anchor line re-anchoring to a symbol found once in its
                         file); prints each change; writes back only when the graph then passes
   --verbose             print the full receipt (layout composition, diagnostics) instead of one summary line
-  --module-slot <name>  print the colour slot a module name hashes to (repeatable; no graph needed) — for choosing
-                        the name of a module you are introducing; never rename an existing module for colour
   -h, --help            this text
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.
 Composition warnings never fail the run; --input-only prints them in full, later steps only count them in the
 receipt. Fix module.missing, module.inconsistent and flowchart.process-branch; module.single-tone asks whether the
-steps really are one subsystem's work; module.slot-collision is informational (slots repeat by design).`;
+steps really are one subsystem's work.`;
 
 export function readAndValidateGraph(inputPath, options = {}) {
   const absolute = path.resolve(inputPath);
@@ -216,12 +215,8 @@ export function verifySourceEvidence(input, repoRoot) {
 
 if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   try {
-    const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'repo-root': { type: 'string' }, 'input-only': { type: 'boolean', default: false }, fix: { type: 'boolean', default: false }, verbose: { type: 'boolean', default: false }, 'module-slot': { type: 'string', multiple: true }, help: { type: 'boolean', short: 'h', default: false } } });
+    const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'repo-root': { type: 'string' }, 'input-only': { type: 'boolean', default: false }, fix: { type: 'boolean', default: false }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
     if (values.help) { console.log(USAGE); process.exit(0); }
-    if (values['module-slot']?.length) {
-      for (const name of values['module-slot']) console.log(`${name} → ${moduleSlotName(name)}`);
-      if (!positionals.length) process.exit(0);
-    }
     if (positionals.length !== 1) throw new Error(USAGE);
     if (values.fix) {
       const result = fixGraphFile(positionals[0], { inputOnly: values['input-only'], repoRoot: values['repo-root'] });

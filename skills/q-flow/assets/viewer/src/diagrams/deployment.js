@@ -1,9 +1,7 @@
 import { genericCard } from './card.js';
-import { cylinder, polygonAnchor, rectAnchor, roundedRectAnchor, rectangle } from './drawing.js';
+import { cylinder, polygonAnchor, rectAnchor, roundedRectAnchor, rectangle, HEXAGON, polygon } from './drawing.js';
 
-const HEXAGON = [[.08, 0], [.92, 0], [1, .5], [.92, 1], [.08, 1], [0, .5]];
 const CUBE = [[0, .1], [.06, 0], [1, 0], [1, .9], [.94, 1], [0, 1]];
-const polygon = (node, x, y, points) => [['polygon', { points: points.map(([px, py]) => `${x + px * node.size.width},${y + py * node.size.height}`).join(' ') }]];
 
 export function deploymentOutline(node, x, y) {
   const { width: w, height: h } = node.size;

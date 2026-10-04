@@ -1,5 +1,6 @@
 import { translate } from '../i18n.js';
-import { text, fit, TYPOGRAPHY, kindLabels, rectangle, actor, paint, mix, escapeXml } from './drawing.js';
+import { text, fit, TYPOGRAPHY, kindLabels, rectangle, actor, paint, escapeXml } from './drawing.js';
+import { mix } from '../visual-style.js';
 
 const outline = (node, x, y) => node.kind === 'actor' ? actor(node, x, y) : rectangle(node, x, y, 7, TYPOGRAPHY.sequenceHeader);
 export const sequenceHeaderHeight = node => node.kind === 'actor' ? TYPOGRAPHY.sequenceActorHeader + (node.subtitle ? 22 : 0) : TYPOGRAPHY.sequenceHeader;

@@ -1,11 +1,10 @@
 import { auditGraphLayout, boxDistance, occupiedBox, graphBounds, segmentCrossesBox } from './edge-routing.js';
-import { getDiagram } from './diagrams/registry.js';
+import { diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { cardTextLayout, layoutText, groupHeadingLayout } from './text-layout.js';
 import { LAYOUT_LIMITS } from './layout-spacing.js';
 import { minimumNodeSize } from './layout-measure.js';
 import { validateGraph } from './graph-validation.js';
 
-export { LAYOUT_LIMITS } from './layout-spacing.js';
 const bounds = item => ({ ...item.position, ...item.size });
 const contains = (a, b) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.width && b.y + b.height <= a.y + a.height;
 const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -15,7 +14,7 @@ export function qualityFailure(graph, phase, message, diagnostics = []) {
   if (!diagnostics.length) diagnostics = (String(message).includes('\n- ') ? String(message).split('\n- ').slice(1) : [String(message)]).map(detail => {
     const elements = ['nodes', 'edges', 'groups'].flatMap(key => (Array.isArray(graph?.[key]) ? graph[key] : []).filter((item, index) => item && typeof item === 'object' && (
       detail.includes(`${key}[${index}]`) || new RegExp(`(^|[^\\w.-])${String(item.id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\w.-])`).test(detail))));
-    return { ruleId: `${phase}.invalid`, severity: 'error', diagramType: graph?.meta?.diagramType ?? 'architecture',
+    return { ruleId: `${phase}.invalid`, severity: 'error', diagramType: diagramTypeOf(graph),
       elementIds: elements.map(item => item.id), measured: detail, required: `Valid ${phase} content and complete notation`,
       bounds: elements.filter(item => item.position && item.size).map(item => ({ ...item.position, ...item.size })),
       remediation: phase === 'semantic' ? 'Correct the reported input field or reference before layout.' : 'Correct the identified content or geometry and retry without removing semantic facts.' };
@@ -38,7 +37,7 @@ export function requireDiagramQuality(graph) {
 }
 
 export function auditLayoutQuality(graph) {
-  const legacy = auditGraphLayout(graph), type = graph.meta.diagramType ?? 'architecture', diagram = getDiagram(type), limits = LAYOUT_LIMITS;
+  const legacy = auditGraphLayout(graph), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = LAYOUT_LIMITS;
   const diagnostics = [...legacy.diagnostics, ...legacy.crossings];
   const issue = (ruleId, ids, measured, required, boxes, remediation) => diagnostics.push({ ruleId, severity: 'error', diagramType: type, elementIds: ids, measured, required, bounds: boxes, remediation });
   const nodeBoxes = new Map(graph.nodes.map(node => [node.id, occupiedBox(node, type)]));
@@ -144,7 +143,7 @@ export function auditLayoutQuality(graph) {
         const initialShared = separation < .001 && shared <= limits.endpoint && terminals(edge, route).some(left => terminals(other, otherRoute).some(right => left.id === right.id && left.point.x === right.point.x && left.point.y === right.point.y && (left.point === a || left.point === b) && (right.point === c || right.point === d)));
         if (!initialShared) found.push({ x: Math.min(a.x, b.x, c.x, d.x), y: Math.min(a.y, b.y, c.y, d.y), width: Math.max(a.x, b.x, c.x, d.x) - Math.min(a.x, b.x, c.x, d.x), height: Math.max(a.y, b.y, c.y, d.y) - Math.min(a.y, b.y, c.y, d.y), separation, shared });
       }
-      if (found.length) issue('route.parallel-channels', [edge.id, other.id], Math.min(...found.map(item => item.separation)), limits.parallelGap, found, 'Separate parallel channels; only the initial 12px at one common port may overlap.');
+      if (found.length) issue('route.parallel-channels', [edge.id, other.id], Math.min(...found.map(item => item.separation)), limits.parallelGap, found, `Separate parallel channels; only the initial ${limits.endpoint}px at one common port may overlap.`);
     }
   }
   if (!diagram.sequence) {

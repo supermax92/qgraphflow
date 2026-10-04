@@ -1,4 +1,3 @@
-import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { operandScopes } from './sequence-fragments.js';
 
 // Pair numbers follow the calls' message order (C1 is the first call that gets a reply), not their id spelling.
@@ -19,12 +18,7 @@ export function sequenceMessageLabel(graph, edge, pairs = sequencePairs(graph), 
   return pair ? `${pair.label} · ${edge.label ?? ''}` : parallel ? edge.label ?? '' : `${String(edge.order).padStart(2, '0')} · ${edge.label ?? ''}`;
 }
 
-export function sequenceEndpointY(graph, edge, at) {
-  const source = graph.nodes.find(node => node.id === edge.source);
-  const target = graph.nodes.find(node => node.id === edge.target);
-  return (edge.route?.messageY ?? Math.min(source.position.y, target.position.y) + Math.max(...graph.nodes.map(sequenceHeaderHeight)) + 4 + edge.order * 54)
-    + (at === 'receive' && edge.source === edge.target ? 30 : 0);
-}
+export const sequenceEndpointY = (edge, at) => edge.route.messageY + (at === 'receive' && edge.source === edge.target ? 30 : 0);
 
 export function validateExecutions(graph, { inputOnly = false } = {}) {
   const errors = [], edges = new Map(graph.edges.map(edge => [edge.id, edge]));
@@ -35,7 +29,7 @@ export function validateExecutions(graph, { inputOnly = false } = {}) {
   }
   if (!inputOnly) {
     const ordered = [...graph.edges].sort((a, b) => a.order - b.order);
-    for (let i = 1; i < ordered.length; i++) if (sequenceEndpointY(graph, ordered[i], 'send') <= sequenceEndpointY(graph, ordered[i - 1], 'send')) errors.push(`edge ${ordered[i].id}.route.messageY must preserve message order after ${ordered[i - 1].id}`);
+    for (let i = 1; i < ordered.length; i++) if (sequenceEndpointY(ordered[i], 'send') <= sequenceEndpointY(ordered[i - 1], 'send')) errors.push(`edge ${ordered[i].id}.route.messageY must preserve message order after ${ordered[i - 1].id}`);
   }
   const scopes = operandScopes(graph), returned = new Set();
   for (const edge of graph.edges) {
@@ -66,7 +60,7 @@ export function validateExecutions(graph, { inputOnly = false } = {}) {
       if (!edge || !['send', 'receive'].includes(endpoint?.at)) { errors.push(`${prefix}.${role} invalid endpoint ${String(endpoint?.edgeId)}`); continue; }
       if (edge[endpoint.at === 'send' ? 'source' : 'target'] !== execution.participantId) errors.push(`${prefix}.${role} endpoint ${edge.id} does not belong to participant ${execution.participantId}`);
       // Semantic ordering must not depend on coordinates or legacy message spacing.
-      ys.push(inputOnly ? edge.order * 2 + Number(endpoint.at === 'receive' && edge.source === edge.target) : sequenceEndpointY(graph, edge, endpoint.at));
+      ys.push(inputOnly ? edge.order * 2 + Number(endpoint.at === 'receive' && edge.source === edge.target) : sequenceEndpointY(edge, endpoint.at));
       const key = `${edge.id}:${endpoint.at}`;
       if (anchors.has(key)) errors.push(`${prefix}.${role} ambiguous endpoint ${key} with execution ${anchors.get(key)}`);
       anchors.set(key, execution.id);
@@ -104,6 +98,19 @@ export function validateExecutions(graph, { inputOnly = false } = {}) {
   return errors;
 }
 
+// Authoring rule for the CLI, not the Viewer: an answered sync call needs a bar on its callee from the call's receive
+// to the reply's send. Legacy sequences have no replyTo, so they are never asked for one; async pairs need no bar.
+export function missingCallExecutions(graph) {
+  if (graph.meta.diagramType !== 'sequence') return [];
+  const edges = new Map(graph.edges.map(edge => [edge.id, edge])), bars = graph.executions ?? [];
+  const at = (anchor, edgeId, side) => anchor?.edgeId === edgeId && anchor.at === side;
+  return graph.edges.flatMap(reply => {
+    const call = edges.get(reply.replyTo);
+    if (call?.kind !== 'sync' || bars.some(bar => bar.participantId === call.target && at(bar.start, call.id, 'receive') && at(bar.end, reply.id, 'send'))) return [];
+    return [`edge ${call.id} sync call answered by ${reply.id} needs an execution on ${call.target} from ${call.id} receive to ${reply.id} send`];
+  });
+}
+
 // Geometry is shared by routing, the participant SVG, exports and bounds.
 export function sequenceExecutions(graph) {
   if (graph.meta.diagramType !== 'sequence') return [];
@@ -113,8 +120,8 @@ export function sequenceExecutions(graph) {
     const seen = new Set([item.id]);
     while (parent && !seen.has(parent.id)) { seen.add(parent.id); depth++; parent = items.find(other => other.id === parent.parentId); }
     const node = graph.nodes.find(node => node.id === item.participantId);
-    const y = sequenceEndpointY(graph, edges.get(item.start.edgeId), item.start.at);
-    return { ...item, depth, scope: scopes.get(item.start.edgeId) ?? '', x: node.position.x + node.size.width / 2 - 8 + depth * 8, y, width: 16, height: sequenceEndpointY(graph, edges.get(item.end.edgeId), item.end.at) - y };
+    const y = sequenceEndpointY(edges.get(item.start.edgeId), item.start.at);
+    return { ...item, depth, scope: scopes.get(item.start.edgeId) ?? '', x: node.position.x + node.size.width / 2 - 8 + depth * 8, y, width: 16, height: sequenceEndpointY(edges.get(item.end.edgeId), item.end.at) - y };
   });
 }
 

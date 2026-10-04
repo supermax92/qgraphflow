@@ -1,11 +1,10 @@
 import { translate } from '../i18n.js';
-import { text, fit, layoutText, TYPOGRAPHY, coreNode, nodeMetrics, rectangle, paint } from './drawing.js';
+import { text, fit, layoutText, TYPOGRAPHY, nodeMetrics, rectangle, paint } from './drawing.js';
 
 const outline = (node, x, y) => rectangle(node, x, y, 9);
 
 function erNode(node, x, y, fill, stroke, palette, locale) {
-  const { erHeaderHeight: header, erRowHeight: rowHeight, erFontSize: fontSize } = nodeMetrics(node, 'er');
-  const core = coreNode(node);
+  const { erHeaderHeight: header, erRowHeight: rowHeight, erFontSize: fontSize } = nodeMetrics(node);
   const subtitle = fit(node.subtitle ?? translate(locale, 'Entity'), node.size.width - 60);
   const subtitleFont = node.subtitle ? TYPOGRAPHY.body : TYPOGRAPHY.small;
   const rows = node.fields.map((field, index) => {

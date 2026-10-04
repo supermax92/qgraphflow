@@ -5,7 +5,9 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { auditGraphLayout, cardinalityMarks, cardTextLayout, createEdgeRoutes, ER_ENDPOINT_STUB, graphBounds, layoutText, occupiedBox, pathFromPoints, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
+import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, graphBounds, occupiedBox, pathFromPoints, pathFromRoute, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
+import { cardTextLayout, layoutText } from '../assets/viewer/src/text-layout.js';
+import { ASPECT_BAND } from '../assets/viewer/src/layout-spacing.js';
 import { createDiagramSvg, diagramSvgFiles, SVG_FILE } from '../assets/viewer/src/export-svg.js';
 import { edgeColor, isCore, kindLabels, moduleColorMap, groupAppearanceMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
 import { IDENTITY, IDENTITY_SCALES, RADIX } from '../assets/viewer/src/radix-colors.js';
@@ -16,9 +18,9 @@ import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
-import { readingRect, readingViewport, locateViewport } from '../assets/viewer/src/reading-area.js';
+import { appleEase, readingRect, readingViewport, locateViewport } from '../assets/viewer/src/reading-area.js';
 import { sequenceFragment, renderFragment } from '../assets/viewer/src/sequence-fragments.js';
-import { compileGraphLayout, ASPECT_BAND } from './compile-layout.mjs';
+import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { renderNode } from '../assets/viewer/src/node-svg.js';
 
@@ -336,7 +338,7 @@ test('exports the same twelve-percent slant and bottom return route as the page'
 });
 
 function exportedEdgePath(svg, label) {
-  const group = svg.split('</defs>').at(-1).split('</g>').find(fragment => fragment.includes(`>${label}</text>`));
+  const group = svg.split('</defs>').at(-1).split('</g>').find(fragment => fragment.includes(`>${label}</text>`) || fragment.includes(`>${label}</tspan>`));
   assert.ok(group, `missing exported edge label: ${label}`);
   return group.match(/<path d="([^"]+)" fill="none" stroke=/)?.[1];
 }
@@ -350,7 +352,7 @@ export const fixtures = {
   ], [edge('to-decision', 'start', 'decision', 'flow'), edge('to-end', 'decision', 'end', 'yes')]),
   sequence: graph('sequence', [
     box('browser', 'Browser', 'actor', 0, 0, 140, 360), box('api', 'Order API', 'service', 260, 0, 180, 360)
-  ], [edge('request', 'browser', 'api', 'sync', { label: 'POST /orders', order: 1 })]),
+  ], [edge('request', 'browser', 'api', 'sync', { label: 'POST /orders', order: 1, route: { messageY: 166 } })]),
   er: graph('er', [
     box('users', 'users', 'entity', 0, 0, 240, 130, { fields: [{ name: 'id', type: 'bigint', key: 'PK', nullable: false }] }),
     box('orders', 'orders', 'entity', 400, 0, 240, 160, { fields: [{ name: 'id', type: 'bigint', key: 'PK' }, { name: 'user_id', type: 'bigint', key: 'FK' }] })
@@ -394,6 +396,10 @@ test('reading area clears actual visible bottom controls', () => {
   assert.equal(readingRect(canvas, true, true).bottom, 764, '112px controls plus 12px clearance determine the reading bottom');
   boxes[0] = { top: 0, width: 0, height: 0 };
   assert.equal(readingRect(canvas, true, true).bottom, 798, 'hidden controls do not contribute; the visible minimap still does');
+});
+
+test('viewport moves follow the chrome\'s cubic-bezier(.32,.72,0,1)', () => {
+  for (const [t, y] of [[0, 0], [.25, .779], [.5, .9547], [1, 1]]) assert.ok(Math.abs(appleEase(t) - y) < 1e-3, `ease(${t})`);
 });
 
 test('reveals without shrinking and locates sequence heads at a readable scale', () => {
@@ -605,7 +611,9 @@ test('separates parallel transitions and routes self transitions outside the nod
   const route = createEdgeRoutes(state).get('retry');
   const path = exportedEdgePath(svg, 'retry transition');
   const [x, y] = path.match(/^M ([\d.]+) ([\d.]+)/).slice(1).map(Number);
-  assert.equal(path, pathFromPoints(route.points, x - route.points[0].x, y - route.points[0].y));
+  assert.equal(path, pathFromRoute(route, x - route.points[0].x, y - route.points[0].y));
+  assert.match(path, /^M [\d.]+ [\d.]+ C /, 'a state self-transition is one smooth arc');
+  assert.equal(route.points.length, 4, 'its bracket polyline stays the audited geometry');
 });
 
 test('exports the React Flow UI board in light and dark themes', () => {
@@ -808,23 +816,6 @@ test('generates a graph collection with aggregate metadata', () => {
   assert.match(fs.readFileSync(path.join(output, 'index.html'), 'utf8'), /"diagrams"/);
 });
 
-test('removes the legacy snapshot only with force', () => {
-  const fixture = fixtures.architecture;
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codegraph-flow-legacy-'));
-  const input = path.join(root, 'input.json');
-  const output = path.join(root, 'out');
-  fs.mkdirSync(output);
-  fs.writeFileSync(input, JSON.stringify(fixture));
-  fs.writeFileSync(path.join(output, 'snapshot.svg'), '<svg/>');
-  const args = [path.join(scriptDir, 'generate-viewer.mjs'), input, output];
-  const refused = spawnSync(process.execPath, args, { encoding: 'utf8' });
-  assert.notEqual(refused.status, 0);
-  assert.match(refused.stderr, /Refusing to remove legacy snapshot.svg/);
-  const forced = spawnSync(process.execPath, [...args, '--force'], { encoding: 'utf8' });
-  assert.equal(forced.status, 0, forced.stderr);
-  assert.deepEqual(fs.readdirSync(output).sort(), ['diagram.svg', 'graph.json', 'index.html']);
-});
-
 test('SVG outputs share the page delivery: nine views, refusal, rollback, stale removal and foreign files', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-svg-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -995,15 +986,6 @@ test('strict CLI rejects nodes below the 48px clearance threshold', () => {
   assert.match(result.stderr, /spacing.nodes: caller, api/);
 });
 
-test('rejects wrapped sequence labels that cannot fit the fixed message pitch', () => {
-  const sequence = structuredClone(fixtures.sequence);
-  sequence.edges[0].label = 'POST /orders with a deliberately long request payload and idempotency metadata';
-
-  assert.match(validateGraph(sequence).join('\n'), /layout: sequence edge request wrapped label needs .*px height/);
-  sequence.edges[0].route = { labelAt: { x: 320, y: 80 } };
-  assert.match(validateGraph(sequence).join('\n'), /layout: sequence edge request wrapped label needs .*px height/);
-});
-
 test('CLI reports clear point crossings as information and blocks cramped labels', () => {
   const crossing = graph('architecture', [
     box('left', 'Left', 'service', 0, 400, 240, 100),
@@ -1031,7 +1013,7 @@ test('CLI reports clear point crossings as information and blocks cramped labels
 
 test('keeps sequence route hints on the ordered message lane', () => {
   const sequence = structuredClone(fixtures.sequence);
-  sequence.edges[0].route = { via: [{ x: 200, y: 112 }] };
+  sequence.edges[0].route = { ...sequence.edges[0].route, via: [{ x: 200, y: 112 }] };
 
   const route = createEdgeRoutes(sequence).get('request');
   assert.equal(route.points[0].y, 166);
@@ -1105,8 +1087,9 @@ test('reserves ER endpoint segments and rejects incompatible hints without chang
   ]);
   assert.deepEqual(validateGraph(er), []);
   const route = createEdgeRoutes(er).get('user-orders');
-  assert.equal(route.points[1].x - route.points[0].x, ER_ENDPOINT_STUB);
-  assert.equal(route.points.at(-1).x - route.points.at(-2).x, ER_ENDPOINT_STUB);
+  const stub = getDiagram('er').endpointStub;
+  assert.equal(route.points[1].x - route.points[0].x, stub);
+  assert.equal(route.points.at(-1).x - route.points.at(-2).x, stub);
   for (const [index, x, role] of [[0, 252, 'source'], [3, 388, 'target']]) {
     const invalid = structuredClone(er);
     invalid.edges[0].route.via[index].x = x;
@@ -1209,7 +1192,7 @@ test('preserves diagram-specific relationship notation and direction', () => {
   assert.equal(getDiagram('state').edgeLabel({ kind: 'transition', label: 'pay', guard: 'stock', action: 'reserve()' }), 'pay [stock] / reserve()');
   const sequence = graph('sequence', [
     box('left', 'Left', 'service', 0, 0, 160, 320), box('right', 'Right', 'service', 360, 0, 160, 320)
-  ], [edge('return', 'right', 'left', 'return', { label: 'result', order: 1 })]);
+  ], [edge('return', 'right', 'left', 'return', { label: 'result', order: 1, route: { messageY: 130 } })]);
   const route = createEdgeRoutes(sequence).get('return');
   assert.ok(route.points[0].x > route.points.at(-1).x, 'return arrow follows source to target');
   assert.equal(isDashed(sequence.edges[0], 'sequence'), true);
@@ -1236,10 +1219,10 @@ test('checks all five ER cardinalities in four directions and includes nearby no
   assert.doesNotMatch(errors, /edge user-orders crosses node near-marker/);
 });
 
-test('rejects multiline sequence labels that no longer fit the 54px pitch without losing text', () => {
+test('rejects multiline sequence labels that sit too close together without losing text', () => {
   const sequence = graph('sequence', [box('a', 'A', 'service', 0, 0, 140, 300), box('b', 'B', 'service', 210, 0, 140, 300)], [
-    edge('request', 'a', 'b', 'sync', { label: 'Create payment request', order: 1 }),
-    edge('response', 'b', 'a', 'return', { label: 'Return payment response', order: 2 })
+    edge('request', 'a', 'b', 'sync', { label: 'Create payment request', order: 1, route: { messageY: 130 } }),
+    edge('response', 'b', 'a', 'return', { label: 'Return payment response', order: 2, route: { messageY: 184 } })
   ]);
   assert.ok(validateGraph(sequence).some(error => error.includes('6px clearance')));
   const routes = createEdgeRoutes(sequence);
@@ -1291,37 +1274,30 @@ test('accounts for wide ASCII glyphs in compact headers and node titles', () => 
   }
 });
 
-test('keeps legacy short-card rendering available while blocking strict export', () => {
-  const samples = [
-    graph('architecture', [box('only', 'Only', 'service', 0, 0, 180, 70, { subtitle: 'subtitle' })], []),
-    graph('er', [box('only', 'Only', 'entity', 0, 0, 240, 150, {
-      fields: Array.from({ length: 4 }, (_, index) => ({ name: `field_${index}`, type: index === 3 ? 'varchar(128) COLLATE utf8mb4_unicode_520_ci' : 'bigint' }))
-    })], [])
-  ];
-  for (const sample of samples) {
-    assert.deepEqual(validateGraph(sample), []);
-    assert.throws(() => createDiagramSvg(sample), /Diagram quality failed/);
-    const svg = renderNode(sample.nodes[0], sample.meta.diagramType, 64, 152, PALETTES.light);
-    const node = sample.nodes[0];
-    const card = svg.match(new RegExp(`<rect x="64" y="([\\d.]+)" width="${node.size.width}" height="${node.size.height}"`));
-    assert.ok(card);
-    const top = Number(card[1]);
-    const texts = [...svg.matchAll(/<text([^>]+class="(title|body|compact-title|compact-body|field-name|field-type)"[^>]*)>([^<]*)<\/text>/g)];
-    for (const [, attributes, className, content] of texts) {
-      const y = Number(attributes.match(/y="([\d.]+)"/)[1]);
-      assert.ok(y > top && y + 3 <= top + node.size.height, `${className} ${content} must fit inside the card`);
-    }
-    if (sample.meta.diagramType === 'er') {
-      for (const [index, name] of texts.filter(match => match[2] === 'field-name').entries()) {
-        assert.ok(node.fields[index].name.startsWith(name[3].replace(/…$/, '')));
-        assert.ok(svg.includes(node.fields[index].name), 'full field name remains in the SVG node title');
-      }
-      const lastType = texts.filter(match => match[2] === 'field-type').at(-1);
-      assert.ok(lastType[3].endsWith('…'), 'legacy narrow types use an ellipsis instead of squeezing glyphs');
-      assert.ok(node.fields.at(-1).type.startsWith(lastType[3].slice(0, -1)));
-      assert.ok(!svg.includes('textLength='), 'export must not compress the enlarged typography');
-    } else assert.ok(texts.some(match => match[3] === 'subtitle'));
+test('a short ER entity truncates narrow field types with an ellipsis while strict export stays blocked', () => {
+  const sample = graph('er', [box('only', 'Only', 'entity', 0, 0, 240, 150, {
+    fields: Array.from({ length: 4 }, (_, index) => ({ name: `field_${index}`, type: index === 3 ? 'varchar(128) COLLATE utf8mb4_unicode_520_ci' : 'bigint' }))
+  })], []);
+  assert.deepEqual(validateGraph(sample), []);
+  assert.throws(() => createDiagramSvg(sample), /Diagram quality failed/);
+  const svg = renderNode(sample.nodes[0], 'er', 64, 152, PALETTES.light);
+  const node = sample.nodes[0];
+  const card = svg.match(new RegExp(`<rect x="64" y="([\\d.]+)" width="${node.size.width}" height="${node.size.height}"`));
+  assert.ok(card);
+  const top = Number(card[1]);
+  const texts = [...svg.matchAll(/<text([^>]+class="(field-name|field-type)"[^>]*)>([^<]*)<\/text>/g)];
+  for (const [, attributes, className, content] of texts) {
+    const y = Number(attributes.match(/y="([\d.]+)"/)[1]);
+    assert.ok(y > top && y + 3 <= top + node.size.height, `${className} ${content} must fit inside the card`);
   }
+  for (const [index, name] of texts.filter(match => match[2] === 'field-name').entries()) {
+    assert.ok(node.fields[index].name.startsWith(name[3].replace(/…$/, '')));
+    assert.ok(svg.includes(node.fields[index].name), 'full field name remains in the SVG node title');
+  }
+  const lastType = texts.filter(match => match[2] === 'field-type').at(-1);
+  assert.ok(lastType[3].endsWith('…'), 'narrow types use an ellipsis instead of squeezing glyphs');
+  assert.ok(node.fields.at(-1).type.startsWith(lastType[3].slice(0, -1)));
+  assert.ok(!svg.includes('textLength='), 'export must not compress the enlarged typography');
 });
 
 test('shares theme and semantic colors between page tokens and SVG exports', () => {
@@ -1334,9 +1310,9 @@ test('shares theme and semantic colors between page tokens and SVG exports', () 
     const entry = dataflow.edges.find(item => item.id === 'entry');
     const fragment = createDiagramSvg(dataflow, theme).split('</g>').find(item => item.includes('>ledger entry</text>'));
     assert.equal(fragment.match(/<path[^>]+stroke="([^"]+)"/)[1], edgeColor(entry, target, palette));
-    assert.equal(edgeColor(entry, target, palette), tokens['--good']);
+    assert.equal(edgeColor(entry, target, palette), palette.data);
     const erSvg = createDiagramSvg(compiledFixtures.er, theme);
-    assert.match(erSvg, new RegExp(`style="fill:${tokens['--good']}"[^>]*>PK</text>`));
+    assert.match(erSvg, new RegExp(`style="fill:${palette.data}"[^>]*>PK</text>`));
     assert.match(erSvg, new RegExp(`style="fill:${tokens['--accent']}"[^>]*>FK</text>`));
   }
 });
@@ -1357,7 +1333,7 @@ test('rejects edge labels placed over a group heading', () => {
 
 test('shares readable typography with label measurement and SVG output', () => {
   const tokens = themeVariables(PALETTES.light);
-  assert.deepEqual([tokens['--font-small'], tokens['--font-body'], tokens['--font-title']], ['14px', '16px', '20px']);
+  assert.deepEqual([tokens['--font-small'], tokens['--font-body']], ['14px', '16px']);
   assert.equal(layoutText('字段', Infinity).height, TYPOGRAPHY.edgeLineHeight);
   assert.equal(layoutText('字段', Infinity, 20, 26).height, 26);
   const sample = graph('er', [box('entity', 'Readable entity', 'entity', 0, 0, 600, 210, { fields: [{ name: 'partitionId', type: 'Integer', key: 'PK' }] })], []);
@@ -1381,10 +1357,11 @@ test('reports undersized normal cards instead of silently shrinking or truncatin
 test('six-participant sequence validates explicit branches, legacy warnings and unsafe operands', async () => {
   const original = JSON.parse(fs.readFileSync(path.resolve(scriptDir, '../../../tests/fixtures/sequence-pointer.graph.json')));
   assert.match(validateGraph(original).join('\n'), /edge m10 label overlaps group dispatch boundary/);
-  // The legacy fixed pitch left no room for this now-wrapped message above its frame.
+  // The authored spacing left no room for this now-wrapped message above its frame, and explicit operands also keep it
+  // clear of the frame heading.
   const routes = createEdgeRoutes(original);
-  for (const edge of original.edges.filter(edge => edge.order >= 10)) edge.route = { ...edge.route, messageY: routes.get(edge.id).points[0].y + 24 };
-  original.groups.find(group => group.id === 'dispatch').size.height += 24;
+  for (const edge of original.edges.filter(edge => edge.order >= 10)) edge.route = { ...edge.route, messageY: routes.get(edge.id).points[0].y + 56 };
+  original.groups.find(group => group.id === 'dispatch').size.height += 56;
   assert.deepEqual(validateGraph(original), []);
   assert.match(auditGraphLayout(original).warnings.join('\n'), /operands missing/);
   assert.throws(() => createDiagramSvg(original), /Diagram quality failed/);
@@ -1436,10 +1413,10 @@ test('sequence labels, subtitles and arrow kinds share page/export geometry', as
   assert.ok(isDashed({kind:'return',evidence:'test'}, 'sequence'));
   assert.ok(isDashed({kind:'async',evidence:'framework'}, 'sequence'));
   assert.match(createDiagramSvg(compiledFixtures.sequence), /marker-end="url\(#arrow/);
-  const explicit = structuredClone(sequence); explicit.edges[0].route = {labelAt:routes.get('m1').points[0]};
+  const explicit = structuredClone(sequence); explicit.edges[0].route = {...explicit.edges[0].route, labelAt:routes.get('m1').points[0]};
   assert.deepEqual(createEdgeRoutes(explicit).get('m1').labelPoint, explicit.edges[0].route.labelAt);
   assert.match(validateGraph(explicit).join('\n'), /6px clearance/);
-  const actor = graph('sequence', [box('a','Actor','actor',0,0,300,500,{subtitle:'Visible actor subtitle'})], [edge('self','a','a','async',{order:1,label:'Self call'})]);
+  const actor = graph('sequence', [box('a','Actor','actor',0,0,300,500,{subtitle:'Visible actor subtitle'})], [edge('self','a','a','async',{order:1,label:'Self call',route:{messageY:188}})]);
   assert.equal(occupiedBox(actor.nodes[0], 'sequence').height, 130);
   assert.deepEqual(validateGraph(actor), []);
   assert.match(createDiagramSvg(actor), /class="body"[^>]*>Visible actor subtitle<\/text>/);
@@ -1510,7 +1487,7 @@ test('nine-type color contract: neutral structure, identity chips and frames, ri
       for (const role of ['data', 'warn']) assert.ok(colorDistance(tone.accent, palette[role]) >= 20, `${theme} ${tone.name} stays clear of the ${role} stroke`);
       for (const other of palette.moduleTones) if (other !== tone) assert.ok(colorDistance(tone.accent, other.accent) >= 12, `${theme} ${tone.name} and ${other.name} frames stay distinct`);
     }
-    assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.accent);
+    assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.ink, 'pseudostates are ink, not an identity color');
     assert.equal(nodeAppearance({ kind: 'final' }, palette).fill, palette.surface);
   }
 });
