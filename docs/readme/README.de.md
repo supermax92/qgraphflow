@@ -62,7 +62,7 @@ Für die Installation als Plugin den folgenden Schritten folgen. [Qoder Desktop]
 
 ### 1. Plugin herunterladen
 
-[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
+[qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) herunterladen und in ein eigenes Verzeichnis entpacken. Versteckte Dateien beibehalten.
 
 Alle folgenden Terminalbefehle im **entpackten Plugin-Stammverzeichnis mit `skills/`** ausführen.
 

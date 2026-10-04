@@ -22,7 +22,7 @@ npx skills add supermax92/qgraphflow
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
 ```
 
 已有 QGraphFlow 源码可跳过克隆，并进入其根目录。ZIP 文件名以 QGraphFlow 的 `package.json` 版本为准；使用新的输出和解压目录，不覆盖旧文件。Git 下载只包含已推送的代码，不包含尚未提交的本地修改。

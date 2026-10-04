@@ -22,7 +22,7 @@ Installiert den Skill `q-flow` für Claude Code, Codex, Cursor und Qoder (getest
 git clone https://github.com/supermax92/qgraphflow.git
 cd qgraphflow
 npm run package
-unzip -q dist/qgraphflow-0.0.5.zip -d dist/runtime
+unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
 ```
 
 Wenn der QGraphFlow-Quellcode bereits vorliegt, überspringe das Klonen und wechsle in dessen Stammverzeichnis. Passe den ZIP-Dateinamen an die Version in der `package.json` von QGraphFlow an. Verwende neue Ausgabe- und Entpackverzeichnisse, ohne vorhandene Dateien zu überschreiben. Git lädt nur bereits gepushten Code herunter, keine lokalen Änderungen ohne Commit.

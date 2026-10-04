@@ -62,7 +62,7 @@ npx skills add supermax92/qgraphflow
 
 ### 1. プラグインをダウンロード
 
-[qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
+[qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
 
 以下のコマンドはすべて、**展開後の `skills/` を含むプラグインのルートディレクトリ**で実行してください。
 

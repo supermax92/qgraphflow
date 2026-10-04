@@ -62,7 +62,7 @@ npx skills add supermax92/qgraphflow
 
 ### 1. 下载插件
 
-下载 [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip)，解压到独立目录，保留隐藏文件。
+下载 [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip)，解压到独立目录，保留隐藏文件。
 
 以下终端命令均在**解压后包含 `skills/` 的插件根目录**执行。
 

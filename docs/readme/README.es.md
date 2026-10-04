@@ -62,7 +62,7 @@ Para instalarla como complemento, seguir los pasos siguientes. En [Qoder Desktop
 
 ### 1. Descargar el complemento
 
-Descargar [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
+Descargar [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) y extraerlo en un directorio independiente, conservando los archivos ocultos.
 
 Ejecutar los comandos siguientes desde **la raíz del complemento extraído, que contiene `skills/`**.
 

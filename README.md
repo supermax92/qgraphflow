@@ -62,7 +62,7 @@ To install it as a plugin instead, follow the steps below. [Qoder Desktop](#qode
 
 ### 1. Download the plugin
 
-Download [qgraphflow-0.0.5.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.5/qgraphflow-0.0.5.zip) and extract it into a separate directory, keeping hidden files.
+Download [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) and extract it into a separate directory, keeping hidden files.
 
 Run the following terminal commands from **the extracted plugin root containing `skills/`**.
 
