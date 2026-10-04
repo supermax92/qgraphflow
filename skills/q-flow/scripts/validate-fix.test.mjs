@@ -18,6 +18,17 @@ const temp = (t, graph) => {
   return file;
 };
 
+test('--fix adds the callee bar of each answered sync call, nested like the hand-drawn ones', t => {
+  const expected = example().executions, graph = example();
+  delete graph.executions;
+  const file = temp(t, graph), result = fixGraphFile(file, { inputOnly: true });
+  assert.deepEqual(result.errors, []); assert.ok(result.written);
+  const bars = JSON.parse(fs.readFileSync(file, 'utf8')).executions;
+  const shape = list => list.map(bar => [bar.participantId, bar.start.edgeId, bar.start.at, bar.end.edgeId, bar.end.at, list.find(item => item.id === bar.parentId)?.start.edgeId ?? null]).sort((a, b) => a.join().localeCompare(b.join()));
+  assert.deepEqual(shape(bars), shape(expected), 'same anchors and the same nesting as the authored example');
+  assert.ok(result.changes.some(change => /execution x-c2 on order from c2 receive to r2 send inside x-c1/.test(change)), result.changes.join('\n'));
+});
+
 test('missing or duplicate orders are renumbered in authoring order and reported', () => {
   const graph = example();
   delete edge(graph, 'c3').order; edge(graph, 'r4').order = edge(graph, 'c4').order;

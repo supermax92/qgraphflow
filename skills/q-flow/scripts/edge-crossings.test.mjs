@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileGraphLayout } from './compile-layout.mjs';
+import { compileGraphLayout, shapeRank } from './compile-layout.mjs';
+import { layoutComposition } from './validate-graph.mjs';
 import { auditLayoutQuality } from '../assets/viewer/src/layout-quality.js';
 
 const input = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../../tests/fixtures/edge-crossings.graph.json'), 'utf8'));
@@ -46,4 +47,21 @@ test('nothing is refined when no relation crosses', async () => {
   const result = await compileGraphLayout(graph);
   assert.equal(crossings(result.graph), 0);
   assert.ok(result.report.candidates.every(item => !item.refined), 'nothing to refine when no relation crosses');
+});
+
+test('with equal crossings a shape inside the aspect band wins before compactness', async () => {
+  const kafka = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../../examples/showcase/kafka.en.graph.json'), 'utf8'));
+  const view = structuredClone(kafka.diagrams.find(graph => graph.meta.diagramType === 'architecture'));
+  delete view.layout;
+  for (const item of [...view.nodes, ...(view.groups ?? [])]) { delete item.position; delete item.size; }
+  for (const edge of view.edges) delete edge.route;
+  const { graph } = await compileGraphLayout(view);
+  assert.equal(crossings(graph), 0);
+  assert.ok(layoutComposition(graph).withinBand, `ratio ${layoutComposition(graph).aspectRatio} leaves the band although an in-band candidate has no crossings either`);
+});
+
+test('a long strip outranks crossings only by a whole shape step', () => {
+  assert.equal(shapeRank(1.2), 1, 'inside the tie every shape ranks the same');
+  assert.equal(shapeRank(1.52), shapeRank(1.64), 'a marginally better strip does not beat a crossing');
+  assert.ok(shapeRank(2.2) > shapeRank(1.6), 'a clearly better shape still wins');
 });

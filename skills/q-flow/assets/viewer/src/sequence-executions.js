@@ -99,17 +99,21 @@ export function validateExecutions(graph, { inputOnly = false } = {}) {
 }
 
 // Authoring rule for the CLI, not the Viewer: an answered sync call needs a bar on its callee from the call's receive
-// to the reply's send. Legacy sequences have no replyTo, so they are never asked for one; async pairs need no bar.
-export function missingCallExecutions(graph) {
-  if (graph.meta.diagramType !== 'sequence') return [];
+// to the reply's send. Legacy sequences have no replyTo, so they are never asked for one; async pairs need no bar. Two
+// answered calls to one callee that interleave (the second opens inside the first and closes after it) cannot be drawn,
+// since bars on one participant nest or stay apart, so neither is asked for one.
+export function callsMissingExecutions(graph) {
+  if (graph.meta?.diagramType !== 'sequence') return [];
   const edges = new Map(graph.edges.map(edge => [edge.id, edge])), bars = graph.executions ?? [];
   const at = (anchor, edgeId, side) => anchor?.edgeId === edgeId && anchor.at === side;
-  return graph.edges.flatMap(reply => {
-    const call = edges.get(reply.replyTo);
-    if (call?.kind !== 'sync' || bars.some(bar => bar.participantId === call.target && at(bar.start, call.id, 'receive') && at(bar.end, reply.id, 'send'))) return [];
-    return [`edge ${call.id} sync call answered by ${reply.id} needs an execution on ${call.target} from ${call.id} receive to ${reply.id} send`];
-  });
+  const pairs = graph.edges.filter(reply => edges.get(reply.replyTo)?.kind === 'sync').map(reply => ({ call: edges.get(reply.replyTo), reply }));
+  const crosses = (a, b) => a.call.order < b.call.order && b.call.order < a.reply.order && a.reply.order < b.reply.order;
+  return pairs.filter(pair => !pairs.some(other => other.call.target === pair.call.target && (crosses(pair, other) || crosses(other, pair)))
+    && !bars.some(bar => bar.participantId === pair.call.target && at(bar.start, pair.call.id, 'receive') && at(bar.end, pair.reply.id, 'send')));
 }
+
+export const missingCallExecutions = graph => callsMissingExecutions(graph)
+  .map(({ call, reply }) => `edge ${call.id} sync call answered by ${reply.id} needs an execution on ${call.target} from ${call.id} receive to ${reply.id} send; --fix adds it`);
 
 // Geometry is shared by routing, the participant SVG, exports and bounds.
 export function sequenceExecutions(graph) {

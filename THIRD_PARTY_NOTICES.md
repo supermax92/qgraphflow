@@ -22,8 +22,9 @@ and https://github.com/eclipse-elk/elk. QGraphFlow does not modify ELK;
 - `react` 19.2.8, `react-dom` 19.2.8, `scheduler` 0.27.0, and
   `use-sync-external-store` 1.6.0
 - `zustand` 4.5.7
-- Selected color scales derived from Radix Colors (Slate, Iris, Cyan, and
-  Orange, light and dark)
+- Selected color scales derived from Radix Colors (Slate, Iris, Cyan, Red,
+  Amber, Blue, Orange, Teal, Crimson, Violet, Grass, Plum and Indigo, light
+  and dark)
 
 MIT License
 

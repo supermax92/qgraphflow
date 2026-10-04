@@ -10,6 +10,7 @@ import { ASPECT_BAND, ASPECT_SLACK, ratioExcess } from '../assets/viewer/src/lay
 import { graphsOf, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
+import { callsMissingExecutions } from '../assets/viewer/src/sequence-executions.js';
 export { DIAGRAM_TYPES, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 export { graphsOf, reviewComposition, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 
@@ -17,8 +18,9 @@ const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
   --input-only          check semantics only (no geometry); use before generating
   --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
   --fix                 repair mechanical errors in place (sequence order numbering, opt/loop/par operand ids,
-                        unambiguous replyTo; with --repo-root, anchor line re-anchoring to a symbol found once in its
-                        file); prints each change; writes back only when the graph then passes
+                        unambiguous replyTo, the callee activation bar of each answered sync call; with --repo-root,
+                        anchor line re-anchoring to a symbol found once in its file); prints each change; writes back
+                        only when the graph then passes
   --verbose             print the full receipt (layout composition, diagnostics) instead of one summary line
   -h, --help            this text
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.
@@ -69,8 +71,9 @@ export function layoutComposition(graph) {
     aspectBand: targetRatio === null ? null : ASPECT_BAND, bandSlack: targetRatio === null ? null : ASPECT_SLACK, withinBand: targetRatio === null ? null : +ratioExcess(aspectRatio).toFixed(2) <= ASPECT_SLACK, singleRow, warnings };
 }
 
-// Mechanical repairs only: numbering, operand ids and unambiguous reply pairing. Facts (kinds, evidence, labels,
-// fields, anchors) and the set of elements are never touched; every change is reported so the author can veto it.
+// Mechanical repairs only: numbering, operand ids, unambiguous reply pairing and the activation bar a paired sync call
+// requires (its anchors follow from the pair). Facts (kinds, evidence, labels, fields, anchors) are never touched and no
+// other element is added; every change is reported so the author can veto it.
 export function applyMechanicalFixes(input) {
   const changes = [], blocked = [];
   for (const [index, graph] of graphsOf(input).entries()) {
@@ -97,6 +100,25 @@ export function applyMechanicalFixes(input) {
       const candidates = edges.filter(call => ['sync', 'async'].includes(call.kind) && valid(call.order) && call.order < edge.order && call.source === edge.target && call.target === edge.source && !answered.has(call.id) && (scopes.get(call.id) ?? '') === (scopes.get(edge.id) ?? ''));
       if (candidates.length === 1) { edge.replyTo = candidates[0].id; answered.add(candidates[0].id); changes.push(`${prefix}edge ${edge.id}.replyTo → ${candidates[0].id}`); }
       else blocked.push(`${prefix}edge ${edge.id}.replyTo not filled: ${candidates.length ? `${candidates.length} candidates (${candidates.map(call => call.id).join(', ')})` : 'no unanswered reversed call before it'}`);
+    }
+    // 4. executions: an answered sync call gets its callee bar (call receive → reply send), nested in the innermost bar of
+    // that participant around it. Longer calls go first, so a bar added inside them finds its parent.
+    if (edges.length === graph.edges.length && (graph.executions === undefined || Array.isArray(graph.executions) && graph.executions.every(bar => bar && typeof bar === 'object'))) {
+      const bars = graph.executions ?? [], byId = new Map(edges.map(edge => [edge.id, edge]));
+      const point = anchor => { const edge = byId.get(anchor?.edgeId); return edge ? edge.order * 2 + Number(anchor.at === 'receive' && edge.source === edge.target) : NaN; };
+      const missing = callsMissingExecutions(graph).sort((a, b) => (b.reply.order - b.call.order) - (a.reply.order - a.call.order) || a.call.order - b.call.order);
+      for (const { call, reply } of missing) {
+        let id = `x-${call.id}`;
+        for (let n = 2; bars.some(bar => bar.id === id); n++) id = `x-${call.id}-${n}`;
+        const bar = { id, participantId: call.target, start: { edgeId: call.id, at: 'receive' }, end: { edgeId: reply.id, at: 'send' } };
+        const from = point(bar.start), to = point(bar.end);
+        const parent = bars.filter(other => other.participantId === call.target && point(other.start) <= from && to <= point(other.end) && (point(other.start) < from || to < point(other.end)))
+          .sort((a, b) => (point(a.end) - point(a.start)) - (point(b.end) - point(b.start)))[0];
+        if (parent) bar.parentId = parent.id;
+        bars.push(bar);
+        changes.push(`${prefix}execution ${id} on ${call.target} from ${call.id} receive to ${reply.id} send${parent ? ` inside ${parent.id}` : ''}`);
+      }
+      if (bars.length && graph.executions === undefined) graph.executions = bars;
     }
   }
   return { changes, blocked };

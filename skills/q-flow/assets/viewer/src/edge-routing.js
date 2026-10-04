@@ -189,19 +189,21 @@ export function pathFromPoints(points, offsetX = 0, offsetY = 0) {
 }
 
 // A self-transition leaves and re-enters one side as a single arc. Its points stay the laid-out polyline, so every audit
-// sees the bounding box the arc stays inside; the arc only smooths it, reaching as far out as that polyline does.
-function arcPath(points, side, offsetX, offsetY) {
-  const [start, ...rest] = points.map(point => ({ x: point.x + offsetX, y: point.y + offsetY })), end = rest.at(-1);
-  const [nx, ny] = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] }[side] ?? [1, 0], [tx, ty] = [-ny, nx];
+// sees the bounding box the arc stays inside; the arc only smooths it, reaching as far out as that polyline does. Ends on
+// two sides (a moved waypoint) or on one point (a choice) keep the polyline: no single arc on one side can draw them.
+function arcPath(route, offsetX, offsetY) {
+  if (route.sourceSide !== route.targetSide) return null;
+  const [start, ...rest] = route.points.map(point => ({ x: point.x + offsetX, y: point.y + offsetY })), end = rest.at(-1);
+  const [nx, ny] = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] }[route.sourceSide] ?? [1, 0], [tx, ty] = [-ny, nx];
   const reach = Math.max(...rest.map(point => (point.x - start.x) * nx + (point.y - start.y) * ny)) * 4 / 3;
-  if (!(reach > 0)) return null;
-  const span = (end.x - start.x) * tx + (end.y - start.y) * ty, lift = Math.abs(span) * .35, direction = Math.sign(span) || 1;
+  const span = (end.x - start.x) * tx + (end.y - start.y) * ty, lift = Math.abs(span) * .35, direction = Math.sign(span);
+  if (!(reach > 0) || Math.abs(span) < 1) return null;
   const c1 = { x: start.x + nx * reach - tx * direction * lift, y: start.y + ny * reach - ty * direction * lift };
   const c2 = { x: end.x + nx * reach + tx * direction * lift, y: end.y + ny * reach + ty * direction * lift };
   return `M ${start.x} ${start.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`;
 }
 
-export const pathFromRoute = (route, offsetX = 0, offsetY = 0) => (route.curved && arcPath(route.points, route.sourceSide, offsetX, offsetY)) || pathFromPoints(route.points, offsetX, offsetY);
+export const pathFromRoute = (route, offsetX = 0, offsetY = 0) => (route.curved && arcPath(route, offsetX, offsetY)) || pathFromPoints(route.points, offsetX, offsetY);
 
 function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const { graph, executions, scopes, pairs } = context;

@@ -27,8 +27,11 @@ export const REFINE_CANDIDATES = 2;
 export const REFINE_EVALUATIONS = 60;
 export const REFINE_TIME_SHARE = .4;
 // Candidates whose width/height ratio is within this factor of the accepted band rank equal on shape, so a crossing is never
-// traded for a slightly better aspect ratio; only a shape beyond it (a long strip) outranks the crossings.
+// traded for a slightly better aspect ratio; only a shape beyond it (a long strip) outranks the crossings, and only by a
+// whole SHAPE_STEP, so a strip does not take on crossings for a marginally better ratio.
 export const SHAPE_TIE = 1.3;
+export const SHAPE_STEP = .25;
+export const shapeRank = excess => excess <= SHAPE_TIE ? 1 : Math.ceil(excess / SHAPE_STEP) * SHAPE_STEP;
 const stable = items => [...items].sort((a, b) => (a.layout?.rank ?? 0) - (b.layout?.rank ?? 0) || (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 const round = value => +value.toFixed(3);
 const box = item => ({ ...item.position, ...item.size });
@@ -406,11 +409,10 @@ function candidateScore(graph, audit, index) {
   const bends = routes.reduce((sum, route) => sum + route.points.length - 2, 0);
   // Normalize by content, so a small routing improvement cannot justify unlimited whitespace.
   const cost = bounds.width * bounds.height / area + length / (count * unit) + .25 * bends / count + 4 * crossings / count;
-  // Shapes within the band's slack tie and compete on compactness; beyond it, the shape nearer the band wins first. The
-  // type's budget ratio only breaks ties towards its preferred orientation.
-  const excess = +aspectExcess(graph, audit.routes).toFixed(2), shape = excess <= SHAPE_TIE ? 1 : excess;
-  // Among shapes inside the band, fewer crossings come before compactness.
-  return [audit.errors.length, shape, crossings, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
+  // Shapes of one rank compete on crossings, then on the exact distance from the band (every in-band shape scores 1), then
+  // on compactness; a better rank wins first. The type's budget ratio only breaks ties towards its preferred orientation.
+  const excess = +aspectExcess(graph, audit.routes).toFixed(2);
+  return [audit.errors.length, shapeRank(excess), crossings, excess, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 

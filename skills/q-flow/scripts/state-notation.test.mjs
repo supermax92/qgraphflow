@@ -7,6 +7,7 @@ import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { stateActivities } from '../assets/viewer/src/diagrams/state.js';
 import { labelRunsByLine } from '../assets/viewer/src/text-layout.js';
+import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { graphLegend } from '../assets/viewer/src/legend.js';
 import { PALETTES, moduleColorMap } from '../assets/viewer/src/visual-style.js';
 
@@ -79,4 +80,18 @@ test('the state legend names states and transitions; other types keep the neutra
 
 test('the guard color is Radix amber step 11 in both themes', () => {
   assert.equal(PALETTES.light.guard, '#ab6400'); assert.equal(PALETTES.dark.guard, '#ffca16');
+});
+
+test('a self-transition keeps its polyline when its ends sit on two sides or on one point', () => {
+  const view = (kind, size, via) => ({ meta: { title: 'Loop', sourceRef: 'test', diagramType: 'state' },
+    nodes: [{ id: 's', label: 'S', kind, position: { x: 100, y: 200 }, size }],
+    edges: [{ id: 'loop', source: 's', target: 's', kind: 'transition', label: 'tick', evidence: 'test', route: { via } }] });
+  const moved = createEdgeRoutes(view('state', { width: 240, height: 80 }, [{ x: 300, y: 160 }, { x: 400, y: 160 }, { x: 400, y: 250 }])).get('loop');
+  assert.notEqual(moved.sourceSide, moved.targetSide);
+  assert.doesNotMatch(moved.path, / C /, 'a single arc on one side would cut through the state');
+  const choice = createEdgeRoutes(view('choice', { width: 120, height: 120 }, [{ x: 352, y: 236 }, { x: 352, y: 284 }])).get('loop');
+  assert.deepEqual(choice.points[0], choice.points.at(-1));
+  assert.doesNotMatch(choice.path, / C /, 'ends on one point would collapse the arc into a line');
+  const plain = createEdgeRoutes(view('state', { width: 240, height: 80 }, [{ x: 352, y: 224 }, { x: 384, y: 224 }, { x: 384, y: 256 }, { x: 352, y: 256 }])).get('loop');
+  assert.match(plain.path, /^M [\d.]+ [\d.]+ C /, 'an ordinary loop on one side is still an arc');
 });
