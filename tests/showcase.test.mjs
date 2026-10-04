@@ -52,12 +52,14 @@ test('Chinese ecommerce showcase covers all nine views with clean layouts', () =
     byType.architecture.nodes.length, byType.architecture.edges.length,
     byType.flowchart.nodes.length, byType.flowchart.edges.length,
     byType.sequence.nodes.length, byType.sequence.edges.length
-  ], [11, 10, 15, 15, 8, 14], 'The three core views retain the reviewed demo content.');
-  assert.ok(byType.sequence.groups?.some(group => group.kind === 'alt'), 'The sequence view retains its inventory alt fragment.');
+  ], [11, 10, 15, 15, 8, 13], 'The three core views retain the reviewed demo content.');
+  assert.ok(byType.sequence.groups?.some(group => group.kind === 'opt' && group.operands[0].edgeIds.length === 7), 'The sequence view wraps the post-reservation path in its inventory opt fragment.');
+  assert.ok(byType.sequence.edges.filter(edge => edge.kind === 'return').every(edge => edge.replyTo), 'Every return in the sequence view is paired with its call.');
+  assert.deepEqual(byType.sequence.executions.map(bar => bar.participantId), ['checkout', 'pricing', 'inventory', 'risk', 'payment', 'order'], 'Each called participant shows its activation bar.');
   assert.ok(byType.er.nodes.every(node => node.fields.every(field => typeof field.nullable === 'boolean')));
   assert.ok(byType.class.nodes.every(node => node.attributes?.length || node.methods?.length));
   assert.deepEqual(byType.sequence.edges.filter(edge => edge.kind === 'return').map(edge => [edge.source, edge.target]), [
-    ['pricing', 'checkout'], ['inventory', 'checkout'], ['inventory', 'checkout'], ['risk', 'checkout'],
+    ['pricing', 'checkout'], ['inventory', 'checkout'], ['risk', 'checkout'],
     ['payment', 'checkout'], ['order', 'checkout'], ['checkout', 'buyer']
   ]);
   assert.ok(byType.state.edges.some(edge => edge.guard) && byType.state.edges.some(edge => edge.action));

@@ -1303,17 +1303,17 @@
           "label": "Käufer",
           "module": "Kanäle",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 160,
-            "height": 1672
-          },
           "facts": [
             "Warenkorb senden und Bestell-ID erhalten."
-          ]
+          ],
+          "size": {
+            "width": 160,
+            "height": 1308
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "Transaktionssteuerung",
           "module": "Kaufabschluss",
           "kind": "service",
-          "position": {
-            "x": 722.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Preise, Bestand, Risiko, Zahlung und Bestellungen koordinieren."
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1308
+          },
+          "position": {
+            "x": 287.5,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "Preise und Rabatte",
           "module": "Preise",
           "kind": "participant",
-          "position": {
-            "x": 3091.5,
-            "y": 48
-          },
-          "size": {
-            "width": 225,
-            "height": 1672
-          },
           "facts": [
             "Unveränderlichen Preissnapshot erzeugen."
-          ]
+          ],
+          "size": {
+            "width": 225,
+            "height": 1308
+          },
+          "position": {
+            "x": 643.5,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "Bestandsreservierung",
           "module": "Bestand",
           "kind": "participant",
-          "position": {
-            "x": 1670,
-            "y": 48
-          },
-          "size": {
-            "width": 242,
-            "height": 1672
-          },
           "facts": [
             "SKUs reservieren und Token zurückgeben."
-          ]
+          ],
+          "size": {
+            "width": 242,
+            "height": 1308
+          },
+          "position": {
+            "x": 932.5,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "Transaktionsrisiko",
           "module": "Risiko",
           "kind": "participant",
-          "position": {
-            "x": 3564.5,
-            "y": 48
-          },
-          "size": {
-            "width": 221,
-            "height": 1672
-          },
           "facts": [
             "PASS, REVIEW oder REJECT zurückgeben."
-          ]
+          ],
+          "size": {
+            "width": 221,
+            "height": 1308
+          },
+          "position": {
+            "x": 1238.5,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "Zahlungsautorisierung",
           "module": "Zahlung",
           "kind": "external",
-          "position": {
-            "x": 2606.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Snapshot-Betrag autorisieren."
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1308
+          },
+          "position": {
+            "x": 1523.5,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "Bestellung und Outbox",
           "module": "Bestellungen",
           "kind": "database",
-          "position": {
-            "x": 2134,
-            "y": 48
-          },
-          "size": {
-            "width": 256,
-            "height": 1672
-          },
           "facts": [
             "Bestellung und Outbox atomar speichern."
-          ]
+          ],
+          "size": {
+            "width": 256,
+            "height": 1308
+          },
+          "position": {
+            "x": 1840.5,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "Auftragsabwicklung",
           "module": "Versand",
           "kind": "participant",
-          "position": {
-            "x": 1205.5,
-            "y": 48
-          },
-          "size": {
-            "width": 229,
-            "height": 1672
-          },
           "facts": [
             "OrderPaid asynchron verarbeiten."
-          ]
+          ],
+          "size": {
+            "width": 229,
+            "height": 1308
+          },
+          "position": {
+            "x": 2219,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "Bestandsergebnis",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 4289,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 209,
+            "y": 558
+          },
+          "size": {
+            "width": 2157,
+            "height": 652
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 306
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "Preise",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "Rückgabe: PriceSnapshot",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 372
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 438
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "Bestand",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "Rückgabe: reservationToken",
+            "Rückgabe: reservationToken | OUT_OF_STOCK",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "Bestand",
-          "order": 6,
-          "facts": [
-            "Rückgabe: OUT_OF_STOCK",
-            "Diese Nachricht steht für den Fehlbestandspfad."
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 528
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 720
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "Risiko",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "Rückgabe: PASS",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 786
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 852
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "Zahlung",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "Rückgabe: paymentConfirmed",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 918
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 1008
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "Bestellungen",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "Rückgabe: orderId",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1074
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1140
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "Bestell-ID zurückgeben",
+          "label": "Bestell-ID | OUT_OF_STOCK",
           "kind": "return",
           "module": "Kaufabschluss",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "Rückgabe: Bestell-ID zurückgeben",
+            "Rückgabe: Bestell-ID | OUT_OF_STOCK",
             "In nummerierter Reihenfolge lesen."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1294
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },

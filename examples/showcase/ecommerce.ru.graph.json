@@ -1303,17 +1303,17 @@
           "label": "Покупатель",
           "module": "Каналы",
           "kind": "actor",
-          "position": {
-            "x": 298,
-            "y": 48
-          },
-          "size": {
-            "width": 258,
-            "height": 1672
-          },
           "facts": [
             "Отправить корзину и получить ID заказа."
-          ]
+          ],
+          "size": {
+            "width": 258,
+            "height": 1404
+          },
+          "position": {
+            "x": 32,
+            "y": 48
+          }
         },
         {
           "id": "checkout",
@@ -1321,20 +1321,20 @@
           "subtitle": "Координация транзакции",
           "module": "Оформление",
           "kind": "service",
-          "position": {
-            "x": 925,
-            "y": 48
-          },
-          "size": {
-            "width": 426,
-            "height": 1672
-          },
           "facts": [
             "Координировать цены, запасы, риски, оплату и заказы."
           ],
           "tags": [
             "core"
-          ]
+          ],
+          "size": {
+            "width": 426,
+            "height": 1404
+          },
+          "position": {
+            "x": 354,
+            "y": 48
+          }
         },
         {
           "id": "pricing",
@@ -1342,17 +1342,17 @@
           "subtitle": "Цены и скидки",
           "module": "Цены",
           "kind": "participant",
-          "position": {
-            "x": 4566.5,
-            "y": 48
-          },
-          "size": {
-            "width": 253,
-            "height": 1672
-          },
           "facts": [
             "Создать неизменяемый снимок цены."
-          ]
+          ],
+          "size": {
+            "width": 253,
+            "height": 1404
+          },
+          "position": {
+            "x": 844,
+            "y": 48
+          }
         },
         {
           "id": "inventory",
@@ -1360,17 +1360,17 @@
           "subtitle": "Резерв запасов",
           "module": "Запасы",
           "kind": "participant",
-          "position": {
-            "x": 2420.5,
-            "y": 48
-          },
-          "size": {
-            "width": 279,
-            "height": 1672
-          },
           "facts": [
             "Зарезервировать SKU и вернуть токен."
-          ]
+          ],
+          "size": {
+            "width": 279,
+            "height": 1404
+          },
+          "position": {
+            "x": 1161,
+            "y": 48
+          }
         },
         {
           "id": "risk",
@@ -1378,17 +1378,17 @@
           "subtitle": "Риски сделки",
           "module": "Риски",
           "kind": "participant",
-          "position": {
-            "x": 5283,
-            "y": 48
-          },
-          "size": {
-            "width": 242,
-            "height": 1672
-          },
           "facts": [
             "Вернуть PASS, REVIEW или REJECT."
-          ]
+          ],
+          "size": {
+            "width": 242,
+            "height": 1404
+          },
+          "position": {
+            "x": 1504,
+            "y": 48
+          }
         },
         {
           "id": "payment",
@@ -1396,17 +1396,17 @@
           "subtitle": "Авторизация оплаты",
           "module": "Оплата",
           "kind": "external",
-          "position": {
-            "x": 3805.5,
-            "y": 48
-          },
-          "size": {
-            "width": 353,
-            "height": 1672
-          },
           "facts": [
             "Авторизовать сумму снимка."
-          ]
+          ],
+          "size": {
+            "width": 353,
+            "height": 1404
+          },
+          "position": {
+            "x": 1810,
+            "y": 48
+          }
         },
         {
           "id": "order",
@@ -1414,17 +1414,17 @@
           "subtitle": "Заказ и Outbox",
           "module": "Заказы",
           "kind": "database",
-          "position": {
-            "x": 3157.5,
-            "y": 48
-          },
-          "size": {
-            "width": 227,
-            "height": 1672
-          },
           "facts": [
             "Атомарно сохранить заказ и Outbox."
-          ]
+          ],
+          "size": {
+            "width": 227,
+            "height": 1404
+          },
+          "position": {
+            "x": 2227,
+            "y": 48
+          }
         },
         {
           "id": "fulfillment",
@@ -1432,46 +1432,47 @@
           "subtitle": "Комплектация и доставка",
           "module": "Доставка",
           "kind": "participant",
-          "position": {
-            "x": 1630.5,
-            "y": 48
-          },
-          "size": {
-            "width": 437,
-            "height": 1672
-          },
           "facts": [
             "Асинхронно обработать OrderPaid."
-          ]
+          ],
+          "size": {
+            "width": 437,
+            "height": 1404
+          },
+          "position": {
+            "x": 2518,
+            "y": 48
+          }
         }
       ],
       "groups": [
         {
           "id": "inventory-result",
           "label": "Результат запасов",
-          "kind": "alt",
-          "position": {
-            "x": 32,
-            "y": 508
-          },
-          "size": {
-            "width": 6268,
-            "height": 508
-          },
+          "kind": "opt",
           "operands": [
             {
+              "id": "reserved",
               "guard": "reservationToken",
               "edgeIds": [
-                "s5"
-              ]
-            },
-            {
-              "guard": "OUT_OF_STOCK",
-              "edgeIds": [
-                "s6"
+                "s7",
+                "s8",
+                "s9",
+                "s10",
+                "s11",
+                "s12",
+                "s13"
               ]
             }
-          ]
+          ],
+          "position": {
+            "x": 252,
+            "y": 582
+          },
+          "size": {
+            "width": 2517,
+            "height": 724
+          }
         }
       ],
       "edges": [
@@ -1489,7 +1490,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 262
+            "messageY": 216
           }
         },
         {
@@ -1506,7 +1507,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 334
+            "messageY": 306
           }
         },
         {
@@ -1517,13 +1518,14 @@
           "kind": "return",
           "module": "Цены",
           "order": 3,
+          "replyTo": "s2",
           "facts": [
             "Возврат: PriceSnapshot",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 406
+            "messageY": 372
           }
         },
         {
@@ -1540,41 +1542,25 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 478
+            "messageY": 462
           }
         },
         {
           "id": "s5",
           "source": "inventory",
           "target": "checkout",
-          "label": "reservationToken",
+          "label": "reservationToken | OUT_OF_STOCK",
           "kind": "return",
           "module": "Запасы",
           "order": 5,
+          "replyTo": "s4",
           "facts": [
-            "Возврат: reservationToken",
+            "Возврат: reservationToken | OUT_OF_STOCK",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 670
-          }
-        },
-        {
-          "id": "s6",
-          "source": "inventory",
-          "target": "checkout",
-          "label": "OUT_OF_STOCK",
-          "kind": "return",
-          "module": "Запасы",
-          "order": 6,
-          "facts": [
-            "Возврат: OUT_OF_STOCK",
-            "Сообщение обозначает ветку нехватки запасов."
-          ],
-          "evidence": "inference",
-          "route": {
-            "messageY": 866
+            "messageY": 552
           }
         },
         {
@@ -1591,7 +1577,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1122
+            "messageY": 768
           }
         },
         {
@@ -1602,13 +1588,14 @@
           "kind": "return",
           "module": "Риски",
           "order": 8,
+          "replyTo": "s7",
           "facts": [
             "Возврат: PASS",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1194
+            "messageY": 834
           }
         },
         {
@@ -1625,7 +1612,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1266
+            "messageY": 924
           }
         },
         {
@@ -1636,13 +1623,14 @@
           "kind": "return",
           "module": "Оплата",
           "order": 10,
+          "replyTo": "s9",
           "facts": [
             "Возврат: paymentConfirmed",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1338
+            "messageY": 990
           }
         },
         {
@@ -1659,7 +1647,7 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1410
+            "messageY": 1080
           }
         },
         {
@@ -1670,13 +1658,14 @@
           "kind": "return",
           "module": "Заказы",
           "order": 12,
+          "replyTo": "s11",
           "facts": [
             "Возврат: orderId",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1482
+            "messageY": 1146
           }
         },
         {
@@ -1693,29 +1682,104 @@
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1554
+            "messageY": 1236
           }
         },
         {
           "id": "s14",
           "source": "checkout",
           "target": "buyer",
-          "label": "Вернуть ID заказа",
+          "label": "ID заказа | OUT_OF_STOCK",
           "kind": "return",
           "module": "Оформление",
           "order": 14,
+          "replyTo": "s1",
           "facts": [
-            "Возврат: Вернуть ID заказа",
+            "Возврат: ID заказа | OUT_OF_STOCK",
             "Читать по номерам."
           ],
           "evidence": "inference",
           "route": {
-            "messageY": 1626
+            "messageY": 1390
+          }
+        }
+      ],
+      "executions": [
+        {
+          "id": "x-checkout",
+          "participantId": "checkout",
+          "start": {
+            "edgeId": "s1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s14",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-pricing",
+          "participantId": "pricing",
+          "start": {
+            "edgeId": "s2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-inventory",
+          "participantId": "inventory",
+          "start": {
+            "edgeId": "s4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-risk",
+          "participantId": "risk",
+          "start": {
+            "edgeId": "s7",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s8",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-payment",
+          "participantId": "payment",
+          "start": {
+            "edgeId": "s9",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s10",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x-order",
+          "participantId": "order",
+          "start": {
+            "edgeId": "s11",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "s12",
+            "at": "send"
           }
         }
       ],
       "layout": {
-        "version": "strict-v1-elkjs-0.11.0",
+        "version": "adaptive-v2-elkjs-0.11.0",
         "strategy": "sequence-0"
       }
     },
