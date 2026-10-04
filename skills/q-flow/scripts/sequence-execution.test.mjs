@@ -182,6 +182,17 @@ test('two answered calls to one callee that interleave are not asked for bars no
   assert.equal(validateGraphInput(graph, { inputOnly: true }).length, 2, 'nested calls are asked for both bars');
 });
 
+test('messages without route.messageY (or without a route) are stacked by order and the quality gate names the gap', () => {
+  for (const strip of [edge => { delete edge.route; }, edge => { edge.route = {}; }]) {
+    const graph = fixture(); graph.edges.forEach(strip);
+    const routes = createEdgeRoutes(graph);   // used to throw "Cannot read properties of undefined (reading 'messageY')"
+    const ys = [...graph.edges].sort((a, b) => a.order - b.order).map(edge => routes.get(edge.id).points[0].y);
+    assert.ok(ys.every(Number.isFinite), 'every message gets a finite position');
+    assert.ok(ys.every((y, i) => !i || y > ys[i - 1]), 'in message order');
+    assert.match(validateGraph(graph).join('\n'), /route\.messageY is required for a positioned sequence message/);
+  }
+});
+
 test('pair numbers follow message order even when call ids sort differently as strings', () => {
   const graph = { meta: { title: 'Pairs', sourceRef: 'test', diagramType: 'sequence' },
     nodes: [{ id: 'a', label: 'A', kind: 'actor' }, { id: 'b', label: 'B', kind: 'service' }],

@@ -18,7 +18,10 @@ export function sequenceMessageLabel(graph, edge, pairs = sequencePairs(graph), 
   return pair ? `${pair.label} · ${edge.label ?? ''}` : parallel ? edge.label ?? '' : `${String(edge.order).padStart(2, '0')} · ${edge.label ?? ''}`;
 }
 
-export const sequenceEndpointY = (edge, at) => edge.route.messageY + (at === 'receive' && edge.source === edge.target ? 30 : 0);
+// Hand-edited or legacy data may lack route.messageY, or the whole route. Such a message is stacked by order below the
+// default headers so the page still opens; the layout check reports the missing coordinate and --layout auto writes it.
+const FALLBACK_TOP = 140, FALLBACK_STEP = 54;
+export const sequenceEndpointY = (edge, at) => (edge.route?.messageY ?? FALLBACK_TOP + edge.order * FALLBACK_STEP) + (at === 'receive' && edge.source === edge.target ? 30 : 0);
 
 export function validateExecutions(graph, { inputOnly = false } = {}) {
   const errors = [], edges = new Map(graph.edges.map(edge => [edge.id, edge]));
