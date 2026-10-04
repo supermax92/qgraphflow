@@ -77,7 +77,7 @@ export default {
   edgeLabel: edge => labelParts(edge).map(part => part.text).join(' '),
   edgeLabelParts: labelParts,
   labelRoleColors: { trigger: 'ink', guard: 'guard' },
-  legend: { neutral: 'State', core: 'Core state', solid: 'Transition' },
+  legend: { neutral: 'State', core: 'Core state', goal: 'Core state', ended: 'Ended state', failed: 'Failed state', flight: 'In-progress state: warm to cool as it advances', solid: 'Transition' },
   validateNode(node, label, errors) {
     for (const key of STATE_ACTIONS) {
       if (node?.[key] === undefined) continue;

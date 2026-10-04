@@ -7,6 +7,7 @@ import { sequenceExecutions } from '../sequence-executions.js';
 import { qualityFailure } from '../layout-quality.js';
 import { groupHeadingLayout } from '../text-layout.js';
 import { pageWithGraph } from '../session-graph.js';
+import { copyColors } from '../visual-style.js';
 
 function fileStem(title) {
   return title.trim().replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '') || 'diagram';
@@ -226,7 +227,7 @@ function downloadPng(svg, name) {
 
 export async function downloadDiagram(graph, theme, format, setStatus, moduleColors) {
     graph = structuredClone(graph);
-    moduleColors = moduleColors && new Map(moduleColors);
+    moduleColors = moduleColors && copyColors(moduleColors);
     const t = (message, values) => translate(graph.meta.locale, message, values);
     try {
       setStatus(t('Generating {format}…', { format: format.toUpperCase() }));

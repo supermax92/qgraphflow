@@ -76,8 +76,10 @@ test('label runs follow the wrapped lines and give up when the lines do not spel
 test('the state legend names states and transitions; other types keep the neutral wording', () => {
   const graph = machine(), palette = PALETTES.light, labels = view => graphLegend(view, palette, moduleColorMap([view], palette)).map(entry => entry.label);
   const state = labels(graph);
-  for (const expected of ['State', 'Core state', 'Transition', 'Initial state', 'Final state', 'Self-transition: handled without leaving the state']) assert.ok(state.includes(expected), expected);
+  for (const expected of ['In-progress state: warm to cool as it advances', 'Core state', 'Transition', 'Initial state', 'Final state', 'Self-transition: handled without leaving the state']) assert.ok(state.includes(expected), expected);
   assert.ok(!state.includes('Components / actors') && !state.includes('Solid relation'));
+  const plain = structuredClone(graph); plain.nodes.find(node => node.id === 'busy').tags = [];
+  assert.ok(labels(plain).includes('State') && !labels(plain).includes('Core state'), 'without a core state the states keep their module colors and the neutral legend');
   const flow = { meta: { ...graph.meta, diagramType: 'flowchart' }, nodes: [{ id: 'a', label: 'A', kind: 'process' }, { id: 'b', label: 'B', kind: 'process' }], edges: [{ id: 'e', source: 'a', target: 'b', kind: 'flow', evidence: 'test' }] };
   assert.deepEqual(labels(flow).filter(label => /State|Transition/.test(label)), []);
   assert.ok(labels(flow).includes('Components / actors') && labels(flow).includes('Solid relation'));
