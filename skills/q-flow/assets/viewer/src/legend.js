@@ -2,15 +2,21 @@ import { translate } from './i18n.js';
 import { getDiagram, isDashed } from './diagrams/registry.js';
 import { nodeAppearance } from './visual-style.js';
 
+// In-flight states each wear their own tone, so they share one legend entry that shows the ramp in the order it is walked.
+export const rampGradient = colors => `linear-gradient(90deg, ${colors.map((color, index) => `${color} ${index / colors.length * 100}% ${(index + 1) / colors.length * 100}%`).join(', ')})`;
+
 export function graphLegend(graph, palette, moduleColors) {
   const definition = getDiagram(graph.meta.diagramType);
   const entries = new Map();
+  const ramp = new Map();
   for (const node of graph.nodes) {
     const appearance = nodeAppearance(node, palette, moduleColors);
-    const shape = node.kind === 'actor' ? 'actor' : ['initial', 'final'].includes(node.kind) ? node.kind : definition.compartments ? 'compartment' : 'box';
+    const shape = appearance.role === 'flight' ? 'ramp' : node.kind === 'actor' ? 'actor' : ['initial', 'final'].includes(node.kind) ? node.kind : definition.compartments ? 'compartment' : 'box';
     const id = `${appearance.role}-${shape}`;
+    if (shape === 'ramp') ramp.set(appearance.toneIndex, appearance.stroke);
     entries.set(id, { id, ...appearance, label: definition.legend?.[appearance.role] ?? appearance.label, shape });
   }
+  if (ramp.size) entries.get('flight-ramp').ramp = [...new Set([...ramp].sort(([a], [b]) => a - b).map(([, stroke]) => stroke))];
   for (const module of [...new Set([...graph.nodes.map(node => node.module), ...graph.edges.map(edge => edge.module)].filter(Boolean))].sort()) {
     const tone = moduleColors?.get(module);
     if (tone) entries.set(`module-${module}`, { id: `module-${module}`, role: 'module', label: module, shape: 'module', fill: tone.chip, stroke: tone.accent });

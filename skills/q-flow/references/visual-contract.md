@@ -29,7 +29,7 @@ Composition and colour contract for Viewer development and audits. The authoring
 | ER | Module-washed headers inside a module frame, neutral field rows, readable PK/FK/UK text; FK is a reference, not a warning. |
 | Deployment | Module chips and frames on components inside neutral boundaries; do not infer environment or trust from a color. |
 | Class | Module-washed headers inside a module frame, neutral members; retain relationship symbols. |
-| State | Pale state bodies, optional entry/do/exit compartment, arc self-transitions and open-arrow transitions; trigger, amber `[guard]` and muted `/ action` stay distinguishable; ink initial dot and final ring, no success inferred from them. |
+| State | Lifecycle-toned state bodies (the `core` state green, a dead end slate, a `failure`-tagged state red, the rest warm to cool by distance from the initial state, lines keep the module color), optional entry/do/exit compartment, arc self-transitions and open-arrow transitions; trigger, amber `[guard]` and muted `/ action` stay distinguishable; ink initial dot and final ring, no success inferred from them. |
 | Use case | Evidenced capability domains share a frame color; the system boundary is a neutral hairline container. |
 | Data flow | Evidenced domain identity on processes and stores; preserve named data flows and directions. |
 

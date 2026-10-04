@@ -156,6 +156,10 @@
     "inheritance": "继承",
     "implementation": "实现",
     "Core state": "核心状态",
+    "Ended state": "终结状态",
+    "Failed state": "失败状态",
+    "In-progress state": "进行中状态",
+    "In-progress state: warm to cool as it advances": "进行中状态：由暖到冷表示推进顺序",
     "Transition": "转移",
     "Self-transition: handled without leaving the state": "自转移：留在原状态内处理的事件"
   },
@@ -316,6 +320,10 @@
     "inheritance": "継承",
     "implementation": "実装",
     "Core state": "主要な状態",
+    "Ended state": "終了した状態",
+    "Failed state": "失敗した状態",
+    "In-progress state": "進行中の状態",
+    "In-progress state: warm to cool as it advances": "進行中の状態：進むにつれて暖色から寒色へ",
     "Transition": "遷移",
     "Self-transition: handled without leaving the state": "自己遷移：状態を離れずに処理するイベント"
   },
@@ -476,6 +484,10 @@
     "inheritance": "상속",
     "implementation": "구현",
     "Core state": "핵심 상태",
+    "Ended state": "종료된 상태",
+    "Failed state": "실패한 상태",
+    "In-progress state": "진행 중인 상태",
+    "In-progress state: warm to cool as it advances": "진행 중인 상태: 진행될수록 따뜻한 색에서 차가운 색으로",
     "Transition": "전이",
     "Self-transition: handled without leaving the state": "자기 전이: 상태를 벗어나지 않고 처리하는 이벤트"
   },
@@ -636,6 +648,10 @@
     "inheritance": "Vererbung",
     "implementation": "Implementierung",
     "Core state": "Kernzustand",
+    "Ended state": "Beendeter Zustand",
+    "Failed state": "Fehlgeschlagener Zustand",
+    "In-progress state": "Zustand in Bearbeitung",
+    "In-progress state: warm to cool as it advances": "Zustand in Bearbeitung: von warm nach kalt, je weiter er fortschreitet",
     "Transition": "Übergang",
     "Self-transition: handled without leaving the state": "Selbstübergang: Ereignis, das im Zustand bleibt"
   },
@@ -796,6 +812,10 @@
     "inheritance": "héritage",
     "implementation": "implémentation",
     "Core state": "État central",
+    "Ended state": "État terminé",
+    "Failed state": "État en échec",
+    "In-progress state": "État en cours",
+    "In-progress state: warm to cool as it advances": "État en cours : du chaud au froid à mesure qu’il avance",
     "Transition": "Transition",
     "Self-transition: handled without leaving the state": "Auto-transition : événement traité sans quitter l’état"
   },
@@ -956,6 +976,10 @@
     "inheritance": "herencia",
     "implementation": "implementación",
     "Core state": "Estado principal",
+    "Ended state": "Estado finalizado",
+    "Failed state": "Estado fallido",
+    "In-progress state": "Estado en curso",
+    "In-progress state: warm to cool as it advances": "Estado en curso: de cálido a frío a medida que avanza",
     "Transition": "Transición",
     "Self-transition: handled without leaving the state": "Autotransición: evento atendido sin salir del estado"
   },
@@ -1116,6 +1140,10 @@
     "inheritance": "наследование",
     "implementation": "реализация",
     "Core state": "Ключевое состояние",
+    "Ended state": "Завершённое состояние",
+    "Failed state": "Состояние сбоя",
+    "In-progress state": "Состояние в процессе",
+    "In-progress state: warm to cool as it advances": "Состояние в процессе: от тёплого цвета к холодному по мере продвижения",
     "Transition": "Переход",
     "Self-transition: handled without leaving the state": "Петля: событие обрабатывается без выхода из состояния"
   },
@@ -1276,6 +1304,10 @@
     "inheritance": "herança",
     "implementation": "implementação",
     "Core state": "Estado central",
+    "Ended state": "Estado encerrado",
+    "Failed state": "Estado com falha",
+    "In-progress state": "Estado em andamento",
+    "In-progress state: warm to cool as it advances": "Estado em andamento: do quente ao frio conforme avança",
     "Transition": "Transição",
     "Self-transition: handled without leaving the state": "Autotransição: evento tratado sem sair do estado"
   }

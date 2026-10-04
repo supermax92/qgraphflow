@@ -356,6 +356,7 @@ button:disabled { cursor: not-allowed; }
 .legend i:is(.legend-solid, .legend-dashed) { width: 18px; height: 0; border: 0; border-top: 1px solid; border-radius: 0; }
 .legend i.legend-dashed { border-top-style: dashed; }
 .legend i.legend-module { width: 10px; height: 10px; border-radius: 50%; }
+.legend i.legend-ramp { width: 28px; height: 10px; border-width: 0; }
 
 @keyframes edge-flow { to { stroke-dashoffset: -20px; } }
 @keyframes sequence-edge-flow { from { stroke-dashoffset: 0px; } to { stroke-dashoffset: calc(-10 * var(--sequence-flow-unit, 1px)); } }

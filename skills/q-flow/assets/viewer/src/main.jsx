@@ -5,7 +5,7 @@ import '@xyflow/react/dist/style.css';
 import './styles.css';
 import ViewerShell from './ViewerShell.jsx';
 import { DIAGRAM_TYPES, diagramTypeOf } from './diagrams/registry.js';
-import { moduleColorMap, PALETTES, themeVariables } from './visual-style.js';
+import { moduleColorMap, PALETTES, themeVariables, withoutWash } from './visual-style.js';
 import { usePanels } from './features/usePanels.js';
 import { graphInputWithEdits } from './session-graph.js';
 import { DEFAULT_LOCALE } from './i18n.js';
@@ -41,13 +41,12 @@ function Viewer() {
     setActiveType(type);
   };
   const graphForSave = currentGraph => graphInputWithEdits(input, drafts.current, currentGraph);
-  // Card wash is on by default and for every page: the module chip and frame stay, the faint surface tint can be switched
-  // off for the current session only.
+  // Card wash is on by default and for every page: the module chip and frame stay, the faint surface tint (and the fill
+  // of a state's lifecycle tone) can be switched off for the current session only.
   const [wash, setWash] = useState(true);
   const moduleColors = useMemo(() => {
     const colors = moduleColorMap(diagrams, PALETTES[theme]);
-    if (!wash) for (const [name, tone] of colors) colors.set(name, { ...tone, wash: PALETTES[theme].card, header: PALETTES[theme].surface2 });
-    return colors;
+    return wash ? colors : withoutWash(colors, PALETTES[theme]);
   }, [theme, wash]);
   useEffect(() => { document.documentElement.lang = graph.meta.locale ?? DEFAULT_LOCALE; }, [graph.meta.locale]);
   useEffect(() => { document.title = `${graph.meta.title} · QGraphFlow`; }, [graph.meta.title]);
