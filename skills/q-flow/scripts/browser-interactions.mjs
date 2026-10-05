@@ -1904,9 +1904,6 @@ async function flowContrastChecks(browser, url, graph) {
       await page.goto(url); await chooseGraph(page, graph, false);
       await theme(page, colorTheme);
       const selected = target(graph); await searchSelect(page, graph, selected);
-      await openLegend(page); const motion = page.getByRole('switch', { name: '连线流动', exact: true });
-      if (await motion.count()) await motion.click();
-      await dismiss(page);
       if (graph.meta.diagramType === 'sequence') { await hidePanels(page); await fit(page); }
       await page.waitForTimeout(800);
       const stable = await geometry(page), sequence = getDiagram(graph.meta.diagramType).sequence;
@@ -2077,13 +2074,11 @@ async function flowChecks(browser, url, graph) {
         else assert.equal(after[i], before[i], 'The dashed stroke stays still with flow disabled or reduced motion.');
       }
     };
-    assert.equal(await count(page, '.edge-flow'), 0, 'Edge motion starts off: a resting dash would read as the dashed notation.');
+    assert.equal(await count(page, '.edge-flow'), directed.length, 'Edge motion starts on.');
     assert.equal(await count(page, '.capsule,.playback-controls,.playback-outline,.diagram-node.is-current,.diagram-node.is-complete'), 0);
     assert.equal(await page.getByRole('button', { name: /^(播放|暂停|← 上一步|下一步 →)$/ }).count(), 0);
     await searchSelect(page, graph, target(graph));
     if (directed.length) {
-      await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click(); await dismiss(page);
-      assert.equal(await count(page, '.edge-flow'), directed.length);
       await assertDashMotion(true);
       const flow = page.locator('.edge-flow').first();
       const before = await flow.evaluate(element => getComputedStyle(element).strokeDashoffset);
@@ -2092,12 +2087,11 @@ async function flowChecks(browser, url, graph) {
       await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click(); await dismiss(page);
       assert.equal(await count(page, '.edge-flow'), 0, 'Stopping flow removes the overlay instead of freezing it.');
       await assertDashMotion(false);
-      await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click(); await dismiss(page);
       await openMore(page); await menuItem(page, '重置').click();
-      assert.equal(await count(page, '.edge-flow'), 0, 'Reset returns edge motion to its default, off.');
-      await assertDashMotion(false);
+      await page.waitForFunction(n => document.querySelectorAll('.edge-flow').length === n, directed.length, { timeout: 3000 }).catch(() => {});
+      assert.equal(await count(page, '.edge-flow'), directed.length, 'Reset returns edge motion to its default, on.');
+      await assertDashMotion(true);
       if (graph.meta.diagramType === 'sequence') {
-        await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click(); await dismiss(page);
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForFunction(() => !document.querySelector('.edge-flow')); await assertDashMotion(false);
         await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -2227,7 +2221,6 @@ async function sequenceReadingChecks(browser, url, graph) {
       await nodeElement(page,graph.nodes[0].id).focus(); await page.keyboard.press('Enter'); if(mobile(page)) await hidePanels(page);
       const preferenceSelection = await page.locator('.diagram-node.is-selected').evaluate(el=>el.closest('[data-id]').dataset.id), preferencePanels = await panelState(page);
       await page.emulateMedia({reducedMotion:'no-preference'});
-      await openLegend(page);await page.getByRole('switch',{name:'连线流动',exact:true}).click();await dismiss(page);
       await page.waitForFunction(()=>document.querySelectorAll('.sequence-edge-flow').length>0);
       await openLegend(page);const toggle=page.getByRole('switch',{name:'连线流动',exact:true});
       const state=await page.locator('.react-flow__viewport').getAttribute('style');
@@ -2358,8 +2351,7 @@ async function fileUrlSequenceCheck(browser, graph) {
     }
     await openLegend(page); const flow = page.getByRole('switch', { name: '连线流动', exact: true });
     if (await flow.count()) {
-      await flow.click(); assert.ok(await count(page, '.edge-flow') > 0, 'The file page draws sequence overlays when flow is on.');
-      await flow.click(); assert.equal(await count(page, '.edge-flow'), 0, 'The file page removes sequence overlays when flow is off.');
+      await flow.click(); assert.equal(await count(page, '.edge-flow'), 0, 'The file page removes sequence overlays when flow is off.'); await flow.click();
     }
     await dismiss(page); await assertFlow(page);
     assert.deepEqual(external, [], 'The copied file page makes no external requests.'); assert.deepEqual(failed, [], 'The copied file page has no failed requests.');

@@ -34,7 +34,7 @@ export function useViewerController(graph, theme, panels, moduleColors, original
   };
   const saveGraph = () => saveGraphJson(graphForSave(layout.currentGraph), graph.meta.locale, setStatus);
   const reset = () => {
-    layout.resetLayout(); selection.resetSelection(); setFlowEnabled(false);
+    layout.resetLayout(); selection.resetSelection(); setFlowEnabled(true);
     setStatus('Reset: original positions and reading view restored');
   };
   return { ...layout, ...selection, ...presentation, ...panels, ...fullscreen,
