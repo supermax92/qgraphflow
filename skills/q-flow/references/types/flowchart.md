@@ -14,6 +14,7 @@ The steps and decisions of one function, use case or job, top to bottom. Read wi
 - The main path must read downward. When the happy path is not obvious from the edges, list it in `layout.primaryPath` (node ids in order, each pair joined by a directed edge). Feedback / retry edges are allowed and route around the outside.
 - `module` per step is the subsystem whose work the step performs: a call into inventory is inventory's work, a payment check is payment's, a pure control decision keeps the owning component, `start` / `end` take the caller. A flow that really lives inside one subsystem keeps one module; `module.single-tone` only asks you to check.
 - A `process`, `input`, `output` or `subprocess` has exactly one outgoing edge; only a `decision` branches (`flowchart.process-branch`).
+- Edge `site`: the call that runs a step, or the condition line of a `yes` / `no` branch.
 - Anchor each step to the lines that implement it. Keep 8–14 nodes; merge trivial assignments into the step that owns them.
 
 ## Minimal valid skeleton
@@ -31,11 +32,11 @@ The steps and decisions of one function, use case or job, top to bottom. Read wi
     { "id": "failed", "label": "throw 402", "kind": "end", "module": "orders" }
   ],
   "edges": [
-    { "id": "f1", "source": "start", "target": "reserve", "kind": "flow", "evidence": "source" },
-    { "id": "f2", "source": "reserve", "target": "ok", "kind": "flow", "evidence": "source" },
-    { "id": "f3", "source": "ok", "target": "persist", "kind": "yes", "label": "yes", "evidence": "source" },
-    { "id": "f4", "source": "ok", "target": "failed", "kind": "no", "label": "no", "evidence": "source" },
-    { "id": "f5", "source": "persist", "target": "done", "kind": "success", "evidence": "source" }
+    { "id": "f1", "source": "start", "target": "reserve", "kind": "flow", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 17, "symbol": "reserve" } },
+    { "id": "f2", "source": "reserve", "target": "ok", "kind": "flow", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 25, "symbol": "ok" } },
+    { "id": "f3", "source": "ok", "target": "persist", "kind": "yes", "label": "yes", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 32, "symbol": "persist" } },
+    { "id": "f4", "source": "ok", "target": "failed", "kind": "no", "label": "no", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 27, "symbol": "failed" } },
+    { "id": "f5", "source": "persist", "target": "done", "kind": "success", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 34, "symbol": "done" } }
   ]
 }
 ```

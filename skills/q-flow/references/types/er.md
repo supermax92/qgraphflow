@@ -11,6 +11,7 @@ Tables (entities), their columns and keys, and the relationships with cardinalit
 - Every entity has a non-empty `fields` array; each field `{ "name", "type", "key"?: "PK" | "FK" | "UK", "nullable"?: boolean }` copied from the DDL / mapping (types verbatim, `nullable: true` only when the column allows NULL). List every column of the table you show; do not invent columns, do not infer foreign keys that the schema does not declare.
 - A relationship needs both `sourceCardinality` and `targetCardinality`, each one of `1`, `0..1`, `*`, `1..*`, `0..*`. Source is the referenced (parent) side, target the referencing side: `customers (1) → orders (0..*)`. A UNIQUE foreign key gives `1 → 0..1`. Label with the verb in the locale's language (`places`, `contains`).
 - Anchor each entity to its `CREATE TABLE` (or ORM class) with `source.kind: "schema"`. Keep 4–8 entities per view; large schemas become several views by aggregate.
+- Edge `site`: the foreign-key constraint or mapping annotation; `symbol` is the referenced table.
 
 ## Minimal valid skeleton
 
@@ -24,7 +25,7 @@ Tables (entities), their columns and keys, and the relationships with cardinalit
       "fields": [{ "name": "id", "type": "VARCHAR(32)", "key": "PK", "nullable": false }, { "name": "customer_id", "type": "BIGINT", "key": "FK", "nullable": false }, { "name": "status", "type": "VARCHAR(16)", "nullable": false }] }
   ],
   "edges": [
-    { "id": "r1", "source": "customers", "target": "orders", "kind": "relationship", "label": "places", "sourceCardinality": "1", "targetCardinality": "0..*", "evidence": "schema" }
+    { "id": "r1", "source": "customers", "target": "orders", "kind": "relationship", "label": "places", "sourceCardinality": "1", "targetCardinality": "0..*", "evidence": "schema", "site": { "file": "db/schema.sql", "lineStart": 11, "symbol": "customers" } }
   ]
 }
 ```

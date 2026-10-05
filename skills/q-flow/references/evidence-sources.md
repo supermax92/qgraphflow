@@ -21,7 +21,7 @@ The intended implementation is [`colbymchenry/codegraph`](https://github.com/col
 ## Fallback order
 
 1. Use `rg --files`, then narrow `rg` searches to declarations, entry points, callers, implementations, configuration keys, and tests.
-2. Read the complete relevant source path and preserve file, line, and symbol anchors.
+2. Read the complete relevant source path and preserve file, line, and symbol anchors, including the line behind each call, write or key that links two components.
 3. Check build models, packaged artifacts, focused tests, and runtime configuration when they change the conclusion.
 4. Use framework documentation only for behavior owned by the framework; label it `framework` rather than repository source.
 5. Mark non-critical unresolved links as `inference`. Omit unresolved links on the claimed main path.

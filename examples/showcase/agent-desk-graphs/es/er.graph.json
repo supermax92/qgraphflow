@@ -246,6 +246,11 @@
       "target": "messages",
       "kind": "relationship",
       "evidence": "schema",
+      "site": {
+        "file": "db/schema.sql",
+        "lineStart": 12,
+        "symbol": "sessions"
+      },
       "label": "contiene",
       "sourceCardinality": "1",
       "targetCardinality": "0..*"
@@ -256,6 +261,11 @@
       "target": "tool_calls",
       "kind": "relationship",
       "evidence": "schema",
+      "site": {
+        "file": "db/schema.sql",
+        "lineStart": 28,
+        "symbol": "messages"
+      },
       "label": "dispara",
       "sourceCardinality": "1",
       "targetCardinality": "0..*"
@@ -266,6 +276,11 @@
       "target": "tool_calls",
       "kind": "relationship",
       "evidence": "schema",
+      "site": {
+        "file": "db/schema.sql",
+        "lineStart": 29,
+        "symbol": "orders"
+      },
       "label": "afecta a",
       "sourceCardinality": "0..1",
       "targetCardinality": "0..*"
@@ -276,6 +291,11 @@
       "target": "refunds",
       "kind": "relationship",
       "evidence": "schema",
+      "site": {
+        "file": "db/schema.sql",
+        "lineStart": 39,
+        "symbol": "orders"
+      },
       "label": "reembolsa",
       "sourceCardinality": "1",
       "targetCardinality": "0..1"

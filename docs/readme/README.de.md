@@ -20,7 +20,7 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 
 QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen, Konfiguration und Anforderungen. Beziehungen bleiben überprüfbar; das Ergebnis lässt sich als Offline-HTML teilen.
 
-**Was es auszeichnet:** neun Diagrammarten in einem Skill, eine Quelle für jede Beziehung, automatisches Layout, Bearbeiten direkt auf der Seite und keine Netzwerkanfragen von den Plugin-Skripten oder dem Viewer selbst.
+**Was es auszeichnet:** neun Diagrammarten in einem Skill, eine Belegart für jede Beziehung und die Quellzeile hinter jeder durch Code gestützten, automatisches Layout, Bearbeiten direkt auf der Seite und keine Netzwerkanfragen von den Plugin-Skripten oder dem Viewer selbst.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -183,7 +183,7 @@ Der vorgebaute Viewer benötigt weder zusätzliche Abhängigkeiten noch API-Schl
 
 ## Diagramme mit dem Code synchron halten
 
-Ein mit Repository-Wurzel erzeugtes Diagramm hält fest, wo jede Komponente definiert ist. Die Prüfung mit `--repo-root` schlägt fehl, wenn eine erfasste Datei fehlt, ein Zeilenbereich nicht mehr in die Datei passt oder ein erfasstes Symbol seine Zeilen verlassen hat; die Meldung nennt die Zeilen, in denen das Symbol jetzt steht. Diesen Job in die CI aufnehmen; er braucht keinen Build, keine Anmeldung und kein Token:
+Ein mit Repository-Wurzel erzeugtes Diagramm hält fest, wo jede Komponente definiert ist, und die Zeile hinter jeder durch Code gestützten Beziehung (ein Aufruf, ein Fremdschlüssel). Die Prüfung mit `--repo-root` schlägt fehl, wenn eine erfasste Datei fehlt, ein Zeilenbereich nicht mehr in die Datei passt oder ein erfasstes Symbol seine Zeilen verlassen hat; die Meldung nennt die Zeilen, in denen das Symbol jetzt steht. Diesen Job in die CI aufnehmen; er braucht keinen Build, keine Anmeldung und kein Token:
 
 ```yaml
 name: Diagrams

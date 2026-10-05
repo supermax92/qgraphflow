@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { auditGraphLayout, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { canvasBudgetFor, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 import { ASPECT_BAND, ASPECT_SLACK, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
-import { graphsOf, overviewWarnings, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
+import { graphsOf, needsSite, overviewWarnings, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
 import { callsMissingExecutions } from '../assets/viewer/src/sequence-executions.js';
@@ -16,7 +16,7 @@ export { graphsOf, reviewComposition, validateGraph, validateGraphInput } from '
 
 const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
   --input-only          check semantics only (no geometry); use before generating
-  --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
+  --repo-root <dir>     verify every node source and edge site (file, line range, symbol) against this working tree
   --fix                 repair mechanical errors in place (sequence order numbering, opt/loop/par operand ids,
                         unambiguous replyTo, the callee activation bar of each answered sync call; with --repo-root,
                         anchor line re-anchoring to a symbol found once in its file); prints each change; writes back
@@ -158,24 +158,24 @@ export function fixGraphFile(inputPath, { repoRoot, ...options } = {}) {
   return { changes, blocked, errors: [], written };
 }
 
-// Re-anchors a drifted node whose symbol occurs exactly once in its file; the range moves with it and keeps its span.
+// Re-anchors a drifted node source or edge site whose symbol occurs exactly once in its file; the range moves with it and keeps its span.
 // Several matches need a judgement about which one is the definition, so they are only reported.
 export function applyAnchorFixes(input, repoRoot) {
   const changes = [], blocked = [], { read } = sourceReader(repoRoot);
   for (const [index, graph] of graphsOf(input).entries()) {
     const prefix = Object.hasOwn(input, 'diagrams') ? `diagrams[${index}].` : '';
-    for (const node of Array.isArray(graph?.nodes) ? graph.nodes : []) {
-      const source = node?.source;
-      if (typeof source?.symbol !== 'string' || !Number.isInteger(source.lineStart)) continue;
+    for (const [kind, key, items] of [['node', 'source', graph?.nodes], ['edge', 'site', graph?.edges]]) for (const item of Array.isArray(items) ? items : []) {
+      const anchor = item?.[key];
+      if (typeof anchor?.symbol !== 'string' || !Number.isInteger(anchor.lineStart)) continue;
       let lines;
-      try { lines = read(source.file); } catch { continue; } // reported by the source evidence check
-      const term = symbolTerm(source.symbol), found = term ? symbolLines(lines, term) : [];
-      if (found.some(line => line >= source.lineStart && line <= (source.lineEnd ?? source.lineStart))) continue;
-      if (found.length !== 1) { blocked.push(`${prefix}node ${node.id}.source not re-anchored: "${term ?? source.symbol}" ${foundAt(found)}`); continue; }
-      const lineEnd = source.lineEnd === undefined ? undefined : Math.min(lines.length, found[0] + source.lineEnd - source.lineStart);
-      changes.push(`${prefix}node ${node.id}.source.lineStart ${source.lineStart} → ${found[0]}${lineEnd === undefined ? '' : `, lineEnd ${source.lineEnd} → ${lineEnd}`}`);
-      source.lineStart = found[0];
-      if (lineEnd !== undefined) source.lineEnd = lineEnd;
+      try { lines = read(anchor.file); } catch { continue; } // reported by the source evidence check
+      const term = symbolTerm(anchor.symbol), found = term ? symbolLines(lines, term) : [];
+      if (found.some(line => line >= anchor.lineStart && line <= (anchor.lineEnd ?? anchor.lineStart))) continue;
+      if (found.length !== 1) { blocked.push(`${prefix}${kind} ${item.id}.${key} not re-anchored: "${term ?? anchor.symbol}" ${foundAt(found)}`); continue; }
+      const lineEnd = anchor.lineEnd === undefined ? undefined : Math.min(lines.length, found[0] + anchor.lineEnd - anchor.lineStart);
+      changes.push(`${prefix}${kind} ${item.id}.${key}.lineStart ${anchor.lineStart} → ${found[0]}${lineEnd === undefined ? '' : `, lineEnd ${anchor.lineEnd} → ${lineEnd}`}`);
+      anchor.lineStart = found[0];
+      if (lineEnd !== undefined) anchor.lineEnd = lineEnd;
     }
   }
   return { changes, blocked };
@@ -217,10 +217,14 @@ function sourceReader(repoRoot) {
 }
 
 // Checks the explicitly selected working tree, not the revision named in sourceRef or the meaning of a claim.
+// `relations` counts the edges that should record a site, so a delivery can say how much of the diagram is traceable.
 export function verifySourceEvidence(input, repoRoot) {
-  const anchors = graphsOf(input).flatMap((graph, graphIndex) => graph.nodes.flatMap((node, nodeIndex) => node.source
-    ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source` }] : []));
-  const summary = { scope: 'working-tree', references: anchors.length, checked: 0, files: 0 };
+  const graphs = graphsOf(input), edges = graphs.flatMap(graph => graph.edges ?? []);
+  const anchors = graphs.flatMap((graph, graphIndex) => [
+    ...graph.nodes.flatMap((node, nodeIndex) => node.source ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source` }] : []),
+    ...(graph.edges ?? []).flatMap((edge, edgeIndex) => edge.site ? [{ source: edge.site, label: `diagrams[${graphIndex}].edges[${edgeIndex}].site` }] : [])]);
+  const summary = { scope: 'working-tree', references: anchors.length, checked: 0, files: 0,
+    relations: { sited: edges.filter(edge => needsSite(edge) && edge.site).length, eligible: edges.filter(needsSite).length } };
   if (repoRoot === undefined) {
     if (anchors.length) console.warn('Source evidence not verified: pass --repo-root <repository-directory> to check files, line ranges and symbols.');
     return { ...summary, status: anchors.length ? 'skipped' : 'not-applicable', ...(anchors.length ? { reason: 'repository-root-not-provided' } : {}) };

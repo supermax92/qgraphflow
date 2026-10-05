@@ -212,6 +212,11 @@
       "target": "orchestrator",
       "kind": "call",
       "evidence": "source",
+      "site": {
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 11,
+        "symbol": "handle"
+      },
       "label": "handle(session, text)"
     },
     {
@@ -220,6 +225,11 @@
       "target": "llm",
       "kind": "request",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 17,
+        "symbol": "complete"
+      },
       "label": "complete: intent / reply"
     },
     {
@@ -228,7 +238,12 @@
       "target": "tools",
       "kind": "call",
       "label": "execute(tool, args) ≤ 3 times",
-      "evidence": "source"
+      "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 21,
+        "symbol": "execute"
+      }
     },
     {
       "id": "e7",
@@ -236,6 +251,11 @@
       "target": "orders",
       "kind": "data",
       "evidence": "source",
+      "site": {
+        "file": "src/tools/order-tools.js",
+        "lineStart": 8,
+        "symbol": "findById"
+      },
       "label": "read orders · write refunds"
     },
     {
@@ -244,6 +264,11 @@
       "target": "logistics",
       "kind": "request",
       "evidence": "source",
+      "site": {
+        "file": "src/tools/order-tools.js",
+        "lineStart": 15,
+        "symbol": "track"
+      },
       "label": "track(trackingNo)"
     },
     {
@@ -252,6 +277,11 @@
       "target": "sessions",
       "kind": "data",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 22,
+        "symbol": "recordToolCall"
+      },
       "label": "messages · tool-call records"
     },
     {
@@ -260,6 +290,12 @@
       "target": "audit",
       "kind": "call",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 33,
+        "lineEnd": 36,
+        "symbol": "record"
+      },
       "label": "record (parallel to push)"
     },
     {
@@ -268,6 +304,11 @@
       "target": "config",
       "kind": "depends",
       "evidence": "config",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 20,
+        "symbol": "maxToolCalls"
+      },
       "label": "maxToolCalls"
     }
   ]

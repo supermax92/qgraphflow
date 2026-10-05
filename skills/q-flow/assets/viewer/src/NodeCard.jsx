@@ -7,7 +7,7 @@ import { sequenceExecutions, sequencePairs } from './sequence-executions.js';
 import { sequenceFragment, segmentBoxes } from './sequence-fragments.js';
 import { createEdgeRoutes, occupiedBox, visibleEdgeLabel } from './edge-routing.js';
 import { readingRect } from './reading-area.js';
-import { kindLabels, nodeAppearance, edgeColor } from './visual-style.js';
+import { anchorText, evidenceLabels, kindLabels, nodeAppearance, edgeColor } from './visual-style.js';
 
 const CARD_WIDTH = 292, CARD_HEIGHT = 232, GAP = 14;
 
@@ -76,7 +76,7 @@ export default function NodeCard({ node, edge, source, target, others = [], canv
   const pick = safe ?? fitting.sort((a, b) => covered(a) - covered(b))[0] ?? candidates[2];
   const x = Math.min(Math.max(pick.x, area.left), Math.max(area.left, area.right - CARD_WIDTH));
   const y = Math.min(Math.max(pick.y, area.top), Math.max(area.top, area.bottom - cardHeight));
-  const sourceAnchor = !relation && node.source ? `${node.source.file}:${node.source.lineStart}${node.source.lineEnd ? `-${node.source.lineEnd}` : ''}` : null;
+  const sourceAnchor = !relation && node.source ? anchorText(node.source) : relation && edge.site ? anchorText(edge.site) : null;
   const color = relation ? edgeColor(edge, target, palette, moduleColors, source, sequencePairs(graph).get(edge.id)) : nodeAppearance(node, palette, moduleColors).stroke;
   return <aside ref={ref} className={`node-card ${relation ? 'relation-card' : ''} ${pick.side === 'left' ? 'is-flipped' : pick.side === 'below' ? 'is-below' : pick.side === 'above' ? 'is-above' : ''}`} style={{ left: x, top: y, width: CARD_WIDTH, visibility: shouldFallback ? 'hidden' : undefined }} role="dialog" aria-label={label} data-node-id={relation ? undefined : node.id} data-edge-id={relation ? edge.id : undefined}>
     <button className="card-close" onClick={onClose} aria-label={t('Close')}><Icon name="close" /></button>
@@ -84,8 +84,8 @@ export default function NodeCard({ node, edge, source, target, others = [], canv
       <p className="card-kicker"><span className="node-dot" style={{ backgroundColor: color }} />{relation ? `${t('Edges')} · ${edge.kind}` : `${t(kindLabels[node.kind] ?? node.kind)}${node.module ? ` · ${node.module}` : ''}`}</p>
       <h4>{label}</h4>
       {relation ? <p className="card-subtitle">{source?.label} → {target?.label}</p> : node.subtitle && <p className="card-subtitle">{node.subtitle}</p>}
+      {relation && edge.evidence && <p className="card-source">{t('Evidence')} · {t(evidenceLabels[edge.evidence] ?? edge.evidence)}</p>}
       {sourceAnchor && <p className="card-source" title={sourceAnchor}><Icon name="source" /><code>{sourceAnchor}</code></p>}
-      {relation && edge.evidence && <p className="card-source">{t('Evidence')} · {edge.evidence}</p>}
       {!relation && node.tags?.length > 0 && <div className="card-tags">{node.tags.slice(0, 4).map(tag => <span key={tag}>{tag}</span>)}</div>}
       <div className="card-actions"><TextEditor editor={editor} relation={relation} locked={locked} locale={locale} /><button className="card-action" onClick={onDetails}>{t('View details')}<Icon name="arrowRight" /></button></div>
     </>}

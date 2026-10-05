@@ -151,10 +151,10 @@ test('a symbol must stay inside its recorded lines; qualified names use their la
   ));
   let result = run(file, '--input-only', '--repo-root', repo);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: 5, checked: 5, files: 2, symbols: 4 });
+  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: 5, checked: 5, files: 2, symbols: 4, relations: { sited: 0, eligible: 0 } });
   result = run(file, '--input-only');
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'skipped', references: 5, checked: 0, files: 0, reason: 'repository-root-not-provided' });
+  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'skipped', references: 5, checked: 0, files: 0, relations: { sited: 0, eligible: 0 }, reason: 'repository-root-not-provided' });
   for (const [source, expected] of [
     [{ lineStart: 10, lineEnd: 24, symbol: 'createOrder' }, /symbol "createOrder" is not in lines 10-24; found at line 30; run --fix to re-anchor a unique match/],
     [{ lineStart: 10, lineEnd: 12, symbol: 'order' }, /symbol "order" is not in lines 10-12; not found in the file/],
@@ -201,6 +201,59 @@ test('--fix re-anchors a symbol found once in its file, keeps the span, never to
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stderr, /fixed:|wrote/);
   assert.equal(fs.readFileSync(file, 'utf8'), once);
+});
+
+// An edge `site` is the line that makes a relationship hold; it is anchored, verified and re-anchored like a node source.
+const sited = (graph, sites) => {
+  for (const [id, site] of Object.entries(sites)) Object.assign(edge(graph, id), { evidence: 'source', site });
+  return graph;
+};
+const callSite = { file: 'src/order-service.js', lineStart: 30, lineEnd: 44, symbol: 'createOrder' };
+
+test('an edge site is verified like a node source and names its edge; relations counts the edges that should carry one', t => {
+  const repo = drifted(t), graph = sited(example(), { c1: callSite });
+  Object.assign(edge(graph, 'c3'), { evidence: 'source' }); Object.assign(edge(graph, 'r3'), { evidence: 'source' });
+  let result = run(temp(t, graph), '--input-only', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: 1, checked: 1, files: 1, symbols: 1, relations: { sited: 1, eligible: 2 } }, 'a return follows its call and is not counted');
+  result = run(temp(t, graph), '--input-only');
+  assert.equal(JSON.parse(result.stdout).sourceEvidence.relations.sited, 1, 'the count needs no repository');
+  edge(graph, 'c1').site = { ...callSite, lineStart: 10, lineEnd: 24 };
+  result = run(temp(t, graph), '--input-only', '--repo-root', repo);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /diagrams\[0\]\.edges\[0\]\.site \(src\/order-service\.js\): symbol "createOrder" is not in lines 10-24; found at line 30; run --fix to re-anchor a unique match/);
+  edge(graph, 'c1').site = { file: 'src/missing.js', lineStart: 1 };
+  assert.match(run(temp(t, graph), '--input-only', '--repo-root', repo).stderr, /edges\[0\]\.site \(src\/missing\.js\): file does not exist/);
+});
+
+test('an edge site has the same shape rules as a node source', () => {
+  const graph = example();
+  for (const [site, expected] of [
+    ['x', /edges\[0\]\.site must be an object/],
+    [{ lineStart: 1 }, /edges\[0\]\.site\.file must be a non-empty string/],
+    [{ file: 'a.js', lineStart: 0 }, /edges\[0\]\.site\.lineStart must be a positive integer/],
+    [{ file: 'a.js', lineStart: 5, lineEnd: 4 }, /edges\[0\]\.site\.lineEnd must be an integer at or after lineStart/],
+    [{ file: 'a.js', lineStart: 5, symbol: 7 }, /edges\[0\]\.site\.symbol must be a string/]
+  ]) assert.match(validateGraph({ ...graph, edges: graph.edges.map(item => item.id === 'c1' ? { ...item, site } : item) }, { inputOnly: true }).join('\n'), expected);
+});
+
+test('--fix re-anchors an edge site found once, keeps the span and everything else, and is idempotent', t => {
+  const repo = drifted(t), graph = sited(example(), { c1: { ...callSite, lineStart: 10, lineEnd: 24 } });
+  const file = temp(t, graph);
+  let result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /fixed: edge c1\.site\.lineStart 10 → 30, lineEnd 24 → 44/);
+  const written = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(edge(written, 'c1').site, callSite);
+  assert.deepEqual({ ...written, edges: written.edges.map(({ site, ...item }) => item) }, { ...graph, edges: graph.edges.map(({ site, ...item }) => item) });
+  const once = fs.readFileSync(file, 'utf8');
+  result = run(file, '--input-only', '--fix', '--repo-root', repo);
+  assert.doesNotMatch(result.stderr, /fixed:/);
+  assert.equal(fs.readFileSync(file, 'utf8'), once);
+  const ambiguous = temp(t, sited(example(), { c1: { file: 'db/schema.sql', lineStart: 20, lineEnd: 22, symbol: 'orders' } }));
+  result = run(ambiguous, '--input-only', '--fix', '--repo-root', repo);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /not fixed: edge c1\.site not re-anchored: "orders" found at lines 18, 29, 39/);
 });
 
 test('an ambiguous symbol is left alone and its source evidence blocks the write of the other fixes', t => {

@@ -28,6 +28,20 @@ const flowchart = (module, count = 6) => {
   return { meta: meta('flowchart'), nodes, edges };
 };
 
+test('edge.site-missing starts once a graph records a site and spares inference, framework and returns', () => {
+  const graph = JSON.parse(fs.readFileSync(path.join(skillDir, '../../examples/sequence-execution.graph.json'), 'utf8'));
+  const set = (id, change) => Object.assign(graph.edges.find(edge => edge.id === id), change);
+  for (const id of ['c1', 'c3', 'r3']) set(id, { evidence: 'source' });
+  set('c4', { evidence: 'framework' });
+  assert.deepEqual(rules(reviewComposition(graph)), [], 'no site anywhere: the graph predates the field');
+  set('c1', { site: { file: 'a.js', lineStart: 1 } });
+  const [warning, ...rest] = reviewComposition(graph);
+  assert.deepEqual([warning.ruleId, warning.severity, warning.elementIds, rest], ['edge.site-missing', 'warning', ['c3'], []]);
+  assert.match(warning.message, /edge c3 has repository evidence but no site, while 1 other edge records one/);
+  set('c3', { site: { file: 'a.js', lineStart: 2 } });
+  assert.deepEqual(reviewComposition(graph), []);
+});
+
 test('a collection that uses no module identity anywhere gets no composition warning', () => {
   const showcase = JSON.parse(fs.readFileSync(path.join(skillDir, '../../examples/showcase/kafka.en.graph.json'), 'utf8'));
   assert.deepEqual(validateGraphInput(showcase, { inputOnly: true }), []);

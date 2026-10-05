@@ -20,7 +20,7 @@ Siga o caminho. Confira as evidências. Compartilhe um arquivo offline.
 
 QGraphFlow gera diagramas de software interativos a partir de código, esquemas, configuração e requisitos. As relações podem ser verificadas e o resultado é um HTML offline compartilhável.
 
-**O que o diferencia:** nove tipos de diagrama em uma só habilidade, a origem de cada relação, layout automático, edição na própria página e nenhuma requisição de rede dos scripts do plugin nem do próprio Viewer.
+**O que o diferencia:** nove tipos de diagrama em uma só habilidade, o tipo de evidência de cada relação e a linha de código por trás de cada uma que o código sustenta, layout automático, edição na própria página e nenhuma requisição de rede dos scripts do plugin nem do próprio Viewer.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -183,7 +183,7 @@ O Viewer pré-compilado não exige instalar dependências, chave de API ou backe
 
 ## Mantenha os diagramas em sincronia com o código
 
-Um diagrama gerado com a raiz do repositório registra onde cada componente é definido. A validação com `--repo-root` falha quando um arquivo registrado sumiu, um intervalo de linhas não cabe mais no arquivo ou um símbolo registrado saiu das suas linhas, e o erro indica as linhas em que o símbolo está agora. Adicione este job ao seu CI; ele não precisa de build, login nem token:
+Um diagrama gerado com a raiz do repositório registra onde cada componente é definido e a linha por trás de cada relação sustentada pelo código (uma chamada, uma chave estrangeira). A validação com `--repo-root` falha quando um arquivo registrado sumiu, um intervalo de linhas não cabe mais no arquivo ou um símbolo registrado saiu das suas linhas, e o erro indica as linhas em que o símbolo está agora. Adicione este job ao seu CI; ele não precisa de build, login nem token:
 
 ```yaml
 name: Diagrams

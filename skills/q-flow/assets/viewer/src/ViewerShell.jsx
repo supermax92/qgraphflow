@@ -6,7 +6,7 @@ import { renderMiniMapNode } from './node-svg.js';
 import { diagramLabels, diagramTypeOf } from './diagrams/registry.js';
 import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
-import { kindLabels, nodeAppearance } from './visual-style.js';
+import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual-style.js';
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
@@ -15,7 +15,6 @@ import Icon from './icons.jsx';
 import NodeCard from './NodeCard.jsx';
 import TextEditor, { useTextEditor } from './TextEditor.jsx';
 
-const evidenceLabels = { source: 'Source code', code: 'Code', config: 'Configuration', schema: 'Schema', test: 'Test', document: 'Document', framework: 'Framework convention', inference: 'Inference' };
 
 const APPEARANCES = ['system', 'light', 'dark'];
 const appearanceLabels = { system: 'Follow system', light: 'Light', dark: 'Dark' };
@@ -98,13 +97,14 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
         {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
         {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
-        {inspectedNode.source && <><h3>{t('Source')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{inspectedNode.source.file}:{inspectedNode.source.lineStart}{inspectedNode.source.lineEnd ? `-${inspectedNode.source.lineEnd}` : ''}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
+        {inspectedNode.source && <><h3>{t('Source')} · {t(evidenceLabels[inspectedNode.source.kind ?? 'source'] ?? inspectedNode.source.kind)}</h3><code className="source-path">{anchorText(inspectedNode.source)}</code>{inspectedNode.source.symbol && <p className="symbol">{inspectedNode.source.symbol}</p>}</>}
         {inspectedNode.tags?.length > 0 && <div className="tags">{inspectedNode.tags.map(tag => <span key={tag}>{tag}</span>)}</div>}
       </> : inspectedEdge ? <>
         <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: visibleEdges.find(edge => edge.id === inspectedEdge.id)?.style.stroke ?? palette.edge }} />{t('Edges')} · {inspectedEdge.kind}</div>
         <h2>{(createEdgeRoutes(currentGraph).get(inspectedEdge.id)?.label ?? visibleEdgeLabel(inspectedEdge, diagramType, graph.meta.locale)) || inspectedEdge.kind}</h2>
         <p className="drawer-subtitle">{inspectedSource?.label} → {inspectedTarget?.label}</p>
-        <h3>{t('Evidence')}</h3><p>{inspectedEdge.evidence}</p>
+        <h3>{t('Evidence')} · {t(evidenceLabels[inspectedEdge.evidence] ?? inspectedEdge.evidence)}</h3>
+        {inspectedEdge.site && <><code className="source-path">{anchorText(inspectedEdge.site)}</code>{inspectedEdge.site.symbol && <p className="symbol">{inspectedEdge.site.symbol}</p>}</>}
         {inspectedEdge.facts?.length > 0 && <><h3>{t('Evidence facts')}</h3><ul>{inspectedEdge.facts.map(fact => <li key={fact}>{fact}</li>)}</ul></>}
       </> : <div className="drawer-empty"><span className="empty-icon"><Icon name="fit" /></span><span>{t('Start with a node')}</span><p>{t('Select a component or a list entry to explore its role, fields, methods and source.')}</p></div>}
     </section>

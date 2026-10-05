@@ -16,6 +16,16 @@ function optionalString(value, label, errors) {
   if (value !== undefined && typeof value !== 'string') errors.push(`${label} must be a string`);
 }
 
+// A node `source` and an edge `site` share one anchor shape, so one check and one --repo-root verification serve both.
+function validateAnchor(anchor, label, errors) {
+  requireString(anchor.file, `${label}.file`, errors);
+  optionalString(anchor.symbol, `${label}.symbol`, errors);
+  if (!Number.isInteger(anchor.lineStart) || anchor.lineStart < 1) errors.push(`${label}.lineStart must be a positive integer`);
+  if (anchor.lineEnd !== undefined && (!Number.isInteger(anchor.lineEnd) || (Number.isInteger(anchor.lineStart) && anchor.lineEnd < anchor.lineStart))) {
+    errors.push(`${label}.lineEnd must be an integer at or after lineStart`);
+  }
+}
+
 function requireBox(item, label, errors, inputOnly = false) {
   for (const [group, keys] of [['position', ['x', 'y']], ['size', ['width', 'height']]]) {
     if (inputOnly && item[group] === undefined) continue;
@@ -86,13 +96,8 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
     nodeIds.add(node?.id);
     if (node.source !== undefined && !isObject(node.source)) errors.push(`${label}.source must be an object`);
     else if (node.source) {
-      requireString(node.source.file, `${label}.source.file`, errors);
-      optionalString(node.source.symbol, `${label}.source.symbol`, errors);
+      validateAnchor(node.source, `${label}.source`, errors);
       if (node.source.kind !== undefined && !EVIDENCE_KINDS.has(node.source.kind)) errors.push(`${label}.source.kind is unsupported`);
-      if (!Number.isInteger(node.source.lineStart) || node.source.lineStart < 1) errors.push(`${label}.source.lineStart must be a positive integer`);
-      if (node.source.lineEnd !== undefined && (!Number.isInteger(node.source.lineEnd) || (Number.isInteger(node.source.lineStart) && node.source.lineEnd < node.source.lineStart))) {
-        errors.push(`${label}.source.lineEnd must be an integer at or after lineStart`);
-      }
     }
     for (const key of ['facts', 'tags', 'attributes', 'methods']) validateStringArray(node[key], `${label}.${key}`, errors);
     if (node.fields !== undefined) {
@@ -132,6 +137,8 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
     requireString(edge?.target, `${label}.target`, errors);
     if (!rules.edgeKinds.includes(edge?.kind)) errors.push(`${label}.kind is unsupported for ${diagramType}`);
     if (!EVIDENCE_KINDS.has(edge?.evidence)) errors.push(`${label}.evidence is unsupported`);
+    if (edge.site !== undefined && !isObject(edge.site)) errors.push(`${label}.site must be an object`);
+    else if (edge.site) validateAnchor(edge.site, `${label}.site`, errors);
     if (typeof edge.id === 'string' && edgeIds.has(edge.id)) errors.push(`${label}.id duplicates ${edge.id}`);
     edgeIds.add(edge?.id);
     if (typeof edge.source === 'string' && !nodeIds.has(edge.source)) errors.push(`${label}.source does not name a node: ${edge.source}`);
@@ -241,6 +248,9 @@ export function validateGraphInput(input, options = {}) {
 const PLAIN_KINDS = new Set(['initial', 'final']);
 const OUTSIDER_KINDS = new Set(['external', 'actor', 'device']);
 const moduleOf = item => (typeof item?.module === 'string' && item.module.trim() ? item.module : undefined);
+// A relationship backed by repository material records the line that makes it hold; a sequence return follows its call.
+const SITE_EVIDENCE = new Set(['source', 'code', 'config', 'schema', 'test']);
+export const needsSite = edge => SITE_EVIDENCE.has(edge.evidence) && edge.kind !== 'return';
 
 export function reviewComposition(input) {
   if (validateGraphInput(input, { inputOnly: true }).length) return [];
@@ -274,6 +284,11 @@ export function reviewComposition(input) {
         `${diagramType} gives all ${washed.length} nodes the module "${moduleOf(washed[0])}", so the wash tells the reader nothing`,
         'Check whether the steps really are one subsystem\'s work: a step performed by another subsystem (a store, a cache layer, a queue) takes that subsystem\'s module, start and end take the caller. If everything truly belongs to one subsystem, leave it.');
     }
+    // Advisory only once the graph has started recording sites, so a graph authored without them stays quiet.
+    const sited = graph.edges.filter(edge => edge.site), unsited = graph.edges.filter(edge => needsSite(edge) && !edge.site);
+    if (sited.length && unsited.length) warn('edge.site-missing', unsited.map(edge => edge.id),
+      `${unsited.length === 1 ? 'edge' : 'edges'} ${unsited.map(edge => edge.id).join(', ')} ${unsited.length === 1 ? 'has' : 'have'} repository evidence but no site, while ${sited.length} other ${sited.length === 1 ? 'edge records' : 'edges record'} one`,
+      'Add the line that makes the relationship hold (the call, write, foreign key or extends clause) as site, or mark the edge inference.');
     if (diagramType === 'flowchart') {
       const outgoing = new Map();
       for (const edge of graph.edges) outgoing.set(edge.source, (outgoing.get(edge.source) ?? 0) + 1);
