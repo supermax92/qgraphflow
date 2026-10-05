@@ -12,8 +12,8 @@ export function architectureOutline(node, x, y) {
   if (node.kind === 'config') return polygon(node, x, y, SLANT);
   if (node.kind === 'business') return rectangle(node, x, y, Math.min(28, h / 2));
   const base = rectangle(node, x, y, ['service', 'component'].includes(node.kind) ? 16 : 10);
-  // Notation stays in the card margins: text starts at x + 15, the chip row at y + 13, and the last text baseline sits
-  // 21px above the bottom.
+  // Notation stays in the card margins: the icon plate starts 14px in, text 48px in, and the content block is centred
+  // vertically with 14px above and below.
   if (node.kind === 'data') return [...base, ['path', { d: `M${x + 10} ${y}V${y + h}M${x + w - 10} ${y}V${y + h}`, fill: 'none' }]];
   if (node.kind === 'database') return cylinder(node, x, y);
   if (node.kind === 'framework') return [...base, ['path', { d: `M${x + 16} ${y + 6}H${x + w - 16}M${x + 16} ${y + h - 6}H${x + w - 16}`, fill: 'none', 'stroke-dasharray': '7 5' }]];
@@ -30,7 +30,7 @@ const anchor = (node, side, offset) => {
   return rectAnchor(node, side, offset);
 };
 
-const contentInset = node => ['external', 'config', 'failure'].includes(node.kind) ? Math.min(28, node.size.width * .08) : 0;
+const contentInset = node => ['external', 'config', 'failure'].includes(node.kind) ? Math.min(28, node.size.width * .08) : node.kind === 'database' ? 12 : 0;
 
 export default {
   dashedKinds: ['framework', 'optional'],

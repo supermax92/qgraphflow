@@ -1,6 +1,6 @@
 import { createEdgeRoutes, graphBounds, pathFromRoute, cardinalityMarks } from './edge-routing.js';
 import { layoutText } from './text-layout.js';
-import { DIAGRAM_TYPES, diagramTypeOf, getDiagram, edgeMarkers, isDashed, labelRoleColors } from './diagrams/registry.js';
+import { DIAGRAM_TYPES, compactCards, diagramTypeOf, getDiagram, edgeMarkers, isDashed, labelRoleColors } from './diagrams/registry.js';
 import { renderNode } from './node-svg.js';
 import { text, fit, escapeXml, svgStyles, groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
 import { PALETTES, dataKinds, edgeColor, sequenceGroupColor, moduleColorMap, groupAppearanceMap, TYPOGRAPHY } from './visual-style.js';
@@ -87,7 +87,8 @@ export function createDiagramSvg(graph, theme = 'light', moduleColors) {
   const fragmentText = type === 'sequence' ? (graph.groups ?? []).map(group => renderFragment({ ...fragments.get(group.id), separators: [] }, group, offsetX, offsetY, palette.ink3, groupAppearances.get(group.id).fill)).join('') : '';
 
   const edges = graph.edges.map(edge => renderEdge(edge, routes.get(edge.id), type, offsetX, offsetY, palette, nodeById.get(edge.target), moduleColors, nodeById.get(edge.source), pairs.get(edge.id), type === 'sequence' && routes.get(edge.id).label ? fragmentSurfaceAt(routes.get(edge.id).labelBox, graph.groups ?? [], groupAppearances) : undefined)).join('');
-  const nodes = graph.nodes.map(node => renderNode({ ...node, executionRects: executions.filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(pairs.get(item.start.edgeId), palette) ?? palette.edge })) }, type, offsetX, offsetY, palette, graph.meta.locale, moduleColors)).join('');
+  const classicCard = !compactCards(graph);
+  const nodes = graph.nodes.map(node => renderNode({ ...node, classicCard, executionRects: executions.filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(pairs.get(item.start.edgeId), palette) ?? palette.edge })) }, type, offsetX, offsetY, palette, graph.meta.locale, moduleColors)).join('');
   const boardX = 24;
   const boardY = header;
   const boardWidth = width - 48;

@@ -31,7 +31,8 @@ function useAppearance() {
 function Viewer() {
   const [activeType, setActiveType] = useState(diagramTypeOf(diagrams[0]));
   const drafts = useRef(new Map());
-  const flowControl = useState(true);
+  // Edge motion is opt-in: a running dash reads as the dashed (inferred) notation.
+  const flowControl = useState(false);
   const { preference, setPreference, theme } = useAppearance();
   const panels = usePanels();
   const originalGraph = diagrams.find(item => diagramTypeOf(item) === activeType) ?? diagrams[0];

@@ -1,8 +1,7 @@
 import { getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
-import { cardTextLayout, layoutText } from './text-layout.js';
-import { TYPOGRAPHY, kindLabels } from './visual-style.js';
-import { translate } from './i18n.js';
+import { CARD, cardSourceText, cardTag, cardTextLayout, layoutText } from './text-layout.js';
+import { TYPOGRAPHY } from './visual-style.js';
 import { STATE_ACTIONS, STATE_ACTION_INSET, stateActivities } from './diagrams/state.js';
 
 // System fonts vary: reserve width beyond the estimate, then verify actual glyphs in the browser.
@@ -35,13 +34,17 @@ export function minimumNodeSize(node, type, locale = 'en') {
     return rounded({ width: Math.max(240, title + 26, body + 26, ...[...attributes, ...methods].map(value => singleLineWidth(value, TYPOGRAPHY.body) + 26)),
       height: TYPOGRAPHY.classHeader + (node.subtitle ? 24 : 0) + (attributes.length ? attributes.length * TYPOGRAPHY.classRow + 13 : 30) + (methods.length ? methods.length * TYPOGRAPHY.classRow + 13 : 30) });
   }
-  const size = { width: Math.max(240, Math.min(480, Math.max(title, body) + 60)), height: 100 };
   if (diagram.cardLayout) {
-    const inset = diagram.contentInset?.({ ...node, size }) ?? 0;
-    size.width = Math.max(size.width, singleLineWidth(translate(locale, kindLabels[node.kind] ?? node.kind), TYPOGRAPHY.small) + 70 + 2 * inset);
-    size.height = Math.max(100, cardTextLayout({ ...node, size: { ...size, width: size.width - 2 * (diagram.contentInset?.({ ...node, size }) ?? 0) } }).minHeight);
+    // One-line title beside the plate and kind tag where the width cap allows; longer text wraps and the card grows taller.
+    const corner = diagram.cardCorner?.(node) ?? 0;
+    const needed = Math.max(title + cardTag(node, locale).width + CARD.tagGap + corner, body, singleLineWidth(cardSourceText(node), TYPOGRAPHY.small)) + CARD.textX + CARD.pad;
+    // Outlines with slanted sides (hexagon, parallelogram, octagon) inset the text on both sides.
+    const inset = diagram.contentInset?.({ ...node, size: { width: Math.min(CARD.maxWidth, needed + 56), height: 0 } }) ?? 0;
+    const size = { width: Math.max(240, Math.min(CARD.maxWidth, needed + 2 * inset)), height: 0 };
+    size.height = cardTextLayout({ ...node, size: { ...size, width: size.width - 2 * (diagram.contentInset?.({ ...node, size }) ?? 0) } }, locale, false, corner).minHeight;
     return rounded(size);
   }
+  const size = { width: Math.max(240, Math.min(480, Math.max(title, body) + 60)), height: 100 };
   const textArea = diagram.textArea ?? (node => ({ width: node.size.width - 36, height: node.size.height - 20 }));
   // All supported safety regions grow monotonically with height. Bounded expansion also handles diamond/ellipse insets.
   for (let i = 0; i < 16; i++) {

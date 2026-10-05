@@ -211,7 +211,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': t('Zoom in'), 'controls.zoomOut.ariaLabel': t('Zoom out'), 'minimap.ariaLabel': t('Minimap') }}
             proOptions={{ hideAttribution: true }}
           >
-            <Background color={palette.ruleSoft} gap={24} size={0.65} />
+            <Background color={palette.ruleSoft} gap={24} size={1} />
             <Controls position="bottom-left" showInteractive={false} showFitView={false}>
               <ControlButton className="react-flow__controls-fitview" onClick={focusDiagram} title={t('Fit canvas')} aria-label={t('Fit canvas')}><Icon name="fit" /></ControlButton>
               <ControlButton className="react-flow__controls-fullscreen" ref={fullscreenButtonRef} onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-busy={fullscreenPending} aria-disabled={fullscreenPending || (!fullscreenSupported && !isFullscreen)} aria-label={isFullscreen ? t('Exit fullscreen') : t('Enter fullscreen')} title={!fullscreenSupported && !isFullscreen ? t('Fullscreen is not available in this browser or page') : isFullscreen ? t('Exit fullscreen (Esc)') : t('Enter fullscreen')}>

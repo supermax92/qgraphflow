@@ -2,7 +2,7 @@ import React, { useId } from 'react';
 import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position } from '@xyflow/react';
 import SelectionOutline from './SelectionOutline.jsx';
 import { renderNode } from './node-svg.js';
-import { getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
+import { compactCards, getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
 import { cardinalityMarks } from './edge-routing.js';
 import { renderFragment, fragmentDepth } from './sequence-fragments.js';
 import { isCore, TYPOGRAPHY } from './visual-style.js';
@@ -70,7 +70,8 @@ function RoutedEdge({ id, markerEnd, style, data }) {
       <path className="selection-edge-shine" d={route.path} />
     </g>}
     <BaseEdge id={id} path={route.path} markerEnd={end} markerStart={start} style={{ ...style, strokeOpacity: 1 }} />
-    {data.directed && (!sequence || flowing) && <path className={`edge-flow ${sequence ? 'sequence-edge-flow' : ''}`} d={route.path} mask={sequence && data.dashed ? `url(#${maskId})` : undefined} style={{ stroke: style.stroke, animationPlayState: data.flowRunning ? 'running' : 'paused' }} />}
+    {/* The travelling dash exists only while motion runs: a paused one would read as the dashed (inferred) notation. */}
+    {data.directed && flowing && <path className={`edge-flow ${sequence ? 'sequence-edge-flow' : ''}`} d={route.path} mask={sequence && data.dashed ? `url(#${maskId})` : undefined} style={{ stroke: style.stroke }} />}
     {er && <><Cardinality value={data.sourceCardinality} point={route.points[0]} neighbor={route.points[1]} color={data.relationColor} /><Cardinality value={data.targetCardinality} point={route.points.at(-1)} neighbor={route.points.at(-2)} color={data.relationColor} /></>}
     {(route.endpointLabels ?? []).map(label => <g key={label.role} className="edge-multiplicity" data-endpoint={label.role}>
       <rect {...label.labelBox} rx="4" fill="var(--canvas)" />
@@ -95,12 +96,13 @@ export function initialNodes(graph, diagramType) {
     connectable: false,
     zIndex: -(graph.groups?.length ?? 0) + fragmentDepth(group, graph.groups ?? [])
   }));
+  const classicCard = !compactCards(graph);
   return [...boundaries, ...graph.nodes.map(node => ({
     id: node.id,
     type: 'diagram',
     className: diagramType === 'sequence' ? 'sequence-column' : undefined,
     position: node.position,
-    data: { ...node, diagramType, locale: graph.meta.locale },
+    data: { ...node, diagramType, locale: graph.meta.locale, classicCard },
     style: { width: node.size.width, height: node.size.height, ...(diagramType === 'sequence' ? { pointerEvents: 'none' } : {}) },
     zIndex: 2
   }))];
