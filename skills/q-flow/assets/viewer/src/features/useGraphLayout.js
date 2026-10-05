@@ -1,14 +1,14 @@
 import { translate } from '../i18n.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
-import { diagramTypeOf } from '../diagrams/registry.js';
+import { compactCards, diagramTypeOf } from '../diagrams/registry.js';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { graphBounds, occupiedBox } from '../edge-routing.js';
 import { requireDiagramQuality } from '../layout-quality.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
 import { appleEase, readingPadding, readingRect, locateViewport, readableViewport, readingStart } from '../reading-area.js';
 import { isCore } from '../visual-style.js';
-import { constrainNodeChanges, currentGraphFromFlow } from '../session-graph.js';
+import { constrainNodeChanges, currentGraphFromFlow, fitCard } from '../session-graph.js';
 
 export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = graph) {
   const t = (message, values) => translate(graph.meta.locale, message, values);
@@ -33,7 +33,13 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     catch (error) { return { message: error.message, diagnostics: error.diagnostics ?? [] }; }
   }, [currentGraph, renderProblem]);
   const updateNodeText = (id, label, subtitle) => {
-    setNodes(current => current.map(node => node.id === id ? { ...node, data: { ...node.data, label, ...(Object.hasOwn(node.data, 'subtitle') || subtitle !== '' ? { subtitle } : {}) } } : node));
+    const edited = { ...currentGraph, nodes: currentGraph.nodes.map(node => node.id === id ? { ...node, label, subtitle } : node) };
+    const fitted = fitCard(edited, id, !compactCards(currentGraph));
+    setNodes(current => current.map(node => {
+      const next = node.id !== id ? node : { ...node, data: { ...node.data, label, ...(Object.hasOwn(node.data, 'subtitle') || subtitle !== '' ? { subtitle } : {}) } };
+      const box = fitted.get(node.id);
+      return box ? { ...next, position: box.position, style: { ...next.style, ...box.size }, data: { ...next.data, ...box } } : next;
+    }));
   };
   const updateEdgeText = (id, label) => {
     setEdges(current => current.map(edge => edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge));
