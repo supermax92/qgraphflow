@@ -45,7 +45,7 @@ Inicie uma nova sessão, digite `$` e selecione `qgraphflow:q-flow` (use o nome 
 ### Claude Code
 
 ```bash
-claude plugin marketplace add .
+claude plugin marketplace add ./
 claude plugin install qgraphflow@supermax92 --scope user
 ```
 

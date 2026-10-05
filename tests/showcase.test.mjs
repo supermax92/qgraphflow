@@ -143,7 +143,7 @@ test('each README links to its inline installation guide, English references and
     }
     for (const command of [
       'codex plugin marketplace add .', 'codex plugin add qgraphflow@supermax92',
-      'claude plugin marketplace add .', 'claude plugin install qgraphflow@supermax92 --scope user',
+      'claude plugin marketplace add ./', 'claude plugin install qgraphflow@supermax92 --scope user',
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
     // First screen, before the installation guide: the live demo, the verified one-line install and the pitch.
