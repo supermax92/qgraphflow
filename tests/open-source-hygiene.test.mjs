@@ -20,7 +20,7 @@ test('seven installation guides preserve the Chinese commands and working links'
   assert.equal(expected[0], 'npx skills add supermax92/qgraphflow\n', 'the verified one-line install comes first');
   assert.match(expected[1], /\nnpm install qgraphflow --ignore-scripts\n/, 'the plugin root comes from npmjs');
   assert.match(expected[2], /^codex plugin marketplace add \.\n/);
-  assert.match(expected[3], /^claude plugin marketplace add \.\n/);
+  assert.match(expected[3], /^claude plugin marketplace add \.\/\n/);
   assert.match(expected[4], /^qodercli plugins install \.\n/);
   for (const file of guides) {
     const markdown = read(file);
