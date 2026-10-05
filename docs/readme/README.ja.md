@@ -62,9 +62,18 @@ npx skills add supermax92/qgraphflow
 
 ### 1. プラグインをダウンロード
 
-[qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) をダウンロードし、隠しファイルを保持したまま専用のディレクトリに展開します。
+npmjs.com からプラグインを取得します。アカウント、ログイン、トークンは不要です。業務プロジェクトの外に専用ディレクトリを作成します。
 
-以下のコマンドはすべて、**展開後の `skills/` を含むプラグインのルートディレクトリ**で実行してください。
+```bash
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
+```
+
+これでプラグインのルートディレクトリに移動できました。**npm でダウンロードしても、クライアントへのインストールは自動では行われません。** 手順 2 に進んでください。このパッケージには `qgraphflow` コマンドも含まれ、[図とコードを同期させる](#図とコードを同期させる)で使います。
+
+以下のコマンドはすべて、**`skills/` を含むプラグインのルートディレクトリ**で実行してください。
 
 ### 2. クライアントにインストール
 
@@ -80,15 +89,6 @@ codex plugin add qgraphflow@supermax92
 新しいセッションを開始し、`$` を入力して `qgraphflow:q-flow` を選択します。
 
 #### Claude Code
-
-ZIP をダウンロードせず、GitHub から直接インストールします：
-
-```bash
-claude plugin marketplace add supermax92/qgraphflow
-claude plugin install qgraphflow@supermax92 --scope user
-```
-
-または、展開したプラグインのルートで実行します：
 
 ```bash
 claude plugin marketplace add .
@@ -107,9 +107,9 @@ qodercli plugins install .
 
 #### Qoder Desktop
 
-**推奨：** **Settings → Plugins → Marketplace** を開き、**代码图谱可视化** または **qgraphflow** を検索してインストールします。新しいセッションを開始し、`q-flow` を選択します。ZIP のダウンロードやソースのビルドは不要です。
+**推奨：** **Settings → Plugins → Marketplace** を開き、**QGraphFlow** または **代码图谱可视化** を検索してインストールします。新しいセッションを開始し、`q-flow` を選択します。
 
-ローカルインストールの場合は手順 1 を完了し、**Settings → Plugins → Custom → Import** を開いて、展開したプラグインのルートディレクトリ全体をインポートします。新しいセッションで `q-flow` を選択します。
+ローカルインストールの場合は手順 1 を完了し、**Settings → Plugins → Custom → Import** を開いて、プラグインのルートディレクトリ全体をインポートします。新しいセッションで `q-flow` を選択します。
 
 #### Cursor
 
@@ -124,22 +124,6 @@ qodercli plugins install .
 ### 3. 使い始める
 
 クライアントで対象のプロジェクトを開き、新しいセッションでスキルを選択します。下の[すぐに使う](#すぐに使う)の例を参考に依頼し、生成された HTML をブラウザで開いてください。
-
-<details>
-<summary>別のインストール方法：npm</summary>
-
-ZIP の代わりに npmjs.com からプラグインを取得することもできます。アカウント、ログイン、トークンは不要です。業務プロジェクトの外に専用ディレクトリを作成します。
-
-```bash
-mkdir qgraphflow-install
-cd qgraphflow-install
-npm install qgraphflow --ignore-scripts
-cd node_modules/qgraphflow
-```
-
-これでプラグインのルートディレクトリに移動できました。上記のクライアント別インストール手順に進んでください。**npm でダウンロードしても、クライアントへのインストールは自動では行われません。** このパッケージには `qgraphflow` コマンドも含まれ、[図とコードを同期させる](#図とコードを同期させる)で使います。
-
-</details>
 
 自分でビルドする場合は、[ソースからのビルド手順](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)を参照してください。
 

@@ -143,7 +143,6 @@ test('each README links to its inline installation guide, English references and
     }
     for (const command of [
       'codex plugin marketplace add .', 'codex plugin add qgraphflow@supermax92',
-      'claude plugin marketplace add supermax92/qgraphflow',
       'claude plugin marketplace add .', 'claude plugin install qgraphflow@supermax92 --scope user',
       'qodercli plugins install .', '~/.cursor/plugins/local/qgraphflow/'
     ]) assert.ok(installation.includes(`\n${command}\n`), `${file}: ${command}`);
@@ -156,7 +155,10 @@ test('each README links to its inline installation guide, English references and
     assert.ok(installation.indexOf('\nnpx skills add supermax92/qgraphflow\n') < installation.indexOf('#### Codex App / CLI\n'), `${file}: installation starts with it`);
     assert.ok(installation.includes('`skills` 1.7.0'), `${file}: tested skills version`);
     assert.ok(markdown.includes('npx -y qgraphflow validate "$graph" --input-only --repo-root . || { echo "::error file=$graph::$graph failed validation"; failed=1; }'), `${file}: CI drift check names the failing graph`);
-    assert.ok(markdown.includes('\nnpm install qgraphflow --ignore-scripts\n'), `${file}: npmjs installation`);
+    // Codex, Claude Code and Cursor install from the npmjs package root, not from GitHub.
+    const npmAt = installation.indexOf('\nnpm install qgraphflow --ignore-scripts\n');
+    assert.ok(npmAt >= 0 && npmAt < installation.indexOf('#### Codex App / CLI\n'), `${file}: npmjs installation first`);
+    assert.ok(!installation.includes('claude plugin marketplace add supermax92/qgraphflow'), `${file}: no GitHub install for Claude Code`);
     assert.doesNotMatch(markdown, /npm\.pkg\.github\.com|@supermax92\/qgraphflow|read:packages/, `${file}: no GitHub npm token login`);
     assert.doesNotMatch(markdown, /Node\.js 22(?!\s*(or later|及以上|или новее|ou posterior|以降|oder neuer|o posterior))/, `${file}: Node.js 22 or later`);
     const slugs = new Set([...markdown.matchAll(/^#+ (.+)$/gm)].map(match => match[1].trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-')));
