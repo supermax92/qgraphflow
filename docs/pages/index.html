@@ -9,7 +9,8 @@
   :root { --ink: #1c2024; --muted: #60646c; --line: #e0e1e6; --paper: #fcfcfd; --link: #0d74ce; }
   @media (prefers-color-scheme: dark) { :root { --ink: #edeef0; --muted: #b0b4ba; --line: #2e3135; --paper: #111113; --link: #70b8ff; } }
   body { margin: 0 auto; max-width: 720px; padding: 40px 16px 64px; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
-  h1 { font-size: 28px; margin: 0 0 8px; }
+  h1 { display: flex; align-items: center; gap: 12px; font-size: 28px; margin: 0 0 8px; }
+  h1 svg { flex: none; }
   h2 { font-size: 18px; margin: 36px 0 4px; }
   p { margin: 6px 0; color: var(--muted); }
   ul { list-style: none; margin: 12px 0 0; padding: 0; }
@@ -20,7 +21,7 @@
 </style>
 </head>
 <body>
-<h1>QGraphFlow</h1>
+<h1><svg width='36' height='36' aria-hidden='true' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='#1e4437'/><g fill='#faf4e8'><circle cx='27' cy='27' r='15' fill='none' stroke='#faf4e8' stroke-width='5.5'/><path d='M37.6 37.6L49.6 49.6' stroke='#faf4e8' stroke-width='5.5'/><circle cx='27' cy='12' r='5'/><circle cx='12' cy='27' r='5'/><circle cx='37.6' cy='37.6' r='5'/></g><circle cx='49.6' cy='49.6' r='7.5' fill='#a8e3b8'/></svg>QGraphFlow</h1>
 <p>Interactive software diagrams from real code: nine diagram types, a source for every relationship, automatic layout, editing in the page, and no network requests from the page itself.</p>
 <p lang="zh-CN">从真实代码生成可交互的软件图：九类图、每条关系都标出处、自动布局、能在页面里编辑，页面本身不发任何网络请求。</p>
 

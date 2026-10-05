@@ -1,6 +1,6 @@
 <div align="center">
 
-# QGraphFlow
+<h1><picture><source media="(prefers-color-scheme: dark)" srcset="../images/brand/qgraphflow-lockup-dark.svg"><img src="../images/brand/qgraphflow-lockup-light.svg" alt="QGraphFlow" height="64"></picture></h1>
 
 ### Convierte código complejo en diagramas que puedes explorar.
 
