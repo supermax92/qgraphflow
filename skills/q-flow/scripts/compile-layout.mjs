@@ -6,11 +6,11 @@ import { stateSymbolX } from '../assets/viewer/src/diagrams/state.js';
 import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { graphBounds, occupiedBox, visibleEdgeLabel, groupHeadingBoxes, segmentCrossesBox, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { groupHeadingLayout, estimateLabelSize } from '../assets/viewer/src/text-layout.js';
-import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
+import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, OVERVIEW_AREA, layeredDirections, layeredDown, layoutLimits, layoutTargets, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
 
-export const LAYOUT_VERSION = 'adaptive-v2-elkjs-0.11.0';
+export const LAYOUT_VERSION = 'adaptive-v3-elkjs-0.11.0';
 export const CANDIDATE_COUNT = 6;
 // Hang guard for one ELK solve, not a budget for a compile: a slow or busy machine only takes longer.
 export const LAYOUT_TIMEOUT_MS = 30_000;
@@ -46,7 +46,7 @@ function semanticDigest(graph, migration = []) {
   for (const item of [...model.nodes, ...(model.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of model.edges) delete edge.route;
   for (const item of migration) delete [...model.nodes, ...(model.groups ?? [])].find(element => element.id === item.elementId)[item.field];
-  if (model.layout) { delete model.layout.version; delete model.layout.strategy; if (!Object.keys(model.layout).length) delete model.layout; }
+  if (model.layout) { delete model.layout.version; delete model.layout.strategy; delete model.layout.direction; if (!Object.keys(model.layout).length) delete model.layout; }
   const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
   return createHash('sha256').update(JSON.stringify(canonical(model))).digest('hex');
 }
@@ -73,8 +73,8 @@ export function migrateOwnership(graph) {
 }
 
 function elkInput(graph, candidate, hints = {}) {
-  const type = diagramTypeOf(graph), diagram = getDiagram(type), down = !['er', 'deployment', 'dataflow', 'usecase'].includes(type);
-  const spacing = LAYOUT_TARGETS.layerGap + [0, 16, 48][candidate % 3];
+  const type = diagramTypeOf(graph), diagram = getDiagram(type), down = (hints.direction ?? layeredDirections(type)[0]) === 'down';
+  const spacing = layoutTargets(diagram).layerGap + [0, 16, 48][candidate % 3];
   const portGap = candidate < 3 ? 24 : 48;
   const feedback = new Set();
   if (['flowchart', 'state'].includes(type)) {
@@ -96,7 +96,7 @@ function elkInput(graph, candidate, hints = {}) {
     'elk.edgeRouting': 'ORTHOGONAL', 'elk.hierarchyHandling': !graph.edges.length && !graph.groups?.length && !graph.nodes.some(node => node.layout?.rank !== undefined || type === 'state' && ['initial', 'final'].includes(node.kind)) ? 'SEPARATE_CHILDREN' : 'INCLUDE_CHILDREN',
     'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP', 'elk.layered.mergeEdges': 'false',
     'elk.layered.feedbackEdges': String(['flowchart', 'state'].includes(type)),
-    'elk.spacing.nodeNode': String(LAYOUT_TARGETS.nodeGap), 'elk.spacing.componentComponent': String(LAYOUT_TARGETS.nodeGap), 'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing),
+    'elk.spacing.nodeNode': String(layoutTargets(diagram).nodeGap), 'elk.spacing.componentComponent': String(layoutTargets(diagram).nodeGap), 'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing),
     'elk.spacing.portPort': '24',
     'elk.spacing.edgeEdge': String(portGap), 'elk.layered.spacing.edgeEdgeBetweenLayers': String(portGap),
     'elk.spacing.edgeNode': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? LAYOUT_LIMITS.endpoint)), 'elk.layered.spacing.edgeNodeBetweenLayers': String(Math.max(LAYOUT_TARGETS.edgeNodeGap, diagram.endpointStub ?? LAYOUT_LIMITS.endpoint)), 'elk.spacing.edgeLabel': String(LAYOUT_LIMITS.labelGap), 'elk.spacing.labelNode': String(LAYOUT_LIMITS.labelGap),
@@ -105,10 +105,11 @@ function elkInput(graph, candidate, hints = {}) {
     ...(diagram.curvedSelfLoops ? { 'elk.spacing.nodeSelfLoop': '44' } : {})
   };
   const root = { id: '$root', layoutOptions: options, children: [], edges: [] };
+  const inset = layoutLimits(diagram).groupInset;
   const groups = new Map(stable(graph.groups ?? []).map(group => {
     const heading = groupHeadingLayout({ ...group, size: undefined });
     return [group.id, { id: `g:${group.id}`, children: [], layoutOptions: { ...options,
-      'elk.padding': `[top=${heading.height + LAYOUT_LIMITS.groupHeadingGap},left=32,bottom=32,right=32]`,
+      'elk.padding': `[top=${heading.height + LAYOUT_LIMITS.groupHeadingGap},left=${inset},bottom=${inset},right=${inset}]`,
       'elk.nodeSize.constraints': 'MINIMUM_SIZE', 'elk.nodeSize.minimum': `(${heading.width + 64},0)` } }];
   }));
   const ordered = items => hints.nodes ? [...items].sort((a, b) => hints.nodes.indexOf(a.id) - hints.nodes.indexOf(b.id)) : stable(items);
@@ -302,7 +303,7 @@ function foldSegments(graph, layers, breaks, { spacing, portGap, laneOrder }, do
     + Math.max(0, ...groups.filter(child => child.parentId === group.id && spread.get(child.id).size > 1).map(room));
   for (const group of groups.filter(group => spread.get(group.id).size > 1)) {
     const first = extents[Math.min(...spread.get(group.id))], last = extents[Math.max(...spread.get(group.id))];
-    first[C] -= room(group); first[cExtent] += room(group); last[cExtent] += LAYOUT_LIMITS.groupInset;
+    first[C] -= room(group); first[cExtent] += room(group); last[cExtent] += layoutLimits(getDiagram(diagramTypeOf(graph))).groupInset;
   }
   // Crossing edges take the channel right after the earlier of their two segments; lanes there are spaced for their labels.
   const crossing = laneOrder ? output.edges.filter(edge => !internal(edge)).sort((a, b) => laneOrder.indexOf(a.id) - laneOrder.indexOf(b.id)) : stable(output.edges.filter(edge => !internal(edge)));
@@ -324,7 +325,7 @@ function foldSegments(graph, layers, breaks, { spacing, portGap, laneOrder }, do
     if (edge.route?.labelAt) edge.route.labelAt = shift(edge.route.labelAt, d);
   }
   // A boundary inside one segment moves with it; a boundary spread over several is rebuilt around its members and children.
-  const inset = LAYOUT_LIMITS.groupInset, done = new Set();
+  const inset = layoutLimits(getDiagram(diagramTypeOf(graph))).groupInset, done = new Set();
   const place = group => {
     if (done.has(group.id)) return; done.add(group.id);
     const children = groups.filter(child => child.parentId === group.id); children.forEach(place);
@@ -387,7 +388,7 @@ function foldSegments(graph, layers, breaks, { spacing, portGap, laneOrder }, do
 function foldedVariants(graph, options) {
   const type = diagramTypeOf(graph);
   if (graph.nodes.some(node => node.layout?.rank !== undefined) || type === 'state' && !stateChain(graph)) return [];
-  const down = !['er', 'deployment', 'dataflow', 'usecase'].includes(type), bounds = graphBounds(graph);
+  const down = layeredDown(type, graph.layout), bounds = graphBounds(graph);
   // Cutting shortens the layer sequence: a top-down layout folds only when too tall, a left-to-right one only when too wide.
   if (down ? bounds.width >= bounds.height : bounds.height >= bounds.width) return [];
   const layers = layersOf(graph, down);
@@ -414,7 +415,9 @@ function candidateScore(graph, audit, index) {
   // Shapes of one rank compete on crossings, then on the exact distance from the band (every in-band shape scores 1), then
   // on compactness; a better rank wins first. The type's budget ratio only breaks ties towards its preferred orientation.
   const excess = +aspectExcess(graph, audit.routes).toFixed(2);
-  return [audit.errors.length, shapeRank(excess), crossings, excess, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
+  // A type laid out both ways prefers, after crossings, the layout whose whole view fits one screen at the larger zoom.
+  const fit = layeredDirections(diagramTypeOf(graph)).length > 1 ? round(Math.min(OVERVIEW_AREA.width / bounds.width, OVERVIEW_AREA.height / bounds.height)) : 0;
+  return [audit.errors.length, shapeRank(excess), crossings, -fit, excess, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 
@@ -483,27 +486,29 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       const unfolded = { ...evaluate(layered, index), fold: 0, axis: null };
       // Fold only a shape beyond the band's slack; the unfolded result stays available as the fallback.
       const variants = !sequence && unfolded.excess > ASPECT_SLACK
-        ? foldedVariants(layered, { spacing: LAYOUT_TARGETS.layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap, laneOrder: hints.lanes }).map(variant => ({ ...evaluate(variant.graph, index, variant.errors), fold: variant.count, axis: variant.axis })) : [];
+        ? foldedVariants(layered, { spacing: layoutTargets(getDiagram(diagramTypeOf(graph))).layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap, laneOrder: hints.lanes }).map(variant => ({ ...evaluate(variant.graph, index, variant.errors), fold: variant.count, axis: variant.axis })) : [];
       // Folding exists to fix the shape: among the folds the quality gate accepts within the fold slack of the band, the one
       // with the fewest crossings wins, then the fewest segments; otherwise the nearest valid shape competes with the
       // unfolded result.
       const valid = variants.filter(variant => !variant.errors.length), within = valid.filter(variant => variant.excess <= ASPECT_SLACK);
       const fold = within.length ? within.reduce((a, b) => b.score[2] < a.score[2] ? b : a) : valid.sort((a, b) => a.excess - b.excess || compare(a, b))[0];
       const chosen = fold && compare(fold, unfolded) < 0 ? fold : unfolded;
-      const candidate = { index, ...chosen, folds: variants.map(variant => ({ axis: variant.axis, count: variant.fold, errors: variant.errors, excess: variant.excess, score: variant.score })) };
+      const candidate = { index, ...(hints.direction ? { direction: hints.direction } : {}), ...chosen, folds: variants.map(variant => ({ axis: variant.axis, count: variant.fold, errors: variant.errors, excess: variant.excess, score: variant.score })) };
       extras.set(candidate, { layered, prepared, hints });
       return candidate;
     };
     const solve = async (index, hints = {}) => {
       const prepared = sequence ? null : elkInput(graph, index, hints);
-      return finish(index, sequence ? compileSequence(graph, index) : applyElk(graph, await post(prepared.root), prepared), prepared, hints);
+      const layered = sequence ? compileSequence(graph, index) : applyElk(graph, await post(prepared.root), prepared);
+      if (hints.direction) layered.layout = { ...layered.layout, direction: hints.direction };
+      return finish(index, layered, prepared, hints);
     };
     // Crossing-directed local search over port order, decision branch sides and fold lanes (see REFINE_EVALUATIONS).
     const swapped = (list, i, j) => { const next = [...list]; [next[i], next[j]] = [next[j], next[i]]; return next; };
     const refine = async base => {
       let best = base, evaluations = 0;
       const first = extras.get(base);
-      let hints = { ports: new Map(first.prepared.buckets), lanes: stable(graph.edges).map(edge => edge.id), sides: new Map(), nodes: graph.nodes.some(node => node.layout?.order !== undefined) ? undefined : stable(graph.nodes).map(node => node.id) };
+      let hints = { ...(first.hints.direction ? { direction: first.hints.direction } : {}), ports: new Map(first.prepared.buckets), lanes: stable(graph.edges).map(edge => edge.id), sides: new Map(), nodes: graph.nodes.some(node => node.layout?.order !== undefined) ? undefined : stable(graph.nodes).map(node => node.id) };
       if (['flowchart', 'state'].includes(diagramTypeOf(graph))) for (const node of stable(graph.nodes.filter(node => ['decision', 'choice'].includes(node.kind)))) {
         const branches = stable(graph.edges.filter(edge => edge.source === node.id && edge.target !== node.id)).map(edge => edge.id);
         if (branches.length >= 2) hints.sides.set(node.id, branches);
@@ -544,8 +549,10 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       }
       return best;
     };
-    for (let index = 0; index < CANDIDATE_COUNT; index++) {
-      try { candidates.push(await solve(index)); }
+    // A recorded or authored layout.direction pins the direction, so a regenerated view keeps its orientation.
+    const directions = sequence ? [undefined] : graph.layout?.direction ? [graph.layout.direction] : layeredDirections(diagramTypeOf(graph));
+    for (const direction of directions) for (let index = 0; index < CANDIDATE_COUNT; index++) {
+      try { candidates.push(await solve(index, layeredDirections(diagramTypeOf(graph)).length > 1 ? { direction } : {})); }
       catch (error) {
         if (expired) throw error;
         candidates.push({ index, errors: [error.message], diagnostics: qualityFailure(graph, 'geometry', error.message).diagnostics, score: [Infinity, 0, 0, 0, 0, 0, 0, 0, index] });
@@ -559,7 +566,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     const best = candidates[0];
     if (best.errors.length) throw Object.assign(qualityFailure(graph, 'geometry', `No valid layout candidate for ${diagramTypeOf(graph)}:\n- ${best.errors.join('\n- ')}`, best.diagnostics), { diagnosticGraph: best.graph, candidates: candidates.map(({ graph, ...item }) => item) });
     best.graph.layout = { ...best.graph.layout, version: LAYOUT_VERSION, strategy: `${sequence ? 'sequence' : 'layered'}-${best.index}${best.fold ? `-fold${best.fold}${best.axis === 'columns' ? 'c' : ''}` : ''}` };
-    return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
+    return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, ...(best.direction ? { direction: best.direction } : {}), migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
   } catch (error) { throw error.phases ? error : qualityFailure(graph, 'geometry', error.message); }
   finally { await worker.terminate(); }
 }

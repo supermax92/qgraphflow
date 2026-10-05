@@ -5,8 +5,8 @@ const CUBE = [[0, .1], [.06, 0], [1, 0], [1, .9], [.94, 1], [0, 1]];
 
 export function deploymentOutline(node, x, y) {
   const { width: w, height: h } = node.size;
-  // Notation stays clear of the card text: the stand sits under the last line, whose baseline is 21px above the bottom,
-  // and the container's stacked boxes take the top-right corner, opposite the chip.
+  // Notation stays clear of the card text: the stand sits under the 14px bottom padding, and the stacked boxes, the folded
+  // corner and the cube's side face keep the top-right corner, which cardCorner leaves free of the kind tag.
   if (node.kind === 'device') return [
     ['rect', { x: x + 16, y, width: w - 32, height: h, rx: 10 }],
     ['path', { d: `M${x + w / 2} ${y + h - 10}V${y + h - 5}M${x + w / 2 - 30} ${y + h - 5}H${x + w / 2 + 30}`, fill: 'none' }]
@@ -29,13 +29,15 @@ const anchor = (node, side, offset) => {
   return rectAnchor(node, side, offset);
 };
 
-const contentInset = node => node.kind === 'external' ? Math.min(28, node.size.width * .08) : node.kind === 'device' ? 12 : 0;
+// Right-hand room the kind tag leaves for the notation in the top-right corner.
+const cardCorner = node => ({ container: 24, artifact: 18, node: 20 })[node.kind] ?? 0;
+const contentInset = node => node.kind === 'external' ? Math.min(28, node.size.width * .08) : ['device', 'database'].includes(node.kind) ? 12 : 0;
 
 export default {
   id: 'deployment', label: 'Deployment',
   nodeKinds: ["device", "node", "container", "artifact", "service", "database", "external"],
   groupKinds: ["host", "network", "cluster", "namespace"],
   edgeKinds: ["deploy", "network", "depends"],
-  render: (node, ...args) => genericCard(node, ...args, deploymentOutline, contentInset(node)), outline: deploymentOutline, anchor,
-  cardLayout: true, contentInset,
+  render: (node, ...args) => genericCard(node, ...args, deploymentOutline, contentInset(node), cardCorner(node)), outline: deploymentOutline, anchor,
+  cardLayout: true, contentInset, cardCorner,
 };

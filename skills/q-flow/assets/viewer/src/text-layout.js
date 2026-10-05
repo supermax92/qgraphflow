@@ -1,4 +1,5 @@
-import { TYPOGRAPHY } from './visual-style.js';
+import { TYPOGRAPHY, kindLabels } from './visual-style.js';
+import { translate } from './i18n.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 
 // Conservative system-font widths keep server-rendered SVG and browser labels in the same bounds.
@@ -79,11 +80,37 @@ export function layoutText(value, maxWidth, fontSize = TYPOGRAPHY.body, lineHeig
   return { lines, width: Math.ceil(Math.max(...lines.map(line => textWidth(line, fontSize)))), height: lines.length * lineHeight, lineHeight };
 }
 
-export function cardTextLayout(node) {
-  const width = node.size.width - 30;
-  const title = layoutText(node.label, width, TYPOGRAPHY.title, 26);
-  const subtitle = layoutText(node.subtitle ?? '', width, TYPOGRAPHY.body, 24);
-  return { title, subtitle, minHeight: 65 + title.height + subtitle.height };
+// Component card: the icon plate, the title and the kind tag share the first row; the subtitle and the source anchor (file
+// name and lines) follow in the same text column. The whole block is centred vertically in a taller card.
+export const CARD = Object.freeze({ pad: 14, plate: 24, textX: 48, tagGap: 8, tagPad: 8, titleLine: 26, subtitleLine: 24, sourceLine: 20, minHeight: 64, maxWidth: 360 });
+// The card shows where a component is defined (file name and first line); the quick look and Inspector give the full path and range.
+export const cardSourceText = node => node.source?.file ? `${node.source.file.split('/').at(-1)}:${node.source.lineStart}` : '';
+// A source line never wraps: a file name too long for the column keeps its start and end around an ellipsis.
+function oneLine(value, width, fontSize) {
+  const colon = value.lastIndexOf(':'), name = value.slice(0, colon), line = value.slice(colon);
+  for (let keep = name.length - 1; textWidth(value, fontSize) > width && keep > 4; keep--) value = `${name.slice(0, Math.ceil(keep / 2))}…${name.slice(name.length - Math.floor(keep / 2))}${line}`;
+  return value;
+}
+export const cardTag = (node, locale) => {
+  const value = translate(locale, kindLabels[node.kind] ?? node.kind);
+  // The stereotype style adds .6px letter spacing.
+  return { text: value, width: Math.ceil(textWidth(value, TYPOGRAPHY.small) + value.length * .6) + 2 * CARD.tagPad };
+};
+
+// classic: the card drawn before compact cards (kind row above a full-width title, no source line). Views whose stored
+// geometry predates compact cards keep it; see compactCards.
+// corner: extra room right of the kind tag for notation drawn in the card's top-right corner.
+export function cardTextLayout(node, locale, classic = false, corner = 0) {
+  if (classic) {
+    const title = layoutText(node.label, node.size.width - 30, TYPOGRAPHY.title, 26), subtitle = layoutText(node.subtitle ?? '', node.size.width - 30, TYPOGRAPHY.body, 24);
+    return { title, subtitle, minHeight: Math.max(100, 65 + title.height + subtitle.height) };
+  }
+  const tag = cardTag(node, locale), column = node.size.width - CARD.textX - CARD.pad;
+  const title = layoutText(node.label, column - tag.width - CARD.tagGap - corner, TYPOGRAPHY.title, CARD.titleLine);
+  const subtitle = layoutText(node.subtitle ?? '', column, TYPOGRAPHY.body, CARD.subtitleLine);
+  const source = layoutText(oneLine(cardSourceText(node), column, TYPOGRAPHY.small), column, TYPOGRAPHY.small, CARD.sourceLine);
+  const contentHeight = CARD.pad + title.height + (subtitle.height ? 4 + subtitle.height : 0) + (source.height ? 6 + source.height : 0) + CARD.pad;
+  return { title, subtitle, source, tag, contentHeight, minHeight: Math.max(CARD.minHeight, contentHeight) };
 }
 
 export function edgeLabelLayout(value, maxWidth = LAYOUT_TARGETS.labelWidth) {

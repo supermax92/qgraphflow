@@ -1,7 +1,7 @@
 import { auditGraphLayout, boxDistance, occupiedBox, graphBounds, segmentCrossesBox } from './edge-routing.js';
-import { diagramTypeOf, getDiagram } from './diagrams/registry.js';
-import { cardTextLayout, layoutText, groupHeadingLayout } from './text-layout.js';
-import { LAYOUT_LIMITS } from './layout-spacing.js';
+import { cardText, compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
+import { layoutText, groupHeadingLayout } from './text-layout.js';
+import { layeredDown, layoutLimits } from './layout-spacing.js';
 import { minimumNodeSize } from './layout-measure.js';
 import { validateGraph } from './graph-validation.js';
 
@@ -37,7 +37,7 @@ export function requireDiagramQuality(graph) {
 }
 
 export function auditLayoutQuality(graph) {
-  const legacy = auditGraphLayout(graph), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = LAYOUT_LIMITS;
+  const legacy = auditGraphLayout(graph), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = layoutLimits(diagram);
   const diagnostics = [...legacy.diagnostics, ...legacy.crossings];
   const issue = (ruleId, ids, measured, required, boxes, remediation) => diagnostics.push({ ruleId, severity: 'error', diagramType: type, elementIds: ids, measured, required, bounds: boxes, remediation });
   const nodeBoxes = new Map(graph.nodes.map(node => [node.id, occupiedBox(node, type)]));
@@ -60,7 +60,7 @@ export function auditLayoutQuality(graph) {
       const branches = graph.edges.filter(edge => edge.source === node.id && edge.target !== node.id);
       return { node, branches, sides: new Set(branches.map(edge => legacy.routes.get(edge.id).sourceSide)) };
     }).filter(item => item.branches.length >= 2) : [];
-    const vertical = !['er', 'deployment', 'dataflow', 'usecase'].includes(type);
+    const vertical = layeredDown(type, graph.layout);
     const coordinate = vertical ? 'y' : 'x', dimension = vertical ? 'height' : 'width';
     // A layout folded into top-down columns continues at the top of the next column: a successor that sits entirely to the
     // right of its predecessor keeps the notation's reading direction; a path or hierarchy step must also start higher.
@@ -89,10 +89,11 @@ export function auditLayoutQuality(graph) {
       if (!['left', 'right'].every(side => sides.has(side))) issue('semantic.branch-sides', [node.id, ...branches.map(edge => edge.id)], [...sides], ['left', 'right'], [nodeBoxes.get(node.id)], 'Give alternatives separate left and right corridors while retaining their real targets and merges.');
     }
   }
+  const classicCard = !compactCards(graph);
   for (let i = 0; i < graph.nodes.length; i++) {
     const node = graph.nodes[i], rect = nodeBoxes.get(node.id), minimum = minimumNodeSize(node, type, graph.meta.locale);
     if (diagram.cardLayout) {
-      const inset = diagram.contentInset?.(node) ?? 0, required = Math.max(100, cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - inset * 2 } }).minHeight);
+      const required = cardText(node, type, graph.meta.locale, classicCard).minHeight;
       if (node.size.height < required) issue('text.node-height', [node.id], node.size.height, required, [rect], 'Increase height to keep full title and subtitle at 20/16px.');
     } else if (diagram.textArea && node.kind !== 'actor' && !['initial', 'final'].includes(node.kind)) {
       const area = diagram.textArea(node), title = layoutText(node.label, area.width, 20, 29), body = layoutText(node.subtitle, area.width, 16, 23.2), required = title.height + (body.height ? body.height + 5 : 0);

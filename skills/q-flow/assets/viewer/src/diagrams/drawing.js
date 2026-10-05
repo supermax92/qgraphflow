@@ -8,7 +8,9 @@ export function groupHeadingSvg(group, x = 0, y = 0) {
 
 export function groupFrameSvg(group, appearance, x = 0, y = 0) {
   const radius = ['loop', 'par'].includes(group.kind) ? 5 : 14;
-  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="${appearance.stroke}" stroke-width="1"/>`;
+  // A security boundary is a trust line, drawn dashed like Archify's security groups and UML trust boundaries.
+  const dash = group.kind === 'security' ? ' stroke-dasharray="6 4"' : '';
+  return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="${appearance.stroke}" stroke-width="1"${dash}/>`;
 }
 
 export function escapeXml(value = '') {
@@ -64,7 +66,8 @@ export function paint(outline, attributes = {}) {
   return outline.map(([tag, geometry]) => `<${tag}${Object.entries({ ...geometry, ...(Object.keys(attributes).length ? { class: 'node-surface' } : {}), ...attributes, ...(geometry.fill === undefined ? {} : { fill: geometry.fill }) }).map(([key, value]) => ` ${key}="${escapeXml(value)}"`).join('')}/>`).join('');
 }
 export const rectangle = (node, x, y, radius = 10, height = node.size.height) => [['rect', { x, y, width: node.size.width, height, rx: radius }]];
-// Flat caps keep the cylinder above the card's chip row (y + 13) and well below its last text baseline (h - 21); the
+// Flat caps (2–12px) stay above the card's 14px top padding and inside its 14px bottom padding; the walls stand 12px in,
+// so database cards inset their content by 12px. The
 // 2px top and bottom insets are where edges attach.
 export const cylinder = (node, x, y) => {
   const { width: w, height: h } = node.size, ry = 5, top = y + 2 + ry, bottom = y + h - 2 - ry;

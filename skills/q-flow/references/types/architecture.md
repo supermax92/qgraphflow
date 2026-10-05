@@ -12,6 +12,7 @@ Components and their dependencies: who calls, reads or depends on whom, inside w
 - Edges follow the direction of the call or data movement: `request` for HTTP / RPC into the system, `call` for in-process or service calls, `data` for reads / writes, `depends` for configuration or library dependency, `success` / `failure` for outcome branches, `framework` for wiring supplied by a framework, `optional` for conditional paths. Label with the operation (`createOrder`, `publish order.created`), not the kind.
 - Edge `site`: the call, client construction or config read that makes the edge hold.
 - `groupId` puts a node inside a real boundary (`runtime` = one process / JVM / container, `ownership` = team or module, `security` = trust zone, `external` = outside world). Nodes outside every group are fine.
+- Card text (this replaces graph-common's real-name rule for architecture): `label` is the component's short name as the team would say it (`订单服务`, `Order API`; about 12 characters or 3 words), never a list of classes; `subtitle` is one short line naming the class, route or table it stands for, verbatim (`OrderController`). One node is one component: when several classes form it, label their shared role, name the main one or the package in `subtitle` and list the rest in `facts`. Edge labels stay within 3 words (`下单`, `扣减库存`); details go to `facts`. Draw a filter or interceptor that guards a whole area as a `security` group around that area, not as an edge to each component.
 - Keep 6–12 nodes per view; a second view beats a crowded one. Every node needs a `source` anchor except externals and framework pieces.
 
 ## Minimal valid skeleton
@@ -22,9 +23,9 @@ Components and their dependencies: who calls, reads or depends on whom, inside w
   "groups": [{ "id": "process", "label": "order-service process", "kind": "runtime" }],
   "nodes": [
     { "id": "client", "label": "Web client", "kind": "external", "subtitle": "calls POST /orders" },
-    { "id": "api", "label": "OrderController", "kind": "service", "groupId": "process", "module": "order", "source": { "kind": "source", "file": "src/api/orders.js", "lineStart": 1, "lineEnd": 40, "symbol": "OrderController" } },
-    { "id": "service", "label": "OrderService", "kind": "business", "groupId": "process", "module": "order", "subtitle": "createOrder · payOrder", "source": { "kind": "source", "file": "src/services/order-service.js", "lineStart": 6, "lineEnd": 49 } },
-    { "id": "db", "label": "orders DB", "kind": "database", "groupId": "process", "module": "order", "source": { "kind": "schema", "file": "db/schema.sql", "lineStart": 1, "lineEnd": 31 } }
+    { "id": "api", "label": "Order API", "kind": "service", "groupId": "process", "module": "order", "subtitle": "OrderController", "source": { "kind": "source", "file": "src/api/orders.js", "lineStart": 1, "lineEnd": 40, "symbol": "OrderController" } },
+    { "id": "service", "label": "Order service", "kind": "business", "groupId": "process", "module": "order", "subtitle": "OrderService", "source": { "kind": "source", "file": "src/services/order-service.js", "lineStart": 6, "lineEnd": 49 } },
+    { "id": "db", "label": "Orders DB", "kind": "database", "groupId": "process", "module": "order", "subtitle": "orders table", "source": { "kind": "schema", "file": "db/schema.sql", "lineStart": 1, "lineEnd": 31 } }
   ],
   "edges": [
     { "id": "e1", "source": "client", "target": "api", "kind": "request", "label": "HTTP", "evidence": "source", "site": { "file": "src/api/orders.js", "lineStart": 5, "symbol": "POST /orders" } },

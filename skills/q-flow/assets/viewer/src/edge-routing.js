@@ -1,7 +1,7 @@
 import { TYPOGRAPHY } from './visual-style.js';
-import { cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine } from './text-layout.js';
+import { CARD, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine } from './text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
-import { diagramTypeOf, getDiagram } from './diagrams/registry.js';
+import { compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { actorTop } from './diagrams/usecase.js';
 import { stateSymbolX } from './diagrams/state.js';
@@ -484,9 +484,10 @@ export function auditGraphLayout(graph) {
       if (route.points.some(p => p.y > Math.min(...[edge.source, edge.target].map(id => { const n = graph.nodes.find(n => n.id === id); return n.position.y + n.size.height; })))) fail('sequence.lifeline', [edge.id, edge.source, edge.target], `layout: sequence edge ${edge.id} exceeds its participant lifeline`);
     }
   }
+  const classicCard = getDiagram(type).cardLayout && !compactCards(graph);
   if (getDiagram(type).cardLayout) for (const node of graph.nodes) {
-    if (node.size.height < 100) continue;
-    const { minHeight } = cardTextLayout(node);
+    if (node.size.height < (classicCard ? 100 : CARD.minHeight)) continue;
+    const { minHeight } = cardTextLayout(node, graph.meta.locale, classicCard);
     if (node.size.height < minHeight) fail('text.card-height', [node.id], `layout: node ${node.id} text needs at least ${minHeight}px height at 20/16px; enlarge the node and check its route clearance`);
   }
   for (let left = 0; left < graph.nodes.length; left += 1) {

@@ -1,6 +1,6 @@
 import { SUPPORTED_LOCALES } from './i18n.js';
 import { auditGraphLayout, graphBounds } from './edge-routing.js';
-import { MAX_SCREENS, OVERVIEW_AREA, READABLE_ZOOM } from './layout-spacing.js';
+import { MAX_SCREENS, OVERVIEW_AREA, READABLE_ZOOM, layeredDirections } from './layout-spacing.js';
 import { missingCallExecutions, validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
 import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
@@ -189,7 +189,8 @@ function validateLayoutSemantics(graph) {
     }
   }
   if (graph.layout !== undefined && !isObject(graph.layout)) errors.push('layout must be an object');
-  else for (const key of ['primaryPath', 'participantOrder']) {
+  else if (graph.layout?.direction !== undefined && !layeredDirections(type).includes(graph.layout.direction)) errors.push(`layout.direction must be one of ${layeredDirections(type).join(', ')} for ${type}`);
+  if (isObject(graph.layout)) for (const key of ['primaryPath', 'participantOrder']) {
     const list = graph.layout?.[key];
     if (list === undefined) continue;
     if (!Array.isArray(list) || !list.length || list.some(id => typeof id !== 'string' || !nodes.has(id)) || new Set(list).size !== list.length) {

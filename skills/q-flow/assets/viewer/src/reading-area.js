@@ -1,4 +1,5 @@
-import { READABLE_ZOOM } from './layout-spacing.js';
+import { OVERVIEW_ZOOM, READABLE_ZOOM } from './layout-spacing.js';
+import { isCore } from './visual-style.js';
 
 // LEGEND is the float button under the toolbar's left edge (.float-btn height in styles.css).
 export const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12, LEGEND = 28;
@@ -52,14 +53,18 @@ export function locateViewport(bounds, area, current) {
   return { zoom, x: area.left + area.width / 2 - (bounds.x + bounds.width / 2) * zoom, y: area.top - bounds.y * zoom };
 }
 
-// Where the reading flow begins: the primary path, else the start / initial node; none means the graph's top-left corner.
-export const readingStart = graph => graph.nodes.find(node => node.id === graph.layout?.primaryPath?.[0]) ?? graph.nodes.find(node => ['start', 'initial'].includes(node.kind));
+// Where reading begins: the primary path, else the start / initial node. A view without either begins at its business center
+// (core) or else at the node that comes first in reading order, so the readable window never opens on empty canvas; sequence
+// views keep their top-left corner, the first participant's head.
+export const readingStart = graph => graph.nodes.find(node => node.id === graph.layout?.primaryPath?.[0]) ?? graph.nodes.find(node => ['start', 'initial'].includes(node.kind))
+  ?? (graph.meta?.diagramType === 'sequence' || !graph.nodes.every(node => node.position) ? undefined
+    : graph.nodes.find(isCore) ?? [...graph.nodes].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)[0]);
 
-// Opening view. Fit-all stays the default; when it would fall below the readable floor, show the floor-scale window that
-// begins at the reading start instead: clamped to the graph, centred on an axis the graph does not fill, and below the legend
-// button. null means fit-all already reads fine.
-export function readableViewport(bounds, start, area, floor = READABLE_ZOOM) {
-  if (Math.min(area.width / bounds.width, area.height / bounds.height) >= floor) return null;
+// Opening view. Fit-all stays the default while the whole view reads at OVERVIEW_ZOOM or more; a larger view opens at the
+// readable floor on a window that begins at the reading start instead: clamped to the graph, centred on an axis the graph
+// does not fill, and below the legend button. null means fit-all.
+export function readableViewport(bounds, start, area, floor = READABLE_ZOOM, overview = OVERVIEW_ZOOM) {
+  if (Math.min(area.width / bounds.width, area.height / bounds.height) >= overview) return null;
   const origin = (from, extent, center, length) => {
     const span = length / floor;
     return extent <= span ? from + (extent - span) / 2 : Math.min(from + extent - span, Math.max(from, center - span / 2));

@@ -45,12 +45,12 @@ async function saveInto(dir, input, { page = 'index.html', failOn, picker } = {}
 }
 
 test('saving into the page folder writes graph.json, the page, then every SVG the generator would write', async t => {
-  for (const [input, args, view, nodeId] of [[orderFlow, [], null, 'api'], [ecommerce, ['--layout', 'preserve'], 0, 'checkout']]) {
+  for (const [input, args, view, nodeId, dx] of [[orderFlow, [], null, 'api', -16], [ecommerce, ['--layout', 'preserve'], 0, 'checkout', 16]]) {
     const { dir, svgs } = generate(t, input, ...args);
     const before = contents(dir), saved = readJson(path.join(dir, 'graph.json'));
-    // A drag the layout gate accepts.
+    // A drag the layout gate accepts: away from the edges that leave the node's right side.
     const node = (view === null ? saved : saved.diagrams[view]).nodes.find(item => item.id === nodeId);
-    node.position = { ...node.position, x: node.position.x + 16 };
+    node.position = { ...node.position, x: node.position.x + dx };
     const { writes, status } = await saveInto(dir, saved);
     assert.equal(status, SAVED);
     assert.deepEqual(writes, ['graph.json', 'index.html', ...svgs], 'graph.json first, the page next, then the SVGs in view order');
@@ -80,7 +80,8 @@ test('a wrong folder, a cancelled picker or a failed write reports it and keeps 
   const { dir, svgs } = generate(t, orderFlow);
   fs.renameSync(path.join(dir, 'index.html'), path.join(dir, '查看器.html'));
   const input = readJson(path.join(dir, 'graph.json'));
-  input.nodes[0].label = 'Edited client';
+  // An edit that still fits the card; a longer one would leave the layout for regeneration (see the draft test).
+  input.nodes[0].label = 'Edited';
   const before = contents(dir);
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-empty-'));
   t.after(() => fs.rmSync(empty, { recursive: true, force: true }));

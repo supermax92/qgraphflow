@@ -37,7 +37,7 @@ const semanticModel = value => {
   const graph = structuredClone(value);
   for (const item of [...graph.nodes, ...(graph.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of graph.edges) delete edge.route;
-  if (graph.layout) { delete graph.layout.version; delete graph.layout.strategy; if (!Object.keys(graph.layout).length) delete graph.layout; }
+  if (graph.layout) { delete graph.layout.version; delete graph.layout.strategy; delete graph.layout.direction; if (!Object.keys(graph.layout).length) delete graph.layout; }
   return graph;
 };
 
@@ -426,6 +426,7 @@ test('reveals without shrinking and locates sequence heads at a readable scale',
 test('opens a graph too large to fit at the readable floor on its reading start', () => {
   const area = { left: 24, top: 76, right: 1416, bottom: 764, width: 1392, height: 688 }, top = area.top + LEGEND;
   assert.equal(readableViewport({ x: 0, y: 0, width: 1500, height: 700 }, undefined, area), null, 'a graph that reads at the floor keeps fit-all');
+  assert.equal(readableViewport({ x: 0, y: 0, width: 2600, height: 1300 }, undefined, area), null, 'a whole view that still reads at the overview floor opens whole');
   assert.deepEqual(readableViewport({ x: 10, y: 20, width: 6000, height: 6840 }, undefined, area),
     { zoom: READABLE_ZOOM, x: area.left - 10 * READABLE_ZOOM, y: top - 20 * READABLE_ZOOM }, 'without a start the top-left corner opens below the legend button');
   const wide = readableViewport({ x: 0, y: 0, width: 2000, height: 1800 }, box('init', 'Start', 'initial', 1800, 0, 100, 80), area);
@@ -437,7 +438,9 @@ test('opens a graph too large to fit at the readable floor on its reading start'
   const nodes = [box('a', 'A', 'process', 0, 0), box('s', 'S', 'start', 0, 0), box('p', 'P', 'process', 0, 0)];
   assert.equal(readingStart({ nodes, layout: { primaryPath: ['p', 'a'] } }).id, 'p', 'the primary path wins');
   assert.equal(readingStart({ nodes }).id, 's', 'else the start / initial node');
-  assert.equal(readingStart({ nodes: [nodes[0]] }), undefined, 'else none');
+  assert.equal(readingStart({ nodes: [nodes[0], { ...nodes[2], tags: ['core'] }] }).id, 'p', 'else the business center');
+  assert.equal(readingStart({ nodes: [{ ...nodes[2], position: { x: 0, y: 40 } }, nodes[0]] }).id, 'a', 'else the first node in reading order');
+  assert.equal(readingStart({ meta: { diagramType: 'sequence' }, nodes: [nodes[0]] }), undefined, 'a sequence keeps its top-left corner');
 });
 
 test('derives session text and positions without mutating the authored graph, then resets exactly', () => {
@@ -995,10 +998,10 @@ test('rejects a self-loop route that crosses its own node', () => {
   assert.match(validateGraph(invalidLoop).join('\n'), /layout: self-loop retry crosses node pending/);
 });
 
-test('strict CLI rejects nodes below the 48px clearance threshold', () => {
+test('strict CLI rejects nodes below the 32px component-card clearance', () => {
   const tight = graph('architecture', [
     box('caller', 'Caller', 'external', 0, 0),
-    box('api', 'Order API', 'service', 227, 0)
+    box('api', 'Order API', 'service', 211, 0)
   ], []);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'codegraph-flow-layout-warning-'));
   const input = path.join(root, 'graph.json');

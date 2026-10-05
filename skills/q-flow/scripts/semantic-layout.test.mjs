@@ -13,7 +13,7 @@ import { layoutText } from '../assets/viewer/src/text-layout.js';
 import { routeCrossings, createEdgeRoutes, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { sequenceEndpointY, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { auditLayoutQuality, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
-import { ASPECT_SLACK } from '../assets/viewer/src/layout-spacing.js';
+import { ASPECT_SLACK, layeredDirections } from '../assets/viewer/src/layout-spacing.js';
 import { compileGraphLayout, migrateOwnership, aspectExcess, LAYOUT_VERSION } from './compile-layout.mjs';
 import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
 import { writeOutputs } from './generate-viewer.mjs';
@@ -197,9 +197,24 @@ test('horizontal diagram types keep a short chain on one row and fold a long one
   }
 });
 
-test('a long architecture chain folds into columns that keep reading downward with their boundaries intact', async () => {
+test('an architecture view keeps the direction that fits one screen at the larger zoom unless one is pinned', async () => {
+  const fit = graph => { const bounds = graphBounds(graph); return Math.min(1392 / bounds.width, 688 / bounds.height); };
+  const free = await compileGraphLayout(chainOf('architecture', 11, 'service'));
+  const down = await compileGraphLayout({ ...chainOf('architecture', 11, 'service'), layout: { direction: 'down' } });
+  assert.equal(free.graph.layout.direction, 'right');
+  assert.equal(free.report.candidates.length, 12);
+  assert.equal(down.graph.layout.direction, 'down');
+  assert.equal(down.report.candidates.length, 6);
+  assert.ok(fit(free.graph) > fit(down.graph), 'the wide rows fit the screen better than the tall columns');
+  assert.deepEqual(auditLayoutQuality(free.graph).errors, []);
+  assert.deepEqual((await compileGraphLayout(free.graph)).graph.nodes, free.graph.nodes, 'the recorded direction is kept on recompilation');
+  assert.deepEqual(semanticErrors({ ...chainOf('flowchart', 3, 'process'), layout: { direction: 'right' } }), ['layout.direction must be one of down for flowchart']);
+});
+
+test('a long architecture chain pinned top-down folds into columns that keep reading downward with their boundaries intact', async () => {
   const model = chainOf('architecture', 11, 'service', i => ({ groupId: i < 8 ? 'sync' : 'async' }));
   model.groups = [{ id: 'sync', label: 'Synchronous boundary', kind: 'runtime' }, { id: 'async', label: 'Asynchronous boundary', kind: 'runtime' }];
+  model.layout = { direction: 'down' };
   const { graph, report } = await compileGraphLayout(model);
   assert.deepEqual(auditLayoutQuality(graph).errors, []);
   assert.equal(graph.layout.strategy, 'layered-0-fold3c');
@@ -210,7 +225,7 @@ test('a long architecture chain folds into columns that keep reading downward wi
   const columnOf = node => columns.indexOf(node.position.x);
   assert.deepEqual(graph.nodes.map(columnOf), [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2], 'the second cut lands on the boundary change');
   assert.ok(reads(graph, true), 'every column reads downward and the chain continues at the top of the next');
-  assert.equal(aspectExcess(graph), 1);
+  assert.ok(selected.folds.every(fold => fold.errors.length || fold.excess >= selected.excess), 'the fold nearest the band wins when compact cards make every fold a little wide');
   const box = item => ({ ...item.position, ...item.size });
   const inside = (outer, inner) => inner.x >= outer.x && inner.y >= outer.y && inner.x + inner.width <= outer.x + outer.width && inner.y + inner.height <= outer.y + outer.height;
   for (const group of graph.groups) for (const node of graph.nodes) {
@@ -392,7 +407,7 @@ test('state endpoint descriptions remain visible beside solid symbols and clear 
   assert.ok(auditLayoutQuality(compiled).diagnostics.some(item => item.ruleId === 'semantic.state-endpoint'));
 });
 
-test('strict layout permits clear crossings and enforces 48px nodes and 24px parallel channels', () => {
+test('strict layout permits clear crossings and enforces node clearance (32px between component cards, 48px otherwise) and 24px parallel channels', () => {
   const node = (id, x, y) => ({ id, label: id, kind: 'service', position: { x, y }, size: { width: 240, height: 100 } });
   const edge = (id, source, target, via) => ({ id, source, target, kind: 'call', evidence: 'inference', ...(via ? { route: { via } } : {}) });
   const graph = { meta: { title: 'Crossing', sourceRef: 'conceptual:crossing', diagramType: 'architecture' }, nodes: [node('l', 0, 400), node('r', 800, 400), node('t', 400, 0), node('b', 400, 800)], edges: [edge('horizontal', 'l', 'r'), edge('vertical', 't', 'b')] };
@@ -400,10 +415,14 @@ test('strict layout permits clear crossings and enforces 48px nodes and 24px par
   assert.deepEqual(audit.errors, []);
   assert.equal(audit.crossings.length, 1);
   assert.equal(audit.crossings[0].severity, 'info');
-  const pair = { ...graph, nodes: [node('a', 0, 0), node('b', 288, 0)], edges: [] };
+  const pair = { ...graph, nodes: [node('a', 0, 0), node('b', 272, 0)], edges: [] };
   assert.deepEqual(auditLayoutQuality(pair).errors, []);
   pair.nodes[1].position.x--;
-  assert.ok(auditLayoutQuality(pair).diagnostics.some(item => item.ruleId === 'spacing.nodes' && item.measured === 47));
+  assert.ok(auditLayoutQuality(pair).diagnostics.some(item => item.ruleId === 'spacing.nodes' && item.measured === 31));
+  const processes = { meta: { ...graph.meta, diagramType: 'dataflow' }, nodes: [{ ...node('a', 0, 0), kind: 'process' }, { ...node('b', 288, 0), kind: 'process' }], edges: [] };
+  assert.deepEqual(auditLayoutQuality(processes).errors.filter(error => /spacing\.nodes/.test(error)), []);
+  processes.nodes[1].position.x--;
+  assert.ok(auditLayoutQuality(processes).diagnostics.some(item => item.ruleId === 'spacing.nodes' && item.measured === 47));
   const row = { ...graph, nodes: Array.from({ length: 8 }, (_, i) => node(`service-${i}`, i * 400, i % 3 * 12)), edges: [] };
   assert.ok(auditLayoutQuality(row).diagnostics.some(item => item.ruleId === 'semantic.single-row'), 'Small y offsets retain the legacy row degeneration.');
   const parallel = { ...graph, nodes: [node('a', 0, 0), node('b', 0, 400), node('c', 800, 0), node('d', 800, 400)], edges: [edge('upper', 'a', 'c', [{ x: 260, y: 50 }, { x: 300, y: 50 }, { x: 300, y: 200 }, { x: 740, y: 200 }, { x: 760, y: 50 }]), edge('lower', 'b', 'd', [{ x: 260, y: 450 }, { x: 300, y: 450 }, { x: 300, y: 224 }, { x: 740, y: 224 }, { x: 760, y: 450 }])] };
@@ -437,12 +456,13 @@ test('label and ownership clearances accept their boundary and reject one pixel 
   graph.edges[0].route.labelAt.y++;
   assert.equal(has(graph, 'spacing.label-edge'), true);
 
-  const owned = { ...graph, edges: [], nodes: [{ ...node('a', 32, 58), groupId: 'left' }, { ...node('b', 680, 58), groupId: 'right' }],
-    groups: [{ id: 'left', label: 'Left', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 600, height: 400 } }, { id: 'right', label: 'Right', kind: 'runtime', position: { x: 648, y: 0 }, size: { width: 400, height: 400 } }] };
+  // Component cards keep 24px inside their boundary and 32px between sibling boundaries.
+  const owned = { ...graph, edges: [], nodes: [{ ...node('a', 24, 58), groupId: 'left' }, { ...node('b', 656, 58), groupId: 'right' }],
+    groups: [{ id: 'left', label: 'Left', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 600, height: 400 } }, { id: 'right', label: 'Right', kind: 'runtime', position: { x: 632, y: 0 }, size: { width: 400, height: 400 } }] };
   assert.deepEqual(auditLayoutQuality(owned).errors, []);
   for (const axis of ['x', 'y']) {
     const invalid = structuredClone(owned); invalid.nodes[0].position[axis]--;
-    assert.equal(has(invalid, 'group.member-inset'), true, `${axis}: preserve 32px side inset and 24px below the measured heading`);
+    assert.equal(has(invalid, 'group.member-inset'), true, `${axis}: preserve 24px side inset and 24px below the measured heading`);
   }
   owned.groups[1].position.x--;
   assert.equal(has(owned, 'group.sibling-gap'), true);
@@ -456,7 +476,7 @@ test('bounded compilation preserves facts and repeats geometry across reorder an
     const result = structuredClone(graph);
     for (const item of [...result.nodes, ...(result.groups ?? [])]) { delete item.position; delete item.size; }
     for (const edge of result.edges) delete edge.route;
-    if (result.layout) { delete result.layout.version; delete result.layout.strategy; }
+    if (result.layout) { delete result.layout.version; delete result.layout.strategy; delete result.layout.direction; }
     return result;
   };
   const geometry = graph => ({ nodes: [...graph.nodes].sort((a, b) => a.id.localeCompare(b.id)), edges: [...graph.edges].sort((a, b) => a.id.localeCompare(b.id)), groups: [...(graph.groups ?? [])].sort((a, b) => a.id.localeCompare(b.id)), routes: [...createEdgeRoutes(graph)].sort(([a], [b]) => a.localeCompare(b)) });
@@ -470,7 +490,7 @@ test('bounded compilation preserves facts and repeats geometry across reorder an
     assert.deepEqual(geometry(first.graph), geometry(again.graph), `${type}: idempotent`);
     assert.deepEqual(geometry(first.graph), geometry(permuted.graph), `${type}: permutation`);
     assert.deepEqual({ type, strategy: first.graph.layout.strategy, nodes: first.graph.nodes.map(({ id, position, size }) => ({ id, position, size })), edges: first.graph.edges.map(({ id, route }) => ({ id, route })), groups: (first.graph.groups ?? []).map(({ id, position, size }) => ({ id, position, size })) }, snapshot.diagrams.find(item => item.type === type), `${type}: reviewed geometry baseline`);
-    assert.equal(first.report.candidates.length, 6);
+    assert.equal(first.report.candidates.length, 6 * layeredDirections(type).length);
     assert.deepEqual(auditLayoutQuality(first.graph).errors, []);
   }
   await assert.rejects(compileGraphLayout(fixture('architecture'), { timeoutMs: 1 }), /exceeded 1ms/);
@@ -595,7 +615,7 @@ test('legacy migration requires unique containment and preserve retains complete
   const overlap = structuredClone(legacy);
   overlap.nodes[0].position = { x: overlap.groups[0].position.x - 10, y: overlap.groups[0].position.y + 40 };
   assert.throws(() => migrateOwnership(overlap), /Ambiguous legacy containment/);
-  const invalid = structuredClone(graph); invalid.nodes[0].position = { ...invalid.nodes[1].position };
+  const invalid = structuredClone(graph); invalid.nodes[1].position = { ...invalid.nodes[0].position };
   await assert.rejects(compileGraphLayout(invalid, { layout: 'preserve' }), /Diagram quality failed/);
 });
 
@@ -688,7 +708,7 @@ test('endpoint, bottom/right inset and sequence message boundaries reject one pi
       assert.equal(has(invalid, 'route.endpoint-stub'), true, `${type}/${end}: ${stub - 1}px`);
     }
   }
-  const owned = { meta: { title: 'Inset boundary', sourceRef: 'conceptual:boundary', diagramType: 'architecture' }, nodes: [{ id: 'a', label: 'A', kind: 'service', groupId: 'group', position: { x: 32, y: 84 }, size: { width: 240, height: 100 } }], edges: [], groups: [{ id: 'group', label: 'Group', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 304, height: 216 } }] };
+  const owned = { meta: { title: 'Inset boundary', sourceRef: 'conceptual:boundary', diagramType: 'architecture' }, nodes: [{ id: 'a', label: 'A', kind: 'service', groupId: 'group', position: { x: 24, y: 84 }, size: { width: 240, height: 100 } }], edges: [], groups: [{ id: 'group', label: 'Group', kind: 'runtime', position: { x: 0, y: 0 }, size: { width: 288, height: 208 } }] };
   assert.equal(has(owned, 'group.member-inset'), false);
   for (const axis of ['width', 'height']) { const invalid = structuredClone(owned); invalid.groups[0].size[axis]--; assert.equal(has(invalid, 'group.member-inset'), true, axis); }
   const { graph } = await compileGraphLayout(fixture('sequence'));
