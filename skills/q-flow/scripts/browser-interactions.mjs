@@ -19,11 +19,12 @@ import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js'
 import { sequencePairs, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { moduleColorMap, groupAppearanceMap, nodeAppearance, nodeMetrics, PALETTES, TYPOGRAPHY, isCore, sequenceGroupColor } from '../assets/viewer/src/visual-style.js';
-import { diagramLabels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
+import { compactCards, diagramLabels, getDiagram, hasArrow, isDashed, edgeMarkers } from '../assets/viewer/src/diagrams/registry.js';
 import { translate } from '../assets/viewer/src/i18n.js';
 import { validateGraph, validateGraphInput } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
+import { fitCard } from '../assets/viewer/src/session-graph.js';
 
 const [inputDirectory, reportDirectory] = process.argv.slice(2);
 if (!inputDirectory || !reportDirectory) throw new Error('Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY');
@@ -651,6 +652,14 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
   }, true);
 }
 
+// The model a saved page holds after a node's label is edited: the label, plus the room a card that no longer fits its text
+// grows by with its boundaries (fitCard). Nothing else in any view changes.
+function modelAfterLabel(type, id, label) {
+  const expected = structuredClone(input), view = (expected.diagrams ?? [expected]).find(item => item.meta.diagramType === type);
+  view.nodes.find(node => node.id === id).label = label;
+  for (const [key, box] of fitCard(view, id, !compactCards(graphs.find(item => item.meta.diagramType === type)))) Object.assign([...view.nodes, ...(view.groups ?? [])].find(item => item.id === key), box);
+  return expected;
+}
 async function saveFailureChecks(browser, url, graph) {
   await runCase(browser, 'save-failures', viewports[0], {}, async page => {
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await setLocked(page, false);
@@ -658,8 +667,7 @@ async function saveFailureChecks(browser, url, graph) {
     await button(page, '编辑文字').click();
     const label = target(graph).label + ' saved draft';
     await page.getByRole('textbox', { name: '名称', exact: true }).fill(label); await button(page, '保存').click();
-    const expected = structuredClone(input), current = (expected.diagrams ?? [expected]).find(item => item.meta.diagramType === graph.meta.diagramType);
-    current.nodes.find(node => node.id === target(graph).id).label = label;
+    const expected = modelAfterLabel(graph.meta.diagramType, target(graph).id, label);
     const failures = [];
     for (const phase of ['cancel', 'open', 'write', 'close']) {
       await page.evaluate(phase => {
@@ -720,8 +728,7 @@ async function strictDraftChecks(browser, url, graph) {
       const item = downloadedFile, file = path.join(outputRoot, 'exports', `${graph.meta.diagramType}-${suffix}.json`); await item.saveAs(file);
       assert.equal(await item.failure(), null); return JSON.parse(fs.readFileSync(file, 'utf8'));
     };
-    const saved = await save('invalid-draft'), expected = structuredClone(input);
-    (expected.diagrams ?? [expected]).find(item => item.meta.diagramType === graph.meta.diagramType).nodes.find(node => node.id === selected.id).label = value;
+    const saved = await save('invalid-draft'), expected = modelAfterLabel(graph.meta.diagramType, selected.id, value);
     assert.deepEqual(saved, expected, 'JSON retains the entire invalid draft without altering other views or route geometry.');
     await openMore(page); await menuItem(page, '重置').click(); await page.locator('.layout-problems').waitFor({ state: 'detached' });
     assert.deepEqual(await save('reset-draft'), input, 'Reset restores the complete embedded model, including route.messageY.');
@@ -1365,14 +1372,16 @@ async function entrypoints(browser, url, graph) {
   await runCase(browser, `${graph.meta.diagramType}-selection-entrypoints`, viewports[0], {}, async page => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
-    const exportCurrentDraft = async suffix => {
+    // A drag may legitimately break the layout gate, so a blocked export passes; mustExport demands the draft be valid and export.
+    const exportCurrentDraft = async (suffix, mustExport = false) => {
       const name = `${graph.meta.diagramType}-${suffix}`, savedFile = path.join(outputRoot, 'exports', name + '.json');
       await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       await saved.saveAs(savedFile);
       const model = JSON.parse(fs.readFileSync(savedFile, 'utf8'));
       const current = (model.diagrams ?? [model]).find(item => item.meta.diagramType === graph.meta.diagramType);
-      let invalid = false;
-      try { requireDiagramQuality(current); } catch { invalid = true; }
+      let invalid = null;
+      try { requireDiagramQuality(current); } catch (error) { invalid = error; }
+      if (mustExport) assert.ok(!invalid, `A text edit keeps the layout valid and both images export, but ${graph.meta.diagramType} failed: ${invalid?.message.split('\n').slice(1, 3).join(' ')}`);
       if (!invalid) return { current, ...await exportsMatch(page, current, name) };
       const downloads = [], listener = download => downloads.push(download);
       page.on('download', listener);
@@ -1464,7 +1473,9 @@ async function entrypoints(browser, url, graph) {
       await relationCard.getByRole('button', { name: '查看详情', exact: true }).click();
       assert.ok((await page.locator('.drawer-body h2').innerText()).includes(editedEdgeLabel));
       await clear(page, 'close'); await edge.focus(); await page.keyboard.press('Enter'); await relationCard.waitFor(); await assertFlow(page);
-      const downloads = await exportCurrentDraft('edited');
+      // A card grows with its text (fitCard), so a card diagram's edited draft must export. Class and use case drafts fail the gate on
+      // 45019fc too (text.node-size, spacing.label-node) and keep the blocked branch until their own edits are fixed.
+      const downloads = await exportCurrentDraft('edited', Boolean(getDiagram(graph.meta.diagramType).cardLayout));
       assert.equal(downloads.current.nodes.find(node => node.id === selected.id).label, editedNodeLabel);
       assert.equal(downloads.current.edges[0].label, editedEdgeLabel);
       if (downloads.svgFile) {

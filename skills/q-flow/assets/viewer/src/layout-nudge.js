@@ -1,12 +1,10 @@
 import { getDiagram } from './diagrams/registry.js';
 import { forceSimulation, forceX, forceY } from 'd3-force';
-import { LAYOUT_LIMITS } from './layout-spacing.js';
+import { layoutLimits } from './layout-spacing.js';
 import { requireDiagramQuality } from './layout-quality.js';
 import { groupHeadingLayout } from './text-layout.js';
 
-const CLEARANCE = LAYOUT_LIMITS.nodeGap + 1;
 const MAX_SHIFT = 156;
-const GROUP_PADDING = LAYOUT_LIMITS.groupInset;
 const TICKS = 160;
 
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
@@ -30,19 +28,19 @@ function containingGroup(node, groups) {
   return matches.sort((left, right) => left.size.width * left.size.height - right.size.width * right.size.height)[0];
 }
 
-function groupBounds(node, group, sequence) {
+function groupBounds(node, group, sequence, limits) {
   if (!group) return null;
   const halfWidth = node.size.width / 2;
   const halfHeight = node.size.height / 2;
   const anchorX = node.position.x + halfWidth, anchorY = node.position.y + halfHeight;
-  const minimumX = Math.max(group.position.x + GROUP_PADDING + halfWidth, anchorX - MAX_SHIFT);
-  const maximumX = Math.min(group.position.x + group.size.width - GROUP_PADDING - halfWidth, anchorX + MAX_SHIFT);
-  const minimumY = Math.max(group.position.y + groupHeadingLayout(group).height + LAYOUT_LIMITS.groupHeadingGap + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
-  const maximumY = Math.min(group.position.y + group.size.height - GROUP_PADDING - halfHeight, anchorY + (sequence ? 0 : MAX_SHIFT));
+  const minimumX = Math.max(group.position.x + limits.groupInset + halfWidth, anchorX - MAX_SHIFT);
+  const maximumX = Math.min(group.position.x + group.size.width - limits.groupInset - halfWidth, anchorX + MAX_SHIFT);
+  const minimumY = Math.max(group.position.y + groupHeadingLayout(group).height + limits.groupHeadingGap + halfHeight, anchorY - (sequence ? 0 : MAX_SHIFT));
+  const maximumY = Math.min(group.position.y + group.size.height - limits.groupInset - halfHeight, anchorY + (sequence ? 0 : MAX_SHIFT));
   return { minimumX, maximumX, minimumY, maximumY };
 }
 
-function rectangleCollision(sequence) {
+function rectangleCollision(sequence, clearance) {
   let nodes = [];
   const force = () => {
     for (let leftIndex = 0; leftIndex < nodes.length; leftIndex += 1) {
@@ -52,8 +50,8 @@ function rectangleCollision(sequence) {
         if (!left.movable && !right.movable) continue;
         const dx = left.x + left.vx - right.x - right.vx;
         const dy = left.y + left.vy - right.y - right.vy;
-        const overlapX = (left.width + right.width) / 2 + CLEARANCE - Math.abs(dx);
-        const overlapY = (left.height + right.height) / 2 + CLEARANCE - Math.abs(dy);
+        const overlapX = (left.width + right.width) / 2 + clearance - Math.abs(dx);
+        const overlapY = (left.height + right.height) / 2 + clearance - Math.abs(dy);
         if (overlapX <= 0 || overlapY <= 0) continue;
 
         const axis = sequence || overlapX <= overlapY ? 'x' : 'y';
@@ -77,12 +75,12 @@ function rectangleCollision(sequence) {
 }
 
 export function nudgeGraphLayout(graph, focusId = null) {
-  const sequence = getDiagram(graph.meta.diagramType).sequence;
+  const diagram = getDiagram(graph.meta.diagramType), sequence = diagram.sequence, limits = layoutLimits(diagram);
   const movable = movableIds(graph, focusId);
   const simulationNodes = graph.nodes.map(node => {
     const anchorX = node.position.x + node.size.width / 2;
     const anchorY = node.position.y + node.size.height / 2;
-    const bounds = groupBounds(node, containingGroup(node, graph.groups ?? []), sequence);
+    const bounds = groupBounds(node, containingGroup(node, graph.groups ?? []), sequence, limits);
     // An infeasible inset freezes the node; it never removes its containing boundary.
     const canMove = movable.has(node.id) && (!bounds || (bounds.minimumX <= bounds.maximumX && bounds.minimumY <= bounds.maximumY));
     return {
@@ -106,7 +104,7 @@ export function nudgeGraphLayout(graph, focusId = null) {
     .velocityDecay(0.42)
     .force('anchor-x', forceX(node => node.anchorX).strength(0.16))
     .force('anchor-y', forceY(node => node.anchorY).strength(sequence ? 1 : 0.16))
-    .force('rectangles', rectangleCollision(sequence))
+    .force('rectangles', rectangleCollision(sequence, limits.nodeGap + 1))
     .stop();
 
   for (let tick = 0; tick < TICKS; tick += 1) {
