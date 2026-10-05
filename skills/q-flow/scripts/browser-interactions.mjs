@@ -3,7 +3,7 @@
 // quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
 // Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_WIDTHS (matrix only), QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1,
-// QA_EXTRAS=none|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|sequence-reading|file-url, QA_FIXTURE_DIR.
+// QA_EXTRAS=none|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|notes|sequence-reading|file-url, QA_FIXTURE_DIR.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -1556,6 +1556,71 @@ async function edgeSiteCheck(browser, url) {
   }, true);
 }
 
+async function notesCheck(browser, url) {
+  // Three short notes and three of about a hundred characters: the longest set the contract allows must fit without scrolling.
+  const notes = ['支付回调接口没有登录校验。', '“超时关闭”没有任何代码写入。', '取消按钮与取消接口允许的状态不一致。',
+    '后台配货、出库、关闭按批处理，同批任一订单不符则整批不改；各 UPDATE 只按订单编号过滤，先查后改，并发下不防重复流转，也不记录是谁改的。',
+    '恢复库存的 UPDATE 要求商品仍在上架且当前库存不少于退回数量，商品下架或库存不足时可能更新 0 行，取消或关闭整单回滚。',
+    '文档与代码不一致：接口文档写的是 POST 并带地址编号，代码实际是 GET，取会话里的地址和整个购物车；文档把状态 2 称为配货中。'];
+  const graph = {
+    meta: { title: '要点', diagramType: 'architecture', sourceRef: 'browser test fixture', locale: 'zh-CN', notes },
+    groups: [],
+    // Wide enough to be limited by the reading width, so the right edge it stops at shows what the card reserves.
+    nodes: [0, 600, 1200].map((x, index) => ({ id: `step${index}`, label: `组件 ${index + 1}`, kind: 'component', position: { x, y: 100 }, size: { width: 180, height: 100 } })),
+    edges: [['step0', 'step1'], ['step1', 'step2']].map(([source, target]) => ({ id: `${source}-${target}`, source, target, label: '调用', kind: 'call', evidence: 'test' }))
+  };
+  assert.deepEqual(validateGraph(graph), []);
+  const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(
+    /(<script id="graph-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(graph).replaceAll('<', '\\u003c') + close
+  );
+  const rightEdge = page => page.locator('.react-flow__node-diagram').evaluateAll(nodes => Math.max(...nodes.map(node => node.getBoundingClientRect().right)));
+  const focused = page => page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
+  await runCase(browser, 'notes', viewports[0], {}, async page => {
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor(); await page.waitForTimeout(500);
+    const card = page.locator('.notes-card'); await card.waitFor();
+    assert.equal(await card.locator('li').count(), notes.length);
+    assert.equal((await card.locator('.panel-title').innerText()).trim(), `要点 · ${notes.length}`);
+    assert.ok(await card.evaluate(element => element.scrollHeight <= element.clientHeight + 1), 'Every note shows without scrolling the card.');
+    const box = await card.boundingBox(), canvas = await page.locator('.canvas').boundingBox();
+    assert.ok(box.width <= 305 && box.x + box.width <= canvas.x + canvas.width, 'The card is one panel wide and inside the canvas.');
+    const opening = await rightEdge(page);
+    assert.ok(opening <= box.x, 'The opening view leaves the card uncovered.');
+    await button(page, '隐藏要点').click(); await card.waitFor({ state: 'detached' });
+    const show = button(page, '显示要点'); await show.waitFor();
+    assert.equal(await focused(page), '显示要点', 'Hiding hands focus to the show button.');
+    await fit(page);
+    assert.ok(await rightEdge(page) - opening > 200, 'Without the card the same graph fills the width: the reservation is what kept it clear.');
+    await show.click(); await card.waitFor();
+    assert.equal(await focused(page), '隐藏要点', 'Showing hands focus to the hide button.');
+    await button(page, '显示右侧详情栏').click(); await page.locator('.inspector').waitFor();
+    assert.equal(await count(page, '.notes-anchor'), 0, 'Neither the card nor its button shows while the details drawer is open.');
+    await button(page, '隐藏右侧详情栏').click(); await page.locator('.inspector').waitFor({ state: 'detached' }); await card.waitFor();
+    const svg = fs.readFileSync(await download(page, 'SVG', 'notes'), 'utf8');
+    assert.match(svg, new RegExp(`<g data-notes="${notes.length}">`));
+    for (const note of notes) assert.ok(svg.includes(note.slice(0, 10)), `The exported SVG carries the note: ${note}`);
+    await button(page, '进入全屏').click(); await fullscreenState(page, true); await card.waitFor();
+    assert.ok((await card.boundingBox()).y <= 24, 'In fullscreen the card floats at the top, where the legend sits.');
+    await button(page, '隐藏要点').click(); await button(page, '显示要点').waitFor();
+    await button(page, '退出全屏').click(); await fullscreenState(page, false);
+    return { notes: notes.length, openingRight: Math.round(opening) };
+  }, true);
+  await runCase(browser, 'narrow-notes', viewports[2], {}, async page => {
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor();
+    assert.equal(await count(page, '.notes-card'), 0, 'A narrow screen starts with the notes hidden.');
+    await button(page, '显示要点').click(); await page.locator('.notes-card').waitFor();
+    return {};
+  }, true);
+  await runCase(browser, 'plain-notes', viewports[0], {}, async page => {
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor();
+    assert.equal(await count(page, '.notes-anchor'), 0, 'A graph without notes shows no card and no button.');
+    assert.equal(await page.locator('.canvas').getAttribute('data-drawer-open'), 'false');
+    return {};
+  }, true);
+}
+
 async function relationshipCardAvoidanceCheck(browser, url) {
   const graph = {
     meta: { title: '关系速览避让', diagramType: 'flowchart', sourceRef: 'browser test fixture', locale: 'zh-CN' },
@@ -2957,6 +3022,7 @@ try {
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await editPersistenceChecks(browser, url);
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await relationshipCardAvoidanceCheck(browser, url);
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await edgeSiteCheck(browser, url);
+  if (filtered.length && process.env.QA_EXTRAS !== 'none') await notesCheck(browser, url);
   const layoutGraph = filtered.find(graph => graph.meta.diagramType === 'state' && graph.nodes.length >= 4) ?? filtered.find(graph => graph.nodes.length >= 4);
   if (layoutGraph && process.env.QA_EXTRAS !== 'none') await informationLayoutChecks(browser, url, layoutGraph);
   if (process.env.QA_EXTRAS?.split(',').includes('motion-preferences')) for (const graph of filtered) await motionPreferences(browser, url, graph);

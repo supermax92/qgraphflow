@@ -142,7 +142,7 @@ button:disabled { cursor: not-allowed; }
 .board { min-width: 0; min-height: 0; }
 .diagram-board { position: absolute; inset: 0; margin: 0; background: var(--canvas); }
 .diagram-board:fullscreen { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
-.diagram-board:fullscreen .legend-anchor { top: var(--gutter); }
+.diagram-board:fullscreen :is(.legend-anchor, .notes-anchor) { top: var(--gutter); }
 .relation-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 .canvas { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--canvas); }
 
@@ -180,6 +180,13 @@ button:disabled { cursor: not-allowed; }
 
 .float { position: absolute; z-index: 6; transition: left var(--base) var(--ease); }
 .legend-anchor { top: calc(var(--tb-h) + var(--gutter)); left: var(--gutter); }
+.notes-anchor { top: calc(var(--tb-h) + var(--gutter)); right: var(--gutter); }
+/* Tall enough for six notes, stopping above the 78px minimap at the bottom right. */
+.notes-card { width: min(var(--side-w), calc(100% - 2 * var(--gutter))); max-height: calc(100% - var(--tb-h) - 3 * var(--gutter) - 78px); padding: 12px 14px; border-radius: var(--r-card); background: var(--material-thick); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-2); overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--label-4) transparent; overflow-wrap: anywhere; }
+.notes-card .side-head { margin-bottom: 6px; }
+.notes-card ul { margin: 0; padding-left: 16px; color: var(--label-2); font-size: 13px; line-height: 1.6; }
+.notes-card li + li { margin-top: 5px; }
+.notes-card li::marker { color: var(--accent); }
 .workspace.nav-open .legend-anchor { left: calc(var(--side-w) + 2 * var(--gutter)); }
 .float-btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border: 0; border-radius: var(--r-field); color: var(--label); background: var(--material-thin); -webkit-backdrop-filter: var(--blur-thin); backdrop-filter: var(--blur-thin); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-1); cursor: pointer; font-size: 12px; transition: background var(--fast) var(--ease), transform 100ms ease-out; }
 .float-btn .ic { width: 14px; height: 14px; color: var(--label-2); }
@@ -381,12 +388,12 @@ button:disabled { cursor: not-allowed; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .toolbar, .sidebar, .popover, .node-card, .float-btn, .toast, .react-flow__controls, .react-flow__minimap { background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .toolbar, .sidebar, .popover, .node-card, .notes-card, .float-btn, .toast, .react-flow__controls, .react-flow__minimap { background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media (prefers-contrast: more) {
   :root { --sep: var(--label); --label-2: var(--label); --label-3: color-mix(in srgb, var(--ink) 70%, transparent); }
   .toolbar { box-shadow: 0 1px 0 var(--label); }
-  .sidebar, .popover, .node-card, .float-btn, .toast, .react-flow__controls, .react-flow__minimap { box-shadow: 0 0 0 1px var(--label); }
+  .sidebar, .popover, .node-card, .notes-card, .float-btn, .toast, .react-flow__controls, .react-flow__minimap { box-shadow: 0 0 0 1px var(--label); }
 }
 
 /* Keep the canvas aligned with the exported theme. */
