@@ -6,7 +6,7 @@ import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { graphBounds, occupiedBox } from '../edge-routing.js';
 import { requireDiagramQuality } from '../layout-quality.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
-import { appleEase, readingPadding, readingRect, locateViewport } from '../reading-area.js';
+import { appleEase, readingPadding, readingRect, locateViewport, readableViewport, readingStart } from '../reading-area.js';
 import { isCore } from '../visual-style.js';
 import { constrainNodeChanges, currentGraphFromFlow } from '../session-graph.js';
 
@@ -44,8 +44,10 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
       const node = targetGraph.nodes.find(isCore) ?? targetGraph.nodes[0];
       return setViewport(locateViewport(occupiedBox(node, diagramType), readingRect(canvas, false, false), { zoom: .75 }), { duration, ease: appleEase });
     }
-    const viewport = getViewportForBounds(graphBounds(targetGraph), canvas.clientWidth, canvas.clientHeight, .08, 2,
-      readingPadding(canvas, canvas.dataset.navOpen === 'true', canvas.dataset.drawerOpen === 'true'));
+    const bounds = graphBounds(targetGraph), navOpen = canvas.dataset.navOpen === 'true', drawerOpen = canvas.dataset.drawerOpen === 'true';
+    // Fit canvas (overview) always shows everything; every other re-fit opens at the readable floor when everything is too small.
+    const viewport = (!overview && readableViewport(bounds, readingStart(targetGraph), readingRect(canvas, navOpen, drawerOpen)))
+      || getViewportForBounds(bounds, canvas.clientWidth, canvas.clientHeight, .08, 2, readingPadding(canvas, navOpen, drawerOpen));
     return setViewport(viewport, { duration, ease: appleEase });
   };
   const focusNode = useCallback((id, panels = {}) => {

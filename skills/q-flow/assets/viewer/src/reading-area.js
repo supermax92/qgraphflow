@@ -1,4 +1,7 @@
-export const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12;
+import { READABLE_ZOOM } from './layout-spacing.js';
+
+// LEGEND is the float button under the toolbar's left edge (.float-btn height in styles.css).
+export const TOOLBAR = 52, SIDE = 304, GUTTER = 12, BREATH = 12, LEGEND = 28;
 
 // cubic-bezier(.32,.72,0,1) as an easing function, so viewport moves share the chrome's curve (--ease in styles.css):
 // bisect the x curve for the progress that reaches t, then read the y curve there.
@@ -45,6 +48,22 @@ export function readingViewport(bounds, area, current) {
 }
 
 export function locateViewport(bounds, area, current) {
-  const zoom = Math.min(2, Math.max(.75, current.zoom));
+  const zoom = Math.min(2, Math.max(READABLE_ZOOM, current.zoom));
   return { zoom, x: area.left + area.width / 2 - (bounds.x + bounds.width / 2) * zoom, y: area.top - bounds.y * zoom };
+}
+
+// Where the reading flow begins: the primary path, else the start / initial node; none means the graph's top-left corner.
+export const readingStart = graph => graph.nodes.find(node => node.id === graph.layout?.primaryPath?.[0]) ?? graph.nodes.find(node => ['start', 'initial'].includes(node.kind));
+
+// Opening view. Fit-all stays the default; when it would fall below the readable floor, show the floor-scale window that
+// begins at the reading start instead: clamped to the graph, centred on an axis the graph does not fill, and below the legend
+// button. null means fit-all already reads fine.
+export function readableViewport(bounds, start, area, floor = READABLE_ZOOM) {
+  if (Math.min(area.width / bounds.width, area.height / bounds.height) >= floor) return null;
+  const origin = (from, extent, center, length) => {
+    const span = length / floor;
+    return extent <= span ? from + (extent - span) / 2 : Math.min(from + extent - span, Math.max(from, center - span / 2));
+  };
+  const cx = start ? start.position.x + start.size.width / 2 : bounds.x, cy = start ? start.position.y + start.size.height / 2 : bounds.y;
+  return { zoom: floor, x: area.left - origin(bounds.x, bounds.width, cx, area.width) * floor, y: area.top + LEGEND - origin(bounds.y, bounds.height, cy, area.height - LEGEND) * floor };
 }

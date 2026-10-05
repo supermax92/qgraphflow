@@ -803,7 +803,10 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
   await runCase(browser, name, viewport, {}, async page => {
     await page.goto(url); await page.locator('.diagram-node').first().waitFor();
     await theme(page, colorTheme); const branding = await chooseGraph(page, graph, mobile);
+    const openZoom = await page.locator('.react-flow__viewport').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
     await proportionalFlow(page);
+    const fitZoom = await page.locator('.react-flow__viewport').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
+    assert.ok(openZoom >= Math.min(fitZoom, .75) - .005, `The opening view reads: zoom ${openZoom} is below min(fit ${fitZoom}, .75).`);
     await assertLegendLayout(page);
     await assertLegendEntries(page, graph, colorTheme);
     await assertNodeDrawing(page, graph, colorTheme);
@@ -2503,7 +2506,10 @@ async function fullscreenChecks(browser, url, graph) {
       });
       const autoFit = await viewTransform();
       await button(page, '适应画布').click(); await page.waitForTimeout(360);
-      assert.ok((await viewTransform()).every((value, index) => Math.abs(value - autoFit[index]) < .01), 'Auto-fit matches the fit button using the fullscreen canvas dimensions.');
+      const fitAll = await viewTransform();
+      // Entering fullscreen re-fits like the opening view: fit-all when it reads at the .75 floor, else the floor on the reading start.
+      if (fitAll[0] > .76) assert.ok(fitAll.every((value, index) => Math.abs(value - autoFit[index]) < .01), 'Auto-fit matches the fit button using the fullscreen canvas dimensions.');
+      else if (fitAll[0] < .74) assert.ok(Math.abs(autoFit[0] - .75) < .001, 'Fullscreen entry opens at the readable floor when fit-all would be smaller.');
       assert.ok(await page.locator('.canvas').evaluate(canvas => {
         const bounds = canvas.getBoundingClientRect();
         return [...canvas.querySelectorAll('.react-flow__node-diagram')].every(node => {

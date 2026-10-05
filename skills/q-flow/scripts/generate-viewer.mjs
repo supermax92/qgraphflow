@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { diagramTypeOf, graphsOf, printCompositionReview, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
+import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
@@ -96,6 +96,7 @@ async function main() {
   const compiled = await compileViews(graphsOf(input), item => compileGraphLayout(item, { layout: values.layout }));
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
+  const oversized = printViewReview(graph, { print: true }); // geometry exists only now; the input review could not see it
   const contents = { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
   for (const { name, svg } of diagramSvgFiles(graph)) contents[name] = svg;
   writeOutputs(outputDir, contents, svgs.filter(name => !Object.hasOwn(contents, name)));
@@ -109,7 +110,7 @@ async function main() {
     edges: graphs.reduce((sum, item) => sum + item.edges.length, 0),
     groups: graphs.reduce((sum, item) => sum + (item.groups?.length ?? 0), 0),
     semantic: { status: status('semantic') }, geometry: { status: status('geometry') }, rendering: { status: status('rendering') },
-    ...(warnings.length ? { warnings: warnings.length } : {})
+    ...(warnings.length + oversized.length ? { warnings: warnings.length + oversized.length } : {})
   };
   const detail = values.verbose ? { layoutComposition: graphs.map(layoutComposition), layout: compiled.map(item => item.report), quality } : {};
   console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')

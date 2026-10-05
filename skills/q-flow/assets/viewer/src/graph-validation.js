@@ -1,5 +1,6 @@
 import { SUPPORTED_LOCALES } from './i18n.js';
-import { auditGraphLayout } from './edge-routing.js';
+import { auditGraphLayout, graphBounds } from './edge-routing.js';
+import { MAX_SCREENS, OVERVIEW_AREA, READABLE_ZOOM } from './layout-spacing.js';
 import { missingCallExecutions, validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
 import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
@@ -281,6 +282,22 @@ export function reviewComposition(input) {
           'Insert a decision that asks the actual condition, or merge the paths into one.');
       }
     }
+  }
+  return warnings;
+}
+
+// Advisory that needs laid-out geometry, so a graph without positions reports nothing: at the readable zoom a reader sees
+// one OVERVIEW_AREA at a time, and a view that needs more than MAX_SCREENS of them is read by scrolling, not by looking.
+export function overviewWarnings(input) {
+  if (validateGraphInput(input, { inputOnly: true }).length) return [];
+  const warnings = [];
+  for (const graph of graphsOf(input)) {
+    if (!graph.nodes.length || !graph.nodes.every(node => node.position && node.size)) continue;
+    const { width, height } = graphBounds(graph), across = width * READABLE_ZOOM / OVERVIEW_AREA.width, down = height * READABLE_ZOOM / OVERVIEW_AREA.height;
+    if (across * down <= MAX_SCREENS) continue;
+    warnings.push({ ruleId: 'view.oversized', severity: 'warning', diagramType: diagramTypeOf(graph), elementIds: [],
+      message: `the view spans ${Math.round(width)}×${Math.round(height)} units, about ${(across * down).toFixed(1)} screens (${across.toFixed(1)} wide × ${down.toFixed(1)} tall) at the readable zoom ${READABLE_ZOOM}`,
+      remediation: 'Split it by phase or sub-flow into separate views that together cover the whole model, never dropping facts; keep one view only when the user asked for it.' });
   }
   return warnings;
 }
