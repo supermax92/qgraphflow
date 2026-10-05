@@ -6,6 +6,7 @@ import { validateOperands } from './sequence-fragments.js';
 import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 
 const EVIDENCE_KINDS = new Set(['source', 'code', 'config', 'schema', 'test', 'document', 'framework', 'inference']);
+export const MAX_NOTES = 6, MAX_NOTE_LENGTH = 120;
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function requireString(value, label, errors) {
@@ -57,6 +58,14 @@ function validateStringArray(value, label, errors) {
   }
 }
 
+// meta.notes: the findings a reader must see before opening any node; the Viewer and the SVG both draw them.
+function validateNotes(notes, errors) {
+  validateStringArray(notes, 'meta.notes', errors);
+  if (!Array.isArray(notes)) return;
+  if (notes.length > MAX_NOTES) errors.push(`meta.notes must have at most ${MAX_NOTES} items`);
+  notes.forEach((note, index) => { if (typeof note === 'string' && [...note].length > MAX_NOTE_LENGTH) errors.push(`meta.notes[${index}] exceeds ${MAX_NOTE_LENGTH} characters`); });
+}
+
 export function graphsOf(input) {
   return input && typeof input === 'object' && !Array.isArray(input) && Array.isArray(input.diagrams)
     ? input.diagrams
@@ -71,6 +80,7 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
   requireString(graph.meta?.title, 'meta.title', errors);
   requireString(graph.meta?.sourceRef, 'meta.sourceRef', errors);
   for (const key of ['subtitle', 'scope']) optionalString(graph.meta?.[key], `meta.${key}`, errors);
+  validateNotes(graph.meta?.notes, errors);
   if (graph.meta?.locale !== undefined && !SUPPORTED_LOCALES.includes(graph.meta.locale)) errors.push('meta.locale is unsupported');
   const diagramType = diagramTypeOf(graph);
   if (!DIAGRAM_TYPES.includes(diagramType)) errors.push('meta.diagramType is unsupported');

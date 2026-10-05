@@ -459,6 +459,25 @@ test('derives session text and positions without mutating the authored graph, th
   assert.deepEqual(currentGraphFromFlow(authored, initialNodes, initialEdges), authored);
 });
 
+test('meta.notes is optional, bounded in count and length, and survives a page edit', () => {
+  const withNotes = notes => ({ ...fixtures.flowchart, meta: { ...fixtures.flowchart.meta, notes } });
+  assert.deepEqual(validateGraph(withNotes(['one', 'two'])), []);
+  assert.deepEqual(validateGraph(withNotes([])), [], 'an empty list means no notes');
+  assert.deepEqual(validateGraph(withNotes(Array(6).fill('x'))), [], 'six notes is the limit');
+  assert.deepEqual(validateGraph(withNotes(['\u{20BB7}'.repeat(120)])), [], 'the limit counts characters, not UTF-16 units');
+  for (const [notes, message] of [
+    ['one', /meta\.notes must be an array of non-empty strings/],
+    [['ok', '  '], /meta\.notes must be an array of non-empty strings/],
+    [[7], /meta\.notes must be an array of non-empty strings/],
+    [Array(7).fill('x'), /meta\.notes must have at most 6 items/],
+    [['ok', 'x'.repeat(121)], /meta\.notes\[1\] exceeds 120 characters/]
+  ]) assert.ok(validateGraph(withNotes(notes)).some(error => message.test(error)), JSON.stringify(notes).slice(0, 40));
+  const authored = withNotes(['kept']);
+  const nodes = authored.nodes.map(node => ({ id: node.id, type: 'diagram', position: node.position, data: { ...node } }));
+  const edges = authored.edges.map(item => ({ id: item.id, data: { ...item } }));
+  assert.deepEqual(currentGraphFromFlow(authored, nodes, edges).meta.notes, ['kept'], 'saving from the page keeps the notes');
+});
+
 test('keeps sequence dragging horizontal and blocks export when movement invalidates the route', async () => {
   const sequenceNodes = fixtures.sequence.nodes.map(node => ({ id: node.id, type: 'diagram', position: node.position, data: { ...node } }));
   const constrained = constrainNodeChanges([{ id: 'browser', type: 'position', position: { x: 120, y: 240 }, dragging: true }], sequenceNodes, 'sequence');
@@ -661,6 +680,49 @@ test('exports the React Flow UI board in light and dark themes', () => {
   const semantic = structuredClone(compiledFixtures.architecture);
   semantic.edges[0].kind = 'success';
   assert.match(createDiagramSvg(semantic), new RegExp(`stroke="${PALETTES.light.accent}"[^>]+marker-end="url\\(#arrow-ok\\)"`));
+});
+
+test('meta.notes is drawn under the board and leaves everything else in the SVG as it was', () => {
+  const base = compiledFixtures.architecture, notes = ['First finding, in full.', '<b>&</b>'];
+  const plain = createDiagramSvg(base), noted = createDiagramSvg({ ...base, meta: { ...base.meta, notes } });
+  assert.doesNotMatch(plain, /data-notes/);
+  assert.equal(createDiagramSvg({ ...base, meta: { ...base.meta, notes: [] } }), plain, 'an empty list is byte-identical to none');
+  assert.equal((noted.match(/data-notes="2"/g) ?? []).length, 1);
+  assert.ok(noted.includes('>要点</text>'), 'the heading follows the diagram locale');
+  assert.ok(noted.includes('>First finding, in full.</text>') && noted.includes('>&lt;b&gt;&amp;&lt;/b&gt;</text>'), 'notes are escaped text');
+  const height = svg => Number(svg.match(/<svg[^>]* height="([\d.]+)"/)[1]);
+  assert.ok(height(noted) > height(plain));
+  // Only the canvas height and the notes group differ; the board, the offsets and every drawn element are untouched.
+  const shape = svg => svg.replace(/ height="[\d.]+" viewBox="0 0 ([\d.]+) [\d.]+"/, ' height="H" viewBox="0 0 $1 H"').replace(/<g data-notes="\d+">.*?<\/g>(?=<\/svg>)/s, '');
+  assert.equal(shape(noted), shape(plain));
+  // The group sits below the board and inside the canvas, so the export check finds every glyph in bounds.
+  const board = noted.match(/<rect x="24" y="(\d+)" width="[\d.]+" height="([\d.]+)"/), boardBottom = Number(board[1]) + Number(board[2]);
+  const ys = [...noted.match(/<g data-notes.*?<\/g>/s)[0].matchAll(/<text x="[\d.]+" y="([\d.]+)"/g)].map(match => Number(match[1]));
+  assert.ok(ys.length >= 5 && ys.every(y => y > boardBottom && y < height(noted)), 'heading and bullets lie between the board and the canvas edge');
+  const long = createDiagramSvg({ ...base, meta: { ...base.meta, notes: ['汉'.repeat(120)] } });
+  assert.ok((long.match(/class="body">汉/g) ?? []).length > 1, 'a long note wraps instead of leaving the canvas');
+});
+
+test('generation carries meta.notes into graph.json, the page and diagram.svg, and a preserve refresh keeps them', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-notes-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const authored = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '../../../examples/order-flow.graph.json'), 'utf8'));
+  authored.meta.notes = ['Kept on every regeneration.'];
+  const input = path.join(root, 'input.json'), out = path.join(root, 'out');
+  fs.writeFileSync(input, JSON.stringify(authored));
+  const run = args => spawnSync(process.execPath, [path.join(scriptDir, 'generate-viewer.mjs'), ...args], { encoding: 'utf8' });
+  const check = () => {
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, 'graph.json'), 'utf8')).meta.notes, authored.meta.notes);
+    assert.match(fs.readFileSync(path.join(out, 'diagram.svg'), 'utf8'), /<g data-notes="1">.*Kept on every regeneration\./s);
+    assert.ok(fs.readFileSync(path.join(out, 'index.html'), 'utf8').includes('Kept on every regeneration.'));
+  };
+  const first = run([input, out]); assert.equal(first.status, 0, first.stderr); check();
+  const again = run([path.join(out, 'graph.json'), out, '--layout', 'preserve', '--force']); assert.equal(again.status, 0, again.stderr); check();
+  authored.meta.notes = Array(7).fill('too many');
+  fs.writeFileSync(input, JSON.stringify(authored));
+  const rejected = run([input, path.join(root, 'rejected')]);
+  assert.equal(rejected.status, 1); assert.match(rejected.stderr, /meta\.notes must have at most 6 items/);
+  assert.ok(!fs.existsSync(path.join(root, 'rejected', 'index.html')), 'nothing is written for a rejected graph');
 });
 
 test('legend uses actual semantic appearances and a core ring with readable ink text', () => {
