@@ -205,6 +205,12 @@ Read this section only for Viewer maintenance or interaction audits. Graph autho
 - The detail drawer says `Evidence` rather than claiming every anchor is source code.
 - Facts, subtitles, fields, methods, source symbols, and tags wrap long tokens within the Inspector. Preserve complete text and allow only vertical scrolling.
 
+### Key points
+
+- `meta.notes` shows as a card over the top of the right side: open by default above 700px, hidden on narrow screens, closable to a `Key points · N` button in the same place. It is not drawn while the details drawer is mounted (including its slide-out). Fullscreen has no panels, so there it floats over the canvas without reserving space until hidden. Hiding or showing hands keyboard focus to the control that replaces the one used.
+- While the card shows, the reading area gives up the right edge as for the drawer: `ViewerShell` sets `data-drawer-open` on the canvas from `drawerOpen || notesShown`, and `readingRect`, `readableViewport`, quick-look placement and reveal all read that attribute, so the opening view, Fit canvas and locate never place the diagram under the card.
+- A graph without notes has no card, no button and no reserved edge. The SVG block (`createDiagramSvg`, heading `Key points`, bullets in the `body` class) sits under the board; the board, offsets and every other element stay as they were. Run `QA_EXTRAS=notes` after changing either.
+
 ### Browser acceptance
 
 - Run the full browser matrix only when Viewer source, edge routing, graph schema, or validation behavior changed. Cover all nine diagram types at 1440×900, 1920×1080, and 390×844 in light and dark themes; check default directed flow, absence of playback controls, stable manual selection with still-moving edges, the independent flow switch, dynamic semantic legends, pan/zoom, ranked search, linked node/edge emphasis without geometry changes or duplicate pulses, complete Inspector wrapping, layout lock and spacing-result feedback, reset, SVG/PNG download without transient effects, keyboard use, reduced motion, and horizontal overflow. Check each type's own notation and core emphasis. Standalone pages have no diagram-type menu; requested collections use a vertical view menu. At 700px and below both panels start collapsed, remain accessible, and open mutually exclusively.

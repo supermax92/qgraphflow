@@ -18,6 +18,7 @@ const GLYPHS = {
   close: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
   check: <path d="M20 6 9 17l-5-5" />,
   chevron: <path d="m6 9 6 6 6-6" />,
+  notes: <><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" /><path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /></>,
   legend: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 5h7" /><path d="M14 9h5" /><path d="M14 16h7" /><path d="M14 20h5" /></>,
   source: <><path d="M10 12.5 8 15l2 2.5" /><path d="m14 12.5 2 2.5-2 2.5" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /></>,
   arrowRight: <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>,

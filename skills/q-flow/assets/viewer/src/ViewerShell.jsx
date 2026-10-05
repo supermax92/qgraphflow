@@ -10,6 +10,7 @@ import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
+import { mobileQuery } from './features/usePanels.js';
 import { useReveal } from './features/useReveal.js';
 import Icon from './icons.jsx';
 import NodeCard from './NodeCard.jsx';
@@ -52,6 +53,17 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const drawerFrozen = useRef(null);
   const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale);
   const { open, toggle, close } = usePopover();
+  // meta.notes: a card over the top of the right side, open on wide screens until the reader hides it. It is a panel in
+  // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
+  // and it waits for that drawer (even while it slides out) to be gone before it appears. Fullscreen has no panels, so
+  // there it simply floats over the canvas until it is hidden.
+  const notes = graph.meta.notes ?? [];
+  const [notesOpen, setNotesOpen] = useState(() => !window.matchMedia(mobileQuery).matches);
+  const notesShown = notes.length > 0 && notesOpen && !drawerShown;
+  const rightReserved = drawerOpen || (notesShown && !isFullscreen);
+  // The hide and show buttons replace each other, so a reader's toggle hands focus to whichever one appears.
+  const notesToggled = useRef(false), notesFocusRef = useRef(null);
+  useEffect(() => { if (notesToggled.current) notesFocusRef.current?.focus({ preventScroll: true }); }, [notesOpen]);
   const reveal = useReveal(canvasRef, nodes, currentGraph, diagramType, reduceMotion);
   const [searchActive, setSearchActive] = useState(false);
   const [toast, setToast] = useState('');
@@ -116,7 +128,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   return <main className="app-shell">
     <header className="toolbar">
       <div className="tb-group tb-left">
-        <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); if (!toolbarOpen) reveal(selectedId, selectedEdgeId, true, drawerOpen); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')} title={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')}><Icon name="panel-left" /></button>
+        <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); if (!toolbarOpen) reveal(selectedId, selectedEdgeId, true, rightReserved); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')} title={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')}><Icon name="panel-left" /></button>
         {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
           <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
           {open === 'views' && <div className="popover menu" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
@@ -177,7 +189,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
 
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
-        <div ref={canvasRef} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={drawerOpen} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('Interactive {type}', { type: t(diagramLabels[diagramType]) })}>
+        <div ref={canvasRef} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('Interactive {type}', { type: t(diagramLabels[diagramType]) })}>
           <ReactFlow
             nodes={visibleNodes}
             edges={visibleEdges}
@@ -219,6 +231,12 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             </div>}
           </div>
 
+          {notes.length > 0 && !drawerShown && (notesShown
+            ? <section className="float notes-anchor notes-card" aria-label={t('Key points')}>
+              <div className="side-head"><p className="panel-title">{t('Key points')} · {notes.length}</p><button className="side-close" ref={notesFocusRef} onClick={() => { notesToggled.current = true; setNotesOpen(false); }} aria-label={t('Hide key points')} title={t('Hide key points')}><Icon name="close" /></button></div>
+              <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>
+            </section>
+            : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={t('Show key points')} title={t('Show key points')}><Icon name="notes" /><span>{t('Key points')} · {notes.length}</span></button>)}
 
           {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} editor={editor} graph={currentGraph} isFullscreen={isFullscreen} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;

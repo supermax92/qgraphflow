@@ -17,6 +17,7 @@ Flowchart main paths must run top-to-bottom, with left/right branches and outsid
     "subtitle": "Optional supporting line",
     "sourceRef": "Branch, commit, document version, or evidence scope",
     "scope": "Verified evidence scope",
+    "notes": ["A finding the reader must see before opening any node"],
     "generatedAt": "ISO-8601 timestamp"
   },
   "groups": [
@@ -85,6 +86,7 @@ The abbreviated graphs above show only the wrapper; every graph still follows th
 - `meta`, nodes, edges, groups and source anchors are objects; `nodes`, `edges`, and optional `groups` are arrays of objects. Invalid containers are rejected before layout or output generation.
 - Optional `meta.subtitle`, `meta.scope`, node `subtitle`, `source.symbol`, and edge `label` are strings. Optional node and edge `module` values are non-empty strings: reuse the exact same value for the same business module across every graph in a collection; do not store literal colors. Node `facts`, `tags`, `attributes`, and `methods` are arrays of non-empty strings. These rules apply to every diagram type.
 - Optional node `fields` is an array of objects with non-empty string `name` and `type`, optional `key` (`PK`, `FK`, `UK`) and boolean `nullable`; ER requires at least one field. Other types can expose these fields in search and details.
+- Optional `meta.notes` is an array of at most 6 non-empty strings of at most 120 characters (counted as characters, not UTF-16 units); an empty array means none. Each view of a collection has its own. It states what a reader must see before opening a node and the drawing cannot show: a defect or risk found, code that contradicts its documentation or UI, an unverified claim, scope left out. The Viewer shows it as a "Key points" card and `diagram.svg`, exported SVG and PNG draw it under the board; a graph without notes renders and exports byte-for-byte as before. The text is authored in the graph's language; saving from the page keeps it.
 - `meta.diagramType`: `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, or `dataflow`.
 - `meta.locale`: optional Viewer language: `en`, `zh-CN` (default), `ru`, `pt`, `ja`, `de`, or `es`; `ko` and `fr` remain supported for existing graphs. Interface strings are authored in English in the Viewer source (`i18n.js`, `i18n-messages.json` holds every other language including `zh-CN`); a graph without `meta.locale` still renders its interface in Chinese. This controls built-in interface and export labels; author titles, node labels, facts and relationship text in the desired language separately. Code identifiers and standard notation remain unchanged. In a collection, each diagram uses its own locale.
 - IDs are unique non-empty strings. Every edge endpoint names a node.
