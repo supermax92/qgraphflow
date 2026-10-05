@@ -62,9 +62,18 @@ To install it as a plugin instead, follow the steps below. [Qoder Desktop](#qode
 
 ### 1. Download the plugin
 
-Download [qgraphflow-0.0.6.zip](https://github.com/supermax92/qgraphflow/releases/download/v0.0.6/qgraphflow-0.0.6.zip) and extract it into a separate directory, keeping hidden files.
+Get the plugin from npmjs.com; no account, login or token is needed. Create a separate directory outside your application project:
 
-Run the following terminal commands from **the extracted plugin root containing `skills/`**.
+```bash
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
+```
+
+You are now in the plugin root. **Downloading through npm does not automatically install the plugin in your client;** continue with step 2. The package also provides the `qgraphflow` command used in [Keep diagrams in sync with code](#keep-diagrams-in-sync-with-code).
+
+Run the following terminal commands from **the plugin root containing `skills/`**.
 
 ### 2. Install in your client
 
@@ -80,15 +89,6 @@ codex plugin add qgraphflow@supermax92
 Start a new session, type `$`, and select `qgraphflow:q-flow`.
 
 #### Claude Code
-
-Install directly from GitHub without downloading the ZIP:
-
-```bash
-claude plugin marketplace add supermax92/qgraphflow
-claude plugin install qgraphflow@supermax92 --scope user
-```
-
-Or, from the extracted plugin root:
 
 ```bash
 claude plugin marketplace add .
@@ -107,9 +107,9 @@ Start a new session and select `q-flow`.
 
 #### Qoder Desktop
 
-**Recommended:** Open **Settings → Plugins → Marketplace**, search for **代码图谱可视化** or **qgraphflow**, and install the plugin. Start a new session and select `q-flow`. No ZIP download or source build is required.
+**Recommended:** Open **Settings → Plugins → Marketplace**, search for **QGraphFlow** or **代码图谱可视化**, and install the plugin. Start a new session and select `q-flow`.
 
-For local installation, complete step 1, then open **Settings → Plugins → Custom → Import** and import the complete extracted plugin root directory. Start a new session and select `q-flow`.
+For local installation, complete step 1, then open **Settings → Plugins → Custom → Import** and import the complete plugin root directory. Start a new session and select `q-flow`.
 
 #### Cursor
 
@@ -124,22 +124,6 @@ Confirm that `.cursor-plugin/plugin.json` exists there, reload the window, and f
 ### 3. Start using it
 
 Open your project in the client, start a new session, and select the skill. Describe your task using the [Quick start](#quick-start) examples below. Open the generated HTML in your browser.
-
-<details>
-<summary>Alternative installation: npm</summary>
-
-You can also get the plugin from npmjs.com instead of the ZIP; no account, login or token is needed. Create a separate directory outside your application project:
-
-```bash
-mkdir qgraphflow-install
-cd qgraphflow-install
-npm install qgraphflow --ignore-scripts
-cd node_modules/qgraphflow
-```
-
-You are now in the plugin root. Continue with the client installation steps above. **Downloading through npm does not automatically install the plugin in your client.** The package also provides the `qgraphflow` command used in [Keep diagrams in sync with code](#keep-diagrams-in-sync-with-code).
-
-</details>
 
 Building it yourself? See the [source build instructions](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally).
 

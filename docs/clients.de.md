@@ -4,9 +4,9 @@
 
 [Zurück zur README](readme/README.de.md)
 
-Qoder Desktop kann das Plugin aus dem Marketplace installieren, Claude Code direkt von GitHub (siehe die jeweiligen Abschnitte unten). In beiden Fällen entfällt Schritt 1. Für eine lokale Installation lade zuerst den QGraphFlow-Quellcode herunter und erstelle das Laufzeitpaket.
+Qoder Desktop kann das Plugin aus dem Marketplace installieren; dann entfällt Schritt 1 (siehe den Abschnitt unten). Die übrigen Clients installieren das Plugin-Paket von npmjs.com.
 
-Du benötigst Node.js 22 oder neuer und einen Client mit eingerichtetem Modellzugriff. Zum Bauen aus dem Quellcode werden außerdem Git, npm, `tar`, `zip` und `unzip` benötigt.
+Du benötigst Node.js 22 oder neuer (mit npm) und einen Client mit eingerichtetem Modellzugriff.
 
 ## Schnellinstallation
 
@@ -16,25 +16,25 @@ npx skills add supermax92/qgraphflow
 
 Installiert den Skill `q-flow` für Claude Code, Codex, Cursor und Qoder (getestet mit `skills` 1.7.0) und fragt, in welche Clients installiert werden soll. Für die Installation als Plugin den folgenden Schritten folgen.
 
-## 1. Für die lokale Installation herunterladen und bauen
+## 1. Plugin über npm herunterladen
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-npm run package
-unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-Wenn der QGraphFlow-Quellcode bereits vorliegt, überspringe das Klonen und wechsle in dessen Stammverzeichnis. Passe den ZIP-Dateinamen an die Version in der `package.json` von QGraphFlow an. Verwende neue Ausgabe- und Entpackverzeichnisse, ohne vorhandene Dateien zu überschreiben. Git lädt nur bereits gepushten Code herunter, keine lokalen Änderungen ohne Commit.
+Lege das Verzeichnis außerhalb deines Anwendungsprojekts an; Konto, Anmeldung oder Token sind nicht nötig. Danach befindest du dich im Plugin-Stammverzeichnis. Der Download über npm installiert das Plugin nicht im Client; fahre mit Schritt 2 fort. Um noch nicht veröffentlichten Code zu installieren, siehe die [Anleitung zum Bauen aus dem Quellcode](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally).
 
 ## 2. Im Client installieren
 
-Führe die folgenden Befehle im Stammverzeichnis des QGraphFlow-Quellcodes aus, nicht im Verzeichnis deines eigenen Anwendungsprojekts. Sie installieren das vollständige Laufzeitpaket aus dem dortigen Unterverzeichnis `dist/runtime`.
+Führe die folgenden Befehle im Plugin-Stammverzeichnis aus Schritt 1 (`qgraphflow-install/node_modules/qgraphflow`) aus, nicht im Verzeichnis deines eigenen Anwendungsprojekts.
 
 ### Codex App / CLI
 
 ```bash
-codex plugin marketplace add ./dist/runtime
+codex plugin marketplace add .
 codex plugin add qgraphflow@supermax92
 ```
 
@@ -44,17 +44,8 @@ Starte eine neue Sitzung, gib `$` ein und wähle `qgraphflow:q-flow` aus (verwen
 
 ### Claude Code
 
-Direkt von GitHub installieren, ohne Schritt 1:
-
 ```bash
-claude plugin marketplace add supermax92/qgraphflow
-claude plugin install qgraphflow@supermax92 --scope user
-```
-
-Oder aus dem in Schritt 1 erstellten Laufzeitpaket:
-
-```bash
-claude plugin marketplace add ./dist/runtime
+claude plugin marketplace add .
 claude plugin install qgraphflow@supermax92 --scope user
 ```
 
@@ -63,20 +54,20 @@ Starte eine neue Sitzung und gib `/q-flow` (oder den vollständigen Namen `/qgra
 ### Qoder CLI
 
 ```bash
-qodercli plugins install ./dist/runtime
+qodercli plugins install .
 ```
 
 Starte eine neue Sitzung und wähle `q-flow` aus.
 
 ### Qoder Desktop
 
-**Empfohlen:** Öffne **Settings → Plugins → Marketplace**, suche nach **代码图谱可视化** oder **qgraphflow** und installiere das Plugin. Starte eine neue Sitzung und wähle `q-flow`. Ein ZIP-Download oder ein Build aus dem Quellcode ist nicht erforderlich.
+**Empfohlen:** Öffne **Settings → Plugins → Marketplace**, suche nach **QGraphFlow** oder **代码图谱可视化** und installiere das Plugin. Starte eine neue Sitzung und wähle `q-flow`.
 
-Für eine lokale Installation führe zuerst Schritt 1 aus. Öffne dann **Settings → Plugins → Custom → Import** und importiere das vollständige Verzeichnis `dist/runtime`. Lade den Client neu und wähle `q-flow`.
+Für eine lokale Installation führe zuerst Schritt 1 aus. Öffne dann **Settings → Plugins → Custom → Import** und importiere das vollständige Plugin-Stammverzeichnis. Lade den Client neu und wähle `q-flow`.
 
 ### Cursor
 
-Kopiere den gesamten Inhalt von `dist/runtime`, einschließlich versteckter Dateien, nach `~/.cursor/plugins/local/qgraphflow/`. Sichere ein vorhandenes Verzeichnis zuerst; vermische keine alten und neuen Dateien.
+Kopiere den gesamten Inhalt des Plugin-Stammverzeichnisses, einschließlich versteckter Dateien, nach `~/.cursor/plugins/local/qgraphflow/`. Sichere ein vorhandenes Verzeichnis zuerst; vermische keine alten und neuen Dateien.
 
 Prüfe, ob das Manifest unter `~/.cursor/plugins/local/qgraphflow/.cursor-plugin/plugin.json` liegt. Lade das Fenster neu und wähle unter Customize → Plugins / Skills den Skill `q-flow` aus.
 

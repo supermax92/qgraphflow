@@ -4,9 +4,9 @@
 
 [返回 README](readme/README.zh-CN.md)
 
-Qoder Desktop 可从插件商城安装，Claude Code 可直接从 GitHub 安装（见下方对应小节），两者均可跳过第 1 步。采用本地安装时，先下载 QGraphFlow 源码并构建运行包。
+Qoder Desktop 可从插件商城安装，跳过第 1 步（见下方对应小节）。其他客户端安装从 npmjs.com 下载的插件包。
 
-准备 Node.js 22 及以上版本，以及已配置好模型访问的客户端。从源码构建还需 Git、npm、`tar`、`zip` 和 `unzip`。
+准备 Node.js 22 及以上版本（含 npm），以及已配置好模型访问的客户端。
 
 ## 快速安装
 
@@ -16,25 +16,25 @@ npx skills add supermax92/qgraphflow
 
 为 Claude Code、Codex、Cursor 和 Qoder 安装技能 `q-flow`（已用 `skills` 1.7.0 实测），命令会询问装到哪些客户端。如需以插件方式安装，按以下步骤操作。
 
-## 1. 下载并构建（用于本地安装）
+## 1. 从 npm 下载插件
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-npm run package
-unzip -q dist/qgraphflow-0.0.6.zip -d dist/runtime
+mkdir qgraphflow-install
+cd qgraphflow-install
+npm install qgraphflow --ignore-scripts
+cd node_modules/qgraphflow
 ```
 
-已有 QGraphFlow 源码可跳过克隆，并进入其根目录。ZIP 文件名以 QGraphFlow 的 `package.json` 版本为准；使用新的输出和解压目录，不覆盖旧文件。Git 下载只包含已推送的代码，不包含尚未提交的本地修改。
+在业务项目之外创建该目录，无需账号、登录或令牌。此时已进入插件根目录。npm 下载不会自动完成客户端安装，请继续第 2 步。如需安装尚未发布的代码，参见[源码构建说明](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)。
 
 ## 2. 选择客户端安装
 
-以下命令均在 QGraphFlow 源码根目录执行，不是你的业务项目目录。安装的是该目录下 `dist/runtime` 中的完整运行包。
+以下命令均在第 1 步进入的插件根目录（`qgraphflow-install/node_modules/qgraphflow`）执行，不是你的业务项目目录。
 
 ### Codex App / CLI
 
 ```bash
-codex plugin marketplace add ./dist/runtime
+codex plugin marketplace add .
 codex plugin add qgraphflow@supermax92
 ```
 
@@ -44,17 +44,8 @@ codex plugin add qgraphflow@supermax92
 
 ### Claude Code
 
-直接从 GitHub 安装，无需执行第 1 步：
-
 ```bash
-claude plugin marketplace add supermax92/qgraphflow
-claude plugin install qgraphflow@supermax92 --scope user
-```
-
-或使用第 1 步构建的运行包：
-
-```bash
-claude plugin marketplace add ./dist/runtime
+claude plugin marketplace add .
 claude plugin install qgraphflow@supermax92 --scope user
 ```
 
@@ -63,20 +54,20 @@ claude plugin install qgraphflow@supermax92 --scope user
 ### Qoder CLI
 
 ```bash
-qodercli plugins install ./dist/runtime
+qodercli plugins install .
 ```
 
 新建会话，选择 `q-flow`。
 
 ### Qoder Desktop
 
-**推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **代码图谱可视化** 或 **qgraphflow**，安装插件。新建会话，选择 `q-flow`。无需下载 ZIP 或构建源码。
+**推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **QGraphFlow** 或 **代码图谱可视化**，安装插件。新建会话，选择 `q-flow`。
 
-如需本地安装，先完成第 1 步，再打开 **Settings → Plugins → Custom → Import**，导入完整的 `dist/runtime` 目录；重新加载后选择 `q-flow`。
+如需本地安装，先完成第 1 步，再打开 **Settings → Plugins → Custom → Import**，导入完整的插件根目录；重新加载后选择 `q-flow`。
 
 ### Cursor
 
-将 `dist/runtime` 内的全部内容（含隐藏文件）复制到 `~/.cursor/plugins/local/qgraphflow/`。已有目录先备份，勿混合新旧文件。
+将插件根目录内的全部内容（含隐藏文件）复制到 `~/.cursor/plugins/local/qgraphflow/`。已有目录先备份，勿混合新旧文件。
 
 确认清单位于 `~/.cursor/plugins/local/qgraphflow/.cursor-plugin/plugin.json`，重新加载窗口，在 Customize → Plugins / Skills 中选择 `q-flow`。
 
