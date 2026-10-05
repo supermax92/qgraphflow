@@ -120,6 +120,36 @@ test('the validator CLI prints composition warnings to stderr, counts them in th
   assert.equal(JSON.parse(checked.stdout).warnings, 1);
 });
 
+const longSequence = (participants = 10, messages = 60) => ({
+  meta: meta('sequence'),
+  nodes: Array.from({ length: participants }, (_, i) => ({ id: `p${i}`, label: `Service ${i}`, kind: 'service' })),
+  edges: Array.from({ length: messages }, (_, i) => ({ id: `m${i}`, source: `p${i % (participants - 1)}`, target: `p${i % (participants - 1) + 1}`, kind: 'async', label: `event ${i}`, order: i + 1, evidence: 'source' }))
+});
+
+test('a view that needs many screens at the readable zoom is flagged once, by generation', t => {
+  const generate = (graph, ...extra) => {
+    const output = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-oversized-'));
+    t.after(() => fs.rmSync(output, { recursive: true, force: true }));
+    return { output, result: spawnSync(process.execPath, [path.join(skillDir, 'scripts/generate-viewer.mjs'), temp(t, graph), output, '--force', ...extra], { encoding: 'utf8' }) };
+  };
+  const input = run(temp(t, longSequence()), '--input-only');
+  assert.equal(input.status, 0, input.stderr);
+  assert.doesNotMatch(input.stderr, /view\.oversized/, 'a graph without positions cannot be measured');
+  const { output, result } = generate(longSequence());
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr.match(/view\.oversized/g)?.length, 1, 'generation prints it once');
+  assert.match(result.stderr, /Composition warning \(sequence\) view\.oversized: the view spans \d+×\d+ units, about \d+\.\d screens/);
+  assert.equal(JSON.parse(result.stdout).warnings, 1);
+  const checked = run(path.join(output, 'graph.json'));
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.doesNotMatch(checked.stderr, /view\.oversized/, 'the output check only counts it');
+  assert.equal(JSON.parse(checked.stdout).warnings, 1);
+  const small = generate(longSequence(4, 8));
+  assert.equal(small.result.status, 0, small.result.stderr);
+  assert.doesNotMatch(small.result.stderr, /view\.oversized/);
+  assert.equal(JSON.parse(small.result.stdout).warnings, undefined, 'a view that reads in a few screens stays clean');
+});
+
 test('compileViews compiles every view before failing and names each failing view once', async () => {
   const views = ['architecture', 'class', 'state'].map(type => ({ meta: meta(type), nodes: [], edges: [] }));
   const failing = new Set(['class', 'state']);

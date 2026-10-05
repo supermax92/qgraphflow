@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { auditGraphLayout, cardinalityMarks, createEdgeRoutes, graphBounds, occupiedBox, pathFromPoints, pathFromRoute, visibleEdgeLabel } from '../assets/viewer/src/edge-routing.js';
 import { cardTextLayout, layoutText } from '../assets/viewer/src/text-layout.js';
-import { ASPECT_BAND } from '../assets/viewer/src/layout-spacing.js';
+import { ASPECT_BAND, OVERVIEW_AREA, READABLE_ZOOM } from '../assets/viewer/src/layout-spacing.js';
 import { createDiagramSvg, diagramSvgFiles, SVG_FILE } from '../assets/viewer/src/export-svg.js';
 import { edgeColor, isCore, kindLabels, moduleColorMap, groupAppearanceMap, nodeAppearance, PALETTES, TYPOGRAPHY, themeVariables } from '../assets/viewer/src/visual-style.js';
 import { IDENTITY, IDENTITY_SCALES, RADIX } from '../assets/viewer/src/radix-colors.js';
@@ -18,7 +18,7 @@ import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
-import { appleEase, readingRect, readingViewport, locateViewport } from '../assets/viewer/src/reading-area.js';
+import { appleEase, readingRect, readingViewport, locateViewport, readableViewport, readingStart, LEGEND } from '../assets/viewer/src/reading-area.js';
 import { sequenceFragment, renderFragment } from '../assets/viewer/src/sequence-fragments.js';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
@@ -398,6 +398,12 @@ test('reading area clears actual visible bottom controls', () => {
   assert.equal(readingRect(canvas, true, true).bottom, 798, 'hidden controls do not contribute; the visible minimap still does');
 });
 
+test('the size advisory counts screens of the reading rectangle a 1440×900 window gives', () => {
+  const canvas = { clientWidth: 1440, clientHeight: 900, getBoundingClientRect: () => ({ top: 0 }), querySelectorAll: () => [{ getBoundingClientRect: () => ({ top: 776, width: 28, height: 112 }) }] };
+  const { width, height } = readingRect(canvas, false, false);
+  assert.deepEqual({ width, height }, OVERVIEW_AREA);
+});
+
 test('viewport moves follow the chrome\'s cubic-bezier(.32,.72,0,1)', () => {
   for (const [t, y] of [[0, 0], [.25, .779], [.5, .9547], [1, 1]]) assert.ok(Math.abs(appleEase(t) - y) < 1e-3, `ease(${t})`);
 });
@@ -415,6 +421,23 @@ test('reveals without shrinking and locates sequence heads at a readable scale',
     assert.equal((priority.x + priority.width / 2) * located.zoom + located.x, 250);
     assert.equal(priority.y * located.zoom + located.y, 0);
   }
+});
+
+test('opens a graph too large to fit at the readable floor on its reading start', () => {
+  const area = { left: 24, top: 76, right: 1416, bottom: 764, width: 1392, height: 688 }, top = area.top + LEGEND;
+  assert.equal(readableViewport({ x: 0, y: 0, width: 1500, height: 700 }, undefined, area), null, 'a graph that reads at the floor keeps fit-all');
+  assert.deepEqual(readableViewport({ x: 10, y: 20, width: 6000, height: 6840 }, undefined, area),
+    { zoom: READABLE_ZOOM, x: area.left - 10 * READABLE_ZOOM, y: top - 20 * READABLE_ZOOM }, 'without a start the top-left corner opens below the legend button');
+  const wide = readableViewport({ x: 0, y: 0, width: 2000, height: 1800 }, box('init', 'Start', 'initial', 1800, 0, 100, 80), area);
+  assert.equal(2000 * wide.zoom + wide.x, area.right, 'a start near the right edge clamps to the graph edge');
+  assert.equal(wide.y, top);
+  const narrow = readableViewport({ x: 0, y: 0, width: 889, height: 2150 }, undefined, area);
+  assert.equal(444.5 * narrow.zoom + narrow.x, area.left + area.width / 2, 'an axis the graph does not fill is centred');
+  assert.equal(narrow.y, top);
+  const nodes = [box('a', 'A', 'process', 0, 0), box('s', 'S', 'start', 0, 0), box('p', 'P', 'process', 0, 0)];
+  assert.equal(readingStart({ nodes, layout: { primaryPath: ['p', 'a'] } }).id, 'p', 'the primary path wins');
+  assert.equal(readingStart({ nodes }).id, 's', 'else the start / initial node');
+  assert.equal(readingStart({ nodes: [nodes[0]] }), undefined, 'else none');
 });
 
 test('derives session text and positions without mutating the authored graph, then resets exactly', () => {

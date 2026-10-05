@@ -10,6 +10,7 @@ Calls and returns along one flow, with activation bars and fragments. Read with 
 
 - One node per lifeline: `actor` for the human or caller, `service` / `participant` for code you read, `external` for systems outside the repository, `database` for a store or repository. Participants never have `groupId`.
 - Left-to-right order follows first appearance in the messages; `layout.participantOrder` (all ids, once) only reproduces an existing convention.
+- Keep a view near 8 participants and 20 messages; a longer flow is one view per phase (`view.oversized` warns past 4 screens).
 
 ## Messages (edges)
 
@@ -41,9 +42,9 @@ Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end":
   "meta": { "title": "POST /orders → createOrder", "sourceRef": "repo@main", "diagramType": "sequence", "locale": "zh-CN" },
   "nodes": [
     { "id": "client", "label": "caller", "kind": "actor" },
-    { "id": "service", "label": "OrderService", "kind": "service", "source": { "kind": "source", "file": "src/services/order-service.js", "lineStart": 15, "lineEnd": 37 } },
-    { "id": "payments", "label": "PaymentProvider", "kind": "external", "source": { "kind": "source", "file": "src/domain/payment-provider.js", "lineStart": 2, "lineEnd": 6 } },
-    { "id": "bus", "label": "EventBus", "kind": "participant", "source": { "kind": "source", "file": "src/events/bus.js", "lineStart": 13, "lineEnd": 17 } }
+    { "id": "service", "label": "OrderService", "kind": "service", "source": { "kind": "source", "file": "src/order-service.js", "lineStart": 15, "lineEnd": 37 } },
+    { "id": "payments", "label": "PaymentProvider", "kind": "external", "source": { "kind": "source", "file": "src/payment.js", "lineStart": 2, "lineEnd": 6 } },
+    { "id": "bus", "label": "EventBus", "kind": "participant", "source": { "kind": "source", "file": "src/bus.js", "lineStart": 13, "lineEnd": 17 } }
   ],
   "groups": [
     { "id": "outcome", "label": "payment result", "kind": "alt", "operands": [
@@ -69,6 +70,5 @@ Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end":
 - `edge m.order must be a positive integer for sequence` / `order duplicates N` — `--fix` renumbers in array order, or edit the number.
 - `edge r.replyTo m must reference a sync or async call from a return` / `endpoints must be reversed` / `must precede its return` — point at the right call; `--fix` fills it when exactly one candidate exists.
 - `group g.operands order ranges must be ordered and non-interleaving` — all messages of operand 1 come before operand 2; move a message or split the fragment.
-- `group g.operands[i].id is required` — `opt` / `loop` / `par` operands need ids (`--fix` adds `op1..`).
 - `execution x.start endpoint m does not belong to participant p` — `send` ⇒ source, `receive` ⇒ target.
 - `Sequence group g needs explicit operands before automatic layout` — every fragment declares `operands`.

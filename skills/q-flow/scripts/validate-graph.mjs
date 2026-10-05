@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { auditGraphLayout, graphBounds } from '../assets/viewer/src/edge-routing.js';
 import { canvasBudgetFor, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 import { ASPECT_BAND, ASPECT_SLACK, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
-import { graphsOf, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
+import { graphsOf, overviewWarnings, reviewComposition, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
 import { callsMissingExecutions } from '../assets/viewer/src/sequence-executions.js';
@@ -26,7 +26,8 @@ const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.
 Composition warnings never fail the run; --input-only prints them in full, later steps only count them in the
 receipt. Fix module.missing, module.inconsistent and flowchart.process-branch; module.single-tone asks whether the
-steps really are one subsystem's work.`;
+steps really are one subsystem's work. view.oversized (a view needing over 4 screens at the readable zoom) needs the
+laid-out graph: generate-viewer.mjs prints it, output validation only counts it.`;
 
 export function readAndValidateGraph(inputPath, options = {}) {
   const absolute = path.resolve(inputPath);
@@ -51,10 +52,19 @@ export function readAndValidateGraph(inputPath, options = {}) {
 
 // Warnings only. The full lines print once per delivery — during input validation, where the author repairs the
 // graph; generation and output validation see the same facts again and carry only the count in their receipt.
+const printWarnings = warnings => {
+  for (const warning of warnings) console.warn(`Composition warning (${warning.diagramType}) ${warning.ruleId}: ${warning.message} — ${warning.remediation}`);
+  return warnings;
+};
 export function printCompositionReview(graph, { print = true } = {}) {
   const warnings = reviewComposition(graph);
-  if (print) for (const warning of warnings) console.warn(`Composition warning (${warning.diagramType}) ${warning.ruleId}: ${warning.message} — ${warning.remediation}`);
-  return warnings;
+  return print ? printWarnings(warnings) : warnings;
+}
+
+// The size advisory needs the laid-out graph: generation prints it once, the output check only counts it.
+export function printViewReview(graph, { print = false } = {}) {
+  const warnings = overviewWarnings(graph);
+  return print ? printWarnings(warnings) : warnings;
 }
 
 export function layoutComposition(graph) {
@@ -254,7 +264,7 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
     }
     const graph = readAndValidateGraph(positionals[0], { inputOnly: values['input-only'] });
     const sourceEvidence = verifySourceEvidence(graph, values['repo-root']);
-    const warnings = printCompositionReview(graph, { print: values['input-only'] });
+    const warnings = [...printCompositionReview(graph, { print: values['input-only'] }), ...(values['input-only'] ? [] : printViewReview(graph))];
     const graphs = graphsOf(graph);
     const totals = {
       nodes: graphs.reduce((sum, item) => sum + item.nodes.length, 0),

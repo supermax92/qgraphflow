@@ -10,3 +10,10 @@ export const ASPECT_SLACK = 1.1;
 // How far a width/height ratio sits outside the band, as a factor ≥ 1; 1 means inside. Callers compare it to two decimals,
 // so a shape within one percent of the band edge counts as inside.
 export const ratioExcess = ratio => Math.max(ratio / ASPECT_BAND, 1 / (ratio * ASPECT_BAND), 1);
+// First-screen zoom floor: fitting everything below it would shrink the 14/16/20px text under about 10px, so the Viewer opens
+// at this scale on the start of the reading flow instead (14/16/20px read as 10.5/12/15px).
+export const READABLE_ZOOM = .75;
+// What "one screen" means for the size advisory: the reading rectangle of a 1440×900 window with both panels closed
+// (readingRect), and how many such screens a view may need at READABLE_ZOOM before generation suggests splitting it.
+export const OVERVIEW_AREA = Object.freeze({ width: 1392, height: 688 });
+export const MAX_SCREENS = 4;
