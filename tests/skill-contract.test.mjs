@@ -106,7 +106,21 @@ test('refreshing a drifted diagram runs the documented commands as written and k
   }
   assert.deepEqual(fs.readdirSync(dir).sort(), ['diagram.svg', 'graph.json', 'index.html']);
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'graph.json'), 'utf8')).nodes.find(node => node.id === 'gateway').source.lineStart, 25);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'graph.json'), 'utf8')).edges.find(edge => edge.id === 'e3').site.lineStart, 31, 'the relationship site moves with the call it records');
   assert.deepEqual(positions(), before, 'the refresh keeps every position');
+});
+
+test('a relationship whose recorded call was removed fails validation and names the edge, not a node', t => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-relation-drift-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const repo = path.join(temp, 'repo'), gateway = path.join(repo, 'src/gateway/chat-gateway.js');
+  fs.cpSync(path.join(root, 'examples/showcase/agent-desk'), repo, { recursive: true });
+  fs.writeFileSync(gateway, fs.readFileSync(gateway, 'utf8').replace('orchestrator.handle(', 'orchestrator.dispatch('));
+  const graph = path.join(root, 'examples/showcase/agent-desk-graphs/en/architecture.graph.json');
+  const result = spawnSync(process.execPath, ['scripts/validate-graph.mjs', graph, '--input-only', '--repo-root', repo], { cwd: skillDir, encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /edges\[\d+\]\.site \(src\/gateway\/chat-gateway\.js\): symbol "handle" is not in line 11; not found in the file/);
+  assert.doesNotMatch(result.stderr, /nodes\[\d+\]\.source/, 'the definitions are intact; only the relationship drifted');
 });
 
 test('every type page carries a minimal skeleton that passes input validation as written', () => {

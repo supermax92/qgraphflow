@@ -170,6 +170,12 @@
       "target": "gateway",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 6,
+        "lineEnd": 9,
+        "symbol": "createServer"
+      },
       "label": "POST /chat «где мой заказ?»",
       "order": 1
     },
@@ -179,6 +185,11 @@
       "target": "orch",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/gateway/chat-gateway.js",
+        "lineStart": 11,
+        "symbol": "handle"
+      },
       "label": "handle(session, text)",
       "order": 2
     },
@@ -188,6 +199,11 @@
       "target": "llm",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 17,
+        "symbol": "complete"
+      },
       "label": "complete(история, инструменты)",
       "order": 3
     },
@@ -207,6 +223,11 @@
       "target": "tools",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 21,
+        "symbol": "execute"
+      },
       "label": "execute(lookupOrder, { orderId })",
       "order": 5
     },
@@ -226,6 +247,11 @@
       "target": "llm",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 25,
+        "symbol": "complete"
+      },
       "label": "complete(история + наблюдение)",
       "order": 7
     },
@@ -245,6 +271,11 @@
       "target": "llm",
       "kind": "sync",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 31,
+        "symbol": "complete"
+      },
       "label": "complete(итоговый ответ)",
       "order": 9
     },
@@ -264,6 +295,11 @@
       "target": "gateway",
       "kind": "async",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 34,
+        "symbol": "push"
+      },
       "label": "push(часть ответа)",
       "order": 11
     },
@@ -273,6 +309,11 @@
       "target": "audit",
       "kind": "async",
       "evidence": "source",
+      "site": {
+        "file": "src/agent/orchestrator.js",
+        "lineStart": 35,
+        "symbol": "record"
+      },
       "label": "record(вызовы инструментов и модели)",
       "order": 12
     },

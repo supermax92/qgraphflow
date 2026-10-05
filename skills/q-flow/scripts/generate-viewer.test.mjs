@@ -160,7 +160,7 @@ test('both CLI paths verify real source anchors and reject invalid evidence befo
   assert.equal(JSON.parse(skipped.stdout).sourceEvidence.status, 'skipped');
   const checked = run('validate-graph.mjs', ['--input-only', '--repo-root', repo]);
   assert.equal(checked.status, 0, checked.stderr);
-  assert.deepEqual(JSON.parse(checked.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), checked: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), files: 1, symbols: 0 });
+  assert.deepEqual(JSON.parse(checked.stdout).sourceEvidence, { scope: 'working-tree', status: 'passed', references: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), checked: input.diagrams.reduce((n, g) => n + g.nodes.length, 0), files: 1, symbols: 0, relations: { sited: 0, eligible: 2 } });
   const generated = run('generate-viewer.mjs', [output, '--repo-root', repo]);
   assert.equal(generated.status, 0, generated.stderr);
   assert.equal(JSON.parse(generated.stdout).sourceEvidence.status, 'passed');

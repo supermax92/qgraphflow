@@ -14,6 +14,7 @@ The lifecycle of one component or entity: states, the events that move between t
 - A guard is a condition the source checks, never a restatement of the source state (`state != RUNNING` on a transition out of `STARTING`). When an event leads every state to one target (shutdown, close), draw the transitions the source names per state and put "entered from any state on …" in the target's `facts`.
 - A `state` may carry `entry`, `do` and `exit`: one plain string each for what the source runs on entering the state, while it stays active and on leaving it (`"entry": "schedule the timeout, send the registration"`). Take an action out of a transition's `action` and into `entry` when the code runs it after the state is set; leave out the keys the source does not show, never invent a `do`.
 - Anchor each state to where it is declared (enum member, transition-table row, status constant). Tag the state the component exists to reach and stay in (`running`, `active`) with `tags: ["core"]`.
+- Edge `site`: the line that sets the target state; `symbol` is the target constant.
 - State colors are derived from the lifecycle and never written: the `core` state is green, a state with no way on (or only into a `final`) is slate, a state tagged `failure` is red, and the rest run warm to cool in the order the machine reaches them (orange, blue, teal, …). So always tag the goal state `core`: without one the states keep their module color. Use `tags: ["failure"]` only for an error or aborted state, not for every cancellation or timeout.
 - One machine per view; keep 5–10 states. States carry the component's `module`; a `choice` takes the module of the subsystem whose result it branches on; `initial` / `final` never carry a wash.
 
@@ -29,9 +30,9 @@ The lifecycle of one component or entity: states, the events that move between t
     { "id": "cancelled", "label": "cancelled", "kind": "state", "source": { "kind": "source", "file": "src/domain/order-state.js", "lineStart": 6, "lineEnd": 6 } }
   ],
   "edges": [
-    { "id": "s0", "source": "initial", "target": "created", "kind": "transition", "label": "new Order", "evidence": "source" },
-    { "id": "s1", "source": "created", "target": "paid", "kind": "transition", "label": "pay", "guard": "payment.ok", "evidence": "source" },
-    { "id": "s2", "source": "created", "target": "cancelled", "kind": "transition", "label": "cancel", "action": "release inventory", "evidence": "source" }
+    { "id": "s0", "source": "initial", "target": "created", "kind": "transition", "label": "new Order", "evidence": "source", "site": { "file": "src/domain/order.js", "lineStart": 22, "symbol": "CREATED" } },
+    { "id": "s1", "source": "created", "target": "paid", "kind": "transition", "label": "pay", "guard": "payment.ok", "evidence": "source", "site": { "file": "src/domain/order.js", "lineStart": 41, "symbol": "PAID" } },
+    { "id": "s2", "source": "created", "target": "cancelled", "kind": "transition", "label": "cancel", "action": "release inventory", "evidence": "source", "site": { "file": "src/domain/order.js", "lineStart": 47, "symbol": "CANCELLED" } }
   ]
 }
 ```

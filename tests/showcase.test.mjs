@@ -92,13 +92,14 @@ test('localized ecommerce preserves domain structure and renders complete node t
   }
 });
 
-test('every agent-desk graph in every locale keeps its source anchors and symbols on the example code', () => {
+test('every agent-desk graph in every locale keeps its node sources and edge sites on the example code', () => {
   for (const locale of readmeLocales) for (const type of ['architecture', 'sequence', 'er']) {
     const graph = JSON.parse(read(`examples/showcase/agent-desk-graphs/${locale}/${type}.graph.json`));
     const evidence = verifySourceEvidence(graph, path.join(root, 'examples/showcase/agent-desk'));
     assert.equal(evidence.status, 'passed', `${locale}/${type}`);
-    assert.equal(evidence.symbols, graph.nodes.filter(node => node.source?.symbol).length, `${locale}/${type}`);
+    assert.equal(evidence.symbols, [...graph.nodes.map(node => node.source), ...graph.edges.map(edge => edge.site)].filter(anchor => anchor?.symbol).length, `${locale}/${type}`);
     assert.ok(evidence.symbols > 0, `${locale}/${type}`);
+    assert.ok(evidence.relations.sited > 0 && evidence.relations.sited === evidence.relations.eligible, `${locale}/${type}: every repository-evidenced relationship records its site`);
   }
   assert.deepEqual(fs.readdirSync(path.join(root, 'examples/showcase/agent-desk-graphs')).sort(), [...readmeLocales].sort());
 });

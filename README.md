@@ -20,7 +20,7 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
-**What sets it apart:** nine diagram types from one skill, a source for every relationship, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+**What sets it apart:** nine diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -183,7 +183,7 @@ The prebuilt Viewer needs no dependency installation, API key or backend service
 
 ## Keep diagrams in sync with code
 
-A diagram generated with a repository root records where each component is defined. Validating it with `--repo-root` fails when a recorded file is gone, a line range no longer fits, or a recorded symbol has left its lines, and the error names the lines where the symbol is now. Add this job to your CI; it needs no build, login or token:
+A diagram generated with a repository root records where each component is defined and the line behind each code-backed relationship (a call, a foreign key). Validating it with `--repo-root` fails when a recorded file is gone, a line range no longer fits, or a recorded symbol has left its lines, and the error names the lines where the symbol is now. Add this job to your CI; it needs no build, login or token:
 
 ```yaml
 name: Diagrams

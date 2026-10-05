@@ -142,6 +142,10 @@ export function themeVariables(palette) {
   return Object.fromEntries([...Object.entries(tokens).map(([name, key]) => [`--${name}`, palette[key]]), ...Object.entries(sizes).map(([name, key]) => [`--${name}`, `${TYPOGRAPHY[key]}px`])]);
 }
 
+export const evidenceLabels = { source: 'Source code', code: 'Code', config: 'Configuration', schema: 'Schema', test: 'Test', document: 'Document', framework: 'Framework convention', inference: 'Inference' };
+// "file:start-end" for a node source or an edge site.
+export const anchorText = anchor => `${anchor.file}:${anchor.lineStart}${anchor.lineEnd ? `-${anchor.lineEnd}` : ''}`;
+
 export const kindLabels = {
   external: 'External', config: 'Configuration', framework: 'Framework', security: 'Security', service: 'Service', business: 'Business',
   data: 'Data', failure: 'Failure', system: 'System', component: 'Component', database: 'Database', start: 'Start', end: 'End',

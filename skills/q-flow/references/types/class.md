@@ -10,6 +10,7 @@ Types and their structural relationships: inheritance, implementation, compositi
 
 - `attributes` and `methods` are arrays of strings in UML form (`+cents: number`, `+charge(orderId, amount): Promise<Result>`); list the real members, keep declared types. `interface` and `abstract` render with their stereotype.
 - Edge direction: `inheritance` child → parent; `implementation` class → `interface` (the target must be an interface); `composition` / `aggregation` whole → part (diamond at the whole); `association` from the holder of the reference to the referenced type; `dependency` user → used (`new`, parameter, return type).
+- Edge `site`: the `extends` / `implements` clause or the field that holds the association.
 - `sourceMultiplicity` / `targetMultiplicity` (`1`, `*`, `0..1`, `1..*`, `2..4`) are allowed only on `association`, `aggregation` and `composition`.
 - Optional `layout.rank` puts parents / interfaces above their children; when given, a child must not rank above its parent.
 - Keep 5–10 classes per view; show the members that matter for the question, but never fabricate ones.
@@ -26,8 +27,8 @@ Types and their structural relationships: inheritance, implementation, compositi
     { "id": "item", "label": "OrderItem", "kind": "class", "attributes": ["+sku: string", "+quantity: number"], "source": { "kind": "source", "file": "src/domain/order.js", "lineStart": 5, "lineEnd": 15 } }
   ],
   "edges": [
-    { "id": "c1", "source": "gateway", "target": "provider", "kind": "inheritance", "evidence": "source" },
-    { "id": "c2", "source": "order", "target": "item", "kind": "composition", "label": "items", "sourceMultiplicity": "1", "targetMultiplicity": "1..*", "evidence": "source" }
+    { "id": "c1", "source": "gateway", "target": "provider", "kind": "inheritance", "evidence": "source", "site": { "file": "src/domain/payment-provider.js", "lineStart": 8, "symbol": "PaymentProvider" } },
+    { "id": "c2", "source": "order", "target": "item", "kind": "composition", "label": "items", "sourceMultiplicity": "1", "targetMultiplicity": "1..*", "evidence": "source", "site": { "file": "src/domain/order.js", "lineStart": 19, "symbol": "items" } }
   ]
 }
 ```

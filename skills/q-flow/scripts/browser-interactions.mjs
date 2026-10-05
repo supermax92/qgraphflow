@@ -3,7 +3,7 @@
 // quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
 // Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_WIDTHS (matrix only), QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1,
-// QA_EXTRAS=none|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|sequence-reading|file-url, QA_FIXTURE_DIR.
+// QA_EXTRAS=none|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|sequence-reading|file-url, QA_FIXTURE_DIR.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -1524,6 +1524,38 @@ async function mobileEditingCheck(browser, url, graph) {
   }, true);
 }
 
+// A relationship that records a `site` shows the same file:lines path and symbol as a node source, in the quick look and the Inspector.
+async function edgeSiteCheck(browser, url) {
+  const site = { file: 'src/gateway/chat-gateway.js', lineStart: 6, lineEnd: 9, symbol: 'createServer' }, expected = `${site.file}:${site.lineStart}-${site.lineEnd}`;
+  const graph = {
+    meta: { title: '关系出处', diagramType: 'flowchart', sourceRef: 'browser test fixture', locale: 'zh-CN' },
+    groups: [],
+    nodes: [
+      { id: 'left', label: '左侧处理', kind: 'process', position: { x: 300, y: 100 }, size: { width: 180, height: 100 } },
+      { id: 'right', label: '右侧处理', kind: 'process', position: { x: 720, y: 100 }, size: { width: 180, height: 100 } }
+    ],
+    edges: [{ id: 'recorded', source: 'left', target: 'right', label: '校验通过', kind: 'flow', evidence: 'source', site }]
+  };
+  assert.deepEqual(validateGraph(graph), []);
+  const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(
+    /(<script id="graph-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, open, close) => open + JSON.stringify(graph).replaceAll('<', '\\u003c') + close
+  );
+  await runCase(browser, 'edge-site', viewports[0], {}, async page => {
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
+    await page.goto(url); await page.locator('.diagram-node').first().waitFor(); await hidePanels(page); await fit(page);
+    await page.locator('.react-flow__edge-interaction').dispatchEvent('click');
+    const card = page.locator('.relation-card'); await card.waitFor();
+    assert.equal((await card.locator('.card-source code').innerText()).trim(), expected, 'The relationship quick look shows the line that makes it hold.');
+    assert.ok((await card.innerText()).includes('源码'), 'The evidence kind is translated, not the raw value.');
+    await card.getByRole('button', { name: '查看详情' }).click();
+    const inspector = page.locator('.drawer-body[data-edge-id="recorded"]'); await inspector.waitFor();
+    assert.equal((await inspector.locator('.source-path').innerText()).trim(), expected, 'The Inspector shows the same path.');
+    assert.equal((await inspector.locator('.symbol').innerText()).trim(), site.symbol, 'The Inspector shows the symbol.');
+    return { site: expected };
+  }, true);
+}
+
 async function relationshipCardAvoidanceCheck(browser, url) {
   const graph = {
     meta: { title: '关系速览避让', diagramType: 'flowchart', sourceRef: 'browser test fixture', locale: 'zh-CN' },
@@ -2924,6 +2956,7 @@ try {
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await mobileEditingCheck(browser, url, filtered[0]);
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await editPersistenceChecks(browser, url);
   if (filtered.length && process.env.QA_EXTRAS !== 'none') await relationshipCardAvoidanceCheck(browser, url);
+  if (filtered.length && process.env.QA_EXTRAS !== 'none') await edgeSiteCheck(browser, url);
   const layoutGraph = filtered.find(graph => graph.meta.diagramType === 'state' && graph.nodes.length >= 4) ?? filtered.find(graph => graph.nodes.length >= 4);
   if (layoutGraph && process.env.QA_EXTRAS !== 'none') await informationLayoutChecks(browser, url, layoutGraph);
   if (process.env.QA_EXTRAS?.split(',').includes('motion-preferences')) for (const graph of filtered) await motionPreferences(browser, url, graph);
