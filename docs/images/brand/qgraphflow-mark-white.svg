@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+  <linearGradient id="creamm" x1="0" y1="199.4" x2="0" y2="831.1" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fffbf3"/><stop offset="1" stop-color="#f3ead9"/></linearGradient>
+  <linearGradient id="mintm" x1="0" y1="699.1" x2="0" y2="831.1" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#d9f7df"/><stop offset="1" stop-color="#94d9a8"/></linearGradient>
+  <radialGradient id="glowm" cx="765.07" cy="765.07" r="115.5" gradientUnits="userSpaceOnUse">
+    <stop offset=".55" stop-color="#a6f2c0" stop-opacity=".26"/><stop offset="1" stop-color="#a6f2c0" stop-opacity="0"/></radialGradient>
+  <mask id="gapm" maskUnits="userSpaceOnUse" x="0" y="0" width="2000" height="2000">
+    <rect width="2000" height="2000" fill="#fff"/><g fill="#000"><circle cx="450.41" cy="248.41" r="66.00"/><circle cx="248.41" cy="450.41" r="66.00"/><circle cx="593.25" cy="593.25" r="66.00"/><circle cx="765.07" cy="765.07" r="83.00"/></g></mask>
+  <filter id="liftm" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="8.8" stdDeviation="11.0" flood-color="#06140f" flood-opacity=".3"/></filter>
+</defs>
+  
+  <g>
+    <g mask="url(#gapm)">
+      <circle cx="450.41" cy="450.41" r="202.00" fill="none" stroke="#ffffff" stroke-width="55.00"/>
+      <line x1="593.25" y1="593.25" x2="765.07" y2="765.07" stroke="#ffffff" stroke-width="55.00"/>
+    </g>
+    <g fill="#ffffff"><circle cx="450.41" cy="248.41" r="49.00"/><circle cx="248.41" cy="450.41" r="49.00"/><circle cx="593.25" cy="593.25" r="49.00"/></g>
+    <circle cx="765.07" cy="765.07" r="66.00" fill="#ffffff"/>
+  </g>
+</svg>
