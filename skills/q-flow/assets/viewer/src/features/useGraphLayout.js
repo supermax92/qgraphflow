@@ -69,6 +69,7 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     }));
   };
   const updateEdgeText = (id, label) => {
+    if (isArchitectureOverview(currentGraph)) return applyOverview({ ...currentGraph, edges: currentGraph.edges.map(edge => edge.id === id ? { ...edge, label } : edge) });
     setEdges(current => current.map(edge => edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge));
   };
   const readGraph = (targetGraph, duration = reduceMotion ? 0 : 320, overview = false) => {

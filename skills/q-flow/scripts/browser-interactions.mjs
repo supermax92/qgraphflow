@@ -3030,7 +3030,13 @@ async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
     await button(page, '添加徽章').click();
     await page.getByRole('textbox', { name: `徽章 ${selected.badges.length + 1}`, exact: true }).fill('接入规范 · 已编辑');
     await button(page, '保存').click(); await page.locator('.card-form').waitFor({ state: 'detached' });
+    if (graph.edges.length) {
+      await hidePanels(page); await fit(page); const edge = graph.edges[0];
+      await page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(edge.id)}]`)).focus(); await page.keyboard.press('Enter'); await ensureInspector(page);
+      await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill(edge.label + ' · 已编辑'); await button(page, '保存').click(); await page.locator('.card-form').waitFor({ state: 'detached' });
+    }
     const edited = await save('edited'), editedView = view(edited);
+    if (graph.edges.length) assert.equal(editedView.edges[0].label, graph.edges[0].label + ' · 已编辑');
     assert.equal(editedView.nodes[0].overviewText[0], body.trim()); assert.equal(editedView.nodes[0].badges.at(-1).label, '接入规范 · 已编辑');
     requireDiagramQuality(editedView);
     const other = graphs.find(item => viewIdOf(item) !== viewIdOf(graph));
@@ -3061,6 +3067,7 @@ async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
       await nodeElement(page, id).focus(); await page.keyboard.press('ArrowLeft'); assert.deepEqual(view(await save('keyboard-restored')), baseline);
     }
     const snapshot = await save('final'), finalView = view(snapshot); requireDiagramQuality(finalView);
+    if (graph.edges.length) assert.equal(finalView.edges[0].label, editedView.edges[0].label, 'Relation edits survive drag and keyboard reorder');
     // Real file-picker failures and cancellation retain the edited collection.
     for (const phase of ['cancel', 'open', 'write', 'close']) {
       await page.evaluate(phase => { window.overviewSave = { phase }; window.showSaveFilePicker = async () => { if (phase === 'cancel') throw new DOMException('Cancel', 'AbortError'); return { createWritable: async () => { if (phase === 'open') throw new Error('Open failure'); return { write: async contents => { window.overviewSave.contents = contents; if (phase === 'write') throw new Error('Write failure'); }, close: async () => { throw new Error('Close failure'); }, abort: async () => {} }; } }; }; }, phase);
