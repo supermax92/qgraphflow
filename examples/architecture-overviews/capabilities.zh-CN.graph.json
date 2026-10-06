@@ -16,7 +16,9 @@
       "module": "platform",
       "subtitle": "统一版本管理与构建规范",
       "overviewText": [
-        "Spring Boot、Spring Cloud 和第三方库版本由平台统一管理。"
+        "独立仓库与 Maven 私服；dependencyManagement 统一锁定版本。",
+        "JDK 21 · Spring Boot 3.2.10 · Spring Cloud Alibaba。",
+        "Jackson / Lombok / MapStruct / Guava、二方库（User-SDK、Pay-SDK 等）和 dida-starter-* 统一管理。"
       ],
       "badges": [
         {
@@ -44,7 +46,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "应用基础与工具",
-      "overviewText": [],
+      "overviewText": [
+        "Tomcat、Actuator、TraceID、JSON 工具。"
+      ],
       "badges": [
         {
           "label": "已实现",
@@ -71,7 +75,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "响应、异常与 CORS",
-      "overviewText": [],
+      "overviewText": [
+        "Result 包装、全局异常、CORS。"
+      ],
       "badges": [
         {
           "label": "已实现",
@@ -98,7 +104,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "结构化日志与追踪",
-      "overviewText": [],
+      "overviewText": [
+        "JSON 日志、OpenTelemetry 集成、脱敏。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -125,7 +133,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "配置与注册",
-      "overviewText": [],
+      "overviewText": [
+        "配置与注册中心、多环境、透传。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -152,7 +162,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "数据访问与多数据源",
-      "overviewText": [],
+      "overviewText": [
+        "MyBatisPlus、多数据源、慢 SQL。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -179,7 +191,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "缓存与锁",
-      "overviewText": [],
+      "overviewText": [
+        "Redis、Redisson 锁、Caffeine。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -206,7 +220,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "注解脱敏",
-      "overviewText": [],
+      "overviewText": [
+        "注解式脱敏，日志与响应体生效。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -233,7 +249,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "消息能力",
-      "overviewText": [],
+      "overviewText": [
+        "统一 MQ 抽象，零代码切换。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -260,7 +278,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "HTTP 客户端与重试",
-      "overviewText": [],
+      "overviewText": [
+        "高性能 HTTP、TraceID、重试。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -287,7 +307,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "API 文档",
-      "overviewText": [],
+      "overviewText": [
+        "OpenAPI 3、Knife4j。"
+      ],
       "badges": [
         {
           "label": "待实现",
@@ -341,7 +363,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "声明平台 starter 依赖",
-      "overviewText": [],
+      "overviewText": [
+        "Mapper、Client、MQ、缓存；唯一声明平台 starter 的位置。"
+      ],
       "badges": [
         {
           "label": "必选",
@@ -368,7 +392,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "应用入口与业务逻辑",
-      "overviewText": [],
+      "overviewText": [
+        "Controller、Service、Domain、启动类。"
+      ],
       "badges": [
         {
           "label": "必选",
@@ -395,7 +421,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "接口契约与 DTO",
-      "overviewText": [],
+      "overviewText": [
+        "接口契约与 DTO，不绑定实现。"
+      ],
       "badges": [
         {
           "label": "可选",
@@ -422,7 +450,38 @@
       "kind": "component",
       "module": "business",
       "subtitle": "后台任务",
-      "overviewText": [],
+      "overviewText": [
+        "本地任务与任务中心回调。"
+      ],
+      "badges": [
+        {
+          "label": "可选",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "business-starter",
+      "label": "starter",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "业务能力封装为复用组件",
+      "overviewText": [
+        "业务 starter 依赖 infra-core，通过传递依赖获得平台能力。"
+      ],
       "badges": [
         {
           "label": "可选",
@@ -509,6 +568,9 @@
           {
             "nodeId": "p-doc"
           }
+        ],
+        "text": [
+          "AutoConfiguration 引入即生效；禁止业务侧手动配置 Bean。"
         ]
       },
       {
@@ -530,7 +592,13 @@
           },
           {
             "nodeId": "job"
+          },
+          {
+            "nodeId": "business-starter"
           }
+        ],
+        "text": [
+          "根 POM 继承 dida-parent。"
         ]
       },
       {
@@ -538,8 +606,11 @@
         "title": "接入规则",
         "mode": "note",
         "text": [
-          "仅 infra-core 声明平台 starter；其余业务模块通过 Maven 传递依赖获得能力。",
-          "此图记录设计要求，已实现和待实现均为参考文档中的状态。"
+          "禁止反向与循环依赖。shared 不依赖任何业务模块，被所有模块依赖。",
+          "infra-core 依赖 shared；dida-starter-* 只允许在 infra-core 声明。",
+          "service、job、业务 starter 依赖 infra-core，经传递获得平台能力。",
+          "sdk 只依赖 shared，保持轻量；业务工程不直接引第三方 JAR，配置强制上云。",
+          "此图记录设计要求，版本、已实现和待实现均来自参考文档，未核验 Dida 源码。"
         ]
       }
     ]

@@ -47,7 +47,7 @@ test('both templates preserve full text, directions and traceable content throug
 test('reordering remains within the owning section, survives save and does not overwrite another architecture view', () => {
   const collection = read('collection'); collection.diagrams = collection.diagrams.map(graph => layoutArchitectureOverview(graph));
   const initial = collection.diagrams[0], first = initial.nodes.find(node => node.id === 'p-core'), second = initial.nodes.find(node => node.id === 'p-web');
-  const edited = reorderOverview(initial, first.id, second.position); requireDiagramQuality(edited);
+  const edited = layoutArchitectureOverview(reorderOverview(initial, first.id, second.position)); requireDiagramQuality(edited);
   assert.notDeepEqual(edited.layout.sections[1].items, initial.layout.sections[1].items);
   const saved = graphInputWithEdits(collection, new Map([['capabilities', edited]]), collection.diagrams[1]);
   assert.deepEqual(saved.diagrams[0], edited); assert.deepEqual(saved.diagrams[1], collection.diagrams[1]);
@@ -91,4 +91,23 @@ test('section descriptions and many parallel cards grow the canvas; failures loc
   assert.ok(placed.nodes.every(node => node.size.width >= 300));
   const note = placed.layout.sections.at(-1); note.text = [];
   assert.throws(() => requireDiagramQuality(placed), error => error.diagnostics.some(item => item.elementIds.includes(note.id) && item.bounds.length));
+});
+
+test('preserved overviews reject note/card, section and route/text collisions', () => {
+  const graph = layoutArchitectureOverview(read('capabilities.zh-CN')), note = graph.layout.sections.at(-1);
+  note.position = { x: graph.nodes[0].position.x - 32, y: graph.nodes[0].position.y - 32 }; note.size.width = graph.nodes[0].size.width + 64;
+  assert.throws(() => diagramSvgFiles(graph), /overview siblings/);
+  const other = layoutArchitectureOverview(read('capabilities.zh-CN')), edge = other.edges[0], section = other.layout.sections[1];
+  edge.route.via = [{ x: section.position.x - 20, y: section.position.y + 40 }, { x: section.position.x + section.size.width + 20, y: section.position.y + 40 }];
+  assert.throws(() => requireDiagramQuality(other), /crosses section/);
+});
+
+test('an unchanged drop preserves order; reorder does not bypass larger-gap layout retries', () => {
+  const graph = layoutArchitectureOverview(read('capabilities.zh-CN')), node = graph.nodes.find(node => node.id === 'p-core');
+  assert.deepEqual(reorderOverview(graph, node.id, node.position), graph);
+  assert.deepEqual(reorderOverview(graph, node.id, { x: node.position.x + 5, y: node.position.y + 5 }).layout.sections, graph.layout.sections);
+  const dense = read('engineering.zh-CN'); dense.edges = [dense.edges.at(-1)]; dense.edges[0].label = '这是完整的较长关系说明 '.repeat(5);
+  const placed = layoutArchitectureOverview(dense, { gap: 200 }); requireDiagramQuality(placed);
+  const ordered = reorderOverview(placed, placed.nodes[0].id, placed.nodes[0].position);
+  assert.deepEqual(ordered, placed); requireDiagramQuality(layoutArchitectureOverview(ordered, { gap: 200 }));
 });

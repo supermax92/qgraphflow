@@ -2,9 +2,9 @@
 // Replays the production Viewer contract over the canvas-first shell: one floating toolbar, collapsed floating panels,
 // quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
-// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_WIDTHS (matrix only), QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1,
+// Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_VIEWS, QA_WIDTHS (matrix only), QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1,
 // QA_EXTRAS=none|overview|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|notes|sequence-reading|file-url, QA_FIXTURE_DIR.
-import { overviewSections } from '../assets/viewer/src/architecture-overview.js';
+import { overviewSections, fitArchitectureOverview } from '../assets/viewer/src/architecture-overview.js';
 import { isArchitectureOverview, viewIdOf } from '../assets/viewer/src/view-identity.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -37,7 +37,7 @@ const graphs = (input.diagrams ?? [input]).slice().sort((a, b) => Object.keys(di
 const labels = Object.fromEntries(Object.entries(diagramLabels).map(([type, label]) => [type, translate(graphs[0].meta.locale, label)]));
 const fixtureRoot = process.env.QA_FIXTURE_DIR ? path.resolve(process.env.QA_FIXTURE_DIR) : null;
 const fixtures = fixtureRoot ? fs.readdirSync(fixtureRoot).filter(name => fs.existsSync(path.join(fixtureRoot, name, 'index.html'))).map(name => ({ name, graph: JSON.parse(fs.readFileSync(path.join(fixtureRoot, name, 'graph.json'), 'utf8')) })) : [];
-const filtered = graphs.filter(graph => !process.env.QA_TYPES || process.env.QA_TYPES.split(',').includes(graph.meta.diagramType));
+const filtered = graphs.filter(graph => (!process.env.QA_TYPES || process.env.QA_TYPES.split(',').includes(graph.meta.diagramType)) && (!process.env.QA_VIEWS || process.env.QA_VIEWS.split(',').includes(viewIdOf(graph))));
 const viewports = [{ width: 1440, height: 900 }, { width: 1920, height: 1080 }, { width: 390, height: 844 }];
 const matrixViewports = viewports.filter(viewport => !process.env.QA_WIDTHS || process.env.QA_WIDTHS.split(',').includes(String(viewport.width)));
 const digest = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -422,7 +422,7 @@ async function assertNodeDrawing(page, graph, colorTheme) {
     assert.equal(await page.locator(`[data-edge-id=${JSON.stringify(id)}] .pair-label`).innerText(), pair.label);
   }
   for (const node of graph.nodes) {
-    const expected = renderNode({ ...node, executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
+    const expected = renderNode({ ...node, classicCard: !compactCards(graph), executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
     const same = await nodeElement(page, node.id).locator('.node-drawing').evaluate((element, xml) => {
       const expected = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${xml}</svg>`, 'image/svg+xml').querySelector('.node-drawing');
       // Compare parsed DOMs: serialization differences must not hide drawing differences.
@@ -589,7 +589,7 @@ async function runCase(browser, name, viewport, options, run, extra = false) {
 }
 
 async function exportFailureChecks(browser, url, graph, viewport=viewports[0], colorTheme='light') {
-  await runCase(browser, `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-export-failures`, viewport, {}, async page => {
+  await runCase(browser, `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-export-failures`, viewport, {}, async page => {
     await page.goto(url); await chooseGraph(page, graph, viewport.width<=700); await theme(page,colorTheme);
     const downloads = [];
     page.on('download', item => downloads.push(item));
@@ -645,21 +645,22 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
         await page.waitForFunction(source => new RegExp(source).test(document.querySelector('.toast')?.textContent), expected.source);
         assert.equal(downloads.length, before, `${mode}/${format}: no file is downloaded after failure`);
         if(!['context','blank','blob','limit'].includes(mode)){await page.locator('.layout-problems').waitFor();assert.ok(await count(page,'.layout-problems li button'),'Rendered failures expose an actionable element location');}
-        await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-export-failure-${mode}-${format}.png`) });
+        await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-export-failure-${mode}-${format}.png`) });
       }
       await page.evaluate(() => window.restoreExportProbe());
     }
-    const recovered = await exportsMatch(page, graph, `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-export-failure-recovery`);
+    const recovered = await exportsMatch(page, graph, `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-export-failure-recovery`);
     return { type: graph.meta.diagramType, theme:colorTheme, faults: failures.map(([mode]) => mode), rejectedWithoutDownload: true, recovered };
   }, true);
 }
 
 // The model a saved page holds after a node's label is edited: the label, plus the room a card that no longer fits its text
 // grows by with its boundaries (fitCard). Nothing else in any view changes.
-function modelAfterLabel(type, id, label) {
-  const expected = structuredClone(input), view = (expected.diagrams ?? [expected]).find(item => item.meta.diagramType === type);
+function modelAfterLabel(identity, id, label) {
+  const expected = structuredClone(input), view = (expected.diagrams ?? [expected]).find(item => viewIdOf(item) === identity);
   view.nodes.find(node => node.id === id).label = label;
-  for (const [key, box] of fitCard(view, id, !compactCards(graphs.find(item => item.meta.diagramType === type)))) Object.assign([...view.nodes, ...(view.groups ?? [])].find(item => item.id === key), box);
+  if (isArchitectureOverview(view)) { Object.assign(view, fitArchitectureOverview(view, requireDiagramQuality)); return expected; }
+  for (const [key, box] of fitCard(view, id, !compactCards(graphs.find(item => viewIdOf(item) === identity)))) Object.assign([...view.nodes, ...(view.groups ?? [])].find(item => item.id === key), box);
   return expected;
 }
 async function saveFailureChecks(browser, url, graph) {
@@ -669,7 +670,7 @@ async function saveFailureChecks(browser, url, graph) {
     await button(page, '编辑文字').click();
     const label = target(graph).label + ' saved draft';
     await page.getByRole('textbox', { name: '名称', exact: true }).fill(label); await button(page, '保存').click();
-    const expected = modelAfterLabel(graph.meta.diagramType, target(graph).id, label);
+    const expected = modelAfterLabel(viewIdOf(graph), target(graph).id, label);
     const failures = [];
     for (const phase of ['cancel', 'open', 'write', 'close']) {
       await page.evaluate(phase => {
@@ -700,7 +701,8 @@ async function saveFailureChecks(browser, url, graph) {
 }
 
 async function strictDraftChecks(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-strict-draft`, viewports[0], {}, async page => {
+  if (isArchitectureOverview(graph)) return; // Overview editing is transactional; its invalid draft checks live in overviewInteractions.
+  await runCase(browser, `${viewIdOf(graph)}-strict-draft`, viewports[0], {}, async page => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.goto(url); await theme(page, 'light'); await chooseGraph(page, graph, false);
     const selected = graph.nodes.find(node => !['initial', 'final'].includes(node.kind));
@@ -718,7 +720,7 @@ async function strictDraftChecks(browser, url, graph) {
     await page.locator('.layout-problems summary').click();
     assert.ok(await page.locator('.layout-problems li button').count(), 'The invalid draft has actionable element locations.');
     await page.locator('.layout-problems li button').first().click();
-    await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-invalid-draft.png`) });
+    await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-invalid-draft.png`) });
     const downloads = []; page.on('download', item => downloads.push(item));
     for (const format of ['SVG', 'PNG']) {
       await openMore(page); await menuItem(page, `导出 ${format}`).click();
@@ -727,10 +729,10 @@ async function strictDraftChecks(browser, url, graph) {
     }
     const save = async suffix => {
       await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
-      const item = downloadedFile, file = path.join(outputRoot, 'exports', `${graph.meta.diagramType}-${suffix}.json`); await item.saveAs(file);
+      const item = downloadedFile, file = path.join(outputRoot, 'exports', `${viewIdOf(graph)}-${suffix}.json`); await item.saveAs(file);
       assert.equal(await item.failure(), null); return JSON.parse(fs.readFileSync(file, 'utf8'));
     };
-    const saved = await save('invalid-draft'), expected = modelAfterLabel(graph.meta.diagramType, selected.id, value);
+    const saved = await save('invalid-draft'), expected = modelAfterLabel(viewIdOf(graph), selected.id, value);
     assert.deepEqual(saved, expected, 'JSON retains the entire invalid draft without altering other views or route geometry.');
     await openMore(page); await menuItem(page, '重置').click(); await page.locator('.layout-problems').waitFor({ state: 'detached' });
     assert.deepEqual(await save('reset-draft'), input, 'Reset restores the complete embedded model, including route.messageY.');
@@ -744,12 +746,12 @@ async function strictDraftChecks(browser, url, graph) {
     await page.mouse.move(start.x + (other.position.x - selected.position.x) * zoom,
       start.y + (graph.meta.diagramType === 'sequence' ? 0 : other.position.y - selected.position.y) * zoom, { steps: 12 });
     await page.mouse.up(); await page.locator('.layout-problems').waitFor();
-    const dragged = await save('invalid-drag'), draggedGraph = (dragged.diagrams ?? [dragged]).find(item => item.meta.diagramType === graph.meta.diagramType);
+    const dragged = await save('invalid-drag'), draggedGraph = (dragged.diagrams ?? [dragged]).find(item => viewIdOf(item) === viewIdOf(graph));
     const position = draggedGraph.nodes.find(node => node.id === selected.id).position;
     assert.notDeepEqual(position, selected.position, 'A real pointer drag changes the selected node.');
     if (graph.meta.diagramType === 'sequence') assert.equal(position.y, selected.position.y, 'The sequence time axis stays fixed.');
     const dragExpected = structuredClone(input);
-    (dragExpected.diagrams ?? [dragExpected]).find(item => item.meta.diagramType === graph.meta.diagramType).nodes.find(node => node.id === selected.id).position = position;
+    (dragExpected.diagrams ?? [dragExpected]).find(item => viewIdOf(item) === viewIdOf(graph)).nodes.find(node => node.id === selected.id).position = position;
     assert.deepEqual(dragged, dragExpected, 'Dragging retains every unrelated field and the other views.');
     const downloadCount = downloads.length;
     for (const format of ['SVG', 'PNG']) {
@@ -757,10 +759,10 @@ async function strictDraftChecks(browser, url, graph) {
       await page.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('Diagram quality failed'));
       assert.equal(downloads.length, downloadCount, 'Overlapping dragged nodes block both image formats.');
     }
-    await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-invalid-drag.png`) });
+    await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-invalid-drag.png`) });
     await openMore(page); await menuItem(page, '重置').click(); await page.locator('.layout-problems').waitFor({ state: 'detached' });
     assert.deepEqual(await save('reset-drag'), input, 'Reset restores all geometry after the invalid drag.');
-    await exportsMatch(page, graph, `${graph.meta.diagramType}-draft-recovery`);
+    await exportsMatch(page, graph, `${viewIdOf(graph)}-draft-recovery`);
     return { type: graph.meta.diagramType, theme: 'light', draftRetained: true, invalidDragRetained: true, resetComplete: true, actualDownloads: true };
   }, true);
 }
@@ -886,11 +888,11 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
 }
 
 async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
-  const type = graph.meta.diagramType, name = `${type}-${viewport.width}-${colorTheme}-editor-boundaries`;
+  const type = graph.meta.diagramType, name = `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-editor-boundaries`;
   await runCase(browser, name, viewport, {}, async (page, context) => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.goto(url); await chooseGraph(page, graph, mobile(page)); await theme(page, colorTheme);
-    const expected = structuredClone(input), current = (expected.diagrams ?? [expected]).find(g => g.meta.diagramType === type);
+    const expected = structuredClone(input), current = (expected.diagrams ?? [expected]).find(g => viewIdOf(g) === viewIdOf(graph));
     const verifyFile = async suffix => {
       await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       const download = downloadedFile, file = path.join(outputRoot, 'exports', `${name}-${suffix}.json`); await download.saveAs(file);
@@ -1020,7 +1022,7 @@ async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
         await searchSelect(page, current, other); await nameInput.waitFor({ state: 'detached' });
       });
       await step('I15.06', 'Switching diagrams discards this draft and preserves committed values', async () => {
-        await begin(); await nameInput.fill('切图草稿'); const other = graphs.find(g => g.meta.diagramType !== type); assert.ok(other);
+        await begin(); await nameInput.fill('切图草稿'); const other = graphs.find(g => viewIdOf(g) !== viewIdOf(graph)); assert.ok(other);
         await chooseGraph(page, other, mobile(page)); await chooseGraph(page, graph, mobile(page)); await nameInput.waitFor({ state: 'detached' });
       });
     }
@@ -1030,7 +1032,7 @@ async function editorBoundaryChecks(browser, url, graph, viewport, colorTheme) {
 
 async function completeInteractions(browser, url, graph, viewport, colorTheme) {
   const type = graph.meta.diagramType, mobile = viewport.width <= 700;
-  await runCase(browser, `${type}-${viewport.width}-${colorTheme}-acceptance`, viewport, {}, async (page, context) => {
+  await runCase(browser, `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-acceptance`, viewport, {}, async (page, context) => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     let activeStep = !process.env.QA_ACCEPTANCE_FROM;
     const step = async (ids, action, run) => {
@@ -1039,9 +1041,9 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
       const beforePositions=await positions(),beforeFiles=new Set(fs.readdirSync(path.join(outputRoot,'exports')));
       await run();
       console.log('STEP', type, viewport.width, colorTheme, ids);
-      const screenshot = `steps/${type}-${viewport.width}-${colorTheme}-${page.qaSteps.length}.jpg`;
+      const screenshot = `steps/${viewIdOf(graph)}-${viewport.width}-${colorTheme}-${page.qaSteps.length}.jpg`;
       await page.screenshot({path:path.join(outputRoot,screenshot),type:'jpeg',quality:65});
-      page.qaSteps.push({ step: ids, action, expected: 'Assertions in this action succeed without changing unrelated model data', measured: { beforePositions, positions: await positions(), viewport: page.viewportSize() }, files:fs.readdirSync(path.join(outputRoot,'exports')).filter(file=>!beforeFiles.has(file)&&file.startsWith(`${type}-${viewport.width}-${colorTheme}-`)).map(file=>({path:'exports/'+file,sha256:digest(path.join(outputRoot,'exports',file))})), screenshot, at: new Date().toISOString(), url: page.url() });
+      page.qaSteps.push({ step: ids, action, expected: 'Assertions in this action succeed without changing unrelated model data', measured: { beforePositions, positions: await positions(), viewport: page.viewportSize() }, files:fs.readdirSync(path.join(outputRoot,'exports')).filter(file=>!beforeFiles.has(file)&&file.startsWith(`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-`)).map(file=>({path:'exports/'+file,sha256:digest(path.join(outputRoot,'exports',file))})), screenshot, at: new Date().toISOString(), url: page.url() });
     };
     const positions = async () => (await geometry(page)).nodes.map(({ id, position }) => ({ id, position }));
     const transform = () => page.locator('.react-flow__viewport').evaluate(el => { const m = new DOMMatrix(getComputedStyle(el).transform); return { x: m.e, y: m.f, zoom: m.a }; });
@@ -1049,10 +1051,10 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
     const reset = async () => { await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page); };
     const saved = async suffix => {
       await openMore(page); const [downloadedFile] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
-      const file = path.join(outputRoot, 'exports', `${type}-${viewport.width}-${colorTheme}-${suffix}.json`);
+      const file = path.join(outputRoot, 'exports', `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-${suffix}.json`);
       await downloadedFile.saveAs(file); return JSON.parse(fs.readFileSync(file));
     };
-    const current = value => (value.diagrams ?? [value]).find(g => g.meta.diagramType === type);
+    const current = value => (value.diagrams ?? [value]).find(g => viewIdOf(g) === viewIdOf(graph));
     if (process.env.QA_ACCEPTANCE_FROM) { await page.goto(url); await ready(); await setLocked(page,false); }
     await step('I01.01 I01.05', 'Open the collection, choose this type and read all initial nodes', async () => { await page.goto(url); await ready(); assert.equal(await count(page, '.diagram-node'), graph.nodes.length); });
     await step('I01.02 I01.03', 'Reload, then navigate away and reopen the generated page', async () => { await page.reload(); await ready(); await page.goto('about:blank'); await page.goto(url); await ready(); assert.deepEqual(await positions(), graph.nodes.map(n => ({ id: n.id, position: n.position }))); });
@@ -1201,12 +1203,12 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
     });
     await step('I08.01 I08.02 I08.03 I08.04 I19.08', 'Visit every graph, edit a second view and reset only this view', async () => {
       await searchSelect(page,graph,target(graph));await setLocked(page,false);await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('uncommitted view draft');for(const item of graphs)await chooseGraph(page,item,mobile);await chooseGraph(page,graph,mobile);await searchSelect(page,graph,target(graph));assert.equal(await count(page,'.card-form'),0);assert.equal(await page.locator('.drawer-body h2').innerText(),target(graph).label);
-      const other=graphs.find(g=>g.meta.diagramType!==type);
-      if(other){await chooseGraph(page,other,mobile);await setLocked(page,false);await searchSelect(page,other,target(other));await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('Other view retained');await button(page,'保存').click();await chooseGraph(page,graph,mobile);await searchSelect(page,graph,target(graph));await setLocked(page,false);await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('discard current pending draft');await reset();assert.equal(await count(page,'.card-form'),0);const result=await saved('other-view');assert.deepEqual(current(result),graph);assert.equal((result.diagrams??[result]).find(g=>g.meta.diagramType===other.meta.diagramType).nodes.find(n=>n.id===target(other).id).label,'Other view retained');await chooseGraph(page,other,mobile);await reset();await chooseGraph(page,graph,mobile);}
+      const other=graphs.find(g=>viewIdOf(g) !== viewIdOf(graph));
+      if(other){await chooseGraph(page,other,mobile);await setLocked(page,false);await searchSelect(page,other,target(other));await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('Other view retained');await button(page,'保存').click();await chooseGraph(page,graph,mobile);await searchSelect(page,graph,target(graph));await setLocked(page,false);await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('discard current pending draft');await reset();assert.equal(await count(page,'.card-form'),0);const result=await saved('other-view');assert.deepEqual(current(result),graph);assert.equal((result.diagrams??[result]).find(g=>viewIdOf(g)===viewIdOf(other)).nodes.find(n=>n.id===target(other).id).label,'Other view retained');await chooseGraph(page,other,mobile);await reset();await chooseGraph(page,graph,mobile);}
       await hidePanels(page);await fit(page);
     });
     await step('I21.01 I21.02 I21.03 I21.04 I21.07 I20.05 I20.06 I27.06', 'Download current SVG/PNG and consecutive complete JSON files, then continue editing', async () => {
-      await exportsMatch(page,graph,`${type}-${viewport.width}-${colorTheme}-acceptance`);assert.deepEqual(current(await saved('consecutive-1')),graph);assert.deepEqual(current(await saved('consecutive-2')),graph);
+      await exportsMatch(page,graph,`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-acceptance`);assert.deepEqual(current(await saved('consecutive-1')),graph);assert.deepEqual(current(await saved('consecutive-2')),graph);
       await setLocked(page,false);await searchSelect(page,graph,target(graph));await button(page,'编辑文字').click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('still editable');await button(page,'取消').click();await hidePanels(page);
     });
     await step('I23.01 I23.02 I23.03 I23.04 I23.05 I23.06 I23.07 I23.08 I23.09', 'Toggle flow, live reduced motion, switch diagrams and reset, checking effective states', async () => {
@@ -1214,7 +1216,7 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
       if(await control.count()){
         await control.click();assert.equal(await control.getAttribute('aria-checked'),'false');await control.click();assert.equal(await control.getAttribute('aria-checked'),'true');
         await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('[role="switch"][aria-label="连线流动"]')?.disabled);assert.equal(await control.isDisabled(),true);await assertFlow(page,false);await page.emulateMedia({reducedMotion:'no-preference'});await page.waitForFunction(()=>document.querySelector('[role="switch"][aria-label="连线流动"]')?.disabled===false);assert.equal(await control.isEnabled(),true);
-        await control.click();await dismiss(page);const other=graphs.find(g=>g.meta.diagramType!==type);if(other){await chooseGraph(page,other,mobile);await assertFlow(page,false);await chooseGraph(page,graph,mobile);await assertFlow(page,false);}await reset();await assertFlow(page,true);
+        await control.click();await dismiss(page);const other=graphs.find(g=>viewIdOf(g) !== viewIdOf(graph));if(other){await chooseGraph(page,other,mobile);await assertFlow(page,false);await chooseGraph(page,graph,mobile);await assertFlow(page,false);}await reset();await assertFlow(page,true);
       } else await dismiss(page);
     });
     await step('I24.01 I24.02 I24.04 I24.08 I24.09 I24.10 I15.10 I22.07', 'Use actual fullscreen, repeated entry, live system appearance and editor handoff', async () => {
@@ -1243,13 +1245,13 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
       await page.setViewportSize(viewport);await page.waitForTimeout(150);await ensureInspector(page);await page.locator('.inspector').getByRole('button',{name:'保存',exact:true}).click();await page.locator('#search').fill('中文 paste');assert.equal(await count(page,'.results button'),1);await page.goto(url);await ready();
     });
     await step('I21.08 I21.09 I27.06 I27.07', 'Hold font readiness, switch view/theme while exporting and verify the captured file before editing again', async () => {
-      const other=graphs.find(g=>g.meta.diagramType!==type);
+      const other=graphs.find(g=>viewIdOf(g) !== viewIdOf(graph));
       for(const format of ['SVG','PNG']){
         await page.evaluate(()=>Object.defineProperty(document.fonts,'ready',{configurable:true,value:new Promise(resolve=>window.releaseExport=resolve)}));
         await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,`导出 ${format}`).click();assert.match(await status(page),/正在生成/);
         if(other)await chooseGraph(page,other,mobile);await theme(page,colorTheme==='light'?'dark':'light');await page.evaluate(()=>{window.releaseExport();delete document.fonts.ready;});
-        const result=await pending,file=path.join(outputRoot,'exports',`${type}-${viewport.width}-${colorTheme}-pending.${format.toLowerCase()}`);await result.saveAs(file);assert.equal(await result.failure(),null);assert.ok(fs.statSync(file).size>100);
-        const baseline=path.join(outputRoot,'exports',`${type}-${viewport.width}-${colorTheme}-acceptance.${format.toLowerCase()}`);if(fs.existsSync(baseline))assert.equal(digest(file),digest(baseline),'An export pending during a view/theme switch keeps the trigger snapshot');
+        const result=await pending,file=path.join(outputRoot,'exports',`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-pending.${format.toLowerCase()}`);await result.saveAs(file);assert.equal(await result.failure(),null);assert.ok(fs.statSync(file).size>100);
+        const baseline=path.join(outputRoot,'exports',`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-acceptance.${format.toLowerCase()}`);if(fs.existsSync(baseline))assert.equal(digest(file),digest(baseline),'An export pending during a view/theme switch keeps the trigger snapshot');
         await chooseGraph(page,graph,mobile);await theme(page,colorTheme);await hidePanels(page);
       }
       await page.evaluate(()=>{window.nativeToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=callback=>callback(null);});await openMore(page);await menuItem(page,'导出 PNG').click();await page.waitForFunction(()=>/未能生成 PNG/.test(document.querySelector('.toast')?.textContent));await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=window.nativeToBlob;});
@@ -1272,12 +1274,12 @@ async function completeInteractions(browser, url, graph, viewport, colorTheme) {
       await setLocked(page,false);await searchSelect(page,graph,node);await button(page,'编辑文字').click();const text='完整压力输入 WMWM_'.repeat(30);await page.getByRole('textbox',{name:'名称',exact:true}).fill(text);await button(page,'保存').click();await page.locator('.layout-problems').waitFor();await page.locator('.layout-problems summary').click();await page.locator('.layout-problems li button').first().click();
       const downloads=[],listener=d=>downloads.push(d);page.on('download',listener);
       try{for(const format of ['SVG','PNG']){await openMore(page);await menuItem(page,`导出 ${format}`).click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('Diagram quality failed'));assert.equal(downloads.length,0);}}finally{page.off('download',listener);}
-      const draft=current(await saved('long-draft'));assert.equal(draft.nodes.find(n=>n.id===node.id).label,text);const before=await geometry(page);await openMore(page);await menuItem(page,'整理间距').click();assert.match(await status(page),/无法继续整理/);assert.deepEqual(await geometry(page),before);await reset();assert.deepEqual(current(await saved('draft-reset')),graph);await exportsMatch(page,graph,`${type}-${viewport.width}-${colorTheme}-draft-retry`);
+      const draft=current(await saved('long-draft'));assert.equal(draft.nodes.find(n=>n.id===node.id).label,text);const before=await geometry(page);await openMore(page);await menuItem(page,'整理间距').click();assert.match(await status(page),/无法继续整理/);assert.deepEqual(await geometry(page),before);await reset();assert.deepEqual(current(await saved('draft-reset')),graph);await exportsMatch(page,graph,`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-draft-retry`);
     });
     await step('I25.01 I25.02 I27.01 I27.02', 'Traverse visible controls with Tab and Shift+Tab and inspect native hover/focus descriptions', async () => {
       await page.locator('#search').focus();const seen=new Set();for(let i=0;i<35;i++){await page.keyboard.press('Tab');const item=await page.evaluate(()=>{const e=document.activeElement,r=e.getBoundingClientRect();return {tag:e.tagName,label:e.getAttribute('aria-label')||e.textContent||e.title,visible:(r.width>0&&r.height>0)||(e instanceof SVGElement&&(r.width>0||r.height>0))};});assert.ok(item.visible||item.tag==='BODY',JSON.stringify(item));seen.add(item.label);}assert.ok(seen.size>3);await page.keyboard.press('Shift+Tab');await page.locator('#more-menu-button').hover();assert.equal(await page.locator('#more-menu-button').getAttribute('title'),'更多');await page.locator('#more-menu-button').focus();assert.ok(await page.locator('#more-menu-button').evaluate(el=>el.matches(':focus-visible')));
     });
-    await page.screenshot({path:path.join(outputRoot,'screens',`${type}-${viewport.width}-${colorTheme}-acceptance.png`)});
+    await page.screenshot({path:path.join(outputRoot,'screens',`${viewIdOf(graph)}-${viewport.width}-${colorTheme}-acceptance.png`)});
     return { type, theme:colorTheme };
   },true);
 }
@@ -1371,19 +1373,19 @@ async function pointerNode(page, node, drag = false) {
 }
 async function entrypoints(browser, url, graph) {
   if (graph.meta.diagramType === 'sequence') return; // Native sequence entry points and Inspector fallback are checked by sequence-reading/persistence.
-  await runCase(browser, `${graph.meta.diagramType}-selection-entrypoints`, viewports[0], {}, async page => {
+  await runCase(browser, `${viewIdOf(graph)}-selection-entrypoints`, viewports[0], {}, async page => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await fit(page);
     // A drag may legitimately break the layout gate, so a blocked export passes; mustExport demands the draft be valid and export.
     const exportCurrentDraft = async (suffix, mustExport = false) => {
-      const name = `${graph.meta.diagramType}-${suffix}`, savedFile = path.join(outputRoot, 'exports', name + '.json');
+      const name = `${viewIdOf(graph)}-${suffix}`, savedFile = path.join(outputRoot, 'exports', name + '.json');
       await openMore(page); const [saved] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
       await saved.saveAs(savedFile);
       const model = JSON.parse(fs.readFileSync(savedFile, 'utf8'));
-      const current = (model.diagrams ?? [model]).find(item => item.meta.diagramType === graph.meta.diagramType);
+      const current = (model.diagrams ?? [model]).find(item => viewIdOf(item) === viewIdOf(graph));
       let invalid = null;
       try { requireDiagramQuality(current); } catch (error) { invalid = error; }
-      if (mustExport) assert.ok(!invalid, `A text edit keeps the layout valid and both images export, but ${graph.meta.diagramType} failed: ${invalid?.message.split('\n').slice(1, 3).join(' ')}`);
+      if (mustExport) assert.ok(!invalid, `A text edit keeps the layout valid and both images export, but ${viewIdOf(graph)} failed: ${invalid?.message.split('\n').slice(1, 3).join(' ')}`);
       if (!invalid) return { current, ...await exportsMatch(page, current, name) };
       const downloads = [], listener = download => downloads.push(download);
       page.on('download', listener);
@@ -1515,7 +1517,7 @@ async function entrypoints(browser, url, graph) {
 }
 
 async function mobileEditingCheck(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-390-mobile-editing`, viewports[2], {}, async page => {
+  await runCase(browser, `${viewIdOf(graph)}-390-mobile-editing`, viewports[2], {}, async page => {
     await page.goto(url); await chooseGraph(page, graph, true); await hidePanels(page); await fit(page); await setLocked(page, false);
     const selected = target(graph), edited = selected.label + ' 移动端';
     await pointerNode(page, selected);
@@ -1728,7 +1730,7 @@ async function editPersistenceChecks(browser, url) {
       await switchTo(graph.meta.diagramType); await setLocked(page, false);
       await pointerNode(page, graph.nodes[0], true);
       graph.nodes[0].position = (await geometry(page)).nodes.find(node => node.id === 'left').position;
-      assert.notDeepEqual(graph.nodes[0].position, collection.diagrams.find(g => g.meta.diagramType === graph.meta.diagramType).nodes[0].position);
+      assert.notDeepEqual(graph.nodes[0].position, collection.diagrams.find(g => viewIdOf(g) === viewIdOf(graph)).nodes[0].position);
       const card = page.locator('.node-card'); await card.getByRole('button', { name: '编辑文字', exact: true }).click();
       graph.nodes[0].label = graph.meta.diagramType === 'flowchart' ? '流程改名' : '服务改名'; graph.nodes[0].subtitle = '修改说明';
       await card.getByRole('textbox', { name: '名称', exact: true }).fill(graph.nodes[0].label);
@@ -1902,7 +1904,7 @@ async function sequenceFlowPixels(page, checked, name) {
 
 async function flowContrastChecks(browser, url, graph) {
   for (const colorTheme of ['light', 'dark']) {
-    await runCase(browser, `${graph.meta.diagramType}-${colorTheme}-flow-contrast`, viewports[0], {}, async (page, context) => {
+    await runCase(browser, `${viewIdOf(graph)}-${colorTheme}-flow-contrast`, viewports[0], {}, async (page, context) => {
       await page.goto(url); await chooseGraph(page, graph, false);
       await theme(page, colorTheme);
       const selected = target(graph); await searchSelect(page, graph, selected);
@@ -1971,7 +1973,7 @@ async function flowContrastChecks(browser, url, graph) {
           }
         }
         assert.deepEqual(await geometry(page), stable);
-        if (sequence && overviewChecked.length) pixelSamples.push({ time, samples: await sequenceFlowPixels(page, overviewChecked, `${graph.meta.diagramType}-${colorTheme}-selection-${time}`) });
+        if (sequence && overviewChecked.length) pixelSamples.push({ time, samples: await sequenceFlowPixels(page, overviewChecked, `${viewIdOf(graph)}-${colorTheme}-selection-${time}`) });
       }
       await page.locator('.selection-feedback').evaluateAll(elements => {
         for (const animation of new Set(elements.flatMap(e => e.getAnimations({ subtree: true })))) animation.finish();
@@ -1986,7 +1988,7 @@ async function flowContrastChecks(browser, url, graph) {
       if (sequence) {
         for (const item of checked.filter(item => !overviewChecked.includes(item))) {
           await centerMotionEdge(page, item.id);
-          pixelSamples.push({ local: item.id, samples: await sequenceFlowPixels(page, [item], `${graph.meta.diagramType}-${colorTheme}-${item.id}-local-contrast`) });
+          pixelSamples.push({ local: item.id, samples: await sequenceFlowPixels(page, [item], `${viewIdOf(graph)}-${colorTheme}-${item.id}-local-contrast`) });
         }
         await fit(page);
       }
@@ -1996,7 +1998,7 @@ async function flowContrastChecks(browser, url, graph) {
             animation.pause(); animation.currentTime = phase;
           }
         }, phase);
-        await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${colorTheme}-flow-${phase}.png`), animations: 'allow' });
+        await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-${colorTheme}-flow-${phase}.png`), animations: 'allow' });
       }
       const media = [];
       if (sequence) {
@@ -2038,7 +2040,7 @@ async function flowContrastChecks(browser, url, graph) {
 
 async function inspectorChecks(browser, url, graph) {
   for (const viewport of [viewports[0], viewports[2]]) {
-    await runCase(browser, `${graph.meta.diagramType}-${viewport.width}-inspector-sync`, viewport, {}, async page => {
+    await runCase(browser, `${viewIdOf(graph)}-${viewport.width}-inspector-sync`, viewport, {}, async page => {
       await page.goto(url); await chooseGraph(page, graph, viewport.width <= 700);
       await ensureInspector(page);
       if (core(graph)) await assertInspector(page, core(graph));
@@ -2064,7 +2066,7 @@ async function inspectorChecks(browser, url, graph) {
 }
 
 async function flowChecks(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-ambient-flow`, viewports[0], {}, async page => {
+  await runCase(browser, `${viewIdOf(graph)}-ambient-flow`, viewports[0], {}, async page => {
     await page.goto(url); await chooseGraph(page, graph, false);
     const directed = graph.edges.filter(edge => hasArrow(edge, graph.meta.diagramType));
     const assertDashMotion = async running => {
@@ -2289,7 +2291,7 @@ async function sequencePersistenceChecks(browser, url, graph) {
     assert.deepEqual(savedGraph.groups,graph.groups);assert.deepEqual(savedGraph.edges,graph.edges.map(edge=>edge.id===editedEdge?.id?{...edge,label:'配对标签 QA'}:edge));assert.deepEqual(savedGraph.executions,graph.executions);
     assert.equal(savedGraph.nodes[0].label,selected.label+' QA');assert.equal(savedGraph.nodes[0].subtitle,'JSON 往返说明');assert.ok(Math.abs(savedGraph.nodes[0].position.x-position.x)<.001);
     for(let i=1;i<graph.nodes.length;i++)assert.deepEqual(savedGraph.nodes[i],graph.nodes[i]);
-    if(other)assert.deepEqual(saved.diagrams.find(g=>g.meta.diagramType===other.meta.diagramType),other,'Reset in another view is isolated.');
+    if(other)assert.deepEqual(saved.diagrams.find(g=>viewIdOf(g)===viewIdOf(other)),other,'Reset in another view is isolated.');
     const regenerated=path.join(outputRoot,'sequence-regenerated');
     const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force','--verbose'];
     if(process.env.QA_REPO_ROOT)args.push('--repo-root',process.env.QA_REPO_ROOT);
@@ -2393,7 +2395,7 @@ async function assertTextBounds(page) {
 }
 
 async function textBoundsChecks(browser, url, graph) {
-  await runCase(browser, `${graph.meta.diagramType}-text-bounds`, viewports[0], {}, async page => {
+  await runCase(browser, `${viewIdOf(graph)}-text-bounds`, viewports[0], {}, async page => {
     const stress = structuredClone(graph);
     stress.edges = []; stress.groups = [];
     delete stress.executions; delete stress.layout;
@@ -2429,9 +2431,9 @@ async function textBoundsChecks(browser, url, graph) {
       }
       const clippedHeadings = await page.locator('.boundary > span').evaluateAll(elements => elements.filter(element => element.scrollWidth > element.clientWidth + 1).map(element => element.textContent));
       assert.deepEqual(clippedHeadings, [], 'Complete group headings fit without ellipsis.');
-      await page.screenshot({ path: path.join(outputRoot, 'screens', `${graph.meta.diagramType}-${fixture === graph ? 'authored' : fixture === compiledStress ? 'long' : 'uppercase-edge'}-text.png`), animations: 'disabled' });
+      await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-${fixture === graph ? 'authored' : fixture === compiledStress ? 'long' : 'uppercase-edge'}-text.png`), animations: 'disabled' });
       if (['architecture', 'flowchart'].includes(graph.meta.diagramType) && fixture === compiledStress || graph.meta.diagramType === 'sequence' && fixture === compiledUppercase) {
-        await exportsMatch(page, fixture, `${graph.meta.diagramType}-long-input`);
+        await exportsMatch(page, fixture, `${viewIdOf(graph)}-long-input`);
       }
       await page.unroute(url);
     }
@@ -2849,7 +2851,7 @@ async function centerMotionEdge(page, id) {
 }
 
 async function motionMatrix(browser, url, graph, viewport, colorTheme) {
-  const name = `${graph.meta.diagramType}-${viewport.width}-${colorTheme}-motion-matrix`;
+  const name = `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-motion-matrix`;
   const videoOptions = viewport.width === 1440 ? { recordVideo: { dir: path.join(outputRoot, 'videos'), size: viewport } } : {};
   await runCase(browser, name, viewport, videoOptions, async page => {
     await page.goto(url); await chooseGraph(page, graph, mobile(page)); await theme(page, colorTheme); await hidePanels(page); await clear(page); await page.mouse.move(3, 60);
@@ -2916,13 +2918,13 @@ async function motionMatrix(browser, url, graph, viewport, colorTheme) {
 }
 
 async function motionPreferences(browser, url, graph) {
-  for (const colorTheme of ['light', 'dark']) await runCase(browser, `${graph.meta.diagramType}-${colorTheme}-motion-preferences`, viewports[0], {}, async (page, context) => {
+  for (const colorTheme of ['light', 'dark']) await runCase(browser, `${viewIdOf(graph)}-${colorTheme}-motion-preferences`, viewports[0], {}, async (page, context) => {
     await page.goto(url); await chooseGraph(page, graph, false); await theme(page, colorTheme); await clear(page); await hidePanels(page); await fit(page);
     const directed = graph.edges.filter(edge => hasArrow(edge, graph.meta.diagramType)), edge = directed[0] ?? graph.edges[0];
     if (edge) await centerMotionEdge(page, edge.id);
     const states = [], capture = async (label, moving) => {
       await page.waitForTimeout(120);
-      const sample = await motionFrames(page, graph, `${graph.meta.diagramType}-${colorTheme}-${label}`, edge ? [edge.id] : undefined, moving);
+      const sample = await motionFrames(page, graph, `${viewIdOf(graph)}-${colorTheme}-${label}`, edge ? [edge.id] : undefined, moving);
       for (const item of sample.edges) {
         assert.ok(item.samples >= 16, 'Preference check samples a visible route.');
         assert.ok(moving ? item.motion > 1 : item.motion < .5, `${label}: ${JSON.stringify(item)}`);
@@ -2949,7 +2951,7 @@ async function motionPreferences(browser, url, graph) {
     await toggle(false); await capture('flow-off', false);
     await page.emulateMedia({ reducedMotion: 'reduce' }); await assertFlow(page, false); await capture('reduced', false);
     await page.emulateMedia({ reducedMotion: 'no-preference' }); await assertFlow(page, false); await capture('restored-user-off', false);
-    const other = graphs.find(item => item.meta.diagramType !== graph.meta.diagramType);
+    const other = graphs.find(item => viewIdOf(item) !== viewIdOf(graph));
     if (other) { await chooseGraph(page, other, false); await assertFlow(page, false); await chooseGraph(page, graph, false); await assertFlow(page, false); if (edge) await centerMotionEdge(page, edge.id); await capture('switch-preserves-off', false); }
     await toggle(true);
     const session = await context.newCDPSession(page);
@@ -2962,12 +2964,12 @@ async function motionPreferences(browser, url, graph) {
     await session.send('Emulation.setEmulatedMedia', { features: [] });
     await page.emulateMedia({ reducedMotion: 'reduce' }); await capture('enabled-but-reduced', false);
     await page.emulateMedia({ reducedMotion: 'no-preference' }); await capture('restored-user-on', directed.length > 0);
-    return { colorTheme, directedCount: directed.length, states, pixelFrames: fs.readdirSync(path.join(outputRoot, 'screens')).filter(file => file.startsWith(`${graph.meta.diagramType}-${colorTheme}-`)).map(file => 'screens/' + file) };
+    return { colorTheme, directedCount: directed.length, states, pixelFrames: fs.readdirSync(path.join(outputRoot, 'screens')).filter(file => file.startsWith(`${viewIdOf(graph)}-${colorTheme}-`)).map(file => 'screens/' + file) };
   }, true);
 }
 
 async function detailBoundaryChecks(browser, url, graph, viewport, colorTheme) {
-  const type = graph.meta.diagramType, name = `${type}-${viewport.width}-${colorTheme}-acceptance-details`;
+  const type = graph.meta.diagramType, name = `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-acceptance-details`;
   await runCase(browser, name, viewport, {}, async page => {
     const fixture = structuredClone(graph), node = fixture.nodes.find(n => n.id === target(graph).id);
     fixture.meta.title = '中文文件名验收';
@@ -3006,6 +3008,7 @@ async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
   const name = `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-overview`;
   await runCase(browser, name, viewport, {}, async page => {
     await page.goto(url + '?automation=1'); await chooseGraph(page, graph, mobile(page)); await theme(page, colorTheme);
+    await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.evaluate(() => { window.showSaveFilePicker = undefined; });
     const save = async suffix => {
       await openMore(page); const [file] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
@@ -3049,6 +3052,14 @@ async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
       const moved = view(await save('reordered')); requireDiagramQuality(moved);
       assert.notDeepEqual(overviewSections(moved).find(section => section.id === grid.id).items, grid.items);
     }
+    if (grid) {
+      const baseline = view(await save('keyboard-before')), section = overviewSections(baseline).find(item => item.id === grid.id);
+      const id = section.items.find(item => item.nodeId).nodeId;
+      await nodeElement(page, id).focus(); await setLocked(page, true); await nodeElement(page, id).focus(); await page.keyboard.press('ArrowRight'); assert.deepEqual(view(await save('keyboard-locked')), baseline);
+      await setLocked(page, false); await nodeElement(page, id).focus(); await page.keyboard.press('ArrowRight');
+      const moved = view(await save('keyboard-reordered')); requireDiagramQuality(moved); assert.notDeepEqual(overviewSections(moved).find(item => item.id === grid.id).items, section.items);
+      await nodeElement(page, id).focus(); await page.keyboard.press('ArrowLeft'); assert.deepEqual(view(await save('keyboard-restored')), baseline);
+    }
     const snapshot = await save('final'), finalView = view(snapshot); requireDiagramQuality(finalView);
     // Real file-picker failures and cancellation retain the edited collection.
     for (const phase of ['cancel', 'open', 'write', 'close']) {
@@ -3066,6 +3077,16 @@ async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
     await page.goto(url); await chooseGraph(page, graph, mobile(page));
     await setLocked(page, false); await searchSelect(page, graph, selected); await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill('一次性修改'); await button(page, '保存').click();
     await openMore(page); await menuItem(page, '重置').click(); assert.deepEqual(view(await save('original-reset')), graph);
+    if (graphs.length === 2) {
+      const duplicate = structuredClone(graph); duplicate.meta.viewId = viewIdOf(graph) + '-same-template'; duplicate.meta.title += ' · 同模板副本';
+      const repeated = { diagrams: [graph, duplicate] }, repeatHtml = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/, (_, start, end) => start + safeJson(repeated) + end);
+      const repeatUrl = url + 'same-template'; await page.route(repeatUrl, route => route.fulfill({ contentType: 'text/html', body: repeatHtml }));
+      await page.goto(repeatUrl); await chooseGraph(page, duplicate, mobile(page)); await setLocked(page, false); await searchSelect(page, duplicate, duplicate.nodes[0]);
+      await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill('副本的独立编辑'); await button(page, '保存').click();
+      await chooseGraph(page, graph, mobile(page)); const model = await save('same-template'); assert.deepEqual(view(model), graph); assert.equal(model.diagrams[1].nodes[0].label, '副本的独立编辑');
+      await openMore(page); await menuItem(page, '重置').click(); const isolated = await save('same-template-reset'); assert.equal(isolated.diagrams[1].nodes[0].label, '副本的独立编辑');
+      await chooseGraph(page, duplicate, mobile(page)); await openMore(page); await menuItem(page, '重置').click(); const reset = await save('same-template-original'); assert.deepEqual(reset.diagrams[1], duplicate);
+    }
     return { viewId: viewIdOf(graph), colorTheme, files, editing: ['body', 'badges', 'notes', 'cancel', 'composition', 'ordering'], persistence: ['switch', 'reopen', 'reset', 'cancel', 'open', 'write', 'close'] };
   }, true);
 }
@@ -3111,9 +3132,9 @@ try {
   if (layoutGraph && process.env.QA_EXTRAS !== 'none') await informationLayoutChecks(browser, url, layoutGraph);
   if (process.env.QA_EXTRAS?.split(',').includes('motion-preferences')) for (const graph of filtered) await motionPreferences(browser, url, graph);
   if (process.env.QA_EXTRAS?.split(',').includes('motion-matrix')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await motionMatrix(browser, url, graph, viewport, colorTheme); }));
-  if (process.env.QA_EXTRAS?.split(',').includes('acceptance')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of (process.env.QA_THEMES ?? 'light,dark').split(',')) for (const graph of filtered) await completeInteractions(browser, url, graph, viewport, colorTheme); }));
+  if (process.env.QA_EXTRAS?.split(',').includes('acceptance')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of (process.env.QA_THEMES ?? 'light,dark').split(',')) for (const graph of filtered.filter(graph => !isArchitectureOverview(graph))) await completeInteractions(browser, url, graph, viewport, colorTheme); }));
   if (process.env.QA_EXTRAS?.split(',').includes('acceptance-details')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await detailBoundaryChecks(browser, url, graph, viewport, colorTheme); }));
-  if (process.env.QA_EXTRAS?.split(',').includes('overview')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered.filter(isArchitectureOverview)) await overviewInteractions(browser, url, graph, viewport, colorTheme); }));
+  if (process.env.QA_EXTRAS?.split(',').some(extra => ['overview', 'acceptance'].includes(extra))) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered.filter(isArchitectureOverview)) await overviewInteractions(browser, url, graph, viewport, colorTheme); }));
   if (!process.env.QA_ONLY_EXTRAS) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await matrix(browser, url, graph, viewport, colorTheme); }));
   if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) await sequenceReadingChecks(browser, url, graph);
   if (process.env.QA_EXTRAS !== 'none') for (const graph of filtered) { await sequencePersistenceChecks(browser, url, graph); await sequenceFullscreenChecks(browser, url, graph); await sequenceEditorHandoffCheck(browser, url, graph); }
@@ -3124,7 +3145,7 @@ try {
     await flowChecks(browser, url, graph);
     await flowContrastChecks(browser, url, graph);
     await inspectorChecks(browser, url, graph);
-    await runCase(browser, `${graph.meta.diagramType}-reduced-motion`, viewports[0], { reducedMotion: 'reduce' }, async page => {
+    await runCase(browser, `${viewIdOf(graph)}-reduced-motion`, viewports[0], { reducedMotion: 'reduce' }, async page => {
       await page.goto(url); await chooseGraph(page, graph, false); await assertFlow(page);
       await openLegend(page);
       const flowSwitch = page.getByRole('switch', { name: '连线流动', exact: true });
@@ -3139,7 +3160,7 @@ try {
       await assertFlow(page, false);
       return { staticSelection: true, emptyReset: true };
     }, true);
-    await runCase(browser, `${graph.meta.diagramType}-offline`, viewports[0], {}, async (page, context) => {
+    await runCase(browser, `${viewIdOf(graph)}-offline`, viewports[0], {}, async (page, context) => {
       const offlineUrl = url + 'offline.html'; await page.route(offlineUrl, route => route.fulfill({ contentType: 'text/html', body: fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8') })); await context.setOffline(true);
       await page.goto(offlineUrl); await chooseGraph(page, graph, false); await searchSelect(page, graph, target(graph)); return { offline: true };
     }, true);

@@ -176,7 +176,8 @@
     "Status": "状态",
     "Version": "版本",
     "Requirement": "接入要求",
-    "Overview aligned": "总览已对齐"
+    "Overview aligned": "总览已对齐",
+    "Section": "分区"
   },
   "ja": {
     "Architecture": "アーキテクチャ",
@@ -355,7 +356,8 @@
     "Status": "状態",
     "Version": "バージョン",
     "Requirement": "要件",
-    "Overview aligned": "概要を整列しました"
+    "Overview aligned": "概要を整列しました",
+    "Section": "セクション"
   },
   "ko": {
     "Architecture": "아키텍처",
@@ -534,7 +536,8 @@
     "Status": "상태",
     "Version": "버전",
     "Requirement": "요구 사항",
-    "Overview aligned": "개요 정렬 완료"
+    "Overview aligned": "개요 정렬 완료",
+    "Section": "섹션"
   },
   "de": {
     "Architecture": "Architektur",
@@ -713,7 +716,8 @@
     "Status": "Status",
     "Version": "Version",
     "Requirement": "Anforderung",
-    "Overview aligned": "Übersicht ausgerichtet"
+    "Overview aligned": "Übersicht ausgerichtet",
+    "Section": "Abschnitt"
   },
   "fr": {
     "Architecture": "Architecture",
@@ -892,7 +896,8 @@
     "Status": "Statut",
     "Version": "Version",
     "Requirement": "Exigence",
-    "Overview aligned": "Présentation alignée"
+    "Overview aligned": "Présentation alignée",
+    "Section": "Section"
   },
   "es": {
     "Architecture": "Arquitectura",
@@ -1071,7 +1076,8 @@
     "Status": "Estado",
     "Version": "Versión",
     "Requirement": "Requisito",
-    "Overview aligned": "Resumen alineado"
+    "Overview aligned": "Resumen alineado",
+    "Section": "Sección"
   },
   "ru": {
     "Architecture": "Архитектура",
@@ -1250,7 +1256,8 @@
     "Status": "Статус",
     "Version": "Версия",
     "Requirement": "Требование",
-    "Overview aligned": "Обзор выровнен"
+    "Overview aligned": "Обзор выровнен",
+    "Section": "Раздел"
   },
   "pt": {
     "Architecture": "Arquitetura",
@@ -1429,6 +1436,7 @@
     "Status": "Estado",
     "Version": "Versão",
     "Requirement": "Requisito",
-    "Overview aligned": "Visão geral alinhada"
+    "Overview aligned": "Visão geral alinhada",
+    "Section": "Seção"
   }
 }

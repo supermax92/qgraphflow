@@ -1,12 +1,12 @@
 import { isArchitectureOverview } from '../view-identity.js';
-import { layoutArchitectureOverview, overviewSections, reorderOverview } from '../architecture-overview.js';
+import { fitArchitectureOverview, overviewSections, reorderOverview } from '../architecture-overview.js';
 import { translate } from '../i18n.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import { compactCards, diagramTypeOf } from '../diagrams/registry.js';
 import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { graphBounds, occupiedBox } from '../edge-routing.js';
-import { requireDiagramQuality } from '../layout-quality.js';
+import { qualityFailure, requireDiagramQuality } from '../layout-quality.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
 import { appleEase, readingPadding, readingRect, locateViewport, readableViewport, readingStart } from '../reading-area.js';
 import { isCore } from '../visual-style.js';
@@ -31,12 +31,22 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
   const currentGraph = useMemo(() => currentGraphFromFlow(graphDraft, nodes, edges), [graphDraft, nodes, edges]);
   const installOverview = next => { setGraphDraft(next); setNodes(initialNodes(next, diagramType)); setEdges(initialEdges(next, diagramType)); };
   const applyOverview = input => {
-    let last;
-    for (const gap of [120, 200, 320]) { try { const next = layoutArchitectureOverview(input, { gap }); requireDiagramQuality(next); installOverview(next); return; } catch (error) { last = error; } }
-    setRenderProblem({ graph: currentGraph, message: last.message, diagnostics: last.diagnostics ?? [] });
-    return last.message;
+    try { const next = fitArchitectureOverview(input, requireDiagramQuality); installOverview(next); setRenderProblem(null); }
+    catch (error) { const problem = error.diagnostics ? error : qualityFailure(input, 'geometry', error.message); setRenderProblem({ graph: currentGraph, message: problem.message, diagnostics: problem.diagnostics }); return problem.message; }
   };
-  const onNodeDragStop = (_, node) => { if (isArchitectureOverview(currentGraph) && node.type === 'diagram') { try { const next = reorderOverview(currentGraph, node.id, node.position); const error = applyOverview(next); if (error) installOverview(layoutArchitectureOverview(graphDraft)); } catch (error) { installOverview(graphDraft); setStatus(error.message); } } };
+  const onNodeDragStop = (_, node) => { if (isArchitectureOverview(currentGraph) && node.type === 'diagram') { try { const next = reorderOverview(graphDraft, node.id, node.position); const error = applyOverview(next); if (error) { installOverview(graphDraft); setStatus(error); } } catch (error) { installOverview(graphDraft); setStatus(error.message); } } };
+  const onOverviewKeyDown = event => {
+    const direction = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    const element = event.target.closest('.react-flow__node-diagram');
+    if (!isArchitectureOverview(currentGraph) || !direction || !element) return;
+    event.preventDefault(); event.stopPropagation();
+    if (locked || event.repeat) return;
+    const id = element.dataset.id, node = graphDraft.nodes.find(item => item.id === id);
+    const section = overviewSections(graphDraft).find(item => item.items?.some(child => child.nodeId === id));
+    const peers = section ? section.items.filter(item => item.nodeId).map(item => graphDraft.nodes.find(node => node.id === item.nodeId)) : graphDraft.nodes.filter(item => item.groupId && item.groupId === node?.groupId);
+    const next = peers[peers.findIndex(item => item.id === id) + direction];
+    if (next) { const error = applyOverview(reorderOverview(graphDraft, id, next.position)); if (error) setStatus(error); }
+  };
   const [renderProblem, setRenderProblem] = useState(null);
   const onNodesChange = useCallback(changes => applyNodeChanges(constrainNodeChanges(changes, nodes, diagramType)), [applyNodeChanges, diagramType, nodes]);
   const layoutProblem = useMemo(() => {
@@ -102,5 +112,5 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     const rect = problem.bounds?.[0];
     if (rect) setCenter(rect.x + rect.width / 2, rect.y + rect.height / 2, { zoom: 1, duration: reduceMotion ? 0 : 320 });
   };
-  return { nodes, edges, onNodesChange, onNodeDragStop, setRenderProblem, updateNodeText, updateEdgeText, locked, setLocked, canvasRef, currentGraph, layoutProblem, focusProblem, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => readGraph(currentGraph, reduceMotion ? 0 : 320, true) };
+  return { nodes, edges, onNodesChange, onNodeDragStop, onOverviewKeyDown, setRenderProblem, updateNodeText, updateEdgeText, locked, setLocked, canvasRef, currentGraph, layoutProblem, focusProblem, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => readGraph(currentGraph, reduceMotion ? 0 : 320, true) };
 }

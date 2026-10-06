@@ -1,5 +1,5 @@
 import { isArchitectureOverview } from '../assets/viewer/src/view-identity.js';
-import { overviewSections, layoutArchitectureOverview } from '../assets/viewer/src/architecture-overview.js';
+import { overviewSections, fitArchitectureOverview } from '../assets/viewer/src/architecture-overview.js';
 import { Worker } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
@@ -445,11 +445,9 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
   }
   if (isArchitectureOverview(graph)) {
-    let last;
-    for (const gap of [120, 200, 320]) {
-      try { const output = layoutArchitectureOverview(graph, { gap }); requireDiagramQuality(output); return { graph: output, report: { version: 'architecture-overview-v1', mode: layout, semantics: semanticReport(output) } }; } catch (error) { last = error; }
-    }
-    throw last;
+    let output;
+    try { output = fitArchitectureOverview(graph, requireDiagramQuality); } catch (error) { throw error.diagnostics ? error : qualityFailure(graph, 'geometry', error.message); }
+    return { graph: output, report: { version: 'architecture-overview-v1', mode: layout, semantics: semanticReport(output) } };
   }
   const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });

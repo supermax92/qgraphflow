@@ -143,19 +143,25 @@ export function layoutArchitectureOverview(input, { width = 1800, gap = 120 } = 
   return routeOverview(graph);
 }
 
+export function fitArchitectureOverview(input, accept) {
+  let last;
+  for (const gap of [120, 200, 320]) { try { const graph = layoutArchitectureOverview(input, { gap }); accept(graph); return graph; } catch (error) { last = error; } }
+  throw last;
+}
+
 export function reorderOverview(graph, id, position) {
   const next = structuredClone(graph), target = next.nodes.find(node => node.id === id);
   if (!target) return next;
   const list = overviewSections(next).find(section => section.items?.some(item => item.nodeId === id));
   if (list) {
     const peers = list.items.filter(item => item.nodeId).map(item => next.nodes.find(node => node.id === item.nodeId));
-    const nearest = peers.filter(node => node.id !== id).sort((a, b) => Math.hypot(a.position.x - position.x, a.position.y - position.y) - Math.hypot(b.position.x - position.x, b.position.y - position.y))[0];
-    if (nearest) { const from = list.items.findIndex(item => item.nodeId === id), to = list.items.findIndex(item => item.nodeId === nearest.id); list.items.splice(to, 0, list.items.splice(from, 1)[0]); }
+    const nearest = peers.sort((a, b) => Math.hypot(a.position.x - position.x, a.position.y - position.y) - Math.hypot(b.position.x - position.x, b.position.y - position.y))[0];
+    if (nearest && nearest.id !== id) { const from = list.items.findIndex(item => item.nodeId === id), to = list.items.findIndex(item => item.nodeId === nearest.id); list.items.splice(to, 0, list.items.splice(from, 1)[0]); }
   } else if (target.groupId) {
-    const peers = next.nodes.filter(node => node.groupId === target.groupId), nearest = peers.filter(node => node.id !== id).sort((a, b) => Math.hypot(a.position.x - position.x, a.position.y - position.y) - Math.hypot(b.position.x - position.x, b.position.y - position.y))[0];
-    if (nearest) { const from = next.nodes.findIndex(node => node.id === id), to = next.nodes.findIndex(node => node.id === nearest.id); next.nodes.splice(to, 0, next.nodes.splice(from, 1)[0]); }
+    const peers = next.nodes.filter(node => node.groupId === target.groupId), nearest = peers.sort((a, b) => Math.hypot(a.position.x - position.x, a.position.y - position.y) - Math.hypot(b.position.x - position.x, b.position.y - position.y))[0];
+    if (nearest && nearest.id !== id) { const from = next.nodes.findIndex(node => node.id === id), to = next.nodes.findIndex(node => node.id === nearest.id); next.nodes.splice(to, 0, next.nodes.splice(from, 1)[0]); }
   }
-  return layoutArchitectureOverview(next);
+  return next;
 }
 
 const escape = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -172,7 +178,7 @@ export function sectionSvg(section, palette, offsetX = 0, offsetY = 0) {
   return `<g data-overview-section-id="${escape(section.id)}"><rect x="${x}" y="${y}" width="${w}" height="${section.size.height}" rx="16" fill="${palette.surface}" stroke="${palette.rule}"/>${heading.lines.map((line, i) => svgText(x + 32, y + 32 + 20 + i * 26, line, 'title')).join('')}${body}</g>`;
 }
 
-export function overviewGeometryErrors(graph) {
+export function overviewGeometryErrors(graph, routes = new Map()) {
   if (!isArchitectureOverview(graph)) return [];
   const errors = [], sections = overviewSections(graph);
   for (const section of sections) {
@@ -181,6 +187,32 @@ export function overviewGeometryErrors(graph) {
     for (const item of Array.isArray(section.items) ? section.items : []) {
       const child = item.nodeId ? graph.nodes.find(node => node.id === item.nodeId) : item.groupId ? graph.groups.find(group => group.id === item.groupId) : item;
       if (child && (child.position.x < section.position.x + 32 || child.position.y < section.position.y + sectionContentHeight(section, section.size.width) + 24 || child.position.x + child.size.width > section.position.x + section.size.width - 32 || child.position.y + child.size.height > section.position.y + section.size.height - 32)) errors.push(`section ${section.id} does not contain ${child.id}`);
+    }
+  }
+  const itemBox = item => ({ ...item.position, ...item.size });
+  const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  const siblings = items => {
+    const resolved = items.map(item => item.nodeId ? graph.nodes.find(node => node.id === item.nodeId) : item.groupId ? (graph.groups ?? []).find(group => group.id === item.groupId) : item).filter(Boolean);
+    for (let i = 0; i < resolved.length; i++) for (const other of resolved.slice(i + 1)) if (overlaps(itemBox(resolved[i]), itemBox(other))) errors.push(`overview siblings ${resolved[i].id} and ${other.id} overlap`);
+  };
+  siblings(graph.layout.sections);
+  for (const section of sections) if (section.items) siblings(section.items);
+  const crosses = (a, b, rect) => {
+    let low = 0, high = 1;
+    for (const [axis, dimension] of [['x', 'width'], ['y', 'height']]) {
+      const delta = b[axis] - a[axis];
+      if (!delta) { if (a[axis] <= rect[axis] || a[axis] >= rect[axis] + rect[dimension]) return false; continue; }
+      const t1 = (rect[axis] - a[axis]) / delta, t2 = (rect[axis] + rect[dimension] - a[axis]) / delta;
+      low = Math.max(low, Math.min(t1, t2)); high = Math.min(high, Math.max(t1, t2));
+      if (low >= high) return false;
+    }
+    return high > 0 && low < 1;
+  };
+  for (const section of sections) {
+    const obstacle = { ...itemBox(section), height: section.mode === 'note' ? section.size.height : sectionContentHeight(section, section.size.width) + 8 };
+    for (const [id, route] of routes) {
+      if (route.points.slice(1).some((point, i) => crosses(route.points[i], point, obstacle))) errors.push(`overview route ${id} crosses section ${section.id} text`);
+      if (route.label && overlaps(route.labelBox, obstacle)) errors.push(`overview label ${id} overlaps section ${section.id} text`);
     }
   }
   return errors;

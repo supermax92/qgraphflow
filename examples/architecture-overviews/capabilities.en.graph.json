@@ -15,7 +15,11 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Independent repository and Maven registry; dependencyManagement manages versions.",
+        "JDK 21; Spring Boot 3.2.10; Spring Cloud Alibaba.",
+        "Jackson, Lombok, MapStruct, Guava, internal User/Pay SDKs and all dida-starter versions."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -42,7 +46,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Tomcat, Actuator, TraceID and JSON utilities."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -69,7 +75,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Result wrapper, global exceptions and CORS."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -96,7 +104,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "JSON logs, OpenTelemetry integration and masking."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -123,7 +133,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Configuration and discovery, environments and context propagation."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -150,7 +162,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "MyBatisPlus, multiple data sources and slow SQL."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -177,7 +191,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Redis, Redisson locks and Caffeine."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -204,7 +220,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Annotation-based masking in logs and responses."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -231,7 +249,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "Unified MQ abstraction with configuration-only switching."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -258,7 +278,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "High-performance HTTP, TraceID and retries."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -285,7 +307,9 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "Platform component",
-      "overviewText": [],
+      "overviewText": [
+        "OpenAPI 3 and Knife4j."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -339,7 +363,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "Application module",
-      "overviewText": [],
+      "overviewText": [
+        "Mappers, clients, MQ and cache; the only platform starter declaration point."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -366,7 +392,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "Application module",
-      "overviewText": [],
+      "overviewText": [
+        "Controllers, services, domain logic and application bootstrap."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -393,7 +421,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "Application module",
-      "overviewText": [],
+      "overviewText": [
+        "Contracts and DTOs without implementation coupling."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -420,7 +450,38 @@
       "kind": "component",
       "module": "business",
       "subtitle": "Application module",
-      "overviewText": [],
+      "overviewText": [
+        "Local jobs and task-center callbacks."
+      ],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "business-starter",
+      "label": "starter",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Reusable business capabilities",
+      "overviewText": [
+        "Depends on infra-core for transitive platform capabilities."
+      ],
       "badges": [
         {
           "label": "Document requirement",
@@ -507,6 +568,9 @@
           {
             "nodeId": "p-doc"
           }
+        ],
+        "text": [
+          "AutoConfiguration works on inclusion; business modules must not manually configure Beans."
         ]
       },
       {
@@ -528,7 +592,13 @@
           },
           {
             "nodeId": "job"
+          },
+          {
+            "nodeId": "business-starter"
           }
+        ],
+        "text": [
+          "The root POM inherits dida-parent."
         ]
       },
       {
@@ -536,7 +606,11 @@
         "title": "Integration rules",
         "mode": "note",
         "text": [
-          "Only infra-core declares platform starters. This example describes document requirements, not audited implementation."
+          "Reverse and cyclic dependencies are forbidden. Shared depends on no business module; all modules may depend on it.",
+          "Only infra-core declares dida-starter dependencies and depends on shared.",
+          "Service, job and business starters depend on infra-core; the SDK depends only on shared.",
+          "Business projects do not directly declare third-party JARs; configuration is centralized.",
+          "Versions, status and rules are reference-document claims, without Dida source verification."
         ]
       }
     ]

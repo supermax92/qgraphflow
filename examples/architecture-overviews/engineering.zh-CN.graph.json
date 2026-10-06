@@ -15,7 +15,10 @@
       "kind": "component",
       "module": "business",
       "subtitle": "聚合工程",
-      "overviewText": [],
+      "overviewText": [
+        "仅做模块聚合，统一构建全部组件；框架开发者使用。",
+        "CI-Friendly 版本管理：${revision} + flatten-maven-plugin。"
+      ],
       "badges": [],
       "source": {
         "kind": "document",
@@ -30,7 +33,10 @@
       "kind": "component",
       "module": "platform",
       "subtitle": "统一父 POM",
-      "overviewText": [],
+      "overviewText": [
+        "单一事实来源：dependencyManagement + pluginManagement。",
+        "统一锁定 JDK、Spring Boot 3.x、Spring Cloud Alibaba、二方库及全部 dida-starter-* 版本；框架内部模块同样继承它。"
+      ],
       "badges": [],
       "source": {
         "kind": "document",
@@ -100,12 +106,89 @@
       }
     },
     {
+      "id": "component-data",
+      "label": "dida-data",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "独立能力工程",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "component-grpc",
+      "label": "dida-grpc",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "独立能力工程",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "component-eventbus",
+      "label": "dida-eventbus",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "独立能力工程",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "component-observable",
+      "label": "dida-observable",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "独立能力工程",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "component-lock",
+      "label": "dida-lock",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "独立能力工程",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
       "id": "layer-samples",
       "label": "samples",
       "kind": "component",
       "module": "business",
       "subtitle": "SDK 与 Spring Boot 接入示例",
-      "overviewText": [],
+      "overviewText": [
+        "sample-mq：SDK 与 Spring Boot 两种接入方式示例。"
+      ],
       "badges": [
         {
           "label": "JDK 17",
@@ -132,7 +215,10 @@
       "kind": "component",
       "module": "business",
       "subtitle": "自动配置与应用接入",
-      "overviewText": [],
+      "overviewText": [
+        "dida-starter-mq-*：Spring Boot 3.x AutoConfiguration，引入即生效。",
+        "JDK 17 编译；参考设计声明运行时兼容 JDK 17–25，未做运行时核验。"
+      ],
       "badges": [
         {
           "label": "JDK 17",
@@ -159,7 +245,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "业务 SDK 与公共入口",
-      "overviewText": [],
+      "overviewText": [
+        "dida-sdk-mq-*：无 Spring 依赖，兼容遗留系统；设计声明运行于 JDK 8+。"
+      ],
       "badges": [
         {
           "label": "JDK 8",
@@ -186,7 +274,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "第三方协议适配",
-      "overviewText": [],
+      "overviewText": [
+        "dida-mq-adapter-*：薄协议绑定层，封装 RocketMQ / RabbitMQ / Kafka 等第三方客户端。"
+      ],
       "badges": [
         {
           "label": "JDK 8",
@@ -213,7 +303,9 @@
       "kind": "component",
       "module": "business",
       "subtitle": "契约接口与公共逻辑",
-      "overviewText": [],
+      "overviewText": [
+        "dida-mq-core：契约接口（core.api 子包）与公共逻辑，无外部依赖。"
+      ],
       "badges": [
         {
           "label": "JDK 8",
@@ -240,8 +332,17 @@
       "kind": "component",
       "module": "business",
       "subtitle": "单元与集成测试",
-      "overviewText": [],
-      "badges": [],
+      "overviewText": [
+        "dida-mq-test：嵌入式服务与 Mock；单元与集成测试合并维护。",
+        "参考设计建议覆盖率 85%，不是已测得的覆盖率。"
+      ],
+      "badges": [
+        {
+          "label": "JDK 8",
+          "role": "version",
+          "evidence": "document"
+        }
+      ],
       "source": {
         "kind": "document",
         "file": "examples/architecture-overviews/reference.md",
@@ -329,7 +430,25 @@
               },
               {
                 "nodeId": "component-utils"
+              },
+              {
+                "nodeId": "component-lock"
+              },
+              {
+                "nodeId": "component-observable"
+              },
+              {
+                "nodeId": "component-eventbus"
+              },
+              {
+                "nodeId": "component-grpc"
+              },
+              {
+                "nodeId": "component-data"
               }
+            ],
+            "text": [
+              "独立工程；IDEA 可单独打开，独立版本与发布。"
             ]
           }
         ]
@@ -374,7 +493,9 @@
                 "title": "兼容性说明",
                 "mode": "note",
                 "text": [
-                  "JDK 标记来自参考文档，运行时兼容范围需要另行核验。"
+                  "JDK 8 编译层的设计运行范围为 JDK 8+；JDK 17 编译层的设计运行范围为 JDK 17–25。",
+                  "契约 API 已并入 core 的 core.api 子包，不再独立成模块。",
+                  "版本、运行范围、覆盖率与规则均为参考图文档示意，需另行核验实际源码与运行产物。"
                 ]
               }
             ]
