@@ -1,0 +1,569 @@
+{
+  "recordedAt": "2026-10-06T13:45:40.434Z",
+  "baseCommit": "d6e54dd",
+  "testedImplementation": "c516ff0",
+  "branch": "codex/architecture-overviews",
+  "unitTests": {
+    "tests": 235,
+    "passed": 235,
+    "failed": 0,
+    "skipped": 0,
+    "logSha256": "9988c65bf42f3366cc2daacaf8d15e7f0272556a93f7fed88f027ea0e59fb970"
+  },
+  "reports": [
+    {
+      "path": "output/acceptance/overview-delivery/browser-interactions-report.json",
+      "sha256": "4fb30b971d819c8f194c7f8201bd2f16402c3dcf117ee099823b0654d17ada25",
+      "startedAt": "2026-10-06T13:39:07.203Z",
+      "finishedAt": "2026-10-06T13:41:07.257Z",
+      "environment": {
+        "platform": "darwin",
+        "release": "25.5.0",
+        "arch": "arm64",
+        "node": "v22.23.2",
+        "options": {
+          "QA_EXTRAS": "overview"
+        },
+        "browser": "154.0.8037.98"
+      },
+      "summary": {
+        "scenes": 12,
+        "passed": 12,
+        "extras": 12,
+        "extraPassed": 12,
+        "exports": 32,
+        "failures": 0
+      },
+      "browserClosed": true,
+      "serverClosed": true,
+      "cases": [
+        {
+          "name": "capabilities-390-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-390-dark",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-dark",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-dark",
+          "passed": true
+        }
+      ],
+      "extras": [
+        {
+          "name": "capabilities-390-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-390-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-dark-overview",
+          "passed": true
+        }
+      ],
+      "failures": []
+    },
+    {
+      "path": "output/acceptance/nine-types-delivery/browser-interactions-report.json",
+      "sha256": "0f772da751b8182cf8598578292ba4d0f40b0832a3df6b1b255a3a685f091537",
+      "startedAt": "2026-10-06T13:39:11.560Z",
+      "finishedAt": "2026-10-06T13:41:42.578Z",
+      "environment": {
+        "platform": "darwin",
+        "release": "25.5.0",
+        "arch": "arm64",
+        "node": "v22.23.2",
+        "options": {
+          "QA_EXTRAS": "none"
+        },
+        "browser": "154.0.8037.98"
+      },
+      "summary": {
+        "scenes": 54,
+        "passed": 54,
+        "extras": 0,
+        "extraPassed": 0,
+        "exports": 36,
+        "failures": 0
+      },
+      "browserClosed": true,
+      "serverClosed": true,
+      "cases": [
+        {
+          "name": "architecture-390-light",
+          "passed": true
+        },
+        {
+          "name": "architecture-1920-light",
+          "passed": true
+        },
+        {
+          "name": "architecture-1440-light",
+          "passed": true
+        },
+        {
+          "name": "flowchart-390-light",
+          "passed": true
+        },
+        {
+          "name": "flowchart-1920-light",
+          "passed": true
+        },
+        {
+          "name": "flowchart-1440-light",
+          "passed": true
+        },
+        {
+          "name": "sequence-390-light",
+          "passed": true
+        },
+        {
+          "name": "sequence-1920-light",
+          "passed": true
+        },
+        {
+          "name": "er-390-light",
+          "passed": true
+        },
+        {
+          "name": "sequence-1440-light",
+          "passed": true
+        },
+        {
+          "name": "er-1920-light",
+          "passed": true
+        },
+        {
+          "name": "deployment-390-light",
+          "passed": true
+        },
+        {
+          "name": "deployment-1920-light",
+          "passed": true
+        },
+        {
+          "name": "er-1440-light",
+          "passed": true
+        },
+        {
+          "name": "class-390-light",
+          "passed": true
+        },
+        {
+          "name": "class-1920-light",
+          "passed": true
+        },
+        {
+          "name": "deployment-1440-light",
+          "passed": true
+        },
+        {
+          "name": "state-390-light",
+          "passed": true
+        },
+        {
+          "name": "state-1920-light",
+          "passed": true
+        },
+        {
+          "name": "usecase-390-light",
+          "passed": true
+        },
+        {
+          "name": "class-1440-light",
+          "passed": true
+        },
+        {
+          "name": "usecase-1920-light",
+          "passed": true
+        },
+        {
+          "name": "dataflow-390-light",
+          "passed": true
+        },
+        {
+          "name": "state-1440-light",
+          "passed": true
+        },
+        {
+          "name": "dataflow-1920-light",
+          "passed": true
+        },
+        {
+          "name": "architecture-390-dark",
+          "passed": true
+        },
+        {
+          "name": "architecture-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "flowchart-390-dark",
+          "passed": true
+        },
+        {
+          "name": "usecase-1440-light",
+          "passed": true
+        },
+        {
+          "name": "sequence-390-dark",
+          "passed": true
+        },
+        {
+          "name": "flowchart-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "dataflow-1440-light",
+          "passed": true
+        },
+        {
+          "name": "er-390-dark",
+          "passed": true
+        },
+        {
+          "name": "sequence-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "deployment-390-dark",
+          "passed": true
+        },
+        {
+          "name": "architecture-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "er-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "class-390-dark",
+          "passed": true
+        },
+        {
+          "name": "deployment-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "flowchart-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "state-390-dark",
+          "passed": true
+        },
+        {
+          "name": "class-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "usecase-390-dark",
+          "passed": true
+        },
+        {
+          "name": "sequence-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "state-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "dataflow-390-dark",
+          "passed": true
+        },
+        {
+          "name": "er-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "usecase-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "dataflow-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "deployment-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "class-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "state-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "usecase-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "dataflow-1440-dark",
+          "passed": true
+        }
+      ],
+      "extras": [],
+      "failures": []
+    },
+    {
+      "path": "output/acceptance/overview-complete/browser-interactions-report.json",
+      "sha256": "3833f51545f14e8d40b12f8b1c3a988d6fccb4e395ee4d1e773996363dff4c7f",
+      "startedAt": "2026-10-06T13:37:10.168Z",
+      "finishedAt": "2026-10-06T13:39:14.977Z",
+      "environment": {
+        "platform": "darwin",
+        "release": "25.5.0",
+        "arch": "arm64",
+        "node": "v22.23.2",
+        "options": {
+          "QA_EXTRAS": "overview,motion-preferences"
+        },
+        "browser": "154.0.8037.98"
+      },
+      "summary": {
+        "scenes": 12,
+        "passed": 12,
+        "extras": 16,
+        "extraPassed": 16,
+        "exports": 32,
+        "failures": 0
+      },
+      "browserClosed": true,
+      "serverClosed": true,
+      "cases": [
+        {
+          "name": "capabilities-390-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-light",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-light",
+          "passed": true
+        },
+        {
+          "name": "capabilities-390-dark",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-dark",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-dark",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-dark",
+          "passed": true
+        }
+      ],
+      "extras": [
+        {
+          "name": "capabilities-light-motion-preferences",
+          "passed": true
+        },
+        {
+          "name": "capabilities-dark-motion-preferences",
+          "passed": true
+        },
+        {
+          "name": "engineering-light-motion-preferences",
+          "passed": true
+        },
+        {
+          "name": "engineering-dark-motion-preferences",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-390-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-light-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-light-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1920-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-390-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1920-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "capabilities-1440-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-390-dark-overview",
+          "passed": true
+        },
+        {
+          "name": "engineering-1440-dark-overview",
+          "passed": true
+        }
+      ],
+      "failures": []
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "skills/q-flow/assets/viewer-dist/index.html",
+      "sha256": "3fc8f9decc5e6dc592d898a4461f0ba9959ee4945c81f7cf019f0112e5603a4a",
+      "bytes": 685970
+    },
+    {
+      "path": "output/distribution/delivery/qgraphflow-0.0.6.tgz",
+      "sha256": "8bd41a1eef9bfc0a9343add4d1162664424d4c41ddbc8951435c41a1daa5742b",
+      "bytes": 877079
+    },
+    {
+      "path": "output/distribution/delivery/qgraphflow-0.0.6.zip",
+      "sha256": "9de782df8185cc5e2b490d4c2644cb984058a7515c22eb1fbf3131e7811c955e",
+      "bytes": 941751
+    }
+  ],
+  "packageSmoke": {
+    "workingDirectory": "/private/tmp",
+    "unpackedPackage": "/private/tmp/qgf-installed-delivery/package",
+    "generatedFixtures": [
+      "collection.graph.json",
+      "source-project.graph.json"
+    ],
+    "byteEqual": {
+      "svg": 3,
+      "html": 2
+    }
+  },
+  "sourceProject": {
+    "files": 4,
+    "anchors": 8,
+    "sourceRelationships": 4,
+    "mavenValidate": "passed"
+  },
+  "remainingAcceptance": [
+    "Native macOS Chinese input-method candidate selection, commitment and keyboard operation"
+  ]
+}
