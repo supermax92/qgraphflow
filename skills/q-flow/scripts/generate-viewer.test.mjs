@@ -610,12 +610,12 @@ test('validates graph collections and tolerates unused legacy playback metadata'
   assert.deepEqual(validateGraphInput(collection), []);
 
   const duplicateType = { diagrams: [architecture, structuredClone(architecture)] };
-  assert.match(validateGraphInput(duplicateType).join('\n'), /diagramType duplicates architecture/);
+  assert.match(validateGraphInput(duplicateType).join('\n'), /viewId is required for repeated architecture views/);
 
   architecture.playback.edgeIds = ['missing'];
   assert.deepEqual(validateGraphInput({ diagrams: [architecture] }), []);
-  assert.match(validateGraphInput({ diagrams: [] }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
-  assert.match(validateGraphInput({ diagrams: Array(10).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
+  assert.match(validateGraphInput({ diagrams: [] }).join('\n'), /diagrams must contain between 1 and 32 graphs/);
+  assert.match(validateGraphInput({ diagrams: Array(33).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 32 graphs/);
 });
 
 test('preserves complete export labels and UML composition markers', async () => {

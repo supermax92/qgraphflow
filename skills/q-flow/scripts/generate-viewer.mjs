@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { viewIdOf } from '../assets/viewer/src/view-identity.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -50,8 +51,8 @@ export async function compileViews(graphs, compile) {
     throw Object.assign(new Error(failures.map(({ error }) => error.message).join('\n\n')), {
       phases: { semantic: { status: phase === 'semantic' ? 'failed' : 'passed' }, geometry: { status: phase === 'semantic' ? 'not-checked' : 'failed' }, rendering: { status: 'not-checked' } },
       diagnostics: failures.flatMap(({ error }) => error.diagnostics ?? []),
-      candidates: Object.fromEntries(failures.filter(({ error }) => error.candidates).map(({ graph, error }) => [diagramTypeOf(graph), error.candidates])),
-      failedViews: failures.map(({ graph }) => diagramTypeOf(graph))
+      candidates: Object.fromEntries(failures.filter(({ error }) => error.candidates).map(({ graph, error }) => [viewIdOf(graph), error.candidates])),
+      failedViews: failures.map(({ graph }) => viewIdOf(graph))
     });
   }
   return compiled;
