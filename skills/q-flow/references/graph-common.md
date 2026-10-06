@@ -17,7 +17,7 @@ Read this file plus `types/<diagramType>.md`. Together they are the complete aut
 - `meta.locale` only translates the Viewer's interface. Write every readable text yourself in that language — title, subtitle, scope, `notes`, `facts`, edge labels (relationship verbs, branch words), guards; the type pages' English sample text is a placeholder. Identifiers (class, table, field, method, route, config key, literal value) and standard notation (cardinalities, `«include»`, `alt` / `loop`) stay verbatim.
 - Write facts only: **no `position`, `size` or `route`** — layout is computed. Optional hints (`layout.rank` / `layout.order` on nodes, `layout.primaryPath` / `layout.participantOrder` on the graph) express an order that already exists in the source.
 - IDs are unique non-empty strings; every edge endpoint names a node. Keep ids short and stable.
-- One graph per file by default. Only when the user asks for several views, wrap them as `{ "diagrams": [graph, graph] }`, each with a distinct `diagramType`.
+- One graph per file by default. Only when the user asks for several views, wrap them as `{ "diagrams": [graph, graph] }`, other diagram types unique; repeated architecture views each have a distinct `meta.viewId` (see the architecture type page).
 
 ## Nodes
 

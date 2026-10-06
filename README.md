@@ -244,3 +244,15 @@ Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minima
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/architecture-overviews](examples/architecture-overviews) for conceptual reference diagrams and a small source-backed Maven example. Unlock an overview to reorder cards within a layer or edit body text, badges and explanatory sections. Save keeps all views; reset restores only the current one.

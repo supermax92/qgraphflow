@@ -1,0 +1,12 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example.overview</groupId>
+  <artifactId>overview-project</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>parent</module>
+    <module>core</module>
+    <module>starter</module>
+  </modules>
+</project>

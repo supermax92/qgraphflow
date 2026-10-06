@@ -1,0 +1,544 @@
+{
+  "meta": {
+    "title": "Platform capabilities and application modules",
+    "diagramType": "architecture",
+    "architectureView": "capabilities",
+    "viewId": "capabilities-en",
+    "locale": "en",
+    "sourceRef": "Conceptual reference document",
+    "scope": "概念样例；状态和版本未核验实际 Dida 源码"
+  },
+  "nodes": [
+    {
+      "id": "p-parent",
+      "label": "dida-parent",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-core",
+      "label": "starter-core",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-web",
+      "label": "starter-web",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-log",
+      "label": "starter-log",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-cloud",
+      "label": "starter-cloud",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-database",
+      "label": "starter-database",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-cache",
+      "label": "starter-cache",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-mask",
+      "label": "starter-mask",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-mq",
+      "label": "starter-mq",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-client",
+      "label": "starter-client",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "p-doc",
+      "label": "starter-doc",
+      "kind": "component",
+      "module": "platform",
+      "subtitle": "Platform component",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "shared",
+      "label": "shared",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Application module",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "infra-core",
+      "label": "infra-core",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Application module",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "service",
+      "label": "service",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Application module",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "sdk",
+      "label": "sdk",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Application module",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    },
+    {
+      "id": "job",
+      "label": "job",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "Application module",
+      "overviewText": [],
+      "badges": [
+        {
+          "label": "Document requirement",
+          "role": "requirement",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 1,
+        "lineEnd": 14
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "provides",
+      "source": "p-cache",
+      "target": "infra-core",
+      "kind": "provides",
+      "label": "缓存能力",
+      "evidence": "document"
+    },
+    {
+      "id": "business-dep",
+      "source": "service",
+      "target": "infra-core",
+      "kind": "depends",
+      "label": "依赖",
+      "evidence": "document"
+    }
+  ],
+  "layout": {
+    "sections": [
+      {
+        "id": "platform",
+        "title": "Platform foundation",
+        "mode": "stack",
+        "items": [
+          {
+            "nodeId": "p-parent"
+          }
+        ]
+      },
+      {
+        "id": "starters",
+        "title": "Platform capabilities",
+        "mode": "grid",
+        "items": [
+          {
+            "nodeId": "p-core"
+          },
+          {
+            "nodeId": "p-web"
+          },
+          {
+            "nodeId": "p-log"
+          },
+          {
+            "nodeId": "p-cloud"
+          },
+          {
+            "nodeId": "p-database"
+          },
+          {
+            "nodeId": "p-cache"
+          },
+          {
+            "nodeId": "p-mask"
+          },
+          {
+            "nodeId": "p-mq"
+          },
+          {
+            "nodeId": "p-client"
+          },
+          {
+            "nodeId": "p-doc"
+          }
+        ]
+      },
+      {
+        "id": "business",
+        "title": "Application modules",
+        "mode": "grid",
+        "items": [
+          {
+            "nodeId": "shared"
+          },
+          {
+            "nodeId": "infra-core"
+          },
+          {
+            "nodeId": "service"
+          },
+          {
+            "nodeId": "sdk"
+          },
+          {
+            "nodeId": "job"
+          }
+        ]
+      },
+      {
+        "id": "rules",
+        "title": "Integration rules",
+        "mode": "note",
+        "text": [
+          "Only infra-core declares platform starters. This example describes document requirements, not audited implementation."
+        ]
+      }
+    ]
+  }
+}

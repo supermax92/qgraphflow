@@ -1,0 +1,938 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "平台能力与业务接入总览",
+        "diagramType": "architecture",
+        "architectureView": "capabilities",
+        "viewId": "capabilities",
+        "locale": "zh-CN",
+        "sourceRef": "用户参考图 · 文档示意",
+        "scope": "概念样例；状态和版本未核验实际 Dida 源码"
+      },
+      "nodes": [
+        {
+          "id": "p-parent",
+          "label": "dida-parent",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "统一版本管理与构建规范",
+          "overviewText": [
+            "Spring Boot、Spring Cloud 和第三方库版本由平台统一管理。"
+          ],
+          "badges": [
+            {
+              "label": "JDK 21",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-core",
+          "label": "starter-core",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "应用基础与工具",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "已实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-web",
+          "label": "starter-web",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "响应、异常与 CORS",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "已实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-log",
+          "label": "starter-log",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "结构化日志与追踪",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-cloud",
+          "label": "starter-cloud",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "配置与注册",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-database",
+          "label": "starter-database",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "数据访问与多数据源",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-cache",
+          "label": "starter-cache",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "缓存与锁",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-mask",
+          "label": "starter-mask",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "注解脱敏",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-mq",
+          "label": "starter-mq",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "消息能力",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-client",
+          "label": "starter-client",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "HTTP 客户端与重试",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "p-doc",
+          "label": "starter-doc",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "API 文档",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "待实现",
+              "role": "status",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "shared",
+          "label": "shared",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "常量、枚举、异常和工具",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "必选",
+              "role": "requirement",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "infra-core",
+          "label": "infra-core",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "声明平台 starter 依赖",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "必选",
+              "role": "requirement",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "service",
+          "label": "service",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "应用入口与业务逻辑",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "必选",
+              "role": "requirement",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "sdk",
+          "label": "sdk",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "接口契约与 DTO",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "可选",
+              "role": "requirement",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "job",
+          "label": "job",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "后台任务",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "可选",
+              "role": "requirement",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "provides",
+          "source": "p-cache",
+          "target": "infra-core",
+          "kind": "provides",
+          "label": "缓存能力",
+          "evidence": "document"
+        },
+        {
+          "id": "business-dep",
+          "source": "service",
+          "target": "infra-core",
+          "kind": "depends",
+          "label": "依赖",
+          "evidence": "document"
+        }
+      ],
+      "layout": {
+        "sections": [
+          {
+            "id": "platform",
+            "title": "平台基础",
+            "mode": "stack",
+            "items": [
+              {
+                "nodeId": "p-parent"
+              }
+            ]
+          },
+          {
+            "id": "starters",
+            "title": "平台能力组件",
+            "mode": "grid",
+            "items": [
+              {
+                "nodeId": "p-core"
+              },
+              {
+                "nodeId": "p-web"
+              },
+              {
+                "nodeId": "p-log"
+              },
+              {
+                "nodeId": "p-cloud"
+              },
+              {
+                "nodeId": "p-database"
+              },
+              {
+                "nodeId": "p-cache"
+              },
+              {
+                "nodeId": "p-mask"
+              },
+              {
+                "nodeId": "p-mq"
+              },
+              {
+                "nodeId": "p-client"
+              },
+              {
+                "nodeId": "p-doc"
+              }
+            ]
+          },
+          {
+            "id": "business",
+            "title": "业务工程",
+            "mode": "grid",
+            "items": [
+              {
+                "nodeId": "shared"
+              },
+              {
+                "nodeId": "infra-core"
+              },
+              {
+                "nodeId": "service"
+              },
+              {
+                "nodeId": "sdk"
+              },
+              {
+                "nodeId": "job"
+              }
+            ]
+          },
+          {
+            "id": "rules",
+            "title": "接入规则",
+            "mode": "note",
+            "text": [
+              "仅 infra-core 声明平台 starter；其余业务模块通过 Maven 传递依赖获得能力。",
+              "此图记录设计要求，已实现和待实现均为参考文档中的状态。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "meta": {
+        "title": "工程组织与组件内部剖面",
+        "diagramType": "architecture",
+        "architectureView": "engineering",
+        "viewId": "engineering",
+        "locale": "zh-CN",
+        "sourceRef": "用户参考图 · 文档示意",
+        "scope": "概念样例；状态和版本未核验实际 Dida 源码"
+      },
+      "nodes": [
+        {
+          "id": "root",
+          "label": "dida-framework",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "聚合工程",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "parent",
+          "label": "dida-parent",
+          "kind": "component",
+          "module": "platform",
+          "subtitle": "统一父 POM",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "component-mq",
+          "label": "dida-mq",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "component-cache",
+          "label": "dida-cache",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "component-http",
+          "label": "dida-http",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "component-utils",
+          "label": "dida-utils",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "layer-samples",
+          "label": "samples",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "SDK 与 Spring Boot 接入示例",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "JDK 17",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "layer-starter",
+          "label": "starter",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "自动配置与应用接入",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "JDK 17",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "layer-sdk",
+          "label": "sdk",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "业务 SDK 与公共入口",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "JDK 8",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "layer-adapter",
+          "label": "adapter",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "第三方协议适配",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "JDK 8",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "layer-core",
+          "label": "core",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "契约接口与公共逻辑",
+          "overviewText": [],
+          "badges": [
+            {
+              "label": "JDK 8",
+              "role": "version",
+              "evidence": "document",
+              "source": {
+                "kind": "document",
+                "file": "examples/architecture-overviews/reference.md",
+                "lineStart": 1,
+                "lineEnd": 14
+              }
+            }
+          ],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        },
+        {
+          "id": "tests",
+          "label": "测试支持",
+          "kind": "component",
+          "module": "business",
+          "subtitle": "单元与集成测试",
+          "overviewText": [],
+          "badges": [],
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 1,
+            "lineEnd": 14
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "aggregate-parent",
+          "source": "root",
+          "target": "parent",
+          "kind": "aggregates",
+          "label": "聚合",
+          "evidence": "document"
+        },
+        {
+          "id": "inherit-parent",
+          "source": "component-mq",
+          "target": "parent",
+          "kind": "inherits",
+          "label": "继承",
+          "evidence": "document"
+        },
+        {
+          "id": "layer-edge-samples",
+          "source": "layer-samples",
+          "target": "layer-starter",
+          "kind": "depends",
+          "label": "依赖",
+          "evidence": "document"
+        },
+        {
+          "id": "layer-edge-starter",
+          "source": "layer-starter",
+          "target": "layer-sdk",
+          "kind": "depends",
+          "label": "依赖",
+          "evidence": "document"
+        },
+        {
+          "id": "layer-edge-sdk",
+          "source": "layer-sdk",
+          "target": "layer-adapter",
+          "kind": "depends",
+          "label": "依赖",
+          "evidence": "document"
+        },
+        {
+          "id": "layer-edge-adapter",
+          "source": "layer-adapter",
+          "target": "layer-core",
+          "kind": "depends",
+          "label": "依赖",
+          "evidence": "document"
+        }
+      ],
+      "layout": {
+        "sections": [
+          {
+            "id": "organization",
+            "title": "工程组织",
+            "mode": "stack",
+            "items": [
+              {
+                "nodeId": "root"
+              },
+              {
+                "nodeId": "parent"
+              },
+              {
+                "id": "capability-projects",
+                "title": "能力组件群",
+                "mode": "grid",
+                "items": [
+                  {
+                    "nodeId": "component-mq"
+                  },
+                  {
+                    "nodeId": "component-cache"
+                  },
+                  {
+                    "nodeId": "component-http"
+                  },
+                  {
+                    "nodeId": "component-utils"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "detail",
+            "title": "组件内部剖面 · dida-mq",
+            "mode": "row",
+            "items": [
+              {
+                "id": "layers",
+                "title": "职责层次",
+                "mode": "stack",
+                "items": [
+                  {
+                    "nodeId": "layer-samples"
+                  },
+                  {
+                    "nodeId": "layer-starter"
+                  },
+                  {
+                    "nodeId": "layer-sdk"
+                  },
+                  {
+                    "nodeId": "layer-adapter"
+                  },
+                  {
+                    "nodeId": "layer-core"
+                  }
+                ]
+              },
+              {
+                "id": "support",
+                "title": "测试与支持",
+                "mode": "stack",
+                "items": [
+                  {
+                    "nodeId": "tests"
+                  },
+                  {
+                    "id": "compatibility",
+                    "title": "兼容性说明",
+                    "mode": "note",
+                    "text": [
+                      "JDK 标记来自参考文档，运行时兼容范围需要另行核验。"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "detailOf": "component-mq"
+          }
+        ]
+      }
+    }
+  ]
+}

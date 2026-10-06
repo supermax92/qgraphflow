@@ -44,6 +44,7 @@
     "docs/clients*.md",
     "docs/readme/",
     "examples/order-flow.graph.json",
+    "examples/architecture-overviews/",
     "skills/q-flow/scripts/compile-layout.mjs",
     "skills/q-flow/scripts/compile-sequence.mjs",
     "skills/q-flow/assets/layout-dist/",
@@ -51,6 +52,8 @@
     "skills/q-flow/assets/viewer/src/layout-measure.js",
     "skills/q-flow/assets/viewer/src/layout-spacing.js",
     "skills/q-flow/assets/viewer/src/session-graph.js",
+    "skills/q-flow/assets/viewer/src/view-identity.js",
+    "skills/q-flow/assets/viewer/src/architecture-overview.js",
     "skills/q-flow/assets/viewer/src/layout-quality.js",
     "skills/q-flow/assets/viewer/src/export-svg.js",
     "skills/q-flow/assets/viewer/src/node-svg.js"

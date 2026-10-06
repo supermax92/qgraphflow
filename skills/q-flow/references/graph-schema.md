@@ -67,7 +67,7 @@ Flowchart main paths must run top-to-bottom, with left/right branches and outsid
 }
 ```
 
-Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–9 graphs in `diagrams`. Each graph must use a unique `meta.diagramType`; the toolbar view menu follows the fixed order `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. The view menu lists the requested types vertically.
+Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–32 graphs in `diagrams`. Other types keep a unique `meta.diagramType`; repeated architecture views require unique `meta.viewId` values. the toolbar view menu follows the fixed order `architecture`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. The view menu lists the requested types vertically.
 
 ```json
 {
@@ -215,3 +215,7 @@ Structured fragments use `operands: [{id, edgeIds, guard?, label?, body?}]`:
 A child group specifies `parentId` and `parentOperandId`. For example, a loop operand `{id:"attempt", guard:"attempt < 3", edgeIds:["call","reply"]}` owns an alt group via `{parentId:"retry", parentOperandId:"attempt"}`. An opt operand `{id:"reserved", guard:"reserved", edgeIds:[]}` can own a par group in the same way. List a message directly in only one operand; parents inherit child membership. An empty `edgeIds` array requires non-empty plain-text `body` or a child fragment. Guards and body text are escaped, not executable. Reserve authored frame space for titles, guards, text-only branches, message labels and nested frames; validation rejects cycles, crossing frames, incorrect ownership and collisions.
 
 Legacy alt without operand IDs and old unstructured opt/loop remain readable and save without forced migration. Missing conditions are never invented. Sync messages use a solid baseline even for conceptual/inference evidence; evidence remains in metadata and details. Return messages keep dashed open arrows. JSON editing/download, SVG and PNG preserve the same execution bounds, pairing, fragments and group colors; exports remain static.
+
+## Architecture overview extension
+
+The complete authoring shape for `meta.architectureView`, `meta.viewId`, `layout.sections`, node `overviewText` and `badges` is in [types/architecture.md](types/architecture.md#architecture-overview-templates). Section geometry is compiled and persisted alongside card geometry. Ownership remains independent. Per-view diagnostics and drafts use view identity; legacy views fall back to diagram type. SVG naming stays index-based for collections. Browser edits do not reverify source claims; badge label edits remove their old anchor and become document claims.

@@ -246,3 +246,15 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 [MIT](../../LICENSE) · [第三方声明](../../THIRD_PARTY_NOTICES.md)
 
 QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/architecture-overviews](../../examples/architecture-overviews) for conceptual reference diagrams and a small source-backed Maven example. Unlock an overview to reorder cards within a layer or edit body text, badges and explanatory sections. Save keeps all views; reset restores only the current one.

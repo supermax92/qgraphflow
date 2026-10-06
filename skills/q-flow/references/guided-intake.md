@@ -45,6 +45,8 @@ Phrase options as the question the diagram answers. Each option carries the subj
 | How data moves and changes | `dataflow` | one flow | traces calls | always |
 | What states something goes through | `state` | one component | traces calls | state signal |
 
+Architecture also recognizes platform capabilities / business integration (`capabilities`) and engineering organization / component layering (`engineering`); choose these from the question, without an extra intake round.
+
 Structure intents (`architecture`, `deployment`, `er`, `class`, `usecase`) read manifests and declarations. Behaviour intents (`sequence`, `flowchart`, `dataflow`, `state`) trace execution paths and cost more; the tag states this, it does not change the recommendation.
 
 ## Altitude rule and view budget
