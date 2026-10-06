@@ -1,3 +1,4 @@
+import { overviewSections } from '../architecture-overview.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isCore } from '../visual-style.js';
 import { searchNodes } from '../search.js';
@@ -8,8 +9,9 @@ export function useSelection(graph, { focusNode, panels, isFullscreen = false, t
   const [selectionPulse, setSelectionPulse] = useState(0);
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim().toLowerCase();
-  const results = useMemo(() => normalizedQuery ? searchNodes(graph.nodes, normalizedQuery) : graph.nodes, [graph, normalizedQuery]);
-  const selected = graph.nodes.find(node => node.id === selectedId);
+  const items = useMemo(() => [...graph.nodes, ...overviewSections(graph).map(section => ({ ...section, label: section.title, kind: 'annotation', section: true, overviewText: section.text ?? [] }))], [graph]);
+  const results = useMemo(() => normalizedQuery ? searchNodes(items, normalizedQuery) : graph.nodes, [graph, items, normalizedQuery]);
+  const selected = items.find(node => node.id === selectedId);
   const selectedEdge = graph.edges.find(edge => edge.id === selectedEdgeId);
   const { toolbarOpen, drawerOpen, openDetails, closeDetails, closeMobile, closeNav } = panels;
   const selectNode = useCallback((node, focusDetails = true) => {
@@ -38,11 +40,11 @@ export function useSelection(graph, { focusNode, panels, isFullscreen = false, t
       const edge = graph.edges.find(item => item.id === edgeElement.dataset.id); if (edge) selectEdge(edge);
       return;
     }
-    const nodeElement = event.target.closest('.react-flow__node-diagram');
+    const nodeElement = event.target.closest('.react-flow__node-diagram,.react-flow__node-overview');
     if (!nodeElement) return;
     event.preventDefault(); event.stopPropagation();
     if (event.repeat) return;
-    const node = graph.nodes.find(item => item.id === nodeElement.dataset.id); if (node) selectNode(node);
+    const node = items.find(item => item.id === nodeElement.dataset.id); if (node) selectNode(node);
   };
   useEffect(() => {
     const close = event => {

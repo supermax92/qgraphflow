@@ -10,7 +10,7 @@ export function renderNode(node, type, offsetX = 0, offsetY = 0, palette, locale
   const content = definition.render({ ...node, appearance }, x, y, fill, stroke, palette, locale);
   // A soft ring behind the frame marks the business center or an explicit failure without touching the text.
   const halo = ring && !['actor', 'initial', 'final'].includes(node.kind) ? paint(definition.outline(node, x, y), { class: 'role-ring', fill: 'none', stroke: ring, 'stroke-width': 5 }) : '';
-  const description = [node.label, node.subtitle,
+  const description = [node.label, node.subtitle, ...(node.overviewText ?? []), ...(node.badges ?? []).map(badge => badge.label),
     ...(node.fields ?? []).map(field => `${field.key ? field.key + ' ' : ''}${field.name}: ${field.type}${field.nullable === undefined ? '' : ` (nullable: ${field.nullable})`}`),
     ...(node.attributes ?? []), ...(node.methods ?? [])].filter(Boolean).join('\n');
   return `<g data-diagram-node-id="${escapeXml(node.id)}" class="node-drawing${coreNode(node) && !definition.compartments ? ' core-node' : ''}"><title>${escapeXml(description)}</title>${halo}${content}</g>`;

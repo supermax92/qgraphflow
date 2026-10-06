@@ -1,3 +1,4 @@
+import { hasOverviewContent, overviewCardLayout } from './architecture-overview.js';
 import { getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
 import { CARD, cardSourceText, cardTag, cardTextLayout, layoutText } from './text-layout.js';
@@ -9,6 +10,7 @@ const singleLineWidth = (text, font) => Math.ceil(layoutText(String(text ?? '').
 const rounded = size => Object.fromEntries(Object.entries(size).map(([key, value]) => [key, Math.ceil(value)]));
 
 export function minimumNodeSize(node, type, locale = 'en') {
+  if (type === 'architecture' && hasOverviewContent(node)) return { width: 300, height: overviewCardLayout(node, node.size?.width ?? 300).minHeight };
   const diagram = getDiagram(type), title = singleLineWidth(node.label, TYPOGRAPHY.title), body = singleLineWidth(node.subtitle, TYPOGRAPHY.body);
   if (type === 'state' && ['initial', 'final'].includes(node.kind)) {
     if (!node.subtitle) return { width: 28, height: 28 };

@@ -1,3 +1,4 @@
+import { isArchitectureOverview, viewIdOf, architectureViewOf, architectureViewLabels } from './view-identity.js';
 import { translate } from './i18n.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Background, ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
@@ -43,7 +44,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     diagramType, palette, reduceMotion,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
-    locked, setLocked, canvasRef, currentGraph, nodes, onNodesChange, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
+    locked, setLocked, canvasRef, currentGraph, nodes, onNodesChange, onNodeDragStop, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
     visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, focusProblem,
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
@@ -51,7 +52,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const [navShown, navState] = usePresence(toolbarOpen, reduceMotion, panelRef);
   const [drawerShown, drawerState] = usePresence(drawerOpen, reduceMotion, inspectorRef);
   const drawerFrozen = useRef(null);
-  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale);
+  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, isArchitectureOverview(graph));
   const { open, toggle, close } = usePopover();
   // meta.notes: a card over the top of the right side, open on wide screens until the reader hides it. It is a panel in
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
@@ -106,6 +107,8 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
         <h2>{inspectedNode.label}</h2>
         <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
+        {inspectedNode.overviewText?.length > 0 && <><h3>{t('Overview text')}</h3><ul>{inspectedNode.overviewText.map((line, i) => <li key={i}>{line}</li>)}</ul></>}
+        {inspectedNode.badges?.length > 0 && <><h3>{t('Badges')}</h3><ul>{inspectedNode.badges.map((badge, i) => <li key={i}>{badge.label} · {t(evidenceLabels[badge.evidence])}{badge.source && <code className="source-path">{anchorText(badge.source)}</code>}</li>)}</ul></>}
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
         {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
         {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
@@ -125,16 +128,16 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   </>;
   if (drawerOpen) drawerFrozen.current = drawerBody;
 
-  return <main className="app-shell">
+  return <main className="app-shell" data-view-id={viewIdOf(graph)}>
     <header className="toolbar">
       <div className="tb-group tb-left">
         <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); if (!toolbarOpen) reveal(selectedId, selectedEdgeId, true, rightReserved); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')} title={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')}><Icon name="panel-left" /></button>
         {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
-          <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
+          <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{diagramType === 'architecture' && architectureViewOf(graph) !== 'relations' ? t(architectureViewLabels[architectureViewOf(graph)]) : t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
           {open === 'views' && <div className="popover menu" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
-            const type = diagramTypeOf(item);
-            return <button key={type} role="menuitemradio" aria-checked={type === diagramType} className={type === diagramType ? 'is-current' : ''} onClick={() => { onDiagramChange(type, currentGraph); close(); panels.closeMobile(); }}>
-              <span className="menu-mark">{type === diagramType ? <Icon name="check" /> : null}</span>{t(diagramLabels[type])}<small>{t('{count} relations', { count: item.edges.length })}</small>
+            const type = diagramTypeOf(item), viewId = viewIdOf(item), active = viewId === viewIdOf(graph);
+            return <button key={viewId} data-view-id={viewId} role="menuitemradio" aria-checked={active} className={active ? 'is-current' : ''} onClick={() => { onDiagramChange(viewId, currentGraph); close(); panels.closeMobile(); }}>
+              <span className="menu-mark">{active ? <Icon name="check" /> : null}</span>{allDiagrams.filter(view => diagramTypeOf(view) === type).length > 1 ? item.meta.title : t(diagramLabels[type])}<small>{t('{count} relations', { count: item.edges.length })}</small>
             </button>;
           })}</div>}
         </div>}
@@ -196,6 +199,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
+            onNodeDragStop={onNodeDragStop}
             onPaneClick={() => { clearSelectedNode(); close(); }}
             onNodeClick={(_, node) => { if (node.type === 'diagram') selectNode(node, false); }}
             onEdgeClick={(_, edge) => selectEdge(edge.data)}

@@ -1,3 +1,4 @@
+import { overviewGeometryErrors, overviewSections } from './architecture-overview.js';
 import { auditGraphLayout, boxDistance, occupiedBox, graphBounds, segmentCrossesBox } from './edge-routing.js';
 import { cardText, compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { layoutText, groupHeadingLayout } from './text-layout.js';
@@ -14,6 +15,7 @@ export function qualityFailure(graph, phase, message, diagnostics = []) {
   if (!diagnostics.length) diagnostics = (String(message).includes('\n- ') ? String(message).split('\n- ').slice(1) : [String(message)]).map(detail => {
     const elements = ['nodes', 'edges', 'groups'].flatMap(key => (Array.isArray(graph?.[key]) ? graph[key] : []).filter((item, index) => item && typeof item === 'object' && (
       detail.includes(`${key}[${index}]`) || new RegExp(`(^|[^\\w.-])${String(item.id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\w.-])`).test(detail))));
+    elements.push(...overviewSections(graph ?? {}).filter(item => String(detail).includes(item.id)));
     return { ruleId: `${phase}.invalid`, severity: 'error', diagramType: diagramTypeOf(graph),
       elementIds: elements.map(item => item.id), measured: detail, required: `Valid ${phase} content and complete notation`,
       bounds: elements.filter(item => item.position && item.size).map(item => ({ ...item.position, ...item.size })),
@@ -160,6 +162,7 @@ export function auditLayoutQuality(graph) {
     }
   }
   // Existing shape/fragment/marker checks stay blocking; new rules carry structured locations above.
+  for (const detail of overviewGeometryErrors(graph)) { const elements = overviewSections(graph).filter(item => detail.includes(item.id)); issue('overview.section', elements.map(item => item.id), detail, 'Complete section text and contained items', elements.map(bounds), 'Expand and re-layout the identified section without removing facts.'); }
   const errors = [...diagnostics.filter(item => item.severity === 'error').map(item => `${item.ruleId}: ${item.elementIds.join(', ')} (${JSON.stringify(item.measured)}; required ${JSON.stringify(item.required)})`)];
   return { ...legacy, errors, diagnostics, bounds: graphBounds(graph, legacy.routes) };
 }

@@ -1,3 +1,4 @@
+import { overviewSections } from '../architecture-overview.js';
 import { translate } from '../i18n.js';
 import { createDiagramSvg, diagramSvgFiles } from '../export-svg.js';
 import { diagramTypeOf, getDiagram, edgeMarkers } from '../diagrams/registry.js';
@@ -87,8 +88,8 @@ export async function verifyRenderedSvg(svg, graph) {
     for (const element of root.querySelectorAll('text')) {
       if (!element.textContent) continue;
       const rect = boxOf(element), font = parseFloat(getComputedStyle(element).fontSize) * Math.hypot(element.getCTM().a, element.getCTM().b);
-      const owner = element.closest('[data-diagram-node-id],[data-diagram-edge-id],[data-diagram-group-id],[data-fragment-group-id]');
-      elementIds = owner ? [owner.dataset.diagramNodeId ?? owner.dataset.diagramEdgeId ?? owner.dataset.diagramGroupId ?? owner.dataset.fragmentGroupId] : [];
+      const owner = element.closest('[data-diagram-node-id],[data-diagram-edge-id],[data-diagram-group-id],[data-fragment-group-id],[data-overview-section-id]');
+      elementIds = owner ? [owner.dataset.diagramNodeId ?? owner.dataset.diagramEdgeId ?? owner.dataset.diagramGroupId ?? owner.dataset.fragmentGroupId ?? owner.dataset.overviewSectionId] : [];
       bounds = [{ ...rect, x: rect.x - offsetX, y: rect.y - offsetY }];
       const required = /(?:title|heading)/.test(element.getAttribute('class')) ? 20 : /^(body|operand-body|field-name|field-type|member|edge|cardinality)$/.test(element.getAttribute('class')) ? 16 : 14;
       if (!inside(rect, view) || font + .01 < required) throw new Error(`Exported text is out of bounds or below the required size: ${element.textContent.slice(0, 80)}`);
@@ -104,7 +105,7 @@ export async function verifyRenderedSvg(svg, graph) {
       const textBoxes = [...group.querySelectorAll('text')].filter(element => element.textContent).map(element => ({ element, box: boxOf(element) }));
       const visible = normalize(textBoxes.map(item => item.element.textContent).join(''));
       const expected = [['initial', 'final'].includes(node.kind) && !node.subtitle ? '' : node.label, node.subtitle,
-        ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? []), ...(actions ? ['entry', 'do', 'exit'].map(key => node[key]) : [])];
+        ...(node.overviewText ?? []), ...(node.badges ?? []).map(badge => badge.label), ...(node.fields ?? []).flatMap(field => [field.name, field.type]), ...(node.attributes ?? []), ...(node.methods ?? []), ...(actions ? ['entry', 'do', 'exit'].map(key => node[key]) : [])];
       for (const value of expected) if (value && !visible.includes(normalize(value))) throw new Error(`Node text is not fully shown: ${node.id} / ${node.label} / ${String(value).slice(0, 80)}`);
       for (const item of textBoxes) if (!inside(item.box, safe) && !(actionSafe && inside(item.box, actionSafe))) throw new Error(`Node text leaves the safe area: ${node.id} / ${node.label} / ${item.element.textContent.slice(0, 80)}`);
       for (let i = 0; i < textBoxes.length; i++) for (const other of textBoxes.slice(i + 1)) {
@@ -122,6 +123,11 @@ export async function verifyRenderedSvg(svg, graph) {
       if (normalize(elements.map(element => element.textContent).join('')) !== normalize(value)) throw new Error(`${label} text is not fully shown: ${id}`);
       if (elements.some(element => !inside(boxOf(element), safe))) throw new Error(`${label} text leaves the safe area: ${id}`);
     };
+    for (const section of overviewSections(graph)) {
+      elementIds = [section.id];
+      const element = [...root.querySelectorAll('[data-overview-section-id]')].find(item => item.dataset.overviewSectionId === section.id);
+      checkLabel([...(element?.querySelectorAll(':scope > text') ?? [])], [section.title, ...(section.text ?? [])].join(''), shifted({ ...section.position, ...section.size }), section.id, 'section');
+    }
     const markerGeometry = new Map();
     const groupElements = new Map([...root.querySelectorAll('[data-diagram-group-id]')].map(element => [element.dataset.diagramGroupId, element]));
     const executions = sequenceExecutions(graph);

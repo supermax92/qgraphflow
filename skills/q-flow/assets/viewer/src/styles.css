@@ -421,3 +421,9 @@ button:disabled { cursor: not-allowed; }
   .edge-flow { stroke-width: 2px; }
   .selection-node-halo, .selection-edge-halo { display: none; filter: none; }
 }
+
+.overview-section { position: relative; pointer-events: none; }
+.overview-section-select { position: absolute; left: 24px; top: 24px; width: calc(100% - 48px); height: 36px; opacity: 0; pointer-events: auto; cursor: pointer; }
+.overview-section-select:focus-visible { opacity: 1; background: var(--canvas); color: var(--ink); outline: 2px solid var(--accent); }
+.card-form .badge-editor { display: grid; gap: 8px; margin: 8px 0; }
+.card-form select { max-width: 100%; padding: 8px; background: var(--canvas); color: inherit; border: 1px solid var(--rule); border-radius: 6px; }

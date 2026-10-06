@@ -1,3 +1,4 @@
+import { overviewSections, sectionSvg } from './architecture-overview.js';
 import React, { useId } from 'react';
 import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position } from '@xyflow/react';
 import SelectionOutline from './SelectionOutline.jsx';
@@ -81,7 +82,10 @@ function RoutedEdge({ id, markerEnd, style, data }) {
   </>;
 }
 
-export const nodeTypes = { diagram: DiagramNode, boundary: BoundaryNode };
+function OverviewSection({ data }) {
+  return <section className="overview-section"><svg className="node-visual" width={data.size.width} height={data.size.height} aria-label={data.title} dangerouslySetInnerHTML={{ __html: sectionSvg(data, data.palette, -data.position.x, -data.position.y) }} /><button className="overview-section-select nodrag nopan" onClick={event => { event.stopPropagation(); data.onSelect?.(); }} aria-label={data.title}>{data.title}</button></section>;
+}
+export const nodeTypes = { diagram: DiagramNode, boundary: BoundaryNode, overview: OverviewSection };
 export const edgeTypes = { routed: RoutedEdge };
 
 export function initialNodes(graph, diagramType) {
@@ -97,7 +101,7 @@ export function initialNodes(graph, diagramType) {
     zIndex: -(graph.groups?.length ?? 0) + fragmentDepth(group, graph.groups ?? [])
   }));
   const classicCard = !compactCards(graph);
-  return [...boundaries, ...graph.nodes.map(node => ({
+  return [...overviewSections(graph).map((section, index) => ({ id: section.id, type: 'overview', position: section.position, data: { ...section }, style: { width: section.size.width, height: section.size.height, pointerEvents: 'none' }, draggable: false, selectable: false, zIndex: -100 + index })), ...boundaries, ...graph.nodes.map(node => ({
     id: node.id,
     type: 'diagram',
     className: diagramType === 'sequence' ? 'sequence-column' : undefined,

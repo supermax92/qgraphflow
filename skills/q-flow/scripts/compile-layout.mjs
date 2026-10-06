@@ -1,3 +1,5 @@
+import { isArchitectureOverview } from '../assets/viewer/src/view-identity.js';
+import { overviewSections, layoutArchitectureOverview } from '../assets/viewer/src/architecture-overview.js';
 import { Worker } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
@@ -46,6 +48,7 @@ function semanticDigest(graph, migration = []) {
   for (const item of [...model.nodes, ...(model.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of model.edges) delete edge.route;
   for (const item of migration) delete [...model.nodes, ...(model.groups ?? [])].find(element => element.id === item.elementId)[item.field];
+  for (const section of overviewSections(model)) { delete section.position; delete section.size; }
   if (model.layout) { delete model.layout.version; delete model.layout.strategy; delete model.layout.direction; if (!Object.keys(model.layout).length) delete model.layout; }
   const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
   return createHash('sha256').update(JSON.stringify(canonical(model))).digest('hex');
@@ -440,6 +443,13 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   if (layout === 'preserve') {
     requireDiagramQuality(graph);
     return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
+  }
+  if (isArchitectureOverview(graph)) {
+    let last;
+    for (const gap of [120, 200, 320]) {
+      try { const output = layoutArchitectureOverview(graph, { gap }); requireDiagramQuality(output); return { graph: output, report: { version: 'architecture-overview-v1', mode: layout, semantics: semanticReport(output) } }; } catch (error) { last = error; }
+    }
+    throw last;
   }
   const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });

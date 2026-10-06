@@ -1,3 +1,5 @@
+import { isArchitectureOverview } from '../view-identity.js';
+import { layoutArchitectureOverview, overviewSections, reorderOverview } from '../architecture-overview.js';
 import { translate } from '../i18n.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getViewportForBounds, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
@@ -25,14 +27,29 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     window.__qgraphflowAutomation = { getViewport, setViewport, setCenter, ease: appleEase };
     return () => { delete window.__qgraphflowAutomation; };
   }, [getViewport, setViewport, setCenter]);
-  const currentGraph = useMemo(() => currentGraphFromFlow(originalGraph, nodes, edges), [originalGraph, nodes, edges]);
+  const [graphDraft, setGraphDraft] = useState(graph);
+  const currentGraph = useMemo(() => currentGraphFromFlow(graphDraft, nodes, edges), [graphDraft, nodes, edges]);
+  const installOverview = next => { setGraphDraft(next); setNodes(initialNodes(next, diagramType)); setEdges(initialEdges(next, diagramType)); };
+  const applyOverview = input => {
+    let last;
+    for (const gap of [120, 200, 320]) { try { const next = layoutArchitectureOverview(input, { gap }); requireDiagramQuality(next); installOverview(next); return; } catch (error) { last = error; } }
+    setRenderProblem({ graph: currentGraph, message: last.message, diagnostics: last.diagnostics ?? [] });
+    return last.message;
+  };
+  const onNodeDragStop = (_, node) => { if (isArchitectureOverview(currentGraph) && node.type === 'diagram') { try { const next = reorderOverview(currentGraph, node.id, node.position); const error = applyOverview(next); if (error) installOverview(layoutArchitectureOverview(graphDraft)); } catch (error) { installOverview(graphDraft); setStatus(error.message); } } };
   const [renderProblem, setRenderProblem] = useState(null);
   const onNodesChange = useCallback(changes => applyNodeChanges(constrainNodeChanges(changes, nodes, diagramType)), [applyNodeChanges, diagramType, nodes]);
   const layoutProblem = useMemo(() => {
     try { requireDiagramQuality(currentGraph); return renderProblem?.graph === currentGraph ? renderProblem : null; }
     catch (error) { return { message: error.message, diagnostics: error.diagnostics ?? [] }; }
   }, [currentGraph, renderProblem]);
-  const updateNodeText = (id, label, subtitle) => {
+  const updateNodeText = (id, label, subtitle, extra = {}) => {
+    if (isArchitectureOverview(currentGraph)) {
+      const edited = structuredClone(currentGraph), section = overviewSections(edited).find(item => item.id === id);
+      if (section) { section.title = label; section.text = extra.overviewText ?? section.text; }
+      else edited.nodes = edited.nodes.map(node => node.id === id ? { ...node, label, subtitle, ...extra } : node);
+      return applyOverview(edited);
+    }
     const edited = { ...currentGraph, nodes: currentGraph.nodes.map(node => node.id === id ? { ...node, label, subtitle } : node) };
     const fitted = fitCard(edited, id, !compactCards(currentGraph));
     setNodes(current => current.map(node => {
@@ -57,7 +74,7 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     return setViewport(viewport, { duration, ease: appleEase });
   };
   const focusNode = useCallback((id, panels = {}) => {
-    const node = currentGraph.nodes.find(item => item.id === id);
+    const node = currentGraph.nodes.find(item => item.id === id) ?? overviewSections(currentGraph).find(item => item.id === id);
     if (!node) return;
     if (diagramType !== 'sequence') {
       setCenter(node.position.x + node.size.width / 2, node.position.y + node.size.height / 2, { zoom: 1.1, duration: reduceMotion ? 0 : 420, ease: appleEase });
@@ -69,9 +86,11 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     const viewport = locateViewport(occupiedBox(node, diagramType), area, getViewport());
     setViewport(viewport, { duration: reduceMotion ? 0 : 420, ease: appleEase });
   }, [currentGraph, diagramType, getViewport, reduceMotion, setCenter, setViewport]);
-  const resetLayout = () => { setNodes(initialNodes(originalGraph, diagramType)); setEdges(initialEdges(originalGraph, diagramType)); requestAnimationFrame(() => readGraph(originalGraph)); };
+  const resetLayout = () => {
+    setGraphDraft(originalGraph); setRenderProblem(null); setNodes(initialNodes(originalGraph, diagramType)); setEdges(initialEdges(originalGraph, diagramType)); requestAnimationFrame(() => readGraph(originalGraph)); };
   const nudgeLayout = selectedId => {
     if (locked) { setStatus('Unlock the layout before arranging nodes'); return; }
+    if (isArchitectureOverview(currentGraph)) { const error = applyOverview(currentGraph); if (!error) setStatus('Overview aligned'); return; }
     const result = nudgeGraphLayout(currentGraph, selectedId);
     if (result.rejected) { setStatus('Cannot arrange further within the current constraints'); return; }
     const positions = new Map(result.graph.nodes.map(node => [node.id, node.position]));
@@ -83,5 +102,5 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     const rect = problem.bounds?.[0];
     if (rect) setCenter(rect.x + rect.width / 2, rect.y + rect.height / 2, { zoom: 1, duration: reduceMotion ? 0 : 320 });
   };
-  return { nodes, edges, onNodesChange, setRenderProblem, updateNodeText, updateEdgeText, locked, setLocked, canvasRef, currentGraph, layoutProblem, focusProblem, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => readGraph(currentGraph, reduceMotion ? 0 : 320, true) };
+  return { nodes, edges, onNodesChange, onNodeDragStop, setRenderProblem, updateNodeText, updateEdgeText, locked, setLocked, canvasRef, currentGraph, layoutProblem, focusProblem, readGraph, focusNode, resetLayout, nudgeLayout, focusDiagram: () => readGraph(currentGraph, reduceMotion ? 0 : 320, true) };
 }
