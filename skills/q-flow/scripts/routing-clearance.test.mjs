@@ -44,6 +44,34 @@ test('boundary clearance permits perpendicular crossings and rejects parallel ne
   assert.equal(boundaryClearance({x:80,y:160},{x:120,y:160},group).distance,60);
   assert.equal(boundaryClearance({x:102,y:130},{x:102,y:250},group).distance,2);
 });
+test('cross-boundary routes reserve outer label space without moving runtime nodes',()=>{
+  const collection=JSON.parse(fs.readFileSync(new URL('../../../examples/showcase/ecommerce.en.graph.json',import.meta.url),'utf8'));
+  const input=collection.diagrams.find(graph=>graph.meta.diagramType==='deployment');
+  input.nodes=input.nodes.filter(node=>['gateway','commerce','payment'].includes(node.id));
+  const ids=new Set(input.nodes.map(node=>node.id));
+  input.edges=input.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target));
+  const original=templateDraft(input);original.layout.version=LAYOUT_VERSION;
+  for(const offset of [0,Math.min(...original.groups.map(group=>group.position.x))-24]) {
+    const draft=structuredClone(original);
+    for(const item of [...draft.nodes,...draft.groups])item.position.x-=offset;
+    const output=routeOrthogonal(draft,{accept:requireDiagramQuality}).graph;
+    assert.deepEqual(output.nodes,draft.nodes);assert.deepEqual(output.groups,draft.groups);
+    assert.deepEqual(output.edges.map(edge=>edge.id),input.edges.map(edge=>edge.id));
+    assert.ok([...createEdgeRoutes(output).values()].every(route=>route.points.every(point=>point.x>=0&&point.y>=0)));
+    requireDiagramQuality(output);
+  }
+});
+test('mixed deployment boundaries keep every runtime tier and ownership relationship',()=>{
+  const collection=JSON.parse(fs.readFileSync(new URL('../../../examples/showcase/ecommerce.en.graph.json',import.meta.url),'utf8'));
+  const input=collection.diagrams.find(graph=>graph.meta.diagramType==='deployment'),before=structuredClone(input);
+  const draft=templateDraft(input);draft.layout.version=LAYOUT_VERSION;
+  const output=routeOrthogonal(draft,{accept:requireDiagramQuality}).graph;
+  const nodeModel=({position,size,...model})=>model,edgeModel=({route,...model})=>model;
+  assert.deepEqual(output.nodes.map(nodeModel),input.nodes.map(nodeModel));
+  assert.deepEqual(output.edges.map(edgeModel),input.edges.map(edgeModel));
+  assert.deepEqual(output.groups.map(({position,size,...model})=>model),input.groups.map(({position,size,...model})=>model));
+  assert.deepEqual(input,before);requireDiagramQuality(output);
+});
 test('diamond, circle and ellipse clearance follows the outline rather than its bounding box',()=>{
   const node={...card('shape',100,100),size:{width:100,height:100}};
   for(const [type,kind] of [['flowchart','decision'],['usecase','usecase']]) {
