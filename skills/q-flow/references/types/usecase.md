@@ -33,6 +33,12 @@ Actors and what they can do, with include / extend relationships between use cas
 }
 ```
 
+## Layout
+
+Actors outside the real system boundary and use cases in a compact internal matrix. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps the system boundary, actor identity and include/extend direction.
+
 ## Frequent validation errors
 
 - `node X.groupId places an actor inside a system boundary` — remove `groupId` from actors.

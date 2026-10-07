@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { translate } from '../assets/viewer/src/i18n.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
+import { refineDiagramLayout } from '../assets/viewer/src/layout-refinement.js';
+import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 
 const generator = path.join(import.meta.dirname, 'generate-viewer.mjs');
 const orderFlow = path.join(import.meta.dirname, '../../../examples/order-flow.graph.json');
@@ -51,6 +53,10 @@ test('saving into the page folder writes graph.json, the page, then every SVG th
     // A drag the layout gate accepts: away from the edges that leave the node's right side.
     const node = (view === null ? saved : saved.diagrams[view]).nodes.find(item => item.id === nodeId);
     node.position = { ...node.position, x: node.position.x + dx };
+    // Manual moves reroute before saving; fixed route coordinates belong to the previous node position.
+    const moved = view === null ? saved : saved.diagrams[view];
+    Object.assign(moved, refineDiagramLayout(moved, { move: false, growBoundaries: true }).graph);
+    requireDiagramQuality(moved);
     const { writes, status } = await saveInto(dir, saved);
     assert.equal(status, SAVED);
     assert.deepEqual(writes, ['graph.json', 'index.html', ...svgs], 'graph.json first, the page next, then the SVGs in view order');

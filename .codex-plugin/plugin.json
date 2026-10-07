@@ -8,7 +8,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "QGraphFlow",
-    "shortDescription": "Architecture and flow diagrams: nine kinds of interactive software diagrams from source, configuration and documents",
+    "shortDescription": "Architecture and flow diagrams: eleven kinds of interactive software diagrams from source, configuration and documents",
     "longDescription": "Generate flow, architecture, sequence, ER, deployment, class, state, use-case and data-flow diagrams from CodeGraph or raw repository evidence; deliver an offline HTML viewer and an auditable graph.json with in-page SVG and PNG download.",
     "developerName": "Max Zheng",
     "category": "Productivity",

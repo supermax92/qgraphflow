@@ -1,0 +1,273 @@
+{
+  "meta": {
+    "title": "虚构图书馆 · 工程分层架构图",
+    "diagramType": "architecture",
+    "architectureView": "engineering",
+    "viewId": "engineering",
+    "locale": "zh-CN",
+    "sourceRef": "examples/architecture-overviews/reference.md",
+    "scope": "独立编写的虚构公共示例"
+  },
+  "nodes": [
+    {
+      "id": "e-library",
+      "label": "library-service",
+      "kind": "component",
+      "module": "library",
+      "subtitle": "",
+      "overviewText": [
+        "虚构图书馆服务工程。"
+      ],
+      "badges": [
+        {
+          "label": "Example",
+          "role": "status",
+          "evidence": "document",
+          "source": {
+            "kind": "document",
+            "file": "examples/architecture-overviews/reference.md",
+            "lineStart": 3,
+            "lineEnd": 6
+          }
+        }
+      ],
+      "overviewTone": "lavender",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-query",
+      "label": "query-module",
+      "kind": "component",
+      "module": "query",
+      "subtitle": "",
+      "overviewText": [
+        "提供书目查询与借阅用例。"
+      ],
+      "badges": [],
+      "overviewTone": "blue",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-import",
+      "label": "import-module",
+      "kind": "component",
+      "module": "import",
+      "subtitle": "",
+      "overviewText": [
+        "导入虚构书目文件。"
+      ],
+      "badges": [],
+      "overviewTone": "white",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-api",
+      "label": "CatalogEndpoint",
+      "kind": "component",
+      "module": "query",
+      "subtitle": "",
+      "overviewText": [
+        "接收示例 HTTP 请求并校验查询条件。"
+      ],
+      "badges": [],
+      "overviewTone": "green",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-usecase",
+      "label": "BorrowBook",
+      "kind": "component",
+      "module": "lending",
+      "subtitle": "",
+      "overviewText": [
+        "检查可借副本并登记借阅。"
+      ],
+      "badges": [],
+      "overviewTone": "blue",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-port",
+      "label": "CatalogPort",
+      "kind": "component",
+      "module": "catalog",
+      "subtitle": "",
+      "overviewText": [
+        "定义书目查询与副本更新接口。"
+      ],
+      "badges": [],
+      "overviewTone": "blue",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-unit",
+      "label": "UseCaseTest",
+      "kind": "component",
+      "module": "testing",
+      "subtitle": "",
+      "overviewText": [
+        "使用内存替身检查借阅用例。"
+      ],
+      "badges": [],
+      "overviewTone": "subtle",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    },
+    {
+      "id": "e-contract",
+      "label": "ApiContractTest",
+      "kind": "component",
+      "module": "testing",
+      "subtitle": "",
+      "overviewText": [
+        "检查示例接口的输入与输出。"
+      ],
+      "badges": [],
+      "overviewTone": "subtle",
+      "source": {
+        "kind": "document",
+        "file": "examples/architecture-overviews/reference.md",
+        "lineStart": 3,
+        "lineEnd": 6
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "api-usecase",
+      "source": "e-api",
+      "target": "e-usecase",
+      "kind": "call",
+      "label": "调用",
+      "evidence": "document"
+    },
+    {
+      "id": "usecase-port",
+      "source": "e-usecase",
+      "target": "e-port",
+      "kind": "depends",
+      "label": "访问馆藏",
+      "evidence": "document"
+    }
+  ],
+  "layout": {
+    "sections": [
+      {
+        "id": "organization",
+        "title": "虚构工程组织",
+        "mode": "stack",
+        "items": [
+          {
+            "id": "root",
+            "title": "服务工程",
+            "mode": "stack",
+            "tone": "lavender",
+            "items": [
+              {
+                "nodeId": "e-library"
+              }
+            ]
+          },
+          {
+            "id": "modules",
+            "title": "并列模块",
+            "mode": "grid",
+            "columns": 2,
+            "items": [
+              {
+                "nodeId": "e-query"
+              },
+              {
+                "nodeId": "e-import"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "detail-and-support",
+        "title": "查询模块内部结构",
+        "mode": "row",
+        "detailOf": "e-query",
+        "weights": [
+          2,
+          1
+        ],
+        "items": [
+          {
+            "id": "layers",
+            "title": "请求与数据路径",
+            "mode": "stack",
+            "items": [
+              {
+                "nodeId": "e-api"
+              },
+              {
+                "nodeId": "e-usecase"
+              },
+              {
+                "nodeId": "e-port"
+              }
+            ]
+          },
+          {
+            "id": "support",
+            "title": "测试支持",
+            "mode": "stack",
+            "frame": "dashed",
+            "items": [
+              {
+                "nodeId": "e-unit"
+              },
+              {
+                "nodeId": "e-contract"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "scope",
+        "title": "示例范围",
+        "mode": "note",
+        "text": [
+          "本图只演示工程层次和并列支持区，不描述真实项目的内部设计。"
+        ]
+      }
+    ]
+  }
+}

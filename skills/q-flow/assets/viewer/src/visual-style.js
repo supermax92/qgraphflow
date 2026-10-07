@@ -1,4 +1,5 @@
 import { IDENTITY, IDENTITY_SCALES, RADIX } from './radix-colors.js';
+import { overviewAppearance, overviewPalette } from './architecture-overview-theme.js';
 
 // Mix a color over a background: identity washes and headers stay tied to their chip color.
 export function mix(color, background, amount) {
@@ -14,21 +15,22 @@ const FLIGHT_SCALES = ['orange', 'blue', 'teal', 'violet', 'plum', 'indigo'];
 export const PALETTES = Object.fromEntries(Object.entries(RADIX).map(([theme, { neutral: n, accent: t, data: b, warn: a, guard: g }]) => [theme, {
   paper: n[1], surface: n[1], surface2: n[2],
   ink: n[12], ink2: n[11], ink3: n[11], rule: n[6], ruleSoft: n[4],
-  accent: t[11], accentSoft: t[2], ringCore: t[5],
-  data: b[11], warn: a[11], ringWarn: a[5], guard: g[11],
+  accent: theme === 'dark' ? '#67c4aa' : '#126b5a', accentSoft: t[2], ringCore: t[5],
+  data: theme === 'dark' ? '#d9b16c' : '#886019', warn: a[11], ringWarn: a[5], guard: g[11],
   badge: n[3], outline: theme === 'dark' ? n[10] : n[9],
   // Dark cards lift one step above the canvas so a plain card still reads as a surface.
   card: theme === 'dark' ? n[3] : n[1],
   groupFill: n[2], groupFillNested: theme === 'dark' ? mix(n[2], n[3], .5) : n[1], groupLine: n[5],
-  moduleTones: IDENTITY_SCALES.map(name => { const scale = IDENTITY[theme][name]; return { name, chip: scale[9], accent: scale[10], wash: mix(scale[9], theme === 'dark' ? n[3] : n[1], theme === 'dark' ? .09 : .05), header: mix(scale[9], n[2], theme === 'dark' ? .16 : .1) }; }),
+  moduleTones: (theme === 'dark' ? ['#80b5ea', '#67c4aa', '#bb9add', '#d9b16c', '#9eafa7'] : ['#3677bb', '#16816d', '#8c64ac', '#b27e2a', '#6a7c75']).map((color, index) => ({ name: ['blue', 'teal', 'purple', 'amber', 'sage'][index], chip: color, accent: color, wash: mix(color, theme === 'dark' ? n[3] : n[1], .09), header: mix(color, n[2], theme === 'dark' ? .16 : .09) })),
   // Lifecycle tones of a state card: the goal is green, an ended state Slate, a failed one Red, and in-flight states take
   // the ramp above. The body is step 3; the frame is step 11 on light cards and step 10 on dark ones, the first steps
   // that hold 3:1 against that body in each theme.
+  sequenceTones: IDENTITY_SCALES.map(name => IDENTITY[theme][name][10]),
   stateTones: (() => {
     const step = theme === 'dark' ? 10 : 11, scales = IDENTITY[theme], identity = name => ({ name, fill: scales[name][3], stroke: scales[name][step] });
     return { goal: identity('grass'), ended: { name: 'slate', fill: n[3], stroke: n[step] }, failed: { name: 'red', fill: a[3], stroke: a[step] }, flight: FLIGHT_SCALES.map(identity) };
   })(),
-  edge: theme === 'dark' ? n[10] : n[9],
+  edge: theme === 'dark' ? n[10] : '#747982',
   mask: theme === 'dark' ? 'rgba(17,17,19,.75)' : 'rgba(252,252,253,.75)',
   group: n[2]
 }]));
@@ -107,6 +109,7 @@ const STATE_TONE_LABELS = { goal: 'Core state', ended: 'Ended state', failed: 'F
 // Text never follows either: titles stay ink. A failure keeps its red frame over any module. A state in a state
 // diagram wears its lifecycle tone instead of the module's frame and wash; the ring and the module's lines stay.
 export function nodeAppearance(node, palette, moduleColors) {
+  if (node.overviewText !== undefined || node.badges !== undefined || node.overviewTone !== undefined) return overviewAppearance(node, palette);
   const tone = moduleColors?.get(node.module);
   const stateRole = node.kind === 'state' ? moduleColors?.stateTones?.get(node.id) : undefined;
   if (stateRole) {
@@ -125,9 +128,10 @@ export function nodeAppearance(node, palette, moduleColors) {
 }
 
 // Pairs walk the identity scales in order; the order itself keeps neighbouring pair numbers far apart in hue.
-export const sequenceGroupColor = (pair, palette) => pair ? palette.moduleTones[pair.index % palette.moduleTones.length].accent : undefined;
+export const sequenceGroupColor = (pair, palette) => pair ? palette.sequenceTones[pair.index % palette.sequenceTones.length] : undefined;
 
 export function edgeColor(edge, target, palette, moduleColors, source, pair) {
+  if (source?.overviewTone !== undefined) return overviewPalette(palette).edge;
   if (pair) return sequenceGroupColor(pair, palette);
   if (edge.kind === 'failure') return palette.warn;
   if (edge.kind === 'success') return palette.accent;

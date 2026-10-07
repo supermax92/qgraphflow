@@ -10,12 +10,12 @@ import { sequenceFragment, fragmentSurfaceAt } from '../sequence-fragments.js';
 export function usePresentation(graph, layout, selection, flowRunning, palette, moduleColors) {
   const diagramType = diagramTypeOf(graph);
   const { nodes, edges, locked, currentGraph } = layout;
-  const { selectedId, selectedEdgeId, selectEdge, selectionPulse, normalizedQuery } = selection;
+  const { selectedId, selectedEdgeId, selectEdge, selectNode, selectionPulse, normalizedQuery } = selection;
   const routes = useMemo(() => createEdgeRoutes(currentGraph), [currentGraph]);
   const pairs = useMemo(() => sequencePairs(currentGraph), [currentGraph]);
   const executions = useMemo(() => sequenceExecutions(currentGraph), [currentGraph]);
   const groupAppearances = useMemo(() => groupAppearanceMap(currentGraph.groups ?? [], palette), [currentGraph, palette]);
-  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'boundary' ? { ...node, data: { ...node.data, appearance: groupAppearances.get(node.id), fragment: diagramType === 'sequence' ? sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) : null } } : ({
+  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'overview' ? { ...node, draggable: false, data: { ...node.data, palette, onSelect: () => selectNode({ ...node.data, label: node.data.title, kind: 'annotation', section: true, overviewText: node.data.text ?? [] }) } } : node.type === 'boundary' ? { ...node, data: { ...node.data, appearance: groupAppearances.get(node.id), fragment: diagramType === 'sequence' ? sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) : null } } : ({
     ...node,
     selected: node.id === selectedId,
     draggable: !locked,
@@ -27,7 +27,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
       moduleColors,
       dimmed: Boolean(normalizedQuery) && searchRank(node.data, normalizedQuery) === 0
     }
-  })), [locked, nodes, normalizedQuery, selectedId, selectionPulse, palette, moduleColors, routes, diagramType, graph.meta.locale, currentGraph, executions, pairs, groupAppearances]);
+  })), [selectNode, locked, nodes, normalizedQuery, selectedId, selectionPulse, palette, moduleColors, routes, diagramType, graph.meta.locale, currentGraph, executions, pairs, groupAppearances]);
 
   const visibleEdges = useMemo(() => {
     const sequence = getDiagram(diagramType).sequence;

@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "title": "源码示例 · Maven 模块组织",
+    "diagramType": "architecture",
+    "architectureView": "engineering",
+    "viewId": "source-project",
+    "locale": "zh-CN",
+    "sourceRef": "examples/architecture-overviews/source-project",
+    "scope": "实际 POM 配置；来源锚点可验证"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "overview-project",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "config",
+        "file": "examples/architecture-overviews/source-project/pom.xml",
+        "lineStart": 4
+      },
+      "overviewTone": "white"
+    },
+    {
+      "id": "parent",
+      "label": "overview-parent",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "config",
+        "file": "examples/architecture-overviews/source-project/parent/pom.xml",
+        "lineStart": 6
+      },
+      "overviewTone": "blue"
+    },
+    {
+      "id": "core",
+      "label": "overview-core",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "config",
+        "file": "examples/architecture-overviews/source-project/core/pom.xml",
+        "lineStart": 9
+      },
+      "overviewTone": "white"
+    },
+    {
+      "id": "starter",
+      "label": "overview-starter",
+      "kind": "component",
+      "module": "business",
+      "subtitle": "",
+      "overviewText": [],
+      "badges": [],
+      "source": {
+        "kind": "config",
+        "file": "examples/architecture-overviews/source-project/starter/pom.xml",
+        "lineStart": 9
+      },
+      "overviewTone": "white"
+    }
+  ],
+  "edges": [
+    {
+      "id": "aggregate-parent",
+      "source": "root",
+      "target": "parent",
+      "kind": "aggregates",
+      "label": "聚合",
+      "evidence": "config",
+      "site": {
+        "file": "examples/architecture-overviews/source-project/pom.xml",
+        "lineStart": 8
+      }
+    },
+    {
+      "id": "aggregate-core",
+      "source": "root",
+      "target": "core",
+      "kind": "aggregates",
+      "label": "聚合",
+      "evidence": "config",
+      "site": {
+        "file": "examples/architecture-overviews/source-project/pom.xml",
+        "lineStart": 9
+      }
+    },
+    {
+      "id": "aggregate-starter",
+      "source": "root",
+      "target": "starter",
+      "kind": "aggregates",
+      "label": "聚合",
+      "evidence": "config",
+      "site": {
+        "file": "examples/architecture-overviews/source-project/pom.xml",
+        "lineStart": 10
+      }
+    },
+    {
+      "id": "starter-core",
+      "source": "starter",
+      "target": "core",
+      "kind": "depends",
+      "label": "依赖",
+      "evidence": "config",
+      "site": {
+        "file": "examples/architecture-overviews/source-project/starter/pom.xml",
+        "lineStart": 14
+      }
+    }
+  ],
+  "layout": {
+    "sections": [
+      {
+        "id": "project",
+        "title": "聚合工程",
+        "mode": "stack",
+        "items": [
+          {
+            "nodeId": "root"
+          }
+        ]
+      },
+      {
+        "id": "modules",
+        "title": "父 POM 与能力模块",
+        "mode": "grid",
+        "items": [
+          {
+            "nodeId": "parent"
+          },
+          {
+            "nodeId": "core"
+          },
+          {
+            "nodeId": "starter"
+          }
+        ]
+      }
+    ]
+  }
+}

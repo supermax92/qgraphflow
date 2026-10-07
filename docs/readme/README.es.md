@@ -16,11 +16,11 @@ Sigue el recorrido. Comprueba las evidencias. Comparte un archivo sin conexión.
 
 ![Arquitectura, secuencia y ER del ejemplo agent-desk, 1,5 segundos por vista](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.es.hero.gif)
 
-*Nueve tipos: arquitectura, flujo, secuencia, ER, despliegue, clases, estados, casos de uso y flujo de datos.*
+*Once tipos: arquitectura de capacidades, arquitectura por capas, arquitectura de componentes, flujo, secuencia, ER, despliegue, clases, estados, casos de uso y flujo de datos.*
 
 QGraphFlow genera diagramas de software interactivos a partir del código, los esquemas, la configuración y los requisitos. Permite comprobar las relaciones y compartir el resultado como HTML sin conexión.
 
-**Qué lo distingue:** nueve tipos de diagrama en una sola habilidad, un tipo de evidencia en cada relación y la línea de código detrás de cada una respaldada por código, diseño automático, edición en la propia página y ninguna solicitud de red de los scripts del complemento ni del propio Viewer.
+**Qué lo distingue:** once tipos de diagrama en una sola habilidad, un tipo de evidencia en cada relación y la línea de código detrás de cada una respaldada por código, diseño automático, edición en la propia página y ninguna solicitud de red de los scripts del complemento ni del propio Viewer.
 
 ```bash
 npx skills add supermax92/qgraphflow

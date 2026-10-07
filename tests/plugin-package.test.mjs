@@ -134,6 +134,7 @@ test('the distributed plugin runs independently from its installed location', t 
     '.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
     'skills/q-flow/SKILL.md', 'skills/q-flow/agents/openai.yaml',
     'skills/q-flow/references/graph-schema.md', 'skills/q-flow/references/guided-intake.md',
+    'skills/q-flow/references/layout-routing.md',
     'skills/q-flow/assets/viewer-dist/index.html',
     'skills/q-flow/assets/layout-dist/worker.mjs', 'skills/q-flow/assets/layout-dist/ELK-LICENSE.md',
     'skills/q-flow/scripts/compile-layout.mjs', 'skills/q-flow/scripts/compile-sequence.mjs',
@@ -156,7 +157,7 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.ok(files.has(`docs/readme/README.${locale}.md`));
   }
   assert.deepEqual([...files].filter(file => file.startsWith('skills/q-flow/references/')).sort(),
-    [...['acceptance', 'evidence-sources', 'graph-common', 'graph-schema', 'guided-intake'], ...['architecture', 'class', 'dataflow', 'deployment', 'er', 'flowchart', 'sequence', 'state', 'usecase'].map(type => `types/${type}`), 'viewer-development', 'visual-contract']
+    [...['acceptance', 'evidence-sources', 'graph-common', 'graph-schema', 'guided-intake', 'layout-routing'], ...['architecture', 'class', 'dataflow', 'deployment', 'er', 'flowchart', 'sequence', 'state', 'usecase'].map(type => `types/${type}`), 'viewer-development', 'visual-contract']
       .map(name => `skills/q-flow/references/${name}.md`).sort());
   for (const locale of ['ko', 'fr']) assert.ok(!files.has(`docs/readme/README.${locale}.md`));
   for (const file of files) {

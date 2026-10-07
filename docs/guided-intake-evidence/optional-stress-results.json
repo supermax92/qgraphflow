@@ -1,0 +1,38 @@
+{
+  "status": "not-passed",
+  "supersededExportFailures": "Corrected and verified in browser-results.json; other stress assertions were not rerun.",
+  "failures": [
+    {
+      "name": "sequence-1440-light",
+      "message": "Export SVG: ; 布局需要调整，仍可保存 JSON 草稿controller · rendering.svgNode text overlaps: controller / CreateOrderController"
+    },
+    {
+      "name": "sequence-1440-dark",
+      "message": "Export SVG: ; 布局需要调整，仍可保存 JSON 草稿controller · rendering.svgNode text overlaps: controller / CreateOrderController"
+    },
+    {
+      "name": "1440-light-sequence-reading",
+      "message": "Export SVG: ; 布局需要调整，仍可保存 JSON 草稿controller · rendering.svgNode text overlaps: controller / CreateOrderController"
+    },
+    {
+      "name": "1440-dark-sequence-reading",
+      "message": "Export SVG: ; 布局需要调整，仍可保存 JSON 草稿controller · rendering.svgNode text overlaps: controller / CreateOrderController"
+    },
+    {
+      "name": "1920-light-sequence-reading",
+      "message": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('.layout-problems') to be visible\n"
+    },
+    {
+      "name": "1920-dark-sequence-reading",
+      "message": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('.layout-problems') to be visible\n"
+    },
+    {
+      "name": "768-light-sequence-reading",
+      "message": "controller: visible head at readable scale {\"visible\":false,\"left\":279,\"right\":489}"
+    },
+    {
+      "name": "768-dark-sequence-reading",
+      "message": "controller: visible head at readable scale {\"visible\":false,\"left\":279,\"right\":489}"
+    }
+  ]
+}

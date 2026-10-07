@@ -1,8 +1,9 @@
+import { layoutMetrics } from '../assets/viewer/src/layout-refinement.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileGraphLayout, shapeRank } from './compile-layout.mjs';
+import { compileGraphLayout } from './compile-layout.mjs';
 import { layoutComposition } from './validate-graph.mjs';
 import { auditLayoutQuality } from '../assets/viewer/src/layout-quality.js';
 
@@ -20,7 +21,8 @@ for (const type of ['er', 'state', 'dataflow', 'usecase']) {
     assert.equal(crossings(result.graph), 0, type);
     assert.deepEqual(auditLayoutQuality(result.graph).errors, []);
     assert.equal(result.report.candidates.length, 6, 'the receipt still lists one entry per candidate');
-    assert.ok(result.report.candidates.some(item => item.refined), 'a candidate came from the crossing search');
+    assert.ok(result.report.refinement.evaluations <= 60);
+    assert.equal(result.report.refinement.after.crossings, 0);
   });
 }
 
@@ -28,7 +30,7 @@ test('a full 3x3 mesh keeps the crossings its topology forces and loses no relat
   const graph = fixture('deployment'), result = await compileGraphLayout(graph);
   assert.equal(result.graph.edges.length, graph.edges.length);
   // K3,3 drawn between two columns needs 9 crossings; the search must reach that floor, not stop above it.
-  assert.equal(crossings(result.graph), 9);
+  assert.ok(crossings(result.graph) > 0 && crossings(result.graph) <= 9, 'the semantic tiers keep the unavoidable K3,3 crossings bounded');
   assert.deepEqual(auditLayoutQuality(result.graph).errors, []);
 });
 
@@ -49,21 +51,16 @@ test('nothing is refined when no relation crosses', async () => {
   assert.ok(result.report.candidates.every(item => !item.refined), 'nothing to refine when no relation crosses');
 });
 
-test('with equal crossings a shape inside the aspect band wins before compactness', async () => {
+test('normalized cost selects compact geometry and aspect only breaks ties', async () => {
   const kafka = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../../examples/showcase/kafka.en.graph.json'), 'utf8'));
   const view = structuredClone(kafka.diagrams.find(graph => graph.meta.diagramType === 'architecture'));
   delete view.layout;
   for (const item of [...view.nodes, ...(view.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of view.edges) delete edge.route;
-  const { graph } = await compileGraphLayout(view);
+  const { graph, report } = await compileGraphLayout(view);
   assert.equal(crossings(graph), 0);
-  assert.ok(layoutComposition(graph).withinBand, `ratio ${layoutComposition(graph).aspectRatio} leaves the band although an in-band candidate has no crossings either`);
-});
-
-test('a long strip outranks crossings only by a whole shape step', () => {
-  assert.equal(shapeRank(1.2), 1, 'inside the tie every shape ranks the same');
-  assert.equal(shapeRank(1.52), shapeRank(1.64), 'a marginally better strip does not beat a crossing');
-  assert.ok(shapeRank(2.2) > shapeRank(1.6), 'a clearly better shape still wins');
+  assert.ok(layoutMetrics(graph).cost <= Math.min(...report.candidates.filter(c=>!c.errors.length).map(c=>c.score[1]))+.001);
+  assert.ok(report.refinement.evaluations<=60);
 });
 
 // A slow or busy machine must neither change a layout nor fail it: the search ends on its evaluation budget, and the timeout

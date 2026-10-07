@@ -16,11 +16,11 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 ![Architecture, sequence and ER views of the agent-desk example, 1.5 seconds each](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.hero.gif)
 
-*Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
+*Eleven diagram types: platform capability architecture, engineering layer architecture, component relationship architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
-**What sets it apart:** nine diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+**What sets it apart:** eleven diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -215,7 +215,9 @@ The skill moves anchors whose symbol it finds once, corrects only the anchors st
 
 | View · PNG | Main question | Example scope |
 | --- | --- | --- |
-| Architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
+| Platform capability architecture | What capabilities does the platform provide? | Capability bands and matrices |
+| Engineering layer architecture | How is the project organized? | Layers and parallel support |
+| Component relationship architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
 | Flowchart | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
 | Sequence | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
 | ER | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
@@ -244,3 +246,15 @@ Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minima
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/architecture-overviews](examples/architecture-overviews) for conceptual reference diagrams and a small source-backed Maven example. Unlock an overview to reorder cards within a layer or edit body text, badges and explanatory sections. Save keeps all views; reset restores only the current one.

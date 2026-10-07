@@ -6,10 +6,12 @@ CodeGraph is the preferred call-graph accelerator, not a hard dependency.
 
 The intended implementation is [`colbymchenry/codegraph`](https://github.com/colbymchenry/codegraph), exposed through its local CLI or MCP server.
 
-1. Check whether `codegraph` is on `PATH` and whether the target repository contains `.codegraph/`.
-2. When both are present, run `codegraph status` and use one bounded `codegraph explore "<question or symbols>"` query before direct repository tracing.
-3. An already configured CodeGraph MCP tool can serve the same bounded query. Use the tools actually available in this client; do not assume a client-specific tool name.
-4. If the CLI, MCP tool or current index is unavailable, continue directly with the fallback below. Ordinary drawing does not require installing or initializing CodeGraph, resolving npm versions, or changing client configuration.
+1. For repository-backed work, check the available CLI/MCP tool and target index. A `.codegraph/` directory is only a candidate index, not proof of availability or freshness.
+2. With the CLI and index present, run `codegraph status`. Only if it confirms a current index, use one bounded `codegraph explore "<question or symbols>"` query before direct tracing. Report CodeGraph as selected after successful preflight, and as used only after the query succeeds.
+3. A configured MCP tool can supply equivalent status and query results. Use the client's actual capabilities; do not invent a tool name or assume an index is current when freshness cannot be established.
+4. If the tool, current index or query is unavailable/fails, continue with direct tracing and accurately report the fallback. Before checking, say preflight is pending. Do not install, initialize, refresh an index or change client configuration merely to draw.
+
+Document-only requests use the supplied requirements as `document` evidence without CodeGraph preflight or invented source anchors. If implementation is unavailable, state that boundary; conceptual diagrams omit `--repo-root`. Mixed requests keep document and implementation claims distinct.
 
 ## Optional setup when requested
 

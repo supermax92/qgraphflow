@@ -33,6 +33,12 @@ Types and their structural relationships: inheritance, implementation, compositi
 }
 ```
 
+## Layout
+
+Contract parents above implementations; complete member compartments and lateral dependencies. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps attributes, methods, relation direction and endpoint markers; routes leave the nearest feasible class outline.
+
 ## Frequent validation errors
 
 - `edge c implementation target must be an interface` — use `inheritance` for an abstract base class, `implementation` only towards `kind: "interface"`.

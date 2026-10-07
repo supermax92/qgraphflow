@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { overviewSections } from '../assets/viewer/src/architecture-overview.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -221,6 +222,8 @@ function sourceReader(repoRoot) {
 export function verifySourceEvidence(input, repoRoot) {
   const graphs = graphsOf(input), edges = graphs.flatMap(graph => graph.edges ?? []);
   const anchors = graphs.flatMap((graph, graphIndex) => [
+    ...overviewSections(graph).flatMap(section => section.source ? [{ source: section.source, label: `diagrams[${graphIndex}].sections.${section.id}.source` }] : []),
+    ...graph.nodes.flatMap((node, nodeIndex) => (node.badges ?? []).flatMap((badge, i) => badge.source ? [{ source: badge.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].badges[${i}].source` }] : [])),
     ...graph.nodes.flatMap((node, nodeIndex) => node.source ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source` }] : []),
     ...(graph.edges ?? []).flatMap((edge, edgeIndex) => edge.site ? [{ source: edge.site, label: `diagrams[${graphIndex}].edges[${edgeIndex}].site` }] : [])]);
   const summary = { scope: 'working-tree', references: anchors.length, checked: 0, files: 0,

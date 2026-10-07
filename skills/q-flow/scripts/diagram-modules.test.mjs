@@ -100,7 +100,7 @@ export default {
     assert.equal(result.status, 0, result.stderr + result.stdout);
     return result.stdout;
   };
-  run(path.join(viewer, 'node_modules/vite/bin/vite.js'), ['build'], viewer);
+  run(path.join(viewer, 'node_modules/vite/bin/vite.js'), ['build', '--configLoader', 'runner'], viewer);
   run(path.join(copy, 'scripts/generate-viewer.mjs'), [path.join(directory, 'model.json'), path.join(directory, 'page')], copy);
   assert.deepEqual(fs.readdirSync(path.join(directory, 'page')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
   assert.ok(fs.readFileSync(path.join(directory, 'page/index.html'), 'utf8').includes('review-flow'));

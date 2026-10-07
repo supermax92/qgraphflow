@@ -41,6 +41,12 @@ The steps and decisions of one function, use case or job, top to bottom. Read wi
 }
 ```
 
+## Layout
+
+A vertical main spine with separate side branches and outer feedback corridors. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps decision exits on distinct sides, the declared main path and full branch labels.
+
 ## Frequent validation errors
 
 - `layout.primaryPath has no directed edge from A to B` — the path must follow existing edges; fix the path or add the missing edge.

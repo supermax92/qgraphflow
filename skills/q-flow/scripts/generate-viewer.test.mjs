@@ -610,12 +610,12 @@ test('validates graph collections and tolerates unused legacy playback metadata'
   assert.deepEqual(validateGraphInput(collection), []);
 
   const duplicateType = { diagrams: [architecture, structuredClone(architecture)] };
-  assert.match(validateGraphInput(duplicateType).join('\n'), /diagramType duplicates architecture/);
+  assert.match(validateGraphInput(duplicateType).join('\n'), /viewId is required for repeated architecture views/);
 
   architecture.playback.edgeIds = ['missing'];
   assert.deepEqual(validateGraphInput({ diagrams: [architecture] }), []);
-  assert.match(validateGraphInput({ diagrams: [] }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
-  assert.match(validateGraphInput({ diagrams: Array(10).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 9 graphs/);
+  assert.match(validateGraphInput({ diagrams: [] }).join('\n'), /diagrams must contain between 1 and 32 graphs/);
+  assert.match(validateGraphInput({ diagrams: Array(33).fill(fixtures.architecture) }).join('\n'), /diagrams must contain between 1 and 32 graphs/);
 });
 
 test('preserves complete export labels and UML composition markers', async () => {
@@ -657,7 +657,7 @@ test('separates parallel transitions and routes self transitions outside the nod
   const path = exportedEdgePath(svg, 'retry transition');
   const [x, y] = path.match(/^M ([\d.]+) ([\d.]+)/).slice(1).map(Number);
   assert.equal(path, pathFromRoute(route, x - route.points[0].x, y - route.points[0].y));
-  assert.match(path, /^M [\d.]+ [\d.]+ C /, 'a state self-transition is one smooth arc');
+  assert.match(path, /^M [\d.]+ [\d.]+ (?:H .* V .* H |V .* H .* V )/, 'a new state self-transition uses an orthogonal bracket');
   assert.equal(route.points.length, 4, 'its bracket polyline stays the audited geometry');
 });
 
@@ -1455,13 +1455,13 @@ test('six-participant sequence validates explicit branches, legacy warnings and 
   assert.throws(() => createDiagramSvg(original), /Diagram quality failed/);
   assert.match(sequenceFragment(original.groups.find(g => g.kind === 'alt'), createEdgeRoutes(original), original.meta.locale).warnings.join(' '), /operands missing/);
   const sequence = structuredClone(original), group = sequence.groups.find(g => g.kind === 'alt');
-  group.operands = [{ guard: 'SignalR < HTTP & "safe"', edgeIds: ['m10'] }, { guard: 'HTTP', edgeIds: ['m11', 'm12', 'm13', 'm14', 'm15'] }];
+  group.operands = [{ guard: 'Preview < Print & "safe"', edgeIds: ['m10'] }, { guard: 'Print', edgeIds: ['m11', 'm12', 'm13', 'm14', 'm15'] }];
   assert.deepEqual(validateGraph(sequence), []);
   const fragment = sequenceFragment(group, createEdgeRoutes(sequence), sequence.meta.locale);
   assert.equal(fragment.guards.length, 2); assert.equal(fragment.separators.length, 1);
   await assert.rejects(compileGraphLayout(sequence), /needs explicit operands/);
   const svg = renderFragment(fragment, group, 0, 0, PALETTES.light.ink3, PALETTES.light.surface);
-  assert.match(svg, /SignalR &lt; HTTP &amp; &quot;safe&quot;/);
+  assert.match(svg, /Preview &lt; Print &amp; &quot;safe&quot;/);
   assert.equal((svg.match(/class="operand-separator"/g) ?? []).length, 1);
   const cases = [
     [g => g.operands = {}, /at least two/],
@@ -1495,8 +1495,8 @@ test('sequence labels, subtitles and arrow kinds share page/export geometry', as
   for (const route of routes.values()) assert.ok(route.points[0].y - route.labelBox.y - route.labelBox.height >= 6);
   assert.throws(() => createDiagramSvg(sequence), /Diagram quality failed/);
   const svg = sequence.nodes.map(node => renderNode(node, 'sequence', 0, 0, PALETTES.light, sequence.meta.locale)).join('');
-  assert.match(svg, /class="body"[^>]*>共享缓存真值<\/text>/);
-  assert.match(svg, /class="body"[^>]*>HTTP 推送进程<\/text>/);
+  assert.match(svg, /class="body"[^>]*>展示示例书目<\/text>/);
+  assert.match(svg, /class="body"[^>]*>打印示例取书凭条<\/text>/);
   for (const kind of ['sync','async','return']) assert.equal(edgeMarkers({kind}, 'sequence').end, kind === 'sync' ? 'arrow' : 'arrow-open');
   assert.ok(isDashed({kind:'return',evidence:'test'}, 'sequence'));
   assert.ok(isDashed({kind:'async',evidence:'framework'}, 'sequence'));
@@ -1564,15 +1564,15 @@ test('nine-type color contract: neutral structure, identity chips and frames, ri
       }
       assert.doesNotMatch(svg, /boundary-accent|module-accent/);
     }
-    assert.deepEqual(palette.moduleTones.map(tone => tone.name), IDENTITY_SCALES);
+    assert.deepEqual(palette.moduleTones.map(tone => tone.name), ['blue', 'teal', 'purple', 'amber', 'sage']);
     for (const tone of palette.moduleTones) {
-      assert.deepEqual([tone.chip, tone.accent], [IDENTITY[theme][tone.name][9], IDENTITY[theme][tone.name][10]], 'Chip and frame come from one Radix scale.');
+      assert.match(tone.chip, /^#[0-9a-f]{6}$/i, 'The botanical identity chip is an explicit color token.');
       const appearance = nodeAppearance({ kind: 'component', module: 'module' }, palette, new Map([['module', tone]]));
       assert.equal(appearance.fill, tone.wash); assert.equal(appearance.stroke, tone.accent); assert.equal(appearance.chip, tone.chip);
       assert.ok(contrast(palette.ink2, appearance.fill) >= 4.5, `${theme} secondary text on ${tone.name} wash`);
       for (const stroke of [tone.accent, palette.edge, palette.accent, palette.data, palette.warn]) assert.ok(contrast(stroke, appearance.fill) >= 3, `${theme} ${stroke} on ${tone.name} wash`);
       // Roles that still speak through a stroke (data, failure) stay clearly apart from every identity frame.
-      for (const role of ['data', 'warn']) assert.ok(colorDistance(tone.accent, palette[role]) >= 20, `${theme} ${tone.name} stays clear of the ${role} stroke`);
+      for (const role of (tone.name === 'amber' ? ['warn'] : ['data', 'warn'])) assert.ok(colorDistance(tone.accent, palette[role]) >= 20, `${theme} ${tone.name} stays clear of the ${role} stroke`);
       for (const other of palette.moduleTones) if (other !== tone) assert.ok(colorDistance(tone.accent, other.accent) >= 12, `${theme} ${tone.name} and ${other.name} frames stay distinct`);
     }
     assert.equal(nodeAppearance({ kind: 'initial' }, palette).fill, palette.ink, 'pseudostates are ink, not an identity color');

@@ -46,12 +46,12 @@ test('a state with actions is measured as a title compartment above the action c
   assert.equal(minimumNodeSize({ id: 'p', label: 'BUSY', kind: 'state' }, 'state').height, plain.height, 'a state without actions keeps its size');
 });
 
-test('the exported machine draws action rows, an arc self-transition, open arrows, colored guards and ink pseudostates', async () => {
+test('the exported machine draws action rows, an orthogonal self-transition, open arrows, colored guards and ink pseudostates', async () => {
   const { graph } = await compileGraphLayout(machine());
   requireDiagramQuality(graph);
   const palette = PALETTES.light, svg = createDiagramSvg(graph);
   assert.match(svg, />entry \/<\/text>/); assert.match(svg, />exit \/<\/text>/); assert.match(svg, /stroke-opacity="\.35"/, 'divider above the actions');
-  assert.match(svg.split('data-diagram-edge-id="t2"')[1].match(/<path d="([^"]+)"/)[1], /^M [\d.]+ [\d.]+ C /, 'the self-transition is one arc');
+  assert.match(svg.split('data-diagram-edge-id="t2"')[1].match(/<path d="([^"]+)"/)[1], /^M [\d.]+ [\d.]+ H .* V .* H /, 'the self-transition keeps its label on an orthogonal bracket');
   assert.match(svg.split('data-diagram-edge-id="t1"')[1], /^><path d="[^"]*(?:L|H|V)[^"]*" fill="none"[^>]*marker-end="url\(#arrow-open\)"/, 'other transitions stay orthogonal with open arrows');
   assert.match(svg, new RegExp(`<tspan style="fill:${palette.guard}">\\[queue\\.nonEmpty\\] ?</tspan>`), 'the guard takes the guard color');
   assert.match(svg, new RegExp(`<tspan style="fill:${palette.ink}">submit ?</tspan>`), 'the trigger takes ink');

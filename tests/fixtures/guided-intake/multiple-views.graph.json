@@ -1,0 +1,571 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "System architecture overview",
+        "diagramType": "architecture",
+        "sourceRef": "intake-shop local working tree",
+        "locale": "en",
+        "scope": "Default system overview: the three workspace business modules and source-verified cross-module calls. Internal functions, route declarations, and in-memory maps are aggregated into their owning modules. Deployment, HTTP wiring, and external integrations are not established by this source.",
+        "notes": [
+          "Orders and inventory use local in-memory Maps; no database integration is implemented in the inspected path.",
+          "ProviderClient returns a local receipt; no external payment request is implemented.",
+          "Dependencies come from direct source tracing; the target has no CodeGraph index."
+        ]
+      },
+      "nodes": [
+        {
+          "id": "orders",
+          "label": "orders",
+          "kind": "business",
+          "module": "orders",
+          "subtitle": "Create orders and persist them in memory",
+          "facts": [
+            "CreateOrderController delegates to OrderService.createOrder.",
+            "OrderRepository.saveOrder stores the order in a Map.",
+            "Inventory is released if charge or saveOrder throws."
+          ],
+          "source": {
+            "file": "orders/OrderService.js",
+            "lineStart": 1,
+            "lineEnd": 15,
+            "symbol": "createOrder",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "inventory",
+          "label": "inventory",
+          "kind": "component",
+          "module": "inventory",
+          "subtitle": "Reserve and release items",
+          "facts": [
+            "InventoryService keeps reservations in a Map.",
+            "reserve returns a reservation identifier; release deletes it."
+          ],
+          "source": {
+            "file": "inventory/InventoryService.js",
+            "lineStart": 1,
+            "lineEnd": 9,
+            "symbol": "reserve",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "payments",
+          "label": "payments",
+          "kind": "component",
+          "module": "payments",
+          "subtitle": "Authorize totals through local ProviderClient",
+          "facts": [
+            "PaymentService.charge delegates to ProviderClient.authorize.",
+            "authorize rejects a negative total and otherwise returns a local receipt."
+          ],
+          "source": {
+            "file": "payments/PaymentService.js",
+            "lineStart": 1,
+            "lineEnd": 4,
+            "symbol": "charge",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "orders-reserves-inventory",
+          "source": "orders",
+          "target": "inventory",
+          "kind": "call",
+          "label": "reserve items",
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "symbol": "reserve"
+          }
+        },
+        {
+          "id": "orders-charges-payment",
+          "source": "orders",
+          "target": "payments",
+          "kind": "call",
+          "label": "charge total",
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 9,
+            "lineEnd": 9,
+            "symbol": "charge"
+          }
+        },
+        {
+          "id": "orders-releases-inventory",
+          "source": "orders",
+          "target": "inventory",
+          "kind": "optional",
+          "label": "release on error",
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 11,
+            "lineEnd": 13,
+            "symbol": "release"
+          }
+        }
+      ]
+    },
+    {
+      "meta": {
+        "title": "Create-order call sequence",
+        "diagramType": "sequence",
+        "sourceRef": "intake-shop local working tree",
+        "locale": "en",
+        "scope": "Default flow detail: handle(order) through createOrder, reserve, charge, authorize, saveOrder, and conditional release, including call returns, empty-order validation, invalid-total authorization, and compensation for charge or persistence errors. Built-in Map operations are described within participants. The sequence starts at the implemented controller; no HTTP caller or route wiring is assumed.",
+        "notes": [
+          "saveOrder runs only after charge resolves; catch releases inventory for errors from charge or saveOrder.",
+          "reserve runs before try; a reservation error bypasses compensation.",
+          "release errors are not caught here and can replace the original error.",
+          "ProviderClient is local code; an external payment integration is not verified.",
+          "Source tracing verifies the implemented path, not runtime wiring or execution."
+        ]
+      },
+      "nodes": [
+        {
+          "id": "create-order-controller",
+          "label": "CreateOrderController",
+          "kind": "participant",
+          "module": "orders",
+          "subtitle": "Entry point: handle(order)",
+          "source": {
+            "file": "orders/controllers/checkout/CreateOrderController.js",
+            "lineStart": 2,
+            "lineEnd": 4,
+            "symbol": "handle",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "order-service",
+          "label": "OrderService",
+          "kind": "participant",
+          "module": "orders",
+          "subtitle": "Orchestrate order creation",
+          "source": {
+            "file": "orders/OrderService.js",
+            "lineStart": 5,
+            "lineEnd": 15,
+            "symbol": "createOrder",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "inventory-service",
+          "label": "InventoryService",
+          "kind": "participant",
+          "module": "inventory",
+          "subtitle": "In-memory reservations",
+          "source": {
+            "file": "inventory/InventoryService.js",
+            "lineStart": 1,
+            "lineEnd": 9,
+            "symbol": "reserve",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "payment-service",
+          "label": "PaymentService",
+          "kind": "participant",
+          "module": "payments",
+          "subtitle": "Delegate payment authorization",
+          "source": {
+            "file": "payments/PaymentService.js",
+            "lineStart": 2,
+            "lineEnd": 4,
+            "symbol": "charge",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "provider-client",
+          "label": "ProviderClient",
+          "kind": "participant",
+          "module": "payments",
+          "subtitle": "Local authorization implementation",
+          "source": {
+            "file": "payments/ProviderClient.js",
+            "lineStart": 1,
+            "lineEnd": 4,
+            "symbol": "authorize",
+            "kind": "source"
+          }
+        },
+        {
+          "id": "order-repository",
+          "label": "OrderRepository",
+          "kind": "participant",
+          "module": "orders",
+          "subtitle": "In-memory order storage",
+          "source": {
+            "file": "orders/OrderRepository.js",
+            "lineStart": 1,
+            "lineEnd": 5,
+            "symbol": "saveOrder",
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "m1",
+          "source": "create-order-controller",
+          "target": "order-service",
+          "kind": "sync",
+          "label": "createOrder(order)",
+          "order": 1,
+          "evidence": "source",
+          "site": {
+            "file": "orders/controllers/checkout/CreateOrderController.js",
+            "lineStart": 3,
+            "lineEnd": 3,
+            "symbol": "createOrder"
+          }
+        },
+        {
+          "id": "m2",
+          "source": "order-service",
+          "target": "inventory-service",
+          "kind": "sync",
+          "label": "reserve(order.items)",
+          "order": 2,
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "symbol": "reserve"
+          }
+        },
+        {
+          "id": "m3",
+          "source": "inventory-service",
+          "target": "order-service",
+          "kind": "return",
+          "label": "reservation identifier",
+          "order": 3,
+          "replyTo": "m2",
+          "evidence": "source",
+          "site": {
+            "file": "inventory/InventoryService.js",
+            "lineStart": 2,
+            "lineEnd": 5
+          }
+        },
+        {
+          "id": "m4",
+          "source": "order-service",
+          "target": "payment-service",
+          "kind": "sync",
+          "label": "charge(order.total)",
+          "order": 4,
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 9,
+            "lineEnd": 9,
+            "symbol": "charge"
+          }
+        },
+        {
+          "id": "m5",
+          "source": "payment-service",
+          "target": "provider-client",
+          "kind": "sync",
+          "label": "authorize(total)",
+          "order": 5,
+          "evidence": "source",
+          "site": {
+            "file": "payments/PaymentService.js",
+            "lineStart": 3,
+            "lineEnd": 3,
+            "symbol": "authorize"
+          }
+        },
+        {
+          "id": "m6",
+          "source": "provider-client",
+          "target": "payment-service",
+          "kind": "return",
+          "label": "receipt | invalid total error",
+          "order": 6,
+          "replyTo": "m5",
+          "evidence": "source",
+          "site": {
+            "file": "payments/ProviderClient.js",
+            "lineStart": 1,
+            "lineEnd": 4
+          }
+        },
+        {
+          "id": "m7",
+          "source": "payment-service",
+          "target": "order-service",
+          "kind": "return",
+          "label": "receipt | authorization error",
+          "order": 7,
+          "replyTo": "m4",
+          "evidence": "source",
+          "site": {
+            "file": "payments/PaymentService.js",
+            "lineStart": 2,
+            "lineEnd": 4
+          }
+        },
+        {
+          "id": "m8",
+          "source": "order-service",
+          "target": "order-repository",
+          "kind": "sync",
+          "label": "saveOrder({ ...order, reservation, receipt })",
+          "order": 8,
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 10,
+            "lineEnd": 10,
+            "symbol": "saveOrder"
+          }
+        },
+        {
+          "id": "m9",
+          "source": "order-repository",
+          "target": "order-service",
+          "kind": "return",
+          "label": "stored order | persistence error",
+          "order": 9,
+          "replyTo": "m8",
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderRepository.js",
+            "lineStart": 2,
+            "lineEnd": 5
+          }
+        },
+        {
+          "id": "m10",
+          "source": "order-service",
+          "target": "inventory-service",
+          "kind": "sync",
+          "label": "release(reservation)",
+          "order": 10,
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 12,
+            "lineEnd": 12,
+            "symbol": "release"
+          }
+        },
+        {
+          "id": "m11",
+          "source": "inventory-service",
+          "target": "order-service",
+          "kind": "return",
+          "label": "undefined | release error",
+          "order": 11,
+          "replyTo": "m10",
+          "evidence": "source",
+          "site": {
+            "file": "inventory/InventoryService.js",
+            "lineStart": 7,
+            "lineEnd": 9
+          }
+        },
+        {
+          "id": "m12",
+          "source": "order-service",
+          "target": "create-order-controller",
+          "kind": "return",
+          "label": "stored order | propagated error",
+          "order": 12,
+          "replyTo": "m1",
+          "evidence": "source",
+          "site": {
+            "file": "orders/OrderService.js",
+            "lineStart": 5,
+            "lineEnd": 15
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "order-validation",
+          "label": "Order validation",
+          "kind": "alt",
+          "operands": [
+            {
+              "id": "empty-order",
+              "guard": "!order.items.length",
+              "edgeIds": [],
+              "body": "throw new Error('empty order'); no inventory, payment, or persistence calls"
+            },
+            {
+              "id": "nonempty-order",
+              "guard": "else",
+              "edgeIds": [
+                "m2",
+                "m3",
+                "m4",
+                "m5",
+                "m6",
+                "m7"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "authorization-result",
+          "label": "Authorization result",
+          "kind": "alt",
+          "parentId": "order-validation",
+          "parentOperandId": "nonempty-order",
+          "operands": [
+            {
+              "id": "negative-total",
+              "guard": "total < 0",
+              "edgeIds": [],
+              "body": "authorize throws new Error('invalid total')"
+            },
+            {
+              "id": "accepted-total",
+              "guard": "else",
+              "edgeIds": [],
+              "body": "authorize returns { providerId: 'fictional', total }"
+            }
+          ]
+        },
+        {
+          "id": "persist-order",
+          "label": "Persist after authorization",
+          "kind": "opt",
+          "parentId": "order-validation",
+          "parentOperandId": "nonempty-order",
+          "operands": [
+            {
+              "id": "payment-resolved",
+              "guard": "charge resolves successfully",
+              "edgeIds": [
+                "m8",
+                "m9"
+              ],
+              "body": "saveOrder stores the order in its Map; a save error enters catch"
+            }
+          ]
+        },
+        {
+          "id": "compensate-inventory",
+          "label": "Compensate a charge or save error",
+          "kind": "opt",
+          "parentId": "order-validation",
+          "parentOperandId": "nonempty-order",
+          "operands": [
+            {
+              "id": "caught-error",
+              "guard": "catch (error)",
+              "edgeIds": [
+                "m10",
+                "m11"
+              ],
+              "body": "After release resolves, throw error. A release failure propagates instead."
+            }
+          ]
+        }
+      ],
+      "executions": [
+        {
+          "id": "execution-m1",
+          "participantId": "order-service",
+          "start": {
+            "edgeId": "m1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m12",
+            "at": "send"
+          }
+        },
+        {
+          "id": "execution-m2",
+          "participantId": "inventory-service",
+          "start": {
+            "edgeId": "m2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m3",
+            "at": "send"
+          }
+        },
+        {
+          "id": "execution-m4",
+          "participantId": "payment-service",
+          "start": {
+            "edgeId": "m4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m7",
+            "at": "send"
+          }
+        },
+        {
+          "id": "execution-m5",
+          "participantId": "provider-client",
+          "start": {
+            "edgeId": "m5",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m6",
+            "at": "send"
+          }
+        },
+        {
+          "id": "execution-m8",
+          "participantId": "order-repository",
+          "start": {
+            "edgeId": "m8",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m9",
+            "at": "send"
+          }
+        },
+        {
+          "id": "execution-m10",
+          "participantId": "inventory-service",
+          "start": {
+            "edgeId": "m10",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m11",
+            "at": "send"
+          }
+        }
+      ],
+      "layout": {
+        "participantOrder": [
+          "create-order-controller",
+          "order-service",
+          "inventory-service",
+          "payment-service",
+          "provider-client",
+          "order-repository"
+        ]
+      }
+    }
+  ]
+}

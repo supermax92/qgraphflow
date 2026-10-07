@@ -168,11 +168,29 @@ export function sequenceFragment(group, routes, locale, groups = [], executions 
     const childFrames = children.filter(child => child.parentOperandId === operandId(operand, i)).map(child => ({ ...child.position, ...child.size, id: child.id }));
     const selected = operandEdges(group, operand, i, groups).map(id => routes.get(id)).filter(Boolean);
     const boxes = [...childFrames, ...selected.flatMap(route => [route.labelBox, ...segmentBoxes(route)])];
-    return { operand, selected, childFrames, boxes, top: Math.min(...boxes.map(box => box.y)), bottom: Math.max(...boxes.map(box => box.y + box.height)) };
+    const label = group.kind === 'par' ? operand.label : `${group.kind === 'loop' ? `${group.loop.min}..${group.loop.max} ` : ''}[${operand.guard}]`;
+    const width = Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, frame.width - 40));
+    const textHeight = layoutText(label, width, 14, 20).height + 16 + (operand.body ? layoutText(operand.body, width, 16, 24).height + 12 : 0);
+    return { operand, selected, childFrames, boxes, textHeight, top: Math.min(...boxes.map(box => box.y)), bottom: Math.max(...boxes.map(box => box.y + box.height)) };
   });
   for (let i = 1; i < sections.length; i++) {
     const previous = sections[i - 1], next = sections[i];
-    separators.push(Number.isFinite(previous.bottom) && Number.isFinite(next.top) ? (previous.bottom + next.top) / 2 : headingBottom + (bottom - headingBottom) * i / sections.length);
+    separators.push((previous.bottom + next.top) / 2);
+  }
+  for (let start = 0; start < sections.length; start++) {
+    if (sections[start].boxes.length) continue;
+    let end = start;
+    while (end + 1 < sections.length && !sections[end + 1].boxes.length) end++;
+    const before = sections[start - 1], after = sections[end + 1];
+    const low = before ? before.bottom : headingBottom, high = after ? after.top : bottom;
+    let used = before ? 4 : 0;
+    const total = used + sections.slice(start, end + 1).reduce((sum, section) => sum + section.textHeight, 0) + (after?.textHeight ?? 0);
+    if (before) separators[start - 1] = low + (high - low) * used / total;
+    for (let index = start; index <= end; index++) {
+      used += sections[index].textHeight;
+      if (index + 1 < sections.length) separators[index] = low + (high - low) * used / total;
+    }
+    start = end;
   }
   const members = new Set(group.operands.flatMap((operand, i) => operandEdges(group, operand, i, groups)));
   for (const [id, route] of routes) if (route.points.some(p => p.x >= frame.x && p.x <= frame.x + frame.width && p.y > frame.y && p.y < bottom) && !members.has(id)) errors.push(`layout: group ${group.id} omits enclosed message ${id}`);

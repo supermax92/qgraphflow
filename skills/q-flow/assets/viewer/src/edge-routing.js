@@ -1,5 +1,8 @@
+import { alignedLayout } from './layout-policy.js';
+import { presentationGraph } from './presentation-graph.js';
 import { TYPOGRAPHY } from './visual-style.js';
-import { CARD, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine } from './text-layout.js';
+import { overviewSections, hasOverviewContent, overviewCardLayout } from './architecture-overview.js';
+import { CARD, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine, layoutText } from './text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 import { compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { sequenceHeaderHeight } from './diagrams/sequence.js';
@@ -41,7 +44,8 @@ export function cardinalityMarks(cardinality, point, neighbor) {
 }
 
 export function graphBounds(graph, routes = createEdgeRoutes(graph)) {
-  const items = [...(graph.groups ?? []), ...graph.nodes, ...sequenceExecutions(graph).map(item => ({ position: { x: item.x, y: item.y }, size: { width: item.width, height: item.height } }))];
+  graph = presentationGraph(graph);
+  const items = [...overviewSections(graph), ...(graph.groups ?? []), ...graph.nodes, ...sequenceExecutions(graph).map(item => ({ position: { x: item.x, y: item.y }, size: { width: item.width, height: item.height } }))];
   const points = [...routes.values()].flatMap(route => [...route.points, { x: route.labelBox.x, y: route.labelBox.y }, { x: route.labelBox.x + route.labelBox.width, y: route.labelBox.y + route.labelBox.height }]);
   for (const route of routes.values()) for (const label of route.endpointLabels ?? []) points.push({ x: label.labelBox.x, y: label.labelBox.y }, { x: label.labelBox.x + label.labelBox.width, y: label.labelBox.y + label.labelBox.height });
   if (getDiagram(graph.meta?.diagramType).cardinalities) for (const edge of graph.edges) {
@@ -57,7 +61,7 @@ export function graphBounds(graph, routes = createEdgeRoutes(graph)) {
   return { x, y, width: right - x, height: bottom - y };
 }
 
-function anchor(node, side, offset = 0, type = 'architecture') {
+export function nodeAnchor(node, side, offset = 0, type = 'architecture') {
   const custom = getDiagram(type)?.anchor;
   if (custom) return custom(node, side, offset);
   const middle = center(node);
@@ -140,8 +144,7 @@ function sidesFor(source, target) {
 }
 
 function waypointEndpoint(node, point, fallbackSide, type) {
-  const { x, y } = node.position;
-  const { width, height } = node.size;
+  const { x, y, width, height } = type === 'usecase' && node.kind === 'actor' ? routingBounds(node, type) : { ...node.position, ...node.size };
   const dx = Math.max(x - point.x, 0, point.x - x - width);
   const dy = Math.max(y - point.y, 0, point.y - y - height);
   const side = dx === 0 && dy === 0 ? fallbackSide
@@ -150,10 +153,19 @@ function waypointEndpoint(node, point, fallbackSide, type) {
   const middle = center(node);
   const limit = Math.max(0, (horizontal ? height : width) / 2 - LAYOUT_LIMITS.endpoint);
   const offset = Math.max(-limit, Math.min(limit, horizontal ? point.y - middle.y : point.x - middle.x));
-  return { side, point: anchor(node, side, ['decision', 'choice'].includes(node.kind) ? 0 : offset, type) };
+  return { side, point: nodeAnchor(node, side, ['decision', 'choice'].includes(node.kind) ? 0 : offset, type) };
 }
 
 function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints, stub = LAYOUT_LIMITS.endpoint) {
+  const horizontal = start.y === end.y, vertical = start.x === end.x;
+  const opposite = { left: 'right', right: 'left', top: 'bottom', bottom: 'top' };
+  const direction = { left: -1, right: 1, top: -1, bottom: 1 };
+  const axis = horizontal ? 'x' : 'y', across = horizontal ? 'y' : 'x';
+  if ((horizontal && ['left', 'right'].includes(sourceSide) || vertical && ['top', 'bottom'].includes(sourceSide))
+    && opposite[sourceSide] === targetSide && (end[axis] - start[axis]) * direction[sourceSide] > 0
+    && waypoints.every((point, i) => point[across] === start[across]
+      && (point[axis] - (i ? waypoints[i - 1][axis] : start[axis])) * direction[sourceSide] >= 0
+      && (end[axis] - point[axis]) * direction[sourceSide] >= 0)) return [start, end];
   const points = [start, outward(start, sourceSide, stub)];
   // A shaped endpoint can sit inside its layout box. Turn at the real stub before joining its allocated channel.
   if (['left', 'right'].includes(sourceSide) && waypoints.length && points[1].y !== waypoints[0].y) points.push({ x: points[1].x, y: waypoints[0].y });
@@ -164,8 +176,8 @@ function routePointsWithWaypoints(start, end, sourceSide, targetSide, waypoints,
 }
 
 function routeBetween(source, target, sides, sourceOffset, targetOffset, stub = LAYOUT_LIMITS.endpoint, type = 'architecture') {
-  const start = anchor(source, sides.sourceSide, sourceOffset, type);
-  const end = anchor(target, sides.targetSide, targetOffset, type);
+  const start = nodeAnchor(source, sides.sourceSide, sourceOffset, type);
+  const end = nodeAnchor(target, sides.targetSide, targetOffset, type);
   const sourceStub = outward(start, sides.sourceSide, stub);
   const targetStub = outward(end, sides.targetSide, stub);
   const channelOffset = sourceOffset || targetOffset;
@@ -234,6 +246,7 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
 }
 
 export function createEdgeRoutes(graph) {
+  graph = presentationGraph(graph);
   const type = diagramTypeOf(graph);
   const stub = getDiagram(type).endpointStub ?? LAYOUT_LIMITS.endpoint;
   const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
@@ -283,8 +296,8 @@ export function createEdgeRoutes(graph) {
       const sourceEndpoint = waypoints?.length && waypointEndpoint(item.source, waypoints[0], 'right', type);
       const targetEndpoint = waypoints?.length && waypointEndpoint(item.target, waypoints.at(-1), 'right', type);
       const sourceSide = sourceEndpoint ? sourceEndpoint.side : 'right', targetSide = targetEndpoint ? targetEndpoint.side : 'right';
-      const start = sourceEndpoint ? sourceEndpoint.point : anchor(item.source, 'right', -16 - selfIndex * 12, type);
-      const end = targetEndpoint ? targetEndpoint.point : anchor(item.source, 'right', 16 + selfIndex * 12, type);
+      const start = sourceEndpoint ? sourceEndpoint.point : nodeAnchor(item.source, 'right', -16 - selfIndex * 12, type);
+      const end = targetEndpoint ? targetEndpoint.point : nodeAnchor(item.source, 'right', 16 + selfIndex * 12, type);
       route = {
         points: item.edge.route?.via?.length
           ? routePointsWithWaypoints(start, end, sourceSide, targetSide, item.edge.route.via, stub)
@@ -292,7 +305,7 @@ export function createEdgeRoutes(graph) {
         label,
         labelPoint: item.edge.route?.labelAt ?? { x: right + extent + 8 + labelSize.width / 2, y: middleY },
         sourceSide, targetSide,
-        curved: Boolean(getDiagram(type).curvedSelfLoops)
+        curved: Boolean(getDiagram(type).curvedSelfLoops) && !alignedLayout(graph)
       };
     } else {
       const waypoints = item.edge.route?.via;
@@ -344,7 +357,7 @@ function pointOnNodeSide(point, node, side, type) {
   if ((side === 'top' || side === 'bottom') && (point.x < bounds.x || point.x > bounds.x + bounds.width)) return false;
   const middle = center(node);
   const offset = side === 'left' || side === 'right' ? point.y - middle.y : point.x - middle.x;
-  const expected = anchor(node, side, offset, type);
+  const expected = nodeAnchor(node, side, offset, type);
   return Math.hypot(point.x - expected.x, point.y - expected.y) < 1e-7;
 }
 
@@ -360,7 +373,7 @@ export function segmentCrossesBox(start, end, box) {
   return false;
 }
 
-function routingBounds(node, type) {
+export function routingBounds(node, type) {
   if (type === 'state' && ['initial', 'final'].includes(node.kind)) {
     const radius = node.kind === 'initial' ? 12 : 13, middle = center(node);
     return { x: node.position.x + stateSymbolX(node) - radius, y: middle.y - radius, width: radius * 2, height: radius * 2 };
@@ -374,31 +387,37 @@ function routingBounds(node, type) {
   return occupiedBox(node, type);
 }
 
-function segmentCrossesNode(start, end, node, type) {
+export function segmentCrossesNode(start, end, node, type) {
   if (type === 'state' && ['initial', 'final'].includes(node.kind) && node.subtitle) {
     const area = getDiagram(type).textArea(node);
     if (segmentCrossesBox(start, end, { ...area, x: node.position.x + area.x, y: node.position.y + area.y })) return true;
   }
   const bounds = routingBounds(node, type);
   if (type === 'sequence') return segmentCrossesBox(start, end, bounds);
-  if (type === 'usecase' && node.kind === 'actor') return segmentCrossesBox(start, end, bounds);
+  if (type === 'usecase' && node.kind === 'actor') {
+    const cy = node.position.y + actorTop(node), cx = center(node).x;
+    const labelWidth = Math.min(node.size.width, layoutText(node.label, Infinity, 20).width * 1.15);
+    const subtitleWidth = node.subtitle ? Math.min(node.size.width, layoutText(node.subtitle, Infinity, 16).width * 1.15) : 0;
+    return segmentCrossesBox(start, end, bounds) || segmentCrossesBox(start, end, { x: cx - labelWidth / 2, y: cy + 78, width: labelWidth, height: 26 })
+      || subtitleWidth > 0 && segmentCrossesBox(start, end, { x: cx - subtitleWidth / 2, y: cy + 106, width: subtitleWidth, height: 24 });
+  }
   const middle = center(node);
   if (start.y === end.y) {
     if (start.y <= bounds.y || start.y >= bounds.y + bounds.height) return false;
     const offset = start.y - middle.y;
-    const left = anchor(node, 'left', offset, type).x, right = anchor(node, 'right', offset, type).x;
+    const left = nodeAnchor(node, 'left', offset, type).x, right = nodeAnchor(node, 'right', offset, type).x;
     return Math.max(Math.min(start.x, end.x), left) < Math.min(Math.max(start.x, end.x), right) - 1e-7;
   }
   if (start.x === end.x) {
     if (start.x <= bounds.x || start.x >= bounds.x + bounds.width) return false;
     const offset = start.x - middle.x;
-    const top = anchor(node, 'top', offset, type).y, bottom = anchor(node, 'bottom', offset, type).y;
+    const top = nodeAnchor(node, 'top', offset, type).y, bottom = nodeAnchor(node, 'bottom', offset, type).y;
     return Math.max(Math.min(start.y, end.y), top) < Math.min(Math.max(start.y, end.y), bottom) - 1e-7;
   }
   return false;
 }
 
-function groupBorders(group) {
+export function groupBorders(group) {
   const left = group.position.x;
   const right = left + group.size.width;
   const top = group.position.y;
@@ -421,7 +440,7 @@ export function groupHeadingBoxes(group) {
   return boxes;
 }
 
-function sharedSegmentLength(firstStart, firstEnd, secondStart, secondEnd) {
+export function sharedSegmentLength(firstStart, firstEnd, secondStart, secondEnd) {
   if (firstStart.y === firstEnd.y && secondStart.y === secondEnd.y && firstStart.y === secondStart.y) {
     return Math.max(0, Math.min(Math.max(firstStart.x, firstEnd.x), Math.max(secondStart.x, secondEnd.x))
       - Math.max(Math.min(firstStart.x, firstEnd.x), Math.min(secondStart.x, secondEnd.x)));
@@ -451,6 +470,7 @@ export function routeCrossings(first, firstPoints, second, secondPoints) {
 }
 
 export function auditGraphLayout(graph) {
+  graph = presentationGraph(graph);
   const type = diagramTypeOf(graph);
   const crossings = [];
   const routes = createEdgeRoutes(graph);
@@ -487,7 +507,7 @@ export function auditGraphLayout(graph) {
   const classicCard = getDiagram(type).cardLayout && !compactCards(graph);
   if (getDiagram(type).cardLayout) for (const node of graph.nodes) {
     if (node.size.height < (classicCard ? 100 : CARD.minHeight)) continue;
-    const { minHeight } = cardTextLayout(node, graph.meta.locale, classicCard);
+    const { minHeight } = type === 'architecture' && hasOverviewContent(node) ? overviewCardLayout(node) : cardTextLayout(node, graph.meta.locale, classicCard);
     if (node.size.height < minHeight) fail('text.card-height', [node.id], `layout: node ${node.id} text needs at least ${minHeight}px height at 20/16px; enlarge the node and check its route clearance`);
   }
   for (let left = 0; left < graph.nodes.length; left += 1) {

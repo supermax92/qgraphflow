@@ -4,14 +4,14 @@ import { createEdgeRoutes, occupiedBox } from '../edge-routing.js';
 import { appleEase, readingRect, readingViewport, TOOLBAR, SIDE, GUTTER, BREATH } from '../reading-area.js';
 
 // When a floating panel opens over the selected node, pan just far enough to uncover it — never re-zoom, never move
-// when nothing is hidden, and never on narrow screens where a panel is the whole width. Mirrors --tb-h, --side-w and
+// when nothing is hidden. Mirrors --tb-h, --side-w and
 // --gutter in styles.css. Called explicitly by the panel toggles rather than from an effect, so it cannot fight the
 // centring that directory and search selection already perform.
 export function useReveal(canvasRef, nodes, graph, diagramType, reduceMotion) {
   const { getViewport, setViewport } = useReactFlow();
   return useCallback((selectedId, selectedEdgeId, navOpen, drawerOpen) => {
     const box = canvasRef.current?.getBoundingClientRect();
-    if (!box?.width || box.width <= 700) return;
+    if (!box?.width) return;
     if (diagramType === 'sequence') {
       const routes = createEdgeRoutes(graph);
       const selected = graph.nodes.find(item => item.id === selectedId);

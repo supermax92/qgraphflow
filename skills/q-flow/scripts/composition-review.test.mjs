@@ -73,7 +73,7 @@ test('module.missing names ordinary nodes without a module once the collection u
 
 test('module.inconsistent flags the same label carrying a module in one view but none or another in a second view', () => {
   const collection = { diagrams: [
-    { meta: meta('architecture'), nodes: [{ id: 'k', label: 'Kafka', kind: 'external', module: 'pigeon' }, { id: 'a', label: 'A', kind: 'service', module: 'core' }],
+    { meta: meta('architecture'), nodes: [{ id: 'k', label: 'Kafka', kind: 'external', module: 'event-module' }, { id: 'a', label: 'A', kind: 'service', module: 'core' }],
       edges: [{ id: 'e', source: 'a', target: 'k', kind: 'call', evidence: 'source' }] },
     { meta: meta('sequence'), nodes: [{ id: 'c', label: 'caller', kind: 'actor' }, { id: 'k', label: 'Kafka', kind: 'external' }, { id: 'a', label: 'A', kind: 'service', module: 'other' }],
       edges: [{ id: 'm1', source: 'c', target: 'a', kind: 'sync', label: 'x', order: 1, evidence: 'source' }, { id: 'm2', source: 'a', target: 'k', kind: 'async', label: 'y', order: 2, evidence: 'source' }] }
@@ -82,7 +82,7 @@ test('module.inconsistent flags the same label carrying a module in one view but
   const warnings = reviewComposition(collection);
   const inconsistent = warnings.filter(warning => warning.ruleId === 'module.inconsistent');
   assert.deepEqual(inconsistent.map(warning => `${warning.diagramType}:${warning.elementIds.join(',')}`).sort(), ['architecture:a', 'sequence:a', 'sequence:k']);
-  assert.match(inconsistent.find(warning => warning.elementIds[0] === 'k').message, /has no module here but "pigeon" in architecture/);
+  assert.match(inconsistent.find(warning => warning.elementIds[0] === 'k').message, /has no module here but "event-module" in architecture/);
   assert.ok(warnings.every(warning => warning.ruleId !== 'module.missing'), 'an outsider without a module is not "missing"');
 });
 

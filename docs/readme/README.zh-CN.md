@@ -16,11 +16,11 @@
 
 ![agent-desk 示例的架构图、时序图与 ER 图，每类 1.5 秒](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.hero.gif)
 
-*支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
+*支持十一类图：【平台能力架构图、工程分层架构图、组件关系架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
-**差异在哪：** 一个技能覆盖九类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
+**差异在哪：** 一个技能覆盖十一类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -213,11 +213,13 @@ $qgraphflow:q-flow CI 提示 docs/qgraphflow/order-sequence 的图过时了，�
 
 技能会把在文件里只找到一处的符号重新定位，只修改仍然报错的锚点，再保留你调整过的位置和文字，重新生成页面和 SVG；不会重画整张图。
 
-## 九类图各自回答什么
+## 十一类图各自回答什么
 
 | 视图 · PNG | 主要问题 | 本示例范围 |
 | --- | --- | --- |
-| 架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
+| 平台能力架构图 | 平台具备哪些能力？ | 能力分区与矩阵 |
+| 工程分层架构图 | 工程代码怎样组织？ | 工程层级与共享支撑 |
+| 组件关系架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
 | 流程图 | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
 | 时序图 | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
 | ER 图 | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
@@ -246,3 +248,15 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 [MIT](../../LICENSE) · [第三方声明](../../THIRD_PARTY_NOTICES.md)
 
 QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/architecture-overviews](../../examples/architecture-overviews) for conceptual reference diagrams and a small source-backed Maven example. Unlock an overview to reorder cards within a layer or edit body text, badges and explanatory sections. Save keeps all views; reset restores only the current one.

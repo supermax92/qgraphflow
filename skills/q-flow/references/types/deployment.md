@@ -31,7 +31,15 @@ Where runtime units run and how they connect: hosts, networks, containers, datab
 }
 ```
 
+## Layout
+
+Runtime tiers packed inside the existing network/host ownership hierarchy. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps nested runtime boundaries and cross-boundary relations; boundaries grow around real members, never reparent.
+
 ## Frequent validation errors
 
 - `group X.parentId does not name a group` — nested networks must list their parent first.
 - `node X.kind is unsupported for deployment` — `service` here is a deployment unit; application-code kinds (`component`, `business`) belong to architecture.
+
+Optional node `layout.tier` accepts `external`, `application`, `infrastructure`, or `data`, arranged top to bottom. Without a hint: external nodes use external, databases data, queues/caches infrastructure, and other nodes application. It is a display hint, never a new runtime fact.

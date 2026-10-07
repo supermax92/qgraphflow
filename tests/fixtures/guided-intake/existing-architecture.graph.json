@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "title": "Intake Shop order placement",
+    "sourceRef": "fictional evaluation fixture",
+    "diagramType": "architecture",
+    "architectureView": "relations",
+    "locale": "en",
+    "scope": "Service-level order-placement overview including stock release after payment or persistence failure. Provider adapter and controller details are omitted."
+  },
+  "nodes": [
+    {
+      "id": "orders",
+      "label": "Order service",
+      "kind": "business",
+      "module": "orders",
+      "source": {
+        "kind": "source",
+        "file": "orders/OrderService.js",
+        "lineStart": 5,
+        "lineEnd": 15,
+        "symbol": "createOrder"
+      }
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory service",
+      "kind": "service",
+      "module": "inventory",
+      "source": {
+        "kind": "source",
+        "file": "inventory/InventoryService.js",
+        "lineStart": 2,
+        "lineEnd": 9,
+        "symbol": "reserve"
+      }
+    },
+    {
+      "id": "payments",
+      "label": "Payment service",
+      "kind": "service",
+      "module": "payments",
+      "source": {
+        "kind": "source",
+        "file": "payments/PaymentService.js",
+        "lineStart": 2,
+        "lineEnd": 4,
+        "symbol": "charge"
+      }
+    },
+    {
+      "id": "repository",
+      "label": "Order repository",
+      "kind": "data",
+      "module": "orders",
+      "source": {
+        "kind": "source",
+        "file": "orders/OrderRepository.js",
+        "lineStart": 2,
+        "lineEnd": 5,
+        "symbol": "saveOrder"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "reserve",
+      "source": "orders",
+      "target": "inventory",
+      "label": "Reserve stock",
+      "kind": "call",
+      "evidence": "source",
+      "site": {
+        "file": "orders/OrderService.js",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "symbol": "reserve"
+      }
+    },
+    {
+      "id": "charge",
+      "source": "orders",
+      "target": "payments",
+      "label": "Charge payment",
+      "kind": "call",
+      "evidence": "source",
+      "site": {
+        "file": "orders/OrderService.js",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "symbol": "charge"
+      }
+    },
+    {
+      "id": "save",
+      "source": "orders",
+      "target": "repository",
+      "label": "Save order",
+      "kind": "data",
+      "evidence": "source",
+      "site": {
+        "file": "orders/OrderService.js",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "symbol": "saveOrder"
+      }
+    },
+    {
+      "id": "release",
+      "source": "orders",
+      "target": "inventory",
+      "label": "Release after failure",
+      "kind": "failure",
+      "evidence": "source",
+      "site": {
+        "file": "orders/OrderService.js",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "symbol": "release"
+      }
+    }
+  ]
+}

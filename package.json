@@ -44,6 +44,7 @@
     "docs/clients*.md",
     "docs/readme/",
     "examples/order-flow.graph.json",
+    "examples/architecture-overviews/",
     "skills/q-flow/scripts/compile-layout.mjs",
     "skills/q-flow/scripts/compile-sequence.mjs",
     "skills/q-flow/assets/layout-dist/",
@@ -51,9 +52,20 @@
     "skills/q-flow/assets/viewer/src/layout-measure.js",
     "skills/q-flow/assets/viewer/src/layout-spacing.js",
     "skills/q-flow/assets/viewer/src/session-graph.js",
+    "skills/q-flow/assets/viewer/src/view-identity.js",
+    "skills/q-flow/assets/viewer/src/architecture-overview.js",
     "skills/q-flow/assets/viewer/src/layout-quality.js",
+    "skills/q-flow/assets/viewer/src/layout-policy.js",
+    "skills/q-flow/assets/viewer/src/layout-compaction.js",
+    "skills/q-flow/assets/viewer/src/route-clearance.js",
     "skills/q-flow/assets/viewer/src/export-svg.js",
-    "skills/q-flow/assets/viewer/src/node-svg.js"
+    "skills/q-flow/assets/viewer/src/node-svg.js",
+    "skills/q-flow/assets/viewer/src/architecture-overview-theme.js",
+    "skills/q-flow/assets/viewer/src/orthogonal-routing.js",
+    "skills/q-flow/assets/viewer/src/layout-refinement.js",
+    "skills/q-flow/assets/viewer/src/layout-templates.js",
+    "skills/q-flow/assets/viewer/src/presentation-graph.js",
+    "skills/q-flow/assets/viewer/src/layout-semantics.js"
   ],
   "scripts": {
     "package": "node scripts/package.mjs"

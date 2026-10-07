@@ -1,17 +1,17 @@
 {
   "meta": {
-    "title": "Six participants and fifteen messages",
+    "title": "Fictional library ticket sequence",
     "diagramType": "sequence",
     "locale": "zh-CN",
-    "sourceRef": "Viewer pointer fixture · no business source evidence",
-    "scope": "Synthetic test data preserving the audited geometry only."
+    "sourceRef": "conceptual:library-ticket-fixture",
+    "scope": "Independently authored fictional pointer and fragment test; no real system is described."
   },
   "nodes": [
     {
-      "id": "writer",
-      "label": "写方 A",
-      "subtitle": "Java / .NET",
-      "module": "业务缓存",
+      "id": "visitor",
+      "label": "访客",
+      "subtitle": "提交虚构借阅请求",
+      "module": "入口",
       "kind": "participant",
       "position": {
         "x": 62,
@@ -23,11 +23,11 @@
       }
     },
     {
-      "id": "redis",
-      "label": "Redis L2",
-      "subtitle": "共享缓存真值",
-      "module": "Redis",
-      "kind": "database",
+      "id": "kiosk",
+      "label": "自助终端",
+      "subtitle": "展示示例书目",
+      "module": "入口",
+      "kind": "participant",
       "position": {
         "x": 352,
         "y": 50
@@ -38,11 +38,11 @@
       }
     },
     {
-      "id": "kafka",
-      "label": "Kafka",
-      "subtitle": "上行 / 下行 Topic",
-      "module": "Kafka",
-      "kind": "database",
+      "id": "catalog",
+      "label": "目录服务",
+      "subtitle": "提供虚构馆藏记录",
+      "module": "目录",
+      "kind": "participant",
       "position": {
         "x": 642,
         "y": 50
@@ -53,11 +53,11 @@
       }
     },
     {
-      "id": "pigeon",
-      "label": "Pigeon",
-      "subtitle": "去重与分流 · 无回声过滤",
-      "module": "Pigeon",
-      "kind": "service",
+      "id": "reservations",
+      "label": "预约服务",
+      "subtitle": "分配示例取书编号",
+      "module": "预约",
+      "kind": "participant",
       "position": {
         "x": 932,
         "y": 50
@@ -68,11 +68,11 @@
       }
     },
     {
-      "id": "pusher",
-      "label": "Pusher",
-      "subtitle": "HTTP 推送进程",
-      "module": "Pusher",
-      "kind": "service",
+      "id": "printer",
+      "label": "打印终端",
+      "subtitle": "打印示例取书凭条",
+      "module": "打印",
+      "kind": "participant",
       "position": {
         "x": 1222,
         "y": 50
@@ -83,10 +83,10 @@
       }
     },
     {
-      "id": "receiver",
-      "label": "收方 B",
-      "subtitle": "Java / .NET · 独立 L1",
-      "module": "业务缓存",
+      "id": "archive",
+      "label": "记录服务",
+      "subtitle": "保存示例操作记录",
+      "module": "记录",
       "kind": "participant",
       "position": {
         "x": 1512,
@@ -101,11 +101,11 @@
   "edges": [
     {
       "id": "m1",
-      "source": "receiver",
-      "target": "pigeon",
-      "label": "SignalR：RegisterAsync",
-      "kind": "async",
-      "module": "业务缓存",
+      "source": "visitor",
+      "target": "kiosk",
+      "label": "开始查询",
+      "kind": "sync",
+      "module": "示例消息",
       "evidence": "test",
       "order": 1,
       "route": {
@@ -114,11 +114,11 @@
     },
     {
       "id": "m2",
-      "source": "receiver",
-      "target": "pigeon",
-      "label": "L1 miss：SubscribeAsync",
-      "kind": "async",
-      "module": "业务缓存",
+      "source": "kiosk",
+      "target": "catalog",
+      "label": "查询示例书目",
+      "kind": "sync",
+      "module": "示例消息",
       "evidence": "test",
       "order": 2,
       "route": {
@@ -127,11 +127,11 @@
     },
     {
       "id": "m3",
-      "source": "receiver",
-      "target": "redis",
-      "label": "GET：订阅后回源",
-      "kind": "sync",
-      "module": "Redis",
+      "source": "catalog",
+      "target": "kiosk",
+      "label": "返回虚构记录",
+      "kind": "return",
+      "module": "示例消息",
       "evidence": "test",
       "order": 3,
       "route": {
@@ -140,11 +140,11 @@
     },
     {
       "id": "m4",
-      "source": "redis",
-      "target": "receiver",
-      "label": "返回结果；按需驻留 L1",
+      "source": "kiosk",
+      "target": "visitor",
+      "label": "展示书目列表",
       "kind": "return",
-      "module": "Redis",
+      "module": "示例消息",
       "evidence": "test",
       "order": 4,
       "route": {
@@ -153,11 +153,11 @@
     },
     {
       "id": "m5",
-      "source": "writer",
-      "target": "redis",
-      "label": "SET / REMOVE",
+      "source": "visitor",
+      "target": "kiosk",
+      "label": "选择一本书",
       "kind": "sync",
-      "module": "Redis",
+      "module": "示例消息",
       "evidence": "test",
       "order": 5,
       "route": {
@@ -166,11 +166,11 @@
     },
     {
       "id": "m6",
-      "source": "redis",
-      "target": "writer",
-      "label": "L2 操作成功",
-      "kind": "return",
-      "module": "Redis",
+      "source": "kiosk",
+      "target": "reservations",
+      "label": "创建示例预约",
+      "kind": "sync",
+      "module": "示例消息",
       "evidence": "test",
       "order": 6,
       "route": {
@@ -179,11 +179,11 @@
     },
     {
       "id": "m7",
-      "source": "writer",
-      "target": "kafka",
-      "label": "发布 CacheChangeItem",
-      "kind": "async",
-      "module": "Kafka",
+      "source": "reservations",
+      "target": "kiosk",
+      "label": "返回取书编号",
+      "kind": "return",
+      "module": "示例消息",
       "evidence": "test",
       "order": 7,
       "route": {
@@ -192,11 +192,11 @@
     },
     {
       "id": "m8",
-      "source": "pigeon",
-      "target": "kafka",
-      "label": "Consume 上行",
-      "kind": "sync",
-      "module": "Kafka",
+      "source": "kiosk",
+      "target": "archive",
+      "label": "记录示例操作",
+      "kind": "async",
+      "module": "示例消息",
       "evidence": "test",
       "order": 8,
       "route": {
@@ -205,11 +205,11 @@
     },
     {
       "id": "m9",
-      "source": "kafka",
-      "target": "pigeon",
-      "label": "返回变更批次",
+      "source": "archive",
+      "target": "kiosk",
+      "label": "记录完成",
       "kind": "return",
-      "module": "Kafka",
+      "module": "示例消息",
       "evidence": "test",
       "order": 9,
       "route": {
@@ -218,11 +218,11 @@
     },
     {
       "id": "m10",
-      "source": "pigeon",
-      "target": "receiver",
-      "label": "SignalR：PublishAsync（默认 .NET）",
+      "source": "kiosk",
+      "target": "visitor",
+      "label": "展示虚构预约结果与取书说明",
       "kind": "async",
-      "module": "Pigeon",
+      "module": "示例消息",
       "evidence": "test",
       "order": 10,
       "route": {
@@ -231,11 +231,11 @@
     },
     {
       "id": "m11",
-      "source": "pigeon",
-      "target": "kafka",
-      "label": "HTTP 分支：派工通知",
+      "source": "kiosk",
+      "target": "printer",
+      "label": "请求打印凭条",
       "kind": "async",
-      "module": "Kafka",
+      "module": "示例消息",
       "evidence": "test",
       "order": 11,
       "route": {
@@ -244,11 +244,11 @@
     },
     {
       "id": "m12",
-      "source": "pusher",
-      "target": "kafka",
-      "label": "Consume 下行",
+      "source": "printer",
+      "target": "catalog",
+      "label": "读取书目标题",
       "kind": "sync",
-      "module": "Kafka",
+      "module": "示例消息",
       "evidence": "test",
       "order": 12,
       "route": {
@@ -257,11 +257,11 @@
     },
     {
       "id": "m13",
-      "source": "kafka",
-      "target": "pusher",
-      "label": "返回派工批次",
+      "source": "catalog",
+      "target": "printer",
+      "label": "返回标题",
       "kind": "return",
-      "module": "Kafka",
+      "module": "示例消息",
       "evidence": "test",
       "order": 13,
       "route": {
@@ -270,11 +270,11 @@
     },
     {
       "id": "m14",
-      "source": "pusher",
-      "target": "receiver",
-      "label": "POST：变更通知数组",
+      "source": "printer",
+      "target": "visitor",
+      "label": "交付示例凭条",
       "kind": "sync",
-      "module": "Pusher",
+      "module": "示例消息",
       "evidence": "test",
       "order": 14,
       "route": {
@@ -283,11 +283,11 @@
     },
     {
       "id": "m15",
-      "source": "receiver",
-      "target": "pusher",
-      "label": "HTTP 响应",
+      "source": "visitor",
+      "target": "printer",
+      "label": "确认收到",
       "kind": "return",
-      "module": "Pusher",
+      "module": "示例消息",
       "evidence": "test",
       "order": 15,
       "route": {
@@ -298,7 +298,7 @@
   "groups": [
     {
       "id": "read",
-      "label": "L1 miss：先订阅，再回源",
+      "label": "可选：查询书目",
       "kind": "opt",
       "position": {
         "x": 35,
@@ -311,7 +311,7 @@
     },
     {
       "id": "dispatch",
-      "label": "按最终通道：SignalR 或 HTTP",
+      "label": "结果展示与凭条打印",
       "kind": "alt",
       "position": {
         "x": 35,

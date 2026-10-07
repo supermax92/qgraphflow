@@ -16,11 +16,11 @@ Pfade verfolgen. Belege prüfen. Eine Offline-Datei teilen.
 
 ![Architektur, Sequenz und ER des Beispiels agent-desk, je 1,5 Sekunden](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.de.hero.gif)
 
-*Neun Diagrammarten: Architektur, Flussdiagramm, Sequenz, ER, Bereitstellung, Klasse, Zustand, Anwendungsfall und Datenfluss.*
+*Elf Diagrammarten: Plattformfähigkeitsarchitektur, Schichtenarchitektur, Komponentenarchitektur, Flussdiagramm, Sequenz, ER, Bereitstellung, Klasse, Zustand, Anwendungsfall und Datenfluss.*
 
 QGraphFlow erzeugt interaktive Softwarediagramme aus Quellcode, Datenstrukturen, Konfiguration und Anforderungen. Beziehungen bleiben überprüfbar; das Ergebnis lässt sich als Offline-HTML teilen.
 
-**Was es auszeichnet:** neun Diagrammarten in einem Skill, eine Belegart für jede Beziehung und die Quellzeile hinter jeder durch Code gestützten, automatisches Layout, Bearbeiten direkt auf der Seite und keine Netzwerkanfragen von den Plugin-Skripten oder dem Viewer selbst.
+**Was es auszeichnet:** elf Diagrammarten in einem Skill, eine Belegart für jede Beziehung und die Quellzeile hinter jeder durch Code gestützten, automatisches Layout, Bearbeiten direkt auf der Seite und keine Netzwerkanfragen von den Plugin-Skripten oder dem Viewer selbst.
 
 ```bash
 npx skills add supermax92/qgraphflow

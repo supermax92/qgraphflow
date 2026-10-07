@@ -1,8 +1,12 @@
+import { isArchitectureOverview } from './view-identity.js';
+import { DEPLOYMENT_TIERS } from './layout-semantics.js';
 import { SUPPORTED_LOCALES } from './i18n.js';
 import { auditGraphLayout, graphBounds } from './edge-routing.js';
 import { MAX_SCREENS, OVERVIEW_AREA, READABLE_ZOOM, layeredDirections } from './layout-spacing.js';
 import { missingCallExecutions, validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
+import { viewIdOf } from './view-identity.js';
+import { validateOverview } from './architecture-overview.js';
 import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 
 const EVIDENCE_KINDS = new Set(['source', 'code', 'config', 'schema', 'test', 'document', 'framework', 'inference']);
@@ -79,6 +83,8 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
   if (!isObject(graph.meta)) errors.push('meta must be an object');
   requireString(graph.meta?.title, 'meta.title', errors);
   requireString(graph.meta?.sourceRef, 'meta.sourceRef', errors);
+  if (graph.meta?.viewId !== undefined) requireString(graph.meta.viewId, 'meta.viewId', errors);
+  if (graph.meta?.architectureView !== undefined && ((graph.meta.diagramType ?? 'architecture') !== 'architecture' || !['relations', 'capabilities', 'engineering'].includes(graph.meta.architectureView))) errors.push('meta.architectureView is unsupported');
   for (const key of ['subtitle', 'scope']) optionalString(graph.meta?.[key], `meta.${key}`, errors);
   validateNotes(graph.meta?.notes, errors);
   if (graph.meta?.locale !== undefined && !SUPPORTED_LOCALES.includes(graph.meta.locale)) errors.push('meta.locale is unsupported');
@@ -168,6 +174,7 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
     if (diagramType === 'sequence' && !inputOnly && edge.route?.messageY === undefined) errors.push(`${label}.route.messageY is required for a positioned sequence message; regenerate with --layout auto`);
     rules.validateEdge?.(edge, label, errors, { requireString, sequenceOrders });
   }
+  if (errors.length === 0) errors.push(...validateOverview(graph, { inputOnly, validateAnchor, evidenceKinds: EVIDENCE_KINDS }));
   if (errors.length === 0) errors.push(...validateLayoutSemantics(graph));
   if (errors.length === 0) errors.push(...validateOperands(graph));
   if (errors.length === 0) errors.push(...validateExecutions(graph, { inputOnly }));
@@ -186,7 +193,8 @@ function validateLayoutSemantics(graph) {
     }
     if (node.layout !== undefined) {
       if (!isObject(node.layout)) errors.push(`node ${node.id}.layout must be an object`);
-      else for (const key of ['rank', 'order']) if (node.layout[key] !== undefined && (!Number.isInteger(node.layout[key]) || node.layout[key] < 0)) errors.push(`node ${node.id}.layout.${key} must be a non-negative integer`);
+      else if (node.layout.tier !== undefined && (type !== 'deployment' || !DEPLOYMENT_TIERS.includes(node.layout.tier))) errors.push(`node ${node.id}.layout.tier requires deployment and one of ${DEPLOYMENT_TIERS.join(', ')}`);
+      if (isObject(node.layout)) for (const key of ['rank', 'order']) if (node.layout[key] !== undefined && (!Number.isInteger(node.layout[key]) || node.layout[key] < 0)) errors.push(`node ${node.id}.layout.${key} must be a non-negative integer`);
     }
   }
   if (!sequence) for (const group of groups.values()) {
@@ -200,6 +208,7 @@ function validateLayoutSemantics(graph) {
   }
   if (graph.layout !== undefined && !isObject(graph.layout)) errors.push('layout must be an object');
   else if (graph.layout?.direction !== undefined && !layeredDirections(type).includes(graph.layout.direction)) errors.push(`layout.direction must be one of ${layeredDirections(type).join(', ')} for ${type}`);
+  if (graph.layout?.overviewConnections !== undefined && (!isArchitectureOverview(graph) || !['within-category', 'all'].includes(graph.layout.overviewConnections))) errors.push('layout.overviewConnections requires an architecture overview and within-category or all');
   if (isObject(graph.layout)) for (const key of ['primaryPath', 'participantOrder']) {
     const list = graph.layout?.[key];
     if (list === undefined) continue;
@@ -237,15 +246,20 @@ export function validateGraphInput(input, options = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return ['graph must be an object'];
   const authored = graph => { const errors = validateGraph(graph, options); return errors.length ? errors : missingCallExecutions(graph); };
   if (!Object.hasOwn(input, 'diagrams')) return authored(input);
-  if (!Array.isArray(input.diagrams) || input.diagrams.length < 1 || input.diagrams.length > DIAGRAM_TYPES.length) {
-    return [`diagrams must contain between 1 and ${DIAGRAM_TYPES.length} graphs`];
+  if (!Array.isArray(input.diagrams) || input.diagrams.length < 1 || input.diagrams.length > 32) {
+    return [`diagrams must contain between 1 and 32 graphs`];
   }
 
   const errors = [];
-  const types = new Set();
+  const types = new Set(), viewIds = new Set();
+  const architectureCount = input.diagrams.filter(graph => diagramTypeOf(graph) === 'architecture').length;
   input.diagrams.forEach((graph, index) => {
     const type = diagramTypeOf(graph);
-    if (types.has(type)) errors.push(`diagrams[${index}].meta.diagramType duplicates ${type}`);
+    if (types.has(type) && type !== 'architecture') errors.push(`diagrams[${index}].meta.diagramType duplicates ${type}`);
+    if (type === 'architecture' && architectureCount > 1 && !graph?.meta?.viewId) errors.push(`diagrams[${index}].meta.viewId is required for repeated architecture views`);
+    const viewId = viewIdOf(graph);
+    if (viewIds.has(viewId)) errors.push(`diagrams[${index}].meta.viewId duplicates ${viewId}`);
+    viewIds.add(viewId);
     types.add(type);
     errors.push(...authored(graph).map(error => `diagrams[${index}].${error}`));
   });
@@ -271,7 +285,7 @@ export function reviewComposition(input) {
   // The same label across views is the same component: its module must be present everywhere and be the same one.
   const byLabel = new Map();
   for (const graph of graphs) for (const node of graph.nodes) if (typeof node.label === 'string' && !PLAIN_KINDS.has(node.kind)) {
-    byLabel.set(node.label, [...(byLabel.get(node.label) ?? []), { diagramType: diagramTypeOf(graph), id: node.id, module: moduleOf(node) }]);
+    byLabel.set(node.label, [...(byLabel.get(node.label) ?? []), { diagramType: diagramTypeOf(graph), viewId: viewIdOf(graph), id: node.id, module: moduleOf(node) }]);
   }
   for (const graph of graphs) {
     const diagramType = diagramTypeOf(graph);
@@ -282,7 +296,7 @@ export function reviewComposition(input) {
         `${plain.length === 1 ? 'node' : 'nodes'} ${plain.map(node => node.id).join(', ')} ${plain.length === 1 ? 'has' : 'have'} no module and render${plain.length === 1 ? 's' : ''} on the plain surface without identity`,
         'Give every ordinary node the module of the subsystem whose work it performs (a step: the subsystem that does the work; an external hub or broker: its channel); leave only true outsiders plain.');
       for (const node of graph.nodes) {
-        const elsewhere = (byLabel.get(node.label) ?? []).filter(item => item.diagramType !== diagramType && item.module && item.module !== moduleOf(node));
+        const elsewhere = (byLabel.get(node.label) ?? []).filter(item => item.viewId !== viewIdOf(graph) && item.module && item.module !== moduleOf(node));
         if (!elsewhere.length || PLAIN_KINDS.has(node.kind)) continue;
         const other = elsewhere[0];
         warn('module.inconsistent', [node.id], `node ${node.id} "${node.label}" ${moduleOf(node) ? `carries module "${moduleOf(node)}"` : 'has no module'} here but "${other.module}" in ${other.diagramType}`,
