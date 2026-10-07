@@ -10,7 +10,7 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[在线演示](https://supermax92.github.io/qgraphflow/) · [客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[在线演示](https://supermax92.github.io/qgraphflow/) · [快速入门](#快速入门) · [客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
@@ -19,6 +19,16 @@
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
 **差异在哪：** 一个技能覆盖十一类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
+
+![Jeepay 多视图交互演示：组件关系架构图、时序图与 ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.zh-CN.hero.gif)
+
+以 Jeepay 真实源码为例，在组件关系架构图、时序图与 ER 图之间切换，探索组件与调用关系。[查看原尺寸 GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.zh-CN.hero.gif)
+
+**复杂时序图展示**
+
+![复杂时序图逐步绘制：参与者、生命线、消息、激活条与嵌套组合片段](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.zh-CN.sequence-drawing.gif)
+
+虚构电商场景包含 9 个参与者、29 条消息和 6 个组合片段，覆盖库存重试、嵌套分支、并行处理、失败补偿与异步回调。动画逐步呈现已生成的图形，展示复杂时序图的结构与细节。[查看原尺寸 GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.zh-CN.sequence-drawing.gif)
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -35,6 +45,60 @@ npx skills add supermax92/qgraphflow
 - **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
 
 The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
+
+## 快速入门
+
+安装后，在客户端打开你的业务项目，选择 `q-flow` 技能。以下以 Claude Code 的 `/q-flow` 为例；Codex 中使用客户端实际提供的 `$q-flow` 或 `$qgraphflow:q-flow` 入口。还未安装？先看[安装指南](#安装指南)。
+
+### 1. 空白输入：不知道从哪里开始
+
+只调用技能，不附加需求：
+
+```text
+/q-flow
+```
+
+技能会引导你选择要分析的部分，以及希望图回答的问题；必要信息明确后开始绘图。
+
+### 2. 询问能力：先了解能画什么
+
+```text
+/q-flow 你能绘制哪些类型的图？每类图适合回答什么问题？我刚接手一个项目，请先介绍能力并建议一个起点。
+```
+
+先了解十一类图的用途，再决定看项目结构、调用顺序、数据关系还是其他内容。
+
+### 3. 模糊输入：只有一个大致目标
+
+```text
+/q-flow 帮我画一下这个项目，我想尽快看懂它。
+```
+
+不用先指定图类型。技能会根据项目和你的目标确定合适的视图，缺少必要信息时再追问。
+
+### 4. 精准输入：明确范围并要求绘制细节
+
+将下面的业务名称和步骤替换成项目中实际存在的流程：
+
+```text
+/q-flow 分析当前项目的订单创建流程，生成中文时序图。
+覆盖请求入口、价格计算、库存预占、支付授权和订单落库。
+保留源码中实际存在的同步调用、异步消息、成对返回、激活条、条件分支、重试和失败补偿，不要为了简洁省略细节。
+标明组件与调用的源码文件和行号，将结果保存到 docs/qgraphflow/order-sequence/。
+```
+
+把对象、问题、详细程度和输出位置说清楚，就能直接开始；图中只保留有证据支持的事实。
+
+### 5. 继续细化：展开上一张图的局部
+
+在生成结果后，于同一对话中继续：
+
+```text
+/q-flow 展开上一张时序图中的库存预占步骤，单独生成中文流程图。
+完整展示库存校验、预占成功、可重试失败、重试上限和释放库存的分支，以源码为准，不添加代码中没有的步骤。
+```
+
+先看整体，再深入一个步骤；也可以继续要求补充已有图的细节或核验其中的关系。
 
 ## 安装指南
 
@@ -113,7 +177,7 @@ qodercli plugins install .
 
 ### 3. 开始使用
 
-在客户端打开你的业务项目，新建会话并选择技能，按下方[快速使用](#快速使用)中的示例描述需求。生成后，用浏览器打开输出的 HTML。
+在客户端打开你的业务项目，新建会话并选择技能，按[快速入门](#快速入门)中的示例描述需求。生成后，用浏览器打开输出的 HTML。
 
 需要自行构建？参见[源码构建说明](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)。
 

@@ -1,0 +1,598 @@
+{
+  "meta": {
+    "title": "Checkout and asynchronous payment sequence diagram",
+    "subtitle": "Independently authored fictional demo scenario",
+    "diagramType": "sequence",
+    "locale": "en",
+    "sourceRef": "examples/showcase/checkout-sequence.md",
+    "viewId": "checkout-sequence",
+    "scope": "Detailed: checkout, stock retries, authorization branches, parallel fulfillment and notifications, failure compensation, asynchronous callbacks and idempotency. Excludes real implementations and provider internals.",
+    "notes": [
+      "An independently authored fictional scenario; it does not describe a real project implementation.",
+      "The two par operands represent parallel processing; their vertical arrangement does not imply an execution order.",
+      "The drawing animation progressively reveals an already generated diagram."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "buyer",
+      "label": "Buyer",
+      "kind": "actor",
+      "subtitle": "Checkout request"
+    },
+    {
+      "id": "gateway",
+      "label": "API Gateway",
+      "kind": "service",
+      "subtitle": "Order entry point",
+      "module": "access"
+    },
+    {
+      "id": "orders",
+      "label": "Order Service",
+      "kind": "service",
+      "subtitle": "Order orchestration",
+      "module": "order"
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "kind": "service",
+      "subtitle": "Stock reservation",
+      "module": "stock"
+    },
+    {
+      "id": "payments",
+      "label": "Payment Service",
+      "kind": "service",
+      "subtitle": "Authorization and callbacks",
+      "module": "payment"
+    },
+    {
+      "id": "bank",
+      "label": "Payment channel",
+      "kind": "external",
+      "subtitle": "External payment",
+      "module": "payment"
+    },
+    {
+      "id": "bus",
+      "label": "Event Bus",
+      "kind": "participant",
+      "subtitle": "Domain events",
+      "module": "events"
+    },
+    {
+      "id": "fulfill",
+      "label": "Fulfillment",
+      "kind": "service",
+      "subtitle": "Order fulfillment",
+      "module": "delivery"
+    },
+    {
+      "id": "notify",
+      "label": "Notification",
+      "kind": "service",
+      "subtitle": "Customer notifications",
+      "module": "notification"
+    }
+  ],
+  "groups": [
+    {
+      "id": "stock-retry",
+      "kind": "loop",
+      "label": "Stock reservation retries",
+      "loop": {
+        "min": 1,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "attempt",
+          "guard": "Retryable and attempt ≤ 3",
+          "edgeIds": [
+            "m4",
+            "m5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stock-result",
+      "kind": "alt",
+      "label": "Stock reservation result",
+      "operands": [
+        {
+          "id": "held",
+          "guard": "Stock reserved",
+          "edgeIds": [
+            "m6",
+            "m7",
+            "m8",
+            "m9"
+          ]
+        },
+        {
+          "id": "empty",
+          "guard": "else · Insufficient stock",
+          "edgeIds": [
+            "m20"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payment-result",
+      "kind": "alt",
+      "label": "Payment authorization result",
+      "parentId": "stock-result",
+      "parentOperandId": "held",
+      "operands": [
+        {
+          "id": "approved",
+          "guard": "Authorization accepted",
+          "edgeIds": [
+            "m10"
+          ]
+        },
+        {
+          "id": "declined",
+          "guard": "else · Authorization declined",
+          "edgeIds": [
+            "m17",
+            "m18",
+            "m19"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parallel-consumers",
+      "kind": "par",
+      "label": "Parallel event processing",
+      "parentId": "payment-result",
+      "parentOperandId": "approved",
+      "operands": [
+        {
+          "id": "delivery",
+          "label": "Fulfillment consumer",
+          "edgeIds": [
+            "m11",
+            "m12",
+            "m13",
+            "m14"
+          ]
+        },
+        {
+          "id": "confirmation",
+          "label": "Notification consumer",
+          "edgeIds": [
+            "m15",
+            "m16"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "valid-webhook",
+      "kind": "opt",
+      "label": "Asynchronous payment callback",
+      "operands": [
+        {
+          "id": "verified",
+          "guard": "Valid signature",
+          "edgeIds": [
+            "m24"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "idempotency",
+      "kind": "alt",
+      "label": "Callback idempotency",
+      "parentId": "valid-webhook",
+      "parentOperandId": "verified",
+      "operands": [
+        {
+          "id": "new",
+          "guard": "First processing of eventId",
+          "edgeIds": [
+            "m25",
+            "m26",
+            "m27"
+          ]
+        },
+        {
+          "id": "duplicate",
+          "guard": "else · Duplicate event",
+          "edgeIds": [
+            "m28"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "buyer",
+      "target": "gateway",
+      "kind": "sync",
+      "label": "Submit order / checkout",
+      "order": 1,
+      "evidence": "document"
+    },
+    {
+      "id": "m2",
+      "source": "gateway",
+      "target": "orders",
+      "kind": "sync",
+      "label": "Create order / createOrder",
+      "order": 2,
+      "evidence": "document"
+    },
+    {
+      "id": "m3",
+      "source": "orders",
+      "target": "orders",
+      "kind": "sync",
+      "label": "Validate and price",
+      "order": 3,
+      "evidence": "document"
+    },
+    {
+      "id": "m4",
+      "source": "orders",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "Reserve stock / reserve",
+      "order": 4,
+      "evidence": "document"
+    },
+    {
+      "id": "m5",
+      "source": "inventory",
+      "target": "orders",
+      "kind": "return",
+      "label": "Reservation result / held | retry",
+      "order": 5,
+      "evidence": "document",
+      "replyTo": "m4"
+    },
+    {
+      "id": "m6",
+      "source": "orders",
+      "target": "payments",
+      "kind": "sync",
+      "label": "Create payment / createIntent",
+      "order": 6,
+      "evidence": "document"
+    },
+    {
+      "id": "m7",
+      "source": "payments",
+      "target": "bank",
+      "kind": "sync",
+      "label": "Request authorization / authorize",
+      "order": 7,
+      "evidence": "document"
+    },
+    {
+      "id": "m8",
+      "source": "bank",
+      "target": "payments",
+      "kind": "return",
+      "label": "Authorization / accepted | declined",
+      "order": 8,
+      "evidence": "document",
+      "replyTo": "m7"
+    },
+    {
+      "id": "m9",
+      "source": "payments",
+      "target": "orders",
+      "kind": "return",
+      "label": "Payment status / intent",
+      "order": 9,
+      "evidence": "document",
+      "replyTo": "m6"
+    },
+    {
+      "id": "m10",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "Publish / order.confirmed",
+      "order": 10,
+      "evidence": "document"
+    },
+    {
+      "id": "m11",
+      "source": "bus",
+      "target": "fulfill",
+      "kind": "async",
+      "label": "Consume order confirmation",
+      "order": 11,
+      "evidence": "document"
+    },
+    {
+      "id": "m12",
+      "source": "fulfill",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "Commit stock / commit",
+      "order": 12,
+      "evidence": "document"
+    },
+    {
+      "id": "m13",
+      "source": "inventory",
+      "target": "fulfill",
+      "kind": "return",
+      "label": "Stock committed",
+      "order": 13,
+      "evidence": "document",
+      "replyTo": "m12"
+    },
+    {
+      "id": "m14",
+      "source": "fulfill",
+      "target": "bus",
+      "kind": "async",
+      "label": "Publish / fulfillment.ready",
+      "order": 14,
+      "evidence": "document"
+    },
+    {
+      "id": "m15",
+      "source": "bus",
+      "target": "notify",
+      "kind": "async",
+      "label": "Consume order confirmation",
+      "order": 15,
+      "evidence": "document"
+    },
+    {
+      "id": "m16",
+      "source": "notify",
+      "target": "buyer",
+      "kind": "async",
+      "label": "Send order confirmation",
+      "order": 16,
+      "evidence": "document"
+    },
+    {
+      "id": "m17",
+      "source": "orders",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "Release stock / release",
+      "order": 17,
+      "evidence": "document"
+    },
+    {
+      "id": "m18",
+      "source": "inventory",
+      "target": "orders",
+      "kind": "return",
+      "label": "Stock released",
+      "order": 18,
+      "evidence": "document",
+      "replyTo": "m17"
+    },
+    {
+      "id": "m19",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "Publish / order.cancelled",
+      "order": 19,
+      "evidence": "document"
+    },
+    {
+      "id": "m20",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "Publish / order.rejected",
+      "order": 20,
+      "evidence": "document"
+    },
+    {
+      "id": "m21",
+      "source": "orders",
+      "target": "gateway",
+      "kind": "return",
+      "label": "Order status / orderState",
+      "order": 21,
+      "evidence": "document",
+      "replyTo": "m2"
+    },
+    {
+      "id": "m22",
+      "source": "gateway",
+      "target": "buyer",
+      "kind": "return",
+      "label": "Acceptance / accepted | rejected",
+      "order": 22,
+      "evidence": "document",
+      "replyTo": "m1"
+    },
+    {
+      "id": "m23",
+      "source": "bank",
+      "target": "payments",
+      "kind": "async",
+      "label": "Payment callback / webhook",
+      "order": 23,
+      "evidence": "document"
+    },
+    {
+      "id": "m24",
+      "source": "payments",
+      "target": "payments",
+      "kind": "sync",
+      "label": "Check idempotency / eventId",
+      "order": 24,
+      "evidence": "document"
+    },
+    {
+      "id": "m25",
+      "source": "payments",
+      "target": "orders",
+      "kind": "sync",
+      "label": "Mark paid / markPaid",
+      "order": 25,
+      "evidence": "document"
+    },
+    {
+      "id": "m26",
+      "source": "orders",
+      "target": "payments",
+      "kind": "return",
+      "label": "Order paid",
+      "order": 26,
+      "evidence": "document",
+      "replyTo": "m25"
+    },
+    {
+      "id": "m27",
+      "source": "payments",
+      "target": "bus",
+      "kind": "async",
+      "label": "Publish / payment.settled",
+      "order": 27,
+      "evidence": "document"
+    },
+    {
+      "id": "m28",
+      "source": "payments",
+      "target": "payments",
+      "kind": "sync",
+      "label": "Ignore duplicate event",
+      "order": 28,
+      "evidence": "document"
+    },
+    {
+      "id": "m29",
+      "source": "payments",
+      "target": "bank",
+      "kind": "return",
+      "label": "ACK",
+      "order": 29,
+      "evidence": "document",
+      "replyTo": "m23"
+    }
+  ],
+  "executions": [
+    {
+      "id": "x1",
+      "participantId": "gateway",
+      "start": {
+        "edgeId": "m1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m22",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x2",
+      "participantId": "orders",
+      "start": {
+        "edgeId": "m2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m21",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x3",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m4",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m5",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x4",
+      "participantId": "payments",
+      "start": {
+        "edgeId": "m6",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m9",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x5",
+      "participantId": "bank",
+      "start": {
+        "edgeId": "m7",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m8",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x6",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m12",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m13",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x7",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m17",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m18",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x8",
+      "participantId": "payments",
+      "start": {
+        "edgeId": "m23",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m29",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x9",
+      "participantId": "orders",
+      "start": {
+        "edgeId": "m25",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m26",
+        "at": "send"
+      }
+    }
+  ]
+}

@@ -1,0 +1,598 @@
+{
+  "meta": {
+    "title": "电商下单与异步支付时序图",
+    "subtitle": "独立编写的虚构演示场景",
+    "diagramType": "sequence",
+    "locale": "zh-CN",
+    "sourceRef": "examples/showcase/checkout-sequence.md",
+    "viewId": "checkout-sequence",
+    "scope": "详细：下单、库存重试、授权分支、并行履约与通知、失败补偿、异步回调及幂等。排除真实实现与供应商内部细节。",
+    "notes": [
+      "独立编写的虚构场景，不代表真实项目的实现。",
+      "par 中两个操作数表示并行处理，纵向排列不表示两者先后。",
+      "绘制动画对已生成图形做分步呈现。"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "buyer",
+      "label": "买家",
+      "kind": "actor",
+      "subtitle": "提交订单"
+    },
+    {
+      "id": "gateway",
+      "label": "API Gateway",
+      "kind": "service",
+      "subtitle": "订单入口",
+      "module": "access"
+    },
+    {
+      "id": "orders",
+      "label": "Order Service",
+      "kind": "service",
+      "subtitle": "订单编排",
+      "module": "order"
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "kind": "service",
+      "subtitle": "库存预占",
+      "module": "stock"
+    },
+    {
+      "id": "payments",
+      "label": "Payment Service",
+      "kind": "service",
+      "subtitle": "授权与回调",
+      "module": "payment"
+    },
+    {
+      "id": "bank",
+      "label": "支付渠道",
+      "kind": "external",
+      "subtitle": "外部支付",
+      "module": "payment"
+    },
+    {
+      "id": "bus",
+      "label": "Event Bus",
+      "kind": "participant",
+      "subtitle": "领域事件",
+      "module": "events"
+    },
+    {
+      "id": "fulfill",
+      "label": "Fulfillment",
+      "kind": "service",
+      "subtitle": "订单履约",
+      "module": "delivery"
+    },
+    {
+      "id": "notify",
+      "label": "Notification",
+      "kind": "service",
+      "subtitle": "消息通知",
+      "module": "notification"
+    }
+  ],
+  "groups": [
+    {
+      "id": "stock-retry",
+      "kind": "loop",
+      "label": "库存预占重试",
+      "loop": {
+        "min": 1,
+        "max": 3
+      },
+      "operands": [
+        {
+          "id": "attempt",
+          "guard": "可重试且 attempt ≤ 3",
+          "edgeIds": [
+            "m4",
+            "m5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stock-result",
+      "kind": "alt",
+      "label": "库存预占结果",
+      "operands": [
+        {
+          "id": "held",
+          "guard": "库存预占成功",
+          "edgeIds": [
+            "m6",
+            "m7",
+            "m8",
+            "m9"
+          ]
+        },
+        {
+          "id": "empty",
+          "guard": "else · 库存不足",
+          "edgeIds": [
+            "m20"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payment-result",
+      "kind": "alt",
+      "label": "支付授权结果",
+      "parentId": "stock-result",
+      "parentOperandId": "held",
+      "operands": [
+        {
+          "id": "approved",
+          "guard": "授权成功",
+          "edgeIds": [
+            "m10"
+          ]
+        },
+        {
+          "id": "declined",
+          "guard": "else · 授权失败",
+          "edgeIds": [
+            "m17",
+            "m18",
+            "m19"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parallel-consumers",
+      "kind": "par",
+      "label": "并行事件处理",
+      "parentId": "payment-result",
+      "parentOperandId": "approved",
+      "operands": [
+        {
+          "id": "delivery",
+          "label": "履约消费者",
+          "edgeIds": [
+            "m11",
+            "m12",
+            "m13",
+            "m14"
+          ]
+        },
+        {
+          "id": "confirmation",
+          "label": "通知消费者",
+          "edgeIds": [
+            "m15",
+            "m16"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "valid-webhook",
+      "kind": "opt",
+      "label": "异步支付回调",
+      "operands": [
+        {
+          "id": "verified",
+          "guard": "签名有效",
+          "edgeIds": [
+            "m24"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "idempotency",
+      "kind": "alt",
+      "label": "回调幂等处理",
+      "parentId": "valid-webhook",
+      "parentOperandId": "verified",
+      "operands": [
+        {
+          "id": "new",
+          "guard": "首次处理 eventId",
+          "edgeIds": [
+            "m25",
+            "m26",
+            "m27"
+          ]
+        },
+        {
+          "id": "duplicate",
+          "guard": "else · 重复事件",
+          "edgeIds": [
+            "m28"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "buyer",
+      "target": "gateway",
+      "kind": "sync",
+      "label": "提交订单 / checkout",
+      "order": 1,
+      "evidence": "document"
+    },
+    {
+      "id": "m2",
+      "source": "gateway",
+      "target": "orders",
+      "kind": "sync",
+      "label": "创建订单 / createOrder",
+      "order": 2,
+      "evidence": "document"
+    },
+    {
+      "id": "m3",
+      "source": "orders",
+      "target": "orders",
+      "kind": "sync",
+      "label": "校验与计价",
+      "order": 3,
+      "evidence": "document"
+    },
+    {
+      "id": "m4",
+      "source": "orders",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "预占库存 / reserve",
+      "order": 4,
+      "evidence": "document"
+    },
+    {
+      "id": "m5",
+      "source": "inventory",
+      "target": "orders",
+      "kind": "return",
+      "label": "预占结果 / held | retry",
+      "order": 5,
+      "evidence": "document",
+      "replyTo": "m4"
+    },
+    {
+      "id": "m6",
+      "source": "orders",
+      "target": "payments",
+      "kind": "sync",
+      "label": "创建支付 / createIntent",
+      "order": 6,
+      "evidence": "document"
+    },
+    {
+      "id": "m7",
+      "source": "payments",
+      "target": "bank",
+      "kind": "sync",
+      "label": "申请授权 / authorize",
+      "order": 7,
+      "evidence": "document"
+    },
+    {
+      "id": "m8",
+      "source": "bank",
+      "target": "payments",
+      "kind": "return",
+      "label": "授权结果 / accepted | declined",
+      "order": 8,
+      "evidence": "document",
+      "replyTo": "m7"
+    },
+    {
+      "id": "m9",
+      "source": "payments",
+      "target": "orders",
+      "kind": "return",
+      "label": "支付状态 / intent",
+      "order": 9,
+      "evidence": "document",
+      "replyTo": "m6"
+    },
+    {
+      "id": "m10",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "发布 / order.confirmed",
+      "order": 10,
+      "evidence": "document"
+    },
+    {
+      "id": "m11",
+      "source": "bus",
+      "target": "fulfill",
+      "kind": "async",
+      "label": "消费订单确认事件",
+      "order": 11,
+      "evidence": "document"
+    },
+    {
+      "id": "m12",
+      "source": "fulfill",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "确认库存 / commit",
+      "order": 12,
+      "evidence": "document"
+    },
+    {
+      "id": "m13",
+      "source": "inventory",
+      "target": "fulfill",
+      "kind": "return",
+      "label": "库存已确认",
+      "order": 13,
+      "evidence": "document",
+      "replyTo": "m12"
+    },
+    {
+      "id": "m14",
+      "source": "fulfill",
+      "target": "bus",
+      "kind": "async",
+      "label": "发布 / fulfillment.ready",
+      "order": 14,
+      "evidence": "document"
+    },
+    {
+      "id": "m15",
+      "source": "bus",
+      "target": "notify",
+      "kind": "async",
+      "label": "消费订单确认事件",
+      "order": 15,
+      "evidence": "document"
+    },
+    {
+      "id": "m16",
+      "source": "notify",
+      "target": "buyer",
+      "kind": "async",
+      "label": "发送订单确认",
+      "order": 16,
+      "evidence": "document"
+    },
+    {
+      "id": "m17",
+      "source": "orders",
+      "target": "inventory",
+      "kind": "sync",
+      "label": "释放库存 / release",
+      "order": 17,
+      "evidence": "document"
+    },
+    {
+      "id": "m18",
+      "source": "inventory",
+      "target": "orders",
+      "kind": "return",
+      "label": "库存已释放",
+      "order": 18,
+      "evidence": "document",
+      "replyTo": "m17"
+    },
+    {
+      "id": "m19",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "发布 / order.cancelled",
+      "order": 19,
+      "evidence": "document"
+    },
+    {
+      "id": "m20",
+      "source": "orders",
+      "target": "bus",
+      "kind": "async",
+      "label": "发布 / order.rejected",
+      "order": 20,
+      "evidence": "document"
+    },
+    {
+      "id": "m21",
+      "source": "orders",
+      "target": "gateway",
+      "kind": "return",
+      "label": "订单状态 / orderState",
+      "order": 21,
+      "evidence": "document",
+      "replyTo": "m2"
+    },
+    {
+      "id": "m22",
+      "source": "gateway",
+      "target": "buyer",
+      "kind": "return",
+      "label": "受理结果 / accepted | rejected",
+      "order": 22,
+      "evidence": "document",
+      "replyTo": "m1"
+    },
+    {
+      "id": "m23",
+      "source": "bank",
+      "target": "payments",
+      "kind": "async",
+      "label": "支付回调 / webhook",
+      "order": 23,
+      "evidence": "document"
+    },
+    {
+      "id": "m24",
+      "source": "payments",
+      "target": "payments",
+      "kind": "sync",
+      "label": "检查幂等 / eventId",
+      "order": 24,
+      "evidence": "document"
+    },
+    {
+      "id": "m25",
+      "source": "payments",
+      "target": "orders",
+      "kind": "sync",
+      "label": "标记已支付 / markPaid",
+      "order": 25,
+      "evidence": "document"
+    },
+    {
+      "id": "m26",
+      "source": "orders",
+      "target": "payments",
+      "kind": "return",
+      "label": "订单已支付",
+      "order": 26,
+      "evidence": "document",
+      "replyTo": "m25"
+    },
+    {
+      "id": "m27",
+      "source": "payments",
+      "target": "bus",
+      "kind": "async",
+      "label": "发布 / payment.settled",
+      "order": 27,
+      "evidence": "document"
+    },
+    {
+      "id": "m28",
+      "source": "payments",
+      "target": "payments",
+      "kind": "sync",
+      "label": "忽略重复事件",
+      "order": 28,
+      "evidence": "document"
+    },
+    {
+      "id": "m29",
+      "source": "payments",
+      "target": "bank",
+      "kind": "return",
+      "label": "ACK",
+      "order": 29,
+      "evidence": "document",
+      "replyTo": "m23"
+    }
+  ],
+  "executions": [
+    {
+      "id": "x1",
+      "participantId": "gateway",
+      "start": {
+        "edgeId": "m1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m22",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x2",
+      "participantId": "orders",
+      "start": {
+        "edgeId": "m2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m21",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x3",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m4",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m5",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x4",
+      "participantId": "payments",
+      "start": {
+        "edgeId": "m6",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m9",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x5",
+      "participantId": "bank",
+      "start": {
+        "edgeId": "m7",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m8",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x6",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m12",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m13",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x7",
+      "participantId": "inventory",
+      "start": {
+        "edgeId": "m17",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m18",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x8",
+      "participantId": "payments",
+      "start": {
+        "edgeId": "m23",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m29",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x9",
+      "participantId": "orders",
+      "start": {
+        "edgeId": "m25",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m26",
+        "at": "send"
+      }
+    }
+  ]
+}

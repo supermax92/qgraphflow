@@ -12,7 +12,8 @@ test('CI, Pages and release smoke tests use only Jeepay inputs', () => {
     assert.ok(inputs.length > 0, file);
     assert.ok(inputs.every(input => input.startsWith('examples/jeepay/')), file);
   }
-  assert.deepEqual(fs.readdirSync(path.join(root, 'examples')), ['jeepay']);
+  // Recording inputs are separate from the real-source corpus used by workflows.
+  assert.deepEqual(fs.readdirSync(path.join(root, 'examples')).sort(), ['jeepay', 'showcase']);
   assert.equal(fs.existsSync(path.join(root, 'tests/fixtures')), false);
   const workflow = read('.github/workflows/pages.yml'), home = read('docs/pages/index.html');
   assert.match(workflow, /--repo-root output\/jeepay-source/);
