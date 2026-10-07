@@ -14,13 +14,11 @@
 
 </div>
 
-![Архитектура, последовательность и ER-диаграмма примера agent-desk, по 1,5 секунды на вид](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ru.hero.gif)
-
-*Девять типов: архитектура, блок-схема, последовательность, ER, развёртывание, классы, состояния, варианты использования и поток данных.*
+*Одиннадцать типов: архитектура возможностей платформы, слоистая архитектура, архитектура компонентов, блок-схема, последовательность, ER, развёртывание, классы, состояния, варианты использования и поток данных.*
 
 QGraphFlow создаёт интерактивные диаграммы программных систем из кода, схем данных, конфигурации и требований. Основания связей можно проверить, а результат — передать как автономный HTML.
 
-**Чем отличается:** девять типов диаграмм в одном навыке, тип доказательства для каждой связи и строка кода за каждой связью, подтверждённой кодом, автоматическая раскладка, редактирование прямо на странице и никаких сетевых запросов ни от скриптов плагина, ни от самого Viewer.
+**Чем отличается:** одиннадцать типов диаграмм в одном навыке, тип доказательства для каждой связи и строка кода за каждой связью, подтверждённой кодом, автоматическая раскладка, редактирование прямо на странице и никаких сетевых запросов ни от скриптов плагина, ни от самого Viewer.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -30,21 +28,13 @@ npx skills add supermax92/qgraphflow
 
 - **Исследование:** поиск, масштабирование и перемещение холста; назначение компонентов, входящие и исходящие связи.
 
-  ![Исследование: поиск refund, переход к узлу «Инструменты заказов», отдаление до оркестратора выше и базы заказов с отслеживанием доставки ниже, затем перемещение холста](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ru.explore.gif)
-
 - **Проверка:** файлы, строки, символы и явно обозначенная неопределённость в узлах и связях.
-
-  ![Проверка: карточка с src/gateway/chat-gateway.js:5-19, панель деталей с символом и фактами, затем связь POST /chat с пометкой inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ru.verify.gif)
 
 - **Редактирование:** разблокировка расположения, изменение текста и перемещение элементов; сброс при необходимости.
 
-  ![Редактирование: разблокировка расположения, переименование «Провайдер LLM» в «LLM-шлюз», перетаскивание узла вместе со связями, затем сброс](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ru.edit.gif)
-
 - **Обмен:** автономный HTML или экспорт всей диаграммы в SVG / PNG.
 
-  ![Обмен: открытие автономного HTML, экспорт PNG из меню «Ещё», затем сам экспортированный файл](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ru.share.gif)
-
-Верхняя анимация показывает архитектуру, последовательность и ER-диаграмму по 1,5 секунды (цикл 4,5 секунды); четыре анимации возможностей длятся 6,5–8,5 секунды. Все они записаны в собранном из исходников Viewer на [примере agent-desk](../../examples/showcase/agent-desk) — вымышленный бизнес, настоящий код — с русским текстом диаграмм и интерфейса. Они размещены как [ассеты релиза showcase-v2](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2) и не входят ни в историю Git, ни в пакет плагина, поэтому для просмотра нужна сеть; сгенерированный HTML диаграммы работает автономно.
+The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
 
 ## Установка
 
@@ -164,20 +154,17 @@ $qgraphflow:q-flow Подробно раскрой резерв запасов �
 После правок на странице команда **Ещё → Сохранить изменения** в Chrome или Edge перезаписывает страницу, `graph.json` и SVG на месте, когда вы один раз выберете каталог диаграммы. Другие браузеры сохраняют только `graph.json`: положите его в этот каталог и пересоздайте страницу и SVG командой `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
 
 <details>
-<summary>Запустить торговый пример с девятью видами вручную</summary>
+<summary>Run the eleven-view Jeepay source example</summary>
 
-Команды ниже запускают пример из репозитория. Для использования установленного плагина клонировать репозиторий не нужно. Подготовьте Node.js 22 или новее:
+Select your Jeepay source checkout to verify the evidence:
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.ru.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.ru.graph.json output/ecommerce-ru
+export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
+node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-Откройте `output/ecommerce-ru/index.html` в браузере; девять SVG лежат рядом. Переключайтесь через **Типы диаграмм** в верхней панели: сохранённые тексты и позиции сохраняются для каждого вида. **Ещё → Сохранить изменения** сохраняет все виды, как описано выше. Те же страницы есть в [онлайн-демо](https://supermax92.github.io/qgraphflow/).
-
-Готовому Viewer не нужны дополнительные зависимости, ключ API или серверная служба. Сбор оснований и создание графов с помощью ИИ используют модельный сервис выбранного клиента.
+Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](../../examples/jeepay) for the source revision and refresh procedure.
 
 </details>
 

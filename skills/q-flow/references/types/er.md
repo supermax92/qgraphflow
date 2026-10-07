@@ -30,6 +30,12 @@ Tables (entities), their columns and keys, and the relationships with cardinalit
 }
 ```
 
+## Layout
+
+A related-entity matrix with full field columns and dedicated cardinality/label corridors. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps fields, relation direction, cardinalities and endpoint symbols; routes leave the nearest feasible entity outline.
+
 ## Frequent validation errors
 
 - `node X.fields must be an array` / entity without fields — every entity lists at least one field.

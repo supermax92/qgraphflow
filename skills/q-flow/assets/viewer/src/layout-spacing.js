@@ -6,11 +6,9 @@ export const LAYOUT_TARGETS = Object.freeze({ nodeGap: 64, layerGap: 80, edgeNod
 const CARD_LIMITS = Object.freeze({ ...LAYOUT_LIMITS, nodeGap: 32, groupInset: 24, groupGap: 32 }), CARD_TARGETS = Object.freeze({ ...LAYOUT_TARGETS, nodeGap: 40, layerGap: 48 });
 export const layoutLimits = diagram => diagram?.cardLayout ? CARD_LIMITS : LAYOUT_LIMITS;
 export const layoutTargets = diagram => diagram?.cardLayout ? CARD_TARGETS : LAYOUT_TARGETS;
-// A finished diagram keeps its width/height ratio between 1/ASPECT_BAND (portrait) and ASPECT_BAND (landscape); the graph's
-// own shape decides which side. Type budgets only express a preferred orientation inside this band.
+// Aspect is advisory: it triggers folded candidates and breaks equal-cost ties. Safety and semantic rules remain hard limits.
 export const ASPECT_BAND = 1.6;
-// A shape within this factor of the band counts as acceptable: it triggers no fold, and among folds the fewest segments
-// within it win. Without the slack a one-percent overshoot could trigger a fold that costs far more than it fixes.
+// This slack avoids generating fold candidates for a negligible overshoot; every legal candidate uses the normalized score.
 export const ASPECT_SLACK = 1.1;
 // How far a width/height ratio sits outside the band, as a factor ≥ 1; 1 means inside. Callers compare it to two decimals,
 // so a shape within one percent of the band edge counts as inside.
@@ -29,5 +27,5 @@ export const MAX_SCREENS = 4;
 // result that shows the whole view on one OVERVIEW_AREA at the larger zoom. The compiler records its choice in layout.direction,
 // and a direction already there is kept.
 const RIGHT_TYPES = ['er', 'deployment', 'dataflow', 'usecase'];
-export const layeredDirections = type => type === 'architecture' ? ['down', 'right'] : [RIGHT_TYPES.includes(type) ? 'right' : 'down'];
+export const layeredDirections = type => type === 'architecture' ? ['down', 'right'] : type === 'deployment' ? ['down', 'right'] : [RIGHT_TYPES.includes(type) ? 'right' : 'down'];
 export const layeredDown = (type, layout) => (layout?.direction ?? layeredDirections(type)[0]) === 'down';

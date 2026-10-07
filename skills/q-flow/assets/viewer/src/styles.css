@@ -316,7 +316,6 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .selection-feedback, .selection-feedback * { animation: none !important; }
 }
-.react-flow__background { opacity: .38; }
 .react-flow__controls, .react-flow__minimap { overflow: hidden; border: 0; border-radius: var(--r-field); background: var(--material-thin); -webkit-backdrop-filter: var(--blur-thin); backdrop-filter: var(--blur-thin); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-1); transition: left var(--base) var(--ease), right var(--base) var(--ease); }
 .react-flow__panel.react-flow__controls { left: var(--gutter); bottom: var(--gutter); margin: 0; }
 .react-flow__panel.react-flow__minimap { right: var(--gutter); bottom: var(--gutter); margin: 0; }
@@ -368,21 +367,6 @@ button:disabled { cursor: not-allowed; }
 @keyframes edge-flow { to { stroke-dashoffset: -20px; } }
 @keyframes sequence-edge-flow { from { stroke-dashoffset: 0px; } to { stroke-dashoffset: calc(-10 * var(--sequence-flow-unit, 1px)); } }
 
-@media (max-width: 1080px) {
-  .tb-title span { display: none; }
-}
-
-@media (max-width: 700px) {
-  .app-shell { height: 100dvh; min-height: 420px; }
-  .toolbar { grid-template-columns: auto minmax(0, 1fr) auto; padding: 0 8px; gap: 4px; }
-  .tb-title { display: none; }
-  .tb-wide span { display: none; }
-  .tb-search { width: 100%; }
-  .sidebar { width: calc(100% - 2 * var(--gutter)); }
-  .workspace.nav-open .legend-anchor, .workspace.nav-open .react-flow__panel.react-flow__controls { left: var(--gutter); }
-  .react-flow__minimap { display: none; }
-}
-
 /* Three independent accessibility preferences, each written as its own query. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
@@ -421,3 +405,20 @@ button:disabled { cursor: not-allowed; }
   .edge-flow { stroke-width: 2px; }
   .selection-node-halo, .selection-edge-halo { display: none; filter: none; }
 }
+
+.overview-section { position: relative; pointer-events: none; }
+.overview-section-select { position: absolute; left: 24px; top: 24px; width: calc(100% - 48px); height: 36px; opacity: 0; pointer-events: auto; cursor: pointer; }
+.overview-section-select:focus-visible { opacity: 1; background: var(--canvas); color: var(--ink); outline: 2px solid var(--accent); }
+.card-form .badge-editor { display: grid; gap: 8px; margin: 8px 0; }
+.card-form select { max-width: 100%; padding: 8px; background: var(--canvas); color: inherit; border: 1px solid var(--rule); border-radius: 6px; }
+
+/* The eleven-view selector shares the original toolbar and remains reachable on narrow windows. */
+.tb-right .menu-anchor { min-width: 0; }
+#view-menu-button { max-width: 230px; }
+#view-menu-button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-popover-root="views"] .menu { max-width: min(440px, calc(100vw - 24px)); max-height: calc(100dvh - 76px); overflow-y: auto; background: var(--panel); }
+@media (max-width: 1050px) { .toolbar { grid-template-columns: minmax(0, 1fr) minmax(100px, 200px) auto; } .tb-search { width: 100%; } }
+@media (max-width: 640px) { .toolbar { grid-template-columns: minmax(36px, 1fr) minmax(64px, 110px) auto; gap: 3px; padding-inline: 6px; } .tb-title { display: none; } #view-menu-button { max-width: 132px; padding-inline: 5px; } #view-menu-button > .ic:first-child { display: none; } .tb-right .tb-wash { display: none; } }
+
+/* Diagnostics remain accessible without covering the legend after opening navigation. */
+@media (max-width: 1050px) { .workspace.nav-open .layout-problems { top: calc(var(--tb-h) + 52px); } }

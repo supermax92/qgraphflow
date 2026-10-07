@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
+import { viewIdOf } from '../assets/viewer/src/view-identity.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
+import { isDeepStrictEqual, parseArgs } from 'node:util';
 import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
@@ -38,7 +39,7 @@ export function writeOutputs(outputDir, contents, stale = []) {
 }
 
 // Every view is compiled before anything is judged, so one run names every failing view instead of the first one only.
-// A single failure is rethrown untouched; several are combined, their diagnostics concatenated and candidates keyed by type.
+// A single failure is rethrown untouched; several are combined, their diagnostics concatenated and candidates and routing reports keyed by view identity.
 export async function compileViews(graphs, compile) {
   const compiled = [], failures = [];
   for (const graph of graphs) {
@@ -50,8 +51,9 @@ export async function compileViews(graphs, compile) {
     throw Object.assign(new Error(failures.map(({ error }) => error.message).join('\n\n')), {
       phases: { semantic: { status: phase === 'semantic' ? 'failed' : 'passed' }, geometry: { status: phase === 'semantic' ? 'not-checked' : 'failed' }, rendering: { status: 'not-checked' } },
       diagnostics: failures.flatMap(({ error }) => error.diagnostics ?? []),
-      candidates: Object.fromEntries(failures.filter(({ error }) => error.candidates).map(({ graph, error }) => [diagramTypeOf(graph), error.candidates])),
-      failedViews: failures.map(({ graph }) => diagramTypeOf(graph))
+      candidates: Object.fromEntries(failures.filter(({ error }) => error.candidates).map(({ graph, error }) => [viewIdOf(graph), error.candidates])),
+      failedViews: failures.map(({ graph }) => viewIdOf(graph)),
+      routingReports: Object.fromEntries(failures.filter(({ error }) => error.routingReport).map(({ graph, error }) => [viewIdOf(graph), error.routingReport]))
     });
   }
   return compiled;
@@ -60,6 +62,7 @@ export async function compileViews(graphs, compile) {
 const USAGE = `Usage: node generate-viewer.mjs <graph.json> <output-directory> [options]
   --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
   --layout auto|preserve  auto (default) computes positions; preserve keeps authored geometry under the same gate
+  --view <view-id>      auto-layout only this view; repeat for several; all other views must pass preserve
   --force               replace existing index.html / graph.json / diagram*.svg in the output directory (needs approval)
   --verbose             print the full receipt (layout candidates, folds, diagnostics) instead of one summary line
   -h, --help            this text
@@ -67,7 +70,7 @@ Writes index.html, graph.json and one SVG per view (diagram.svg, or diagram-<n>-
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.`;
 
 async function main() {
-  const { positionals: positional, values } = parseArgs({ allowPositionals: true, options: { force: { type: 'boolean' }, 'repo-root': { type: 'string' }, layout: { type: 'string', default: 'auto' }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
+  const { positionals: positional, values } = parseArgs({ allowPositionals: true, options: { force: { type: 'boolean' }, 'repo-root': { type: 'string' }, layout: { type: 'string', default: 'auto' }, view: { type: 'string', multiple: true }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
   const force = values.force;
   if (values.help) { console.log(USAGE); process.exit(0); }
   if (positional.length !== 2) {
@@ -79,6 +82,10 @@ async function main() {
   const outputDir = path.resolve(outputArg);
   if (outputDir === path.parse(outputDir).root || outputDir === os.homedir()) throw new Error('Refusing broad output directory');
   const input = readAndValidateGraph(inputPath, { inputOnly: true });
+  const selected = new Set(values.view ?? []), views = graphsOf(input);
+  if (selected.size && values.layout !== 'auto') throw new Error('--view requires --layout auto');
+  const unknown = [...selected].filter(id => !views.some(graph => viewIdOf(graph) === id));
+  if (unknown.length) throw new Error(`Unknown view: ${unknown.join(', ')}; available views: ${views.map(viewIdOf).join(', ')}`);
   const sourceEvidence = verifySourceEvidence(input, values['repo-root']);
   const warnings = printCompositionReview(input, { print: false }); // already printed by the input validation step
   if (!fs.existsSync(shellPath)) throw new Error(`Viewer shell missing: ${shellPath}`);
@@ -93,7 +100,8 @@ async function main() {
   if (existing.length && !force) throw new Error(`Refusing to overwrite: ${existing.join(', ')}; rerun with --force after approval`);
   const shell = fs.readFileSync(shellPath, 'utf8');
   if (!shell.includes('__CODEGRAPH_FLOW_DATA__')) throw new Error('Viewer shell data marker is missing');
-  const compiled = await compileViews(graphsOf(input), item => compileGraphLayout(item, { layout: values.layout }));
+  const compiled = await compileViews(views, item => compileGraphLayout(item, { layout: selected.size && !selected.has(viewIdOf(item)) ? 'preserve' : values.layout }));
+  for (let i = 0; i < views.length; i++) if (selected.size && !selected.has(viewIdOf(views[i])) && !isDeepStrictEqual(compiled[i].graph, views[i])) throw new Error(`Unselected view ${viewIdOf(views[i])} requires migration; update it explicitly before changing this collection`);
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
   const oversized = printViewReview(graph, { print: true }); // geometry exists only now; the input review could not see it
@@ -122,6 +130,6 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
   await main();
 } catch (error) {
   console.error(error.message);
-  if (error.phases || error.candidates) console.error(JSON.stringify({ ...error.phases, ...(error.failedViews ? { failedViews: error.failedViews } : {}), diagnostics: error.diagnostics, candidates: error.candidates }));
+  if (error.phases || error.candidates) console.error(JSON.stringify({ ...error.phases, ...(error.failedViews ? { failedViews: error.failedViews } : {}), diagnostics: error.diagnostics, candidates: error.candidates, ...(error.routingReport ? { routingReport: error.routingReport } : {}), ...(error.routingReports ? { routingReports: error.routingReports } : {}) }));
   process.exit(1);
 }

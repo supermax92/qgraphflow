@@ -2,8 +2,8 @@ import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { sequenceHeaderHeight } from '../assets/viewer/src/diagrams/sequence.js';
 import { operandId, operandEdges, fragmentDepth, fragmentHeadingLayout } from '../assets/viewer/src/sequence-fragments.js';
 import { createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
-import { sequenceMessageLabel, sequenceExecutions } from '../assets/viewer/src/sequence-executions.js';
-import { edgeLabelLayout, layoutText } from '../assets/viewer/src/text-layout.js';
+import { sequenceMessageLabel, sequenceExecutions, spreadParticipants } from '../assets/viewer/src/sequence-executions.js';
+import { layoutText } from '../assets/viewer/src/text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from '../assets/viewer/src/layout-spacing.js';
 
 export function compileSequence(input, candidate) {
@@ -13,7 +13,7 @@ export function compileSequence(input, candidate) {
   for (const edge of [...graph.edges].sort((a, b) => a.order - b.order)) for (const id of [edge.source, edge.target]) if (!firstSeen.has(id)) firstSeen.set(id, firstSeen.size);
   const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (firstSeen.get(a.id) ?? Infinity) - (firstSeen.get(b.id) ?? Infinity) || (a.id < b.id ? -1 : 1)).map(node => node.id);
   const nodes = ordered.map(id => graph.nodes.find(node => node.id === id));
-  const spacing = LAYOUT_TARGETS.nodeGap + candidate * 8, gap = LAYOUT_LIMITS.labelGap + candidate * 4;
+  const spacing = 32 + candidate * 8, gap = 12 + candidate * 4;
   const guardText = (group, operand) => group.kind === 'par' ? operand.label : `${group.kind === 'loop' ? `${group.loop.min}..${group.loop.max} ` : ''}[${operand.guard}]`;
   const guardLayout = (group, operand) => layoutText(guardText(group, operand), LAYOUT_TARGETS.labelWidth, 14, 20);
   const bodyLayout = operand => layoutText(operand.body, LAYOUT_TARGETS.labelWidth, 16, 24);
@@ -22,24 +22,7 @@ export function compileSequence(input, candidate) {
     node.size = minimumNodeSize(node, 'sequence', graph.meta.locale); node.position = { x, y: 48 };
     x += node.size.width + spacing;
   }
-  // Difference constraints on the message's actual span; moving the suffix keeps
-  // unrelated neighboring gaps unchanged. Longer spans reuse existing space.
-  const constraints = [...graph.edges].sort((a, b) => Math.abs(ordered.indexOf(a.source) - ordered.indexOf(a.target)) - Math.abs(ordered.indexOf(b.source) - ordered.indexOf(b.target)) || a.order - b.order);
-  const selfCounts = new Map();
-  for (const edge of constraints) {
-    const left = Math.min(ordered.indexOf(edge.source), ordered.indexOf(edge.target));
-    let right = Math.max(ordered.indexOf(edge.source), ordered.indexOf(edge.target));
-    const label = edgeLabelLayout(sequenceMessageLabel(graph, edge));
-    let required = label.width + 64;
-    if (left === right) {
-      const ordinal = selfCounts.get(edge.source) ?? 0; selfCounts.set(edge.source, ordinal + 1);
-      right++; required += 48 + ordinal * 24;
-      if (right === nodes.length) continue;
-    }
-    const center = node => node.position.x + node.size.width / 2;
-    const extra = Math.max(0, required - (center(nodes[right]) - center(nodes[left])));
-    for (let i = right; i < nodes.length; i++) nodes[i].position.x += extra;
-  }
+  spreadParticipants(graph, nodes);
   // Provisional order-preserving times let the shared router measure actual
   // prefixes, activation offsets, wrapped labels and self calls.
   for (const edge of graph.edges) edge.route = { messageY: 200 + edge.order * 100 };

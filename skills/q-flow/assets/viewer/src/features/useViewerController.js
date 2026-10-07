@@ -1,3 +1,4 @@
+import { visibleEdges } from '../presentation-graph.js';
 import { useCallback, useEffect, useState } from 'react';
 import { PALETTES } from '../visual-style.js';
 import { useGraphLayout } from './useGraphLayout.js';
@@ -39,7 +40,7 @@ export function useViewerController(graph, theme, panels, moduleColors, original
   };
   return { ...layout, ...selection, ...presentation, ...panels, ...fullscreen,
     diagramType: diagramTypeOf(graph), palette, moduleColors, reduceMotion, exportStatus, exportDiagram, saveGraph, reset,
-    inspectedNode: selection.selected, inspectedEdge: selection.selectedEdge, hasFlow: graph.edges.some(edge => hasArrow(edge, diagramTypeOf(graph))), flowRunning, setFlowEnabled,
+    inspectedNode: selection.selected, inspectedEdge: selection.selectedEdge, hasFlow: visibleEdges(graph).some(edge => hasArrow(edge, diagramTypeOf(graph))), flowRunning, setFlowEnabled,
     nudgeLayout: () => layout.nudgeLayout(selection.selectedId)
   };
 }

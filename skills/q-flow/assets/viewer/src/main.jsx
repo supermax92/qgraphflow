@@ -4,7 +4,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './styles.css';
 import ViewerShell from './ViewerShell.jsx';
-import { DIAGRAM_TYPES, diagramTypeOf } from './diagrams/registry.js';
+import { viewIdOf, compareViews } from './view-identity.js';
+import { diagramTypeOf } from './diagrams/registry.js';
 import { moduleColorMap, PALETTES, themeVariables, withoutWash } from './visual-style.js';
 import { usePanels } from './features/usePanels.js';
 import { graphInputWithEdits } from './session-graph.js';
@@ -12,7 +13,7 @@ import { DEFAULT_LOCALE } from './i18n.js';
 
 const input = JSON.parse(document.querySelector('#graph-data').textContent);
 const diagrams = [...(Array.isArray(input.diagrams) ? input.diagrams : [input])]
-  .sort((left, right) => DIAGRAM_TYPES.indexOf(diagramTypeOf(left)) - DIAGRAM_TYPES.indexOf(diagramTypeOf(right)));
+  .sort(compareViews);
 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -29,13 +30,13 @@ function useAppearance() {
 }
 
 function Viewer() {
-  const [activeType, setActiveType] = useState(diagramTypeOf(diagrams[0]));
+  const [activeType, setActiveType] = useState(viewIdOf(diagrams[0]));
   const drafts = useRef(new Map());
   // Edge motion is opt-in: a running dash reads as the dashed (inferred) notation.
   const flowControl = useState(true);
   const { preference, setPreference, theme } = useAppearance();
   const panels = usePanels();
-  const originalGraph = diagrams.find(item => diagramTypeOf(item) === activeType) ?? diagrams[0];
+  const originalGraph = diagrams.find(item => viewIdOf(item) === activeType) ?? diagrams[0];
   const graph = drafts.current.get(activeType) ?? originalGraph;
   const switchDiagram = (type, currentGraph) => {
     drafts.current.set(activeType, currentGraph);

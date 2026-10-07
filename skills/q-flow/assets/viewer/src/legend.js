@@ -1,3 +1,4 @@
+import { presentationGraph } from './presentation-graph.js';
 import { translate } from './i18n.js';
 import { getDiagram, isDashed } from './diagrams/registry.js';
 import { nodeAppearance } from './visual-style.js';
@@ -6,6 +7,7 @@ import { nodeAppearance } from './visual-style.js';
 export const rampGradient = colors => `linear-gradient(90deg, ${colors.map((color, index) => `${color} ${index / colors.length * 100}% ${(index + 1) / colors.length * 100}%`).join(', ')})`;
 
 export function graphLegend(graph, palette, moduleColors) {
+  graph = presentationGraph(graph);
   const definition = getDiagram(graph.meta.diagramType);
   const entries = new Map();
   const ramp = new Map();

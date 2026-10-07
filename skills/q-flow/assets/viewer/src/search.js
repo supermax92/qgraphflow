@@ -8,7 +8,7 @@ export function searchRank(node, query) {
   const includes = values => values.some(value => String(value ?? '').toLowerCase().includes(keyword));
   if (includes([node.subtitle, ...(node.tags ?? [])])) return 2;
   return includes([
-    ...(node.facts ?? []), ...(node.attributes ?? []), ...(node.methods ?? []),
+    ...(node.overviewText ?? []), ...(node.badges ?? []).map(badge => badge.label), ...(node.facts ?? []), ...(node.attributes ?? []), ...(node.methods ?? []),
     ...(node.fields ?? []).flatMap(field => [field.key, field.name, field.type])
   ]) ? 1 : 0;
 }

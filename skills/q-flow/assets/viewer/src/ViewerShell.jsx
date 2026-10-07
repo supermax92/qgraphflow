@@ -1,6 +1,7 @@
+import { isArchitectureOverview, viewIdOf, viewTypeOf, viewTypeLabel } from './view-identity.js';
 import { translate } from './i18n.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Background, ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
+import { ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
 import { nodeTypes, edgeTypes } from './DiagramCanvas.jsx';
 import { renderMiniMapNode } from './node-svg.js';
 import { diagramLabels, diagramTypeOf } from './diagrams/registry.js';
@@ -10,7 +11,6 @@ import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
-import { mobileQuery } from './features/usePanels.js';
 import { useReveal } from './features/useReveal.js';
 import Icon from './icons.jsx';
 import NodeCard from './NodeCard.jsx';
@@ -43,22 +43,22 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     diagramType, palette, reduceMotion,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
-    locked, setLocked, canvasRef, currentGraph, nodes, onNodesChange, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
-    visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, focusProblem,
+    locked, setLocked, canvasRef, currentGraph, acceptedGraph, nodes, onNodesChange, onNodeDragStop, onOverviewKeyDown, layoutPending, cancelLayout, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
+    visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, layoutWarnings, focusProblem,
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
   } = useViewerController(graph, theme, panels, moduleColors, originalGraph, graphForSave, flowControl);
   const [navShown, navState] = usePresence(toolbarOpen, reduceMotion, panelRef);
   const [drawerShown, drawerState] = usePresence(drawerOpen, reduceMotion, inspectorRef);
   const drawerFrozen = useRef(null);
-  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale);
+  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, isArchitectureOverview(graph), cancelLayout);
   const { open, toggle, close } = usePopover();
   // meta.notes: a card over the top of the right side, open on wide screens until the reader hides it. It is a panel in
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
   // and it waits for that drawer (even while it slides out) to be gone before it appears. Fullscreen has no panels, so
   // there it simply floats over the canvas until it is hidden.
   const notes = graph.meta.notes ?? [];
-  const [notesOpen, setNotesOpen] = useState(() => !window.matchMedia(mobileQuery).matches);
+  const [notesOpen, setNotesOpen] = useState(true);
   const notesShown = notes.length > 0 && notesOpen && !drawerShown;
   const rightReserved = drawerOpen || (notesShown && !isFullscreen);
   // The hide and show buttons replace each other, so a reader's toggle hands focus to whichever one appears.
@@ -103,9 +103,11 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const drawerBody = <>
     <div className="side-head"><p className="panel-title">{t('Details')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('Close details')} title={t('Close details')}><Icon name="close" /></button></div>
     <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
-        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
+        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(inspectedNode.section ? 'Section' : kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
         <h2>{inspectedNode.label}</h2>
         <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
+        {inspectedNode.overviewText?.length > 0 && <><h3>{t('Overview text')}</h3><ul>{inspectedNode.overviewText.map((line, i) => <li key={i}>{line}</li>)}</ul></>}
+        {inspectedNode.badges?.length > 0 && <><h3>{t('Badges')}</h3><ul>{inspectedNode.badges.map((badge, i) => <li key={i}>{badge.label} · {t(evidenceLabels[badge.evidence])}{badge.source && <code className="source-path">{anchorText(badge.source)}</code>}</li>)}</ul></>}
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
         {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
         {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
@@ -125,20 +127,11 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   </>;
   if (drawerOpen) drawerFrozen.current = drawerBody;
 
-  return <main className="app-shell">
+  return <main className="app-shell" data-view-id={viewIdOf(graph)}>
     <header className="toolbar">
       <div className="tb-group tb-left">
         <button className="tb" ref={toolbarButtonRef} onClick={() => { toggleToolbar(); if (!toolbarOpen) reveal(selectedId, selectedEdgeId, true, rightReserved); }} aria-controls="graph-tools" aria-expanded={toolbarOpen} aria-pressed={toolbarOpen} aria-label={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')} title={toolbarOpen ? t('Hide graph navigation') : t('Show graph navigation')}><Icon name="panel-left" /></button>
-        {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
-          <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{t(diagramLabels[diagramType])}</span><Icon name="chevron" /></button>
-          {open === 'views' && <div className="popover menu" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
-            const type = diagramTypeOf(item);
-            return <button key={type} role="menuitemradio" aria-checked={type === diagramType} className={type === diagramType ? 'is-current' : ''} onClick={() => { onDiagramChange(type, currentGraph); close(); panels.closeMobile(); }}>
-              <span className="menu-mark">{type === diagramType ? <Icon name="check" /> : null}</span>{t(diagramLabels[type])}<small>{t('{count} relations', { count: item.edges.length })}</small>
-            </button>;
-          })}</div>}
-        </div>}
-        <div className="tb-title"><b>{graph.meta.title}</b><span>{t(diagramLabels[diagramType])} · {graph.meta.sourceRef}</span></div>
+        <div className="tb-title"><b>{graph.meta.title}</b><span>{t(viewTypeLabel(graph))} · {graph.meta.sourceRef}</span></div>
       </div>
 
       <div className="tb-group tb-center">
@@ -155,13 +148,23 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
       </div>
 
       <div className="tb-group tb-right">
+        {allDiagrams.length > 1 && <div className="menu-anchor" data-popover-root="views">
+          <button id="view-menu-button" className="tb tb-wide" onClick={() => toggle('views')} aria-haspopup="menu" aria-expanded={open === 'views'} title={t('Diagram types')}><Icon name="views" /><span>{t(viewTypeLabel(graph))}</span><Icon name="chevron" /></button>
+          {open === 'views' && <div className="popover menu is-right" role="menu" aria-labelledby="view-menu-button">{allDiagrams.map(item => {
+            const type = diagramTypeOf(item), viewId = viewIdOf(item), active = viewId === viewIdOf(graph);
+            return <button key={viewId} data-view-id={viewId} role="menuitemradio" aria-checked={active} className={active ? 'is-current' : ''} onClick={() => { onDiagramChange(viewId, acceptedGraph); close(); }}>
+              <span className="menu-mark">{active ? <Icon name="check" /> : null}</span>{`${t(viewTypeLabel(item))}${allDiagrams.filter(view => viewTypeOf(view) === viewTypeOf(item)).length > 1 ? ` · ${item.meta.title}` : ''}`}<small>{t('{count} relations', { count: item.edges.length })}</small>
+            </button>;
+          })}</div>}
+        </div>}
+
         <button className="tb tb-wash" role="switch" aria-checked={wash} onClick={() => setWash(value => !value)} title={t('Card wash')} aria-label={t('Card wash')}><Icon name="wash" /></button>
         <div className="menu-anchor" data-popover-root="more">
           <button id="more-menu-button" className="tb" onClick={() => toggle('more')} aria-haspopup="menu" aria-expanded={open === 'more'} title={t('More')} aria-label={t('More')}><Icon name="more" /></button>
           {open === 'more' && <div className="popover menu is-right" role="menu" aria-labelledby="more-menu-button">
-            <button role="menuitem" onClick={() => { exportDiagram('svg'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Export SVG')}</button>
-            <button role="menuitem" onClick={() => { exportDiagram('png'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Export PNG')}</button>
-            <button role="menuitem" onClick={() => { saveGraph(); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Save changes')}</button>
+            <button role="menuitem" disabled={layoutPending} onClick={() => { exportDiagram('svg'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Export SVG')}</button>
+            <button role="menuitem" disabled={layoutPending} onClick={() => { exportDiagram('png'); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Export PNG')}</button>
+            <button role="menuitem" disabled={layoutPending} onClick={() => { saveGraph(); close(); }}><span className="menu-mark"><Icon name="download" /></span>{t('Save changes')}</button>
             <div className="menu-sep" />
             <button role="menuitem" onClick={() => { reset(); close(); }} title={t('Restore the original layout and view, and clear search and selection.')}><span className="menu-mark"><Icon name="reset" /></span>{t('Reset')}</button>
             <div className="menu-row"><span className="menu-lead"><span className="menu-mark"><Icon name={locked ? 'lock' : 'unlock'} /></span>{t('Locked')}</span><button className="switch" role="switch" aria-checked={locked} aria-label={locked ? t('Locked') : t('Draggable')} onClick={() => setLocked(value => !value)}><i /></button></div>
@@ -189,19 +192,20 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
 
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
-        <div ref={canvasRef} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('Interactive {type}', { type: t(diagramLabels[diagramType]) })}>
+        <div ref={canvasRef} aria-busy={layoutPending} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={event => { onOverviewKeyDown(event); if (!event.defaultPrevented) handleCanvasKeyDown(event); }} aria-label={t('Interactive {type}', { type: t(viewTypeLabel(graph)) })}>
           <ReactFlow
             nodes={visibleNodes}
             edges={visibleEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
+            onNodeDragStop={onNodeDragStop}
             onPaneClick={() => { clearSelectedNode(); close(); }}
             onNodeClick={(_, node) => { if (node.type === 'diagram') selectNode(node, false); }}
             onEdgeClick={(_, edge) => selectEdge(edge.data)}
             onNodeDragStart={(_, node) => { if (node.type === 'diagram') selectNode(node, false); }}
             onInit={() => requestAnimationFrame(() => readGraph(currentGraph, 0))}
-            nodesDraggable={!locked}
+            nodesDraggable={!locked && !layoutPending}
             nodesConnectable={false}
             deleteKeyCode={null}
             elementsSelectable
@@ -211,7 +215,6 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': t('Zoom in'), 'controls.zoomOut.ariaLabel': t('Zoom out'), 'minimap.ariaLabel': t('Minimap') }}
             proOptions={{ hideAttribution: true }}
           >
-            <Background color={palette.ruleSoft} gap={24} size={1} />
             <Controls position="bottom-left" showInteractive={false} showFitView={false}>
               <ControlButton className="react-flow__controls-fitview" onClick={focusDiagram} title={t('Fit canvas')} aria-label={t('Fit canvas')}><Icon name="fit" /></ControlButton>
               <ControlButton className="react-flow__controls-fullscreen" ref={fullscreenButtonRef} onClick={toggleFullscreen} aria-pressed={isFullscreen} aria-busy={fullscreenPending} aria-disabled={fullscreenPending || (!fullscreenSupported && !isFullscreen)} aria-label={isFullscreen ? t('Exit fullscreen') : t('Enter fullscreen')} title={!fullscreenSupported && !isFullscreen ? t('Fullscreen is not available in this browser or page') : isFullscreen ? t('Exit fullscreen (Esc)') : t('Enter fullscreen')}>
@@ -248,6 +251,10 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             reveal(selectedId, selectedEdgeId, toolbarOpen, true);
           }} onClose={() => clearSelectedNode()} />}
 
+          {!layoutProblem && layoutWarnings.length > 0 && <details className="layout-problems"><summary>{t('Layout suggestions')}</summary>
+            <p>{t('Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.')}</p>
+            <ul>{[...new Set(layoutWarnings.flatMap(item => item.elementIds).filter(id => currentGraph.edges.some(edge=>edge.id===id)))].map(id => <li key={id}><button onClick={() => focusProblem(layoutWarnings.find(item=>item.elementIds.includes(id)))}>{currentGraph.edges.find(edge=>edge.id===id)?.label || t('Relationship')}</button></li>)}</ul>
+          </details>}
           {layoutProblem && <details className="layout-problems"><summary>{t('Layout needs adjustment; JSON drafts can still be saved')}</summary>
             <ul>{layoutProblem.diagnostics.filter(item => item.severity === 'error').map((item, index) => <li key={index}><button onClick={() => focusProblem(item)}>{item.elementIds.join(', ')} · {item.ruleId}</button></li>)}</ul>
             <pre>{layoutProblem.message}</pre>

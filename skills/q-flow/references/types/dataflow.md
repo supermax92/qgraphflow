@@ -36,6 +36,12 @@ How data moves between external entities, processes and data stores (Gane–Sars
 }
 ```
 
+## Layout
+
+External inputs, processing stages and storage regions connected by the actual data relationships. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps process, store and external symbols, data names and flow direction.
+
 ## Frequent validation errors
 
 - `edge d.kind is unsupported for dataflow` — only `data`; the operation belongs in the label.

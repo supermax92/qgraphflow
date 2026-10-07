@@ -1,0 +1,289 @@
+{
+  "meta": {
+    "title": "Jeepay 支付组件关系架构",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "统一下单与异步回调组件",
+    "diagramType": "architecture",
+    "locale": "zh-CN",
+    "notes": [
+      "渠道实现经 SpringBeansUtil 按 ifCode 动态获取；静态调用图不能穷举实际运行时 Bean。",
+      "回调只在订单为 STATE_ING 时执行成功/失败条件更新。"
+    ],
+    "architectureView": "relations",
+    "viewId": "jeepay-relations"
+  },
+  "nodes": [
+    {
+      "id": "unified",
+      "label": "UnifiedOrderController",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "kind": "source"
+      },
+      "tags": [
+        "core"
+      ]
+    },
+    {
+      "id": "abstract",
+      "label": "AbstractPayOrderController",
+      "kind": "business",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "api",
+      "label": "ApiController",
+      "kind": "security",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "config",
+      "label": "ConfigContextQueryService",
+      "kind": "component",
+      "module": "config",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/ConfigContextQueryService.java",
+        "lineStart": 48,
+        "lineEnd": 48,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "passage",
+      "label": "MchPayPassageService",
+      "kind": "component",
+      "module": "config",
+      "source": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/MchPayPassageService.java",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "orders",
+      "label": "PayOrderService",
+      "kind": "data",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "channel",
+      "label": "IPaymentService",
+      "kind": "component",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "process",
+      "label": "PayOrderProcessService",
+      "kind": "component",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "notify",
+      "label": "PayMchNotifyService",
+      "kind": "component",
+      "module": "notification",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "callback",
+      "label": "ChannelNoticeController",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "kind": "source"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "r1",
+      "source": "unified",
+      "target": "abstract",
+      "kind": "inherits",
+      "label": "继承下单编排",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 44,
+        "lineEnd": 44
+      }
+    },
+    {
+      "id": "r2",
+      "source": "abstract",
+      "target": "api",
+      "kind": "inherits",
+      "label": "继承请求校验",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 64,
+        "lineEnd": 64
+      }
+    },
+    {
+      "id": "r3",
+      "source": "unified",
+      "target": "abstract",
+      "kind": "call",
+      "label": "统一下单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 61,
+        "lineEnd": 61
+      }
+    },
+    {
+      "id": "r4",
+      "source": "abstract",
+      "target": "config",
+      "kind": "call",
+      "label": "查询商户配置",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 129,
+        "lineEnd": 129
+      }
+    },
+    {
+      "id": "r5",
+      "source": "abstract",
+      "target": "passage",
+      "kind": "call",
+      "label": "选择通道",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 167,
+        "lineEnd": 167
+      }
+    },
+    {
+      "id": "r6",
+      "source": "abstract",
+      "target": "orders",
+      "kind": "data",
+      "label": "保存支付订单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 201,
+        "lineEnd": 201
+      }
+    },
+    {
+      "id": "r7",
+      "source": "abstract",
+      "target": "channel",
+      "kind": "call",
+      "label": "调用 pay",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 205,
+        "lineEnd": 205
+      }
+    },
+    {
+      "id": "r8",
+      "source": "abstract",
+      "target": "process",
+      "kind": "call",
+      "label": "处理支付状态",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 383,
+        "lineEnd": 383
+      }
+    },
+    {
+      "id": "r9",
+      "source": "callback",
+      "target": "orders",
+      "kind": "data",
+      "label": "条件更新订单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 237,
+        "lineEnd": 237
+      }
+    },
+    {
+      "id": "r10",
+      "source": "callback",
+      "target": "process",
+      "kind": "call",
+      "label": "成功后处理",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 254,
+        "lineEnd": 254
+      }
+    },
+    {
+      "id": "r11",
+      "source": "process",
+      "target": "notify",
+      "kind": "call",
+      "label": "发商户通知",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+        "lineStart": 60,
+        "lineEnd": 60
+      }
+    }
+  ],
+  "layout": {
+    "direction": "right"
+  }
+}

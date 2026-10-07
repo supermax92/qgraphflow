@@ -1,0 +1,82 @@
+{
+  "browser": "Installed Chrome on macOS",
+  "before": {
+    "typeTitleGap": -1
+  },
+  "after": [
+    {
+      "uiLocale": "en",
+      "glyphs": [
+        {
+          "role": "type",
+          "x": 163.796875,
+          "y": 158,
+          "width": 80.40625,
+          "height": 17,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "14px",
+          "baseline": "172"
+        },
+        {
+          "role": "title",
+          "x": 99.484375,
+          "y": 177,
+          "width": 209.04150390625,
+          "height": 23,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "20px",
+          "baseline": "196"
+        },
+        {
+          "role": "subtitle",
+          "x": 154.515625,
+          "y": 203,
+          "width": 98.96875,
+          "height": 18,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "16px",
+          "baseline": "218"
+        }
+      ],
+      "typeTitleGap": 2,
+      "titleSubtitleGap": 3
+    },
+    {
+      "uiLocale": "zh-CN",
+      "glyphs": [
+        {
+          "role": "type",
+          "x": 182.09375,
+          "y": 158,
+          "width": 43.8125,
+          "height": 17,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "14px",
+          "baseline": "172"
+        },
+        {
+          "role": "title",
+          "x": 99.484375,
+          "y": 177,
+          "width": 209.04150390625,
+          "height": 23,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "20px",
+          "baseline": "196"
+        },
+        {
+          "role": "subtitle",
+          "x": 154.515625,
+          "y": 203,
+          "width": 98.96875,
+          "height": 18,
+          "font": "-apple-system, \"system-ui\", \"PingFang SC\", sans-serif",
+          "size": "16px",
+          "baseline": "218"
+        }
+      ],
+      "typeTitleGap": 2,
+      "titleSubtitleGap": 3
+    }
+  ]
+}

@@ -14,13 +14,11 @@
 
 </div>
 
-![agent-desk サンプルのアーキテクチャ図・シーケンス図・ER 図を 1.5 秒ずつ](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.hero.gif)
-
-*9種類の図に対応：アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
+*11種類の図に対応：プラットフォーム機能アーキテクチャ、工程階層アーキテクチャ、コンポーネント関係アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
 
 QGraphFlow はソースコード、データ構造、設定、要件から対話型のソフトウェア図を生成します。関係の根拠を確認し、共有可能なオフライン HTML として届けます。
 
-**ここが違う：** 1 つのスキルで 9 種類の図、すべての関係に根拠の種別、コードで裏付けられた関係にはその根拠となるソース行、自動レイアウト、ページ上での編集。プラグインのスクリプトと Viewer 自体はネットワーク通信を一切行いません。
+**ここが違う：** 1 つのスキルで 11 種類の図、すべての関係に根拠の種別、コードで裏付けられた関係にはその根拠となるソース行、自動レイアウト、ページ上での編集。プラグインのスクリプトと Viewer 自体はネットワーク通信を一切行いません。
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -30,21 +28,13 @@ npx skills add supermax92/qgraphflow
 
 - **探索：** 検索・拡大縮小・パンで、責務と上流・下流の関係を確認。
 
-  ![探索：refund を検索して注文ツールへジャンプし、上流のエージェントオーケストレーターと下流の注文データベース・配送追跡サービスが見えるまで縮小してからパンする](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.explore.gif)
-
 - **検証：** ノードや接続線からファイル、行番号、シンボル、明示された不確実性を確認。
-
-  ![検証：src/gateway/chat-gateway.js:5-19 を示すカード、シンボルと根拠事実を示す詳細パネル、そして inference と記された POST /chat の接続線](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.verify.gif)
 
 - **編集：** ロック解除後に文字や位置を変更。必要に応じてリセット。
 
-  ![編集：ロックを解除し、LLM プロバイダーを LLM ゲートウェイに改名し、接続線ごとドラッグしてからリセットする](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.edit.gif)
-
 - **共有：** オフライン HTML を開くか、図全体を SVG / PNG に出力。
 
-  ![共有：オフライン HTML を開き、「その他」から PNG を書き出し、書き出されたファイルそのものを表示する](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.ja.share.gif)
-
-上部のアニメーションはアーキテクチャ図・シーケンス図・ER 図を 1.5 秒ずつ（1 ループ 4.5 秒）表示し、4 つの機能アニメーションは 6.5〜8.5 秒です。すべてソースからビルドした Viewer で [agent-desk サンプル](../../examples/showcase/agent-desk)（架空の業務、実在のコード）を日本語の図と UI で録画しています。[showcase-v2 Release のアセット](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2)として配置し、Git 履歴やプラグインパッケージには含めないため閲覧にはネットワークが必要です。生成された図の HTML 自体はオフラインで動作します。
+The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
 
 ## インストールガイド
 
@@ -164,20 +154,17 @@ $qgraphflow:q-flow 前の図の在庫引当を掘り下げ、成功時と失敗�
 ページで編集したあと、Chrome または Edge で「その他 → 変更を保存」を実行し、図のフォルダーを一度選ぶと、ページ、`graph.json`、SVG がその場で書き換わります。ほかのブラウザーは `graph.json` だけを保存します。そのフォルダーに置いてから `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` でページと SVG を再生成してください。
 
 <details>
-<summary>EC の9種類のサンプルを手動で実行</summary>
+<summary>Run the eleven-view Jeepay source example</summary>
 
-次のコマンドはリポジトリ内のサンプル用です。導入済みプラグインの使用には、このリポジトリの複製は不要です。Node.js 22 以降を用意して実行します。
+Select your Jeepay source checkout to verify the evidence:
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.ja.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.ja.graph.json output/ecommerce-ja
+export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
+node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-ブラウザーで `output/ecommerce-ja/index.html` を開きます。9 つの SVG も同じディレクトリにあります。上部の「図の種類」から切り替えます。各図で保存した文字と位置は切り替えても保持されます。「その他 → 変更を保存」で、上で説明したとおり全ビューを保存します。同じページは[オンラインデモ](https://supermax92.github.io/qgraphflow/)でも見られます。
-
-ビルド済み Viewer からのページ生成には、依存関係のインストール、API キー、バックエンドは不要です。AI による根拠収集と図の作成には、選んだクライアントのモデルサービスを使います。
+Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](../../examples/jeepay) for the source revision and refresh procedure.
 
 </details>
 

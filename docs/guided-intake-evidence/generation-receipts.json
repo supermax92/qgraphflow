@@ -1,0 +1,122 @@
+[
+  {
+    "name": "detailed-sequence",
+    "results": [
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "tests/fixtures/guided-intake/detailed-sequence.graph.json",
+          "--input-only",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramType\":\"sequence\",\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"not-checked\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/generate-viewer.mjs",
+          "tests/fixtures/guided-intake/detailed-sequence.graph.json",
+          "{run}/regressions/detailed-sequence",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"generated\":true,\"diagramType\":\"sequence\",\"outputDir\":\"{run}/regressions/detailed-sequence\",\"files\":[\"index.html\",\"graph.json\",\"diagram.svg\"],\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "{run}/regressions/detailed-sequence/graph.json",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramType\":\"sequence\",\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      }
+    ]
+  },
+  {
+    "name": "minimal-all-calls",
+    "results": [
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "tests/fixtures/guided-intake/minimal-all-calls.graph.json",
+          "--input-only",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramType\":\"sequence\",\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"not-checked\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/generate-viewer.mjs",
+          "tests/fixtures/guided-intake/minimal-all-calls.graph.json",
+          "{run}/regressions/minimal-all-calls",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"generated\":true,\"diagramType\":\"sequence\",\"outputDir\":\"{run}/regressions/minimal-all-calls\",\"files\":[\"index.html\",\"graph.json\",\"diagram.svg\"],\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "{run}/regressions/minimal-all-calls/graph.json",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramType\":\"sequence\",\"nodes\":6,\"edges\":12,\"groups\":6,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":18,\"checked\":18,\"files\":6,\"relations\":{\"sited\":6,\"eligible\":6},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      }
+    ]
+  },
+  {
+    "name": "multiple-views",
+    "results": [
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "tests/fixtures/guided-intake/multiple-views.graph.json",
+          "--input-only",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramTypes\":[\"architecture\",\"sequence\"],\"diagrams\":2,\"nodes\":9,\"edges\":15,\"groups\":4,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"not-checked\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":24,\"checked\":24,\"files\":6,\"relations\":{\"sited\":9,\"eligible\":9},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/generate-viewer.mjs",
+          "tests/fixtures/guided-intake/multiple-views.graph.json",
+          "{run}/regressions/multiple-views",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"generated\":true,\"diagramTypes\":[\"architecture\",\"sequence\"],\"diagrams\":2,\"outputDir\":\"{run}/regressions/multiple-views\",\"files\":[\"index.html\",\"graph.json\",\"diagram-1-architecture.svg\",\"diagram-2-sequence.svg\"],\"nodes\":9,\"edges\":15,\"groups\":4,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":24,\"checked\":24,\"files\":6,\"relations\":{\"sited\":9,\"eligible\":9},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "skills/q-flow/scripts/validate-graph.mjs",
+          "{run}/regressions/multiple-views/graph.json",
+          "--repo-root",
+          "{run}/multiple"
+        ],
+        "status": 0,
+        "stdout": "{\"valid\":true,\"diagramTypes\":[\"architecture\",\"sequence\"],\"diagrams\":2,\"nodes\":9,\"edges\":15,\"groups\":4,\"semantic\":{\"status\":\"passed\"},\"geometry\":{\"status\":\"passed\"},\"rendering\":{\"status\":\"not-checked\"},\"sourceEvidence\":{\"scope\":\"working-tree\",\"references\":24,\"checked\":24,\"files\":6,\"relations\":{\"sited\":9,\"eligible\":9},\"status\":\"passed\",\"symbols\":18}}\n",
+        "stderr": ""
+      }
+    ]
+  }
+]

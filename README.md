@@ -14,13 +14,11 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 </div>
 
-![Architecture, sequence and ER views of the agent-desk example, 1.5 seconds each](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.hero.gif)
-
-*Nine diagram types: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
+*Eleven diagram types: platform capability architecture, engineering layer architecture, component relationship architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
-**What sets it apart:** nine diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+**What sets it apart:** eleven diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -30,21 +28,13 @@ One command installs the skill for Claude Code, Codex, Cursor and Qoder; the [in
 
 - **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
 
-  ![Explore: search for refund, jump to Order tools, zoom out to the orchestrator upstream and the order database and logistics downstream, then pan](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.explore.gif)
-
 - **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
-
-  ![Verify: quick-look card with src/gateway/chat-gateway.js:5-19, details with the symbol and evidence facts, then the POST /chat edge marked as inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.verify.gif)
 
 - **Edit:** unlock the layout, change text and move elements; reset when needed.
 
-  ![Edit: unlock the layout, rename LLM provider to LLM gateway, drag it with its edges, then reset](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.edit.gif)
-
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
 
-  ![Share: open the offline HTML, export PNG from More, then the exported file itself](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.en.share.gif)
-
-The top animation shows the architecture, sequence and ER views for 1.5 seconds each (4.5 seconds per loop); the four feature animations run 6.5–8.5 seconds. All of them are recorded from the source-built Viewer on the [agent-desk example](examples/showcase/agent-desk) — fictional business, real code — with English graph and interface text. They are hosted as [showcase-v2 Release assets](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2) and kept out of Git history and the plugin package, so viewing them needs network access; the generated diagram HTML itself works offline.
+The real-source [Jeepay corpus](examples/jeepay) contains all eleven views used by CI and the live demo.
 
 ## Installation guide
 
@@ -164,20 +154,17 @@ Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, ed
 After editing in the page, **More → Save changes** in Chrome or Edge rewrites the page, `graph.json` and the SVGs in place once you pick the diagram's folder. Other browsers save `graph.json` only: put it in the folder and regenerate the page and SVGs with `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
 
 <details>
-<summary>Run the nine-view e-commerce example manually</summary>
+<summary>Run the eleven-view Jeepay source example</summary>
 
-These commands run the repository example. An installed plugin does not require cloning this repository. With Node.js 22 or later:
+Select your Jeepay source checkout to verify the evidence:
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.en.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.en.graph.json output/ecommerce-en
+export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
+node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-Open `output/ecommerce-en/index.html` in a browser; the nine SVGs sit next to it. Switch views with **Diagram types** in the top toolbar; saved text and positions survive switching. **More → Save changes** saves all views as described above. The same pages are online in the [live demo](https://supermax92.github.io/qgraphflow/).
-
-The prebuilt Viewer needs no dependency installation, API key or backend service. AI-assisted evidence gathering and graph authoring use your chosen client's model service.
+Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](examples/jeepay) for the source revision and refresh procedure.
 
 </details>
 
@@ -215,7 +202,9 @@ The skill moves anchors whose symbol it finds once, corrects only the anchors st
 
 | View · PNG | Main question | Example scope |
 | --- | --- | --- |
-| Architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
+| Platform capability architecture | What capabilities does the platform provide? | Capability bands and matrices |
+| Engineering layer architecture | How is the project organized? | Layers and parallel support |
+| Component relationship architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
 | Flowchart | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
 | Sequence | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
 | ER | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
@@ -244,3 +233,15 @@ Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minima
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/jeepay](examples/jeepay) for real-source platform, engineering and component relationship architecture views. Unlock an overview to reorder cards within a layer or edit text. Save keeps all views; reset restores only the current one.

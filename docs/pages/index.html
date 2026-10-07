@@ -1,50 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>QGraphFlow demo</title>
+<title>QGraphFlow · Jeepay 源码示例</title>
 <style>
-  :root { --ink: #1c2024; --muted: #60646c; --line: #e0e1e6; --paper: #fcfcfd; --link: #0d74ce; }
-  @media (prefers-color-scheme: dark) { :root { --ink: #edeef0; --muted: #b0b4ba; --line: #2e3135; --paper: #111113; --link: #70b8ff; } }
-  body { margin: 0 auto; max-width: 720px; padding: 40px 16px 64px; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
-  h1 { display: flex; align-items: center; gap: 12px; font-size: 28px; margin: 0 0 8px; }
-  h1 svg { flex: none; }
-  h2 { font-size: 18px; margin: 36px 0 4px; }
-  p { margin: 6px 0; color: var(--muted); }
-  ul { list-style: none; margin: 12px 0 0; padding: 0; }
-  li { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 10px 0; border-top: 1px solid var(--line); }
-  li > span { flex: 1 1 160px; }
-  a { color: var(--link); }
-  footer { margin-top: 40px; font-size: 14px; }
+:root { color-scheme: light dark; --ink:#1c2024; --muted:#60646c; --line:#e0e1e6; --paper:#fcfcfd; --link:#0d74ce; }
+@media (prefers-color-scheme:dark) { :root { --ink:#edeef0; --muted:#b0b4ba; --line:#2e3135; --paper:#111113; --link:#70b8ff; } }
+body { max-width:720px; margin:0 auto; padding:56px 24px; font:16px/1.7 system-ui,-apple-system,sans-serif; color:var(--ink); background:var(--paper); }
+h1 { font-size:32px; } p { color:var(--muted); } a { color:var(--link); } .demo { display:block; border:1px solid var(--line); border-radius:16px; padding:24px; text-decoration:none; margin:28px 0; } .demo strong { display:block; font-size:20px; margin-bottom:8px; } .demo span { color:var(--muted); }
 </style>
 </head>
 <body>
-<h1><svg width='36' height='36' aria-hidden='true' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='#1e4437'/><g fill='#faf4e8'><circle cx='27' cy='27' r='15' fill='none' stroke='#faf4e8' stroke-width='5.5'/><path d='M37.6 37.6L49.6 49.6' stroke='#faf4e8' stroke-width='5.5'/><circle cx='27' cy='12' r='5'/><circle cx='12' cy='27' r='5'/><circle cx='37.6' cy='37.6' r='5'/></g><circle cx='49.6' cy='49.6' r='7.5' fill='#a8e3b8'/></svg>QGraphFlow</h1>
-<p>Interactive software diagrams from real code: nine diagram types, a source for every relationship, automatic layout, editing in the page, and no network requests from the page itself.</p>
-<p lang="zh-CN">从真实代码生成可交互的软件图：九类图、每条关系都标出处、自动布局、能在页面里编辑，页面本身不发任何网络请求。</p>
-
-<h2>agent-desk <span lang="zh-CN">示例</span></h2>
-<p>A fictional business on real example code. Every node anchor was checked against the code when this site was built.</p>
-<p lang="zh-CN">虚构业务、真实代码。本站构建时，每个节点的源码锚点都对照代码校验过。</p>
-<ul>
-  <li><span>Architecture · <span lang="zh-CN">架构图</span></span><a href="agent-desk/en/architecture/">English</a><a href="agent-desk/zh-CN/architecture/" lang="zh-CN">中文</a></li>
-  <li><span>Sequence · <span lang="zh-CN">时序图</span></span><a href="agent-desk/en/sequence/">English</a><a href="agent-desk/zh-CN/sequence/" lang="zh-CN">中文</a></li>
-  <li><span>ER · <span lang="zh-CN">ER 图</span></span><a href="agent-desk/en/er/">English</a><a href="agent-desk/zh-CN/er/" lang="zh-CN">中文</a></li>
-</ul>
-
-<h2>E-commerce · nine views <span lang="zh-CN">/ 电商九视图</span></h2>
-<p>A concept model: architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow in one page; its relationships are marked as inference.</p>
-<p lang="zh-CN">概念模型：架构、流程、时序、ER、部署、类、状态、用例、数据流九张图在同一页里切换，关系的证据都标为推断。</p>
-<ul>
-  <li><span>Collection · <span lang="zh-CN">集合</span></span><a href="ecommerce/en/">English</a><a href="ecommerce/zh-CN/" lang="zh-CN">中文</a></li>
-</ul>
-
-<footer>
-<p>Every folder also holds its <code>graph.json</code> and one SVG per view (<code>diagram.svg</code> or <code>diagram-&lt;n&gt;-&lt;type&gt;.svg</code>) that can be linked as an image.</p>
-<p lang="zh-CN">每个目录里还有 <code>graph.json</code> 和每个视图一份 SVG，可以直接当图片引用。</p>
-<p><a href="https://github.com/supermax92/qgraphflow">github.com/supermax92/qgraphflow</a> · MIT</p>
-</footer>
+<h1>QGraphFlow</h1>
+<p>以 Jeepay 公开源码、Maven 配置、DDL 和 Compose 为依据，查看十一类可追溯的软件图形。</p>
+<a class="demo" href="jeepay/zh-CN/"><strong>打开 Jeepay 十一类图</strong><span>平台能力、工程分层、组件关系、流程、时序、ER、部署、类、状态、用例和数据流。可搜索、编辑、核验来源并导出。</span></a>
+<p>这些图展示源码和配置声明；容器运行及支付渠道接入状态未作验证。</p>
+<a href="https://github.com/supermax92/qgraphflow">项目源码与安装说明</a>
 </body>
 </html>

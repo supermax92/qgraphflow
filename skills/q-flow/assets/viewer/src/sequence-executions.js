@@ -1,4 +1,5 @@
 import { operandScopes } from './sequence-fragments.js';
+import { edgeLabelLayout } from './text-layout.js';
 
 // Pair numbers follow the calls' message order (C1 is the first call that gets a reply), not their id spelling.
 export function sequencePairs(graph) {
@@ -16,6 +17,27 @@ export function sequenceMessageLabel(graph, edge, pairs = sequencePairs(graph), 
   const pair = pairs.get(edge.id);
   const parallel = (graph.groups ?? []).some(group => group.kind === 'par' && (scopes.get(edge.id) ?? '').split('/').some(segment => segment.startsWith(encodeURIComponent(group.id) + ':')));
   return pair ? `${pair.label} · ${edge.label ?? ''}` : parallel ? edge.label ?? '' : `${String(edge.order).padStart(2, '0')} · ${edge.label ?? ''}`;
+}
+
+// Difference constraints on each message's actual span; moving the suffix keeps unrelated neighboring gaps unchanged.
+// It only widens, so it lays out a fresh row and repairs a placed one alike. `nodes` stand left to right.
+export function spreadParticipants(graph, nodes) {
+  const index = id => nodes.findIndex(node => node.id === id);
+  const constraints = [...graph.edges].sort((a, b) => Math.abs(index(a.source) - index(a.target)) - Math.abs(index(b.source) - index(b.target)) || a.order - b.order);
+  const selfCounts = new Map();
+  for (const edge of constraints) {
+    const left = Math.min(index(edge.source), index(edge.target));
+    let right = Math.max(index(edge.source), index(edge.target));
+    let required = edgeLabelLayout(sequenceMessageLabel(graph, edge)).width + 64;
+    if (left === right) {
+      const ordinal = selfCounts.get(edge.source) ?? 0; selfCounts.set(edge.source, ordinal + 1);
+      right++; required += 48 + ordinal * 24;
+      if (right === nodes.length) continue;
+    }
+    const center = node => node.position.x + node.size.width / 2;
+    const extra = Math.max(0, required - (center(nodes[right]) - center(nodes[left])));
+    for (let i = right; i < nodes.length; i++) nodes[i].position.x += extra;
+  }
 }
 
 // Hand-edited or legacy data may lack route.messageY, or the whole route. Such a message is stacked by order below the

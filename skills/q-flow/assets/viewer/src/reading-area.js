@@ -16,7 +16,7 @@ export function appleEase(t) {
 export function readingRect(canvas, navOpen, drawerOpen) {
   const width = canvas?.clientWidth ?? 0, height = canvas?.clientHeight ?? 0;
   const fullscreen = Boolean(globalThis.document?.fullscreenElement?.contains(canvas));
-  const panelsMatter = width > 700 && !fullscreen;
+  const panelsMatter = !fullscreen;
   const left = (panelsMatter && navOpen ? GUTTER + SIDE : GUTTER) + BREATH;
   const right = width - ((panelsMatter && drawerOpen ? GUTTER + SIDE : GUTTER) + BREATH);
   const top = TOOLBAR + GUTTER + BREATH;

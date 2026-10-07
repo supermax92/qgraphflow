@@ -1,3 +1,7 @@
+import { routeOrthogonal, placeEdgeLabels } from '../assets/viewer/src/orthogonal-routing.js';
+import { refineDiagramLayout, refineWithLegacySeed, layoutMetrics } from '../assets/viewer/src/layout-refinement.js';
+import { isArchitectureOverview } from '../assets/viewer/src/view-identity.js';
+import { overviewSections, fitArchitectureOverview, overviewLayoutReports } from '../assets/viewer/src/architecture-overview.js';
 import { Worker } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
@@ -9,8 +13,10 @@ import { groupHeadingLayout, estimateLabelSize } from '../assets/viewer/src/text
 import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, OVERVIEW_AREA, layeredDirections, layeredDown, layoutLimits, layoutTargets, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
+import { templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
 
-export const LAYOUT_VERSION = 'adaptive-v3-elkjs-0.11.0';
+import { LAYOUT_VERSION } from '../assets/viewer/src/layout-policy.js';
+export { LAYOUT_VERSION };
 export const CANDIDATE_COUNT = 6;
 // Hang guard for one ELK solve, not a budget for a compile: a slow or busy machine only takes longer.
 export const LAYOUT_TIMEOUT_MS = 30_000;
@@ -19,21 +25,8 @@ export const LAYOUT_TIMEOUT_MS = 30_000;
 // the shape back within the slack win, so the graph's own shape decides between landscape and portrait. Ranked layouts and
 // branching state charts never fold.
 export const FOLD_MAX = 5;
-// Fixed-position ports keep the order their relations were created in, so edge order alone decides which relations cross at
-// a node. When the best candidates still have crossings, a bounded local search moves only the relations that cross: it
-// swaps their ports within a node side, swaps which branch of a decision leaves on which side, and swaps their lanes across
-// fold cuts. A move is kept only when the candidate scores better, so it is deterministic and never worse than the plain
-// result; it stops with no crossings, no gain, or when its evaluation budget is spent. The budget counts evaluations, never
-// time, so a slow or busy machine lays out the same graph the same way; only LAYOUT_TIMEOUT_MS can end a compile, and that
-// is an error, not a different layout.
-export const REFINE_CANDIDATES = 2;
+// Layout and route refinement share a deterministic evaluation budget, not a wall-clock cutoff.
 export const REFINE_EVALUATIONS = 60;
-// Candidates whose width/height ratio is within this factor of the accepted band rank equal on shape, so a crossing is never
-// traded for a slightly better aspect ratio; only a shape beyond it (a long strip) outranks the crossings, and only by a
-// whole SHAPE_STEP, so a strip does not take on crossings for a marginally better ratio.
-export const SHAPE_TIE = 1.3;
-export const SHAPE_STEP = .25;
-export const shapeRank = excess => excess <= SHAPE_TIE ? 1 : Math.ceil(excess / SHAPE_STEP) * SHAPE_STEP;
 const stable = items => [...items].sort((a, b) => (a.layout?.rank ?? 0) - (b.layout?.rank ?? 0) || (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 const round = value => +value.toFixed(3);
 const box = item => ({ ...item.position, ...item.size });
@@ -46,6 +39,7 @@ function semanticDigest(graph, migration = []) {
   for (const item of [...model.nodes, ...(model.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of model.edges) delete edge.route;
   for (const item of migration) delete [...model.nodes, ...(model.groups ?? [])].find(element => element.id === item.elementId)[item.field];
+  for (const section of overviewSections(model)) { delete section.position; delete section.size; }
   if (model.layout) { delete model.layout.version; delete model.layout.strategy; delete model.layout.direction; if (!Object.keys(model.layout).length) delete model.layout; }
   const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
   return createHash('sha256').update(JSON.stringify(canonical(model))).digest('hex');
@@ -71,6 +65,8 @@ export function migrateOwnership(graph) {
   }
   return migrated;
 }
+
+const compactArchitecture = graph => diagramTypeOf(graph) === 'architecture' && !graph.groups?.length && !graph.edges.some(edge => edge.source === edge.target) && graph.nodes.some(node => graph.edges.filter(edge => edge.source === node.id).length > 1);
 
 function elkInput(graph, candidate, hints = {}) {
   const type = diagramTypeOf(graph), diagram = getDiagram(type), down = (hints.direction ?? layeredDirections(type)[0]) === 'down';
@@ -144,7 +140,7 @@ function elkInput(graph, candidate, hints = {}) {
     root.edges.push({ id: `e:${edge.id}`, sources: [ports[0]], targets: [ports[1]],
       layoutOptions: { 'elk.layered.priority.direction': String(feedback.has(edge.id) ? 1 : 100) },
       // Labels sit on their own line: ELK routes the edge through the label and reserves its size in the layer gap.
-      labels: label ? [{ text: label, ...size, layoutOptions: { 'elk.edgeLabels.placement': 'CENTER', 'elk.edgeLabels.inline': 'true' } }] : [] });
+      labels: label && !(compactArchitecture(graph) && candidate < 3) ? [{ text: label, ...size, layoutOptions: { 'elk.edgeLabels.placement': 'CENTER', 'elk.edgeLabels.inline': 'true' } }] : [] });
   }
   for (const node of nodes.values()) {
     for (const side of ['NORTH', 'EAST', 'SOUTH', 'WEST']) {
@@ -404,20 +400,10 @@ function foldedVariants(graph, options) {
 
 function candidateScore(graph, audit, index) {
   const bounds = graphBounds(graph, audit.routes), budget = canvasBudgetFor(diagramTypeOf(graph));
-  const routes = [...audit.routes.values()];
-  const length = routes.reduce((sum, route) => sum + route.points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point.x - route.points[i].x, point.y - route.points[i].y), 0), 0);
-  const area = graph.nodes.reduce((sum, node) => { const box = occupiedBox(node, diagramTypeOf(graph)); return sum + box.width * box.height; }, 0);
-  const count = Math.max(1, routes.length), unit = Math.sqrt(area / graph.nodes.length);
-  const crossings = audit.crossings.reduce((sum, item) => sum + item.measured + 2 * item.repeated, 0);
-  const bends = routes.reduce((sum, route) => sum + route.points.length - 2, 0);
-  // Normalize by content, so a small routing improvement cannot justify unlimited whitespace.
-  const cost = bounds.width * bounds.height / area + length / (count * unit) + .25 * bends / count + 4 * crossings / count;
-  // Shapes of one rank compete on crossings, then on the exact distance from the band (every in-band shape scores 1), then
-  // on compactness; a better rank wins first. The type's budget ratio only breaks ties towards its preferred orientation.
+  const { cost, crossings } = layoutMetrics(graph, audit);
   const excess = +aspectExcess(graph, audit.routes).toFixed(2);
-  // A type laid out both ways prefers, after crossings, the layout whose whole view fits one screen at the larger zoom.
-  const fit = layeredDirections(diagramTypeOf(graph)).length > 1 ? round(Math.min(OVERVIEW_AREA.width / bounds.width, OVERVIEW_AREA.height / bounds.height)) : 0;
-  return [audit.errors.length, shapeRank(excess), crossings, -fit, excess, round(cost), budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : 0, index];
+  // The normalized objective is shared with Worker refinement. Aspect and stable candidate ID break ties.
+  return [audit.errors.length, cost, budget ? Math.abs(bounds.width / bounds.height - budget.width / budget.height) : excess, index];
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 
@@ -441,6 +427,11 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     requireDiagramQuality(graph);
     return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
   }
+  if (isArchitectureOverview(graph)) {
+    let output;
+    try { output = fitArchitectureOverview(graph, requireDiagramQuality); } catch (error) { throw error.diagnostics ? error : Object.assign(qualityFailure(graph, 'geometry', error.message), { routingReport: error.routingReport }); }
+    return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, template: { structure: templateOf(graph).structure, applied: true, fallback: null }, refinement: overviewLayoutReports.get(output), semantics: semanticReport(output) } };
+  }
   const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });
   let pending, expired = false;
@@ -451,7 +442,6 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   const timeout = Math.min(LAYOUT_TIMEOUT_MS, Math.max(1, timeoutMs));
   const candidates = [];
   try {
-    const extras = new WeakMap();
     // Each solve has its own limit; the compile as a whole has none, so load can slow it but never fail it or change its result.
     const post = root => new Promise((resolve, reject) => {
       const timer = setTimeout(() => { expired = true; fail(new Error(`Layout exceeded ${timeout}ms for ${diagramTypeOf(graph)}`)); worker.terminate(); }, timeout);
@@ -459,6 +449,20 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       worker.postMessage(root);
     });
     const evaluate = (candidate, index, errors = []) => {
+      // New auto layouts obey tiers; preserve mode keeps legacy coordinates and their recorded version.
+      if (diagramTypeOf(candidate) === 'deployment') candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
+      if (!sequence && !isArchitectureOverview(candidate)) {
+        candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
+        try { placeEdgeLabels(candidate); } catch { /* Routing below must supply an inline corridor. */ }
+      }
+      let routeRefined = false;
+      if (!sequence && (compactArchitecture(candidate) || auditLayoutQuality(candidate).errors.length)) {
+        try {
+          const routed = routeOrthogonal(candidate, { passes: 1, accept: requireDiagramQuality }).graph;
+          const checked = auditLayoutQuality(routed), original = auditLayoutQuality(candidate);
+          if (!checked.errors.length && (original.errors.length || layoutMetrics(routed, checked).cost < layoutMetrics(candidate, original).cost)) { routeRefined = checked.crossings.reduce((s, c) => s + c.measured, 0) < original.crossings.reduce((s, c) => s + c.measured, 0); candidate = routed; }
+        } catch { /* A measured ELK route remains a valid candidate; bounded failures are reported by final refinement. */ }
+      }
       let audit = auditLayoutQuality(candidate);
       if (errors.length) audit = { ...audit, errors: [...errors, ...audit.errors] };
       // ELK can put a label at a legal point crossing. Slide only that label along its own nearest segment.
@@ -480,21 +484,17 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
         }
         edge.route.labelAt = best;
       }
-      return { graph: candidate, errors: audit.errors, diagnostics: audit.diagnostics, score: candidateScore(candidate, audit, index), crossings: audit.crossings, excess: +aspectExcess(candidate, audit.routes).toFixed(2) };
+      return { graph: candidate, ...(routeRefined ? { refined: true } : {}), errors: audit.errors, diagnostics: audit.diagnostics, score: candidateScore(candidate, audit, index), crossings: audit.crossings, excess: +aspectExcess(candidate, audit.routes).toFixed(2) };
     };
     const finish = (index, layered, prepared, hints) => {
       const unfolded = { ...evaluate(layered, index), fold: 0, axis: null };
       // Fold only a shape beyond the band's slack; the unfolded result stays available as the fallback.
-      const variants = !sequence && unfolded.excess > ASPECT_SLACK
+      const variants = !sequence && !(['class', 'deployment', 'state'].includes(diagramTypeOf(graph))) && (diagramTypeOf(graph) === 'er' || !templateOf(graph)?.arrange || graph.layout?.direction && !graph.layout?.version || graph.layout?.strategy?.includes('-fold')) && unfolded.excess > ASPECT_SLACK
         ? foldedVariants(layered, { spacing: layoutTargets(getDiagram(diagramTypeOf(graph))).layerGap + [0, 16, 48][index % 3], stub: prepared.stub, portGap: prepared.portGap, laneOrder: hints.lanes }).map(variant => ({ ...evaluate(variant.graph, index, variant.errors), fold: variant.count, axis: variant.axis })) : [];
-      // Folding exists to fix the shape: among the folds the quality gate accepts within the fold slack of the band, the one
-      // with the fewest crossings wins, then the fewest segments; otherwise the nearest valid shape competes with the
-      // unfolded result.
-      const valid = variants.filter(variant => !variant.errors.length), within = valid.filter(variant => variant.excess <= ASPECT_SLACK);
-      const fold = within.length ? within.reduce((a, b) => b.score[2] < a.score[2] ? b : a) : valid.sort((a, b) => a.excess - b.excess || compare(a, b))[0];
+      // Folded and continuous paths share the same objective.
+      const fold = variants.filter(variant => !variant.errors.length).sort(compare)[0];
       const chosen = fold && compare(fold, unfolded) < 0 ? fold : unfolded;
       const candidate = { index, ...(hints.direction ? { direction: hints.direction } : {}), ...chosen, folds: variants.map(variant => ({ axis: variant.axis, count: variant.fold, errors: variant.errors, excess: variant.excess, score: variant.score })) };
-      extras.set(candidate, { layered, prepared, hints });
       return candidate;
     };
     const solve = async (index, hints = {}) => {
@@ -502,52 +502,6 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       const layered = sequence ? compileSequence(graph, index) : applyElk(graph, await post(prepared.root), prepared);
       if (hints.direction) layered.layout = { ...layered.layout, direction: hints.direction };
       return finish(index, layered, prepared, hints);
-    };
-    // Crossing-directed local search over port order, decision branch sides and fold lanes (see REFINE_EVALUATIONS).
-    const swapped = (list, i, j) => { const next = [...list]; [next[i], next[j]] = [next[j], next[i]]; return next; };
-    const refine = async base => {
-      let best = base, evaluations = 0;
-      const first = extras.get(base);
-      let hints = { ...(first.hints.direction ? { direction: first.hints.direction } : {}), ports: new Map(first.prepared.buckets), lanes: stable(graph.edges).map(edge => edge.id), sides: new Map(), nodes: graph.nodes.some(node => node.layout?.order !== undefined) ? undefined : stable(graph.nodes).map(node => node.id) };
-      if (['flowchart', 'state'].includes(diagramTypeOf(graph))) for (const node of stable(graph.nodes.filter(node => ['decision', 'choice'].includes(node.kind)))) {
-        const branches = stable(graph.edges.filter(edge => edge.source === node.id && edge.target !== node.id)).map(edge => edge.id);
-        if (branches.length >= 2) hints.sides.set(node.id, branches);
-      }
-      if (diagramTypeOf(graph) === 'usecase') for (const node of stable(graph.nodes.filter(node => node.kind === 'actor'))) {
-        const incident = stable(graph.edges.filter(edge => edge.source === node.id || edge.target === node.id)).map(edge => edge.id);
-        if (incident.length >= 2) hints.sides.set(node.id, incident);
-      }
-      while (best.score[2] && evaluations < REFINE_EVALUATIONS) {
-        const here = extras.get(best), crossing = [...new Set(best.crossings.flatMap(item => item.elementIds))].sort();
-        const moves = [];
-        for (const id of crossing) {
-          for (const [portId, role] of here.prepared.portRoles) {
-            if (role.edge.id !== id) continue;
-            const key = `n:${role.edge[role.role]}:${role.side}`, list = hints.ports.get(key) ?? [], at = list.indexOf(portId);
-            for (let other = 0; other < list.length; other++) if (other !== at) moves.push({ rerun: true, hints: { ...hints, ports: new Map(hints.ports).set(key, swapped(list, at, other)) } });
-          }
-          for (const [node, branches] of hints.sides) {
-            const at = branches.indexOf(id);
-            if (at >= 0) for (let other = 0; other < branches.length; other++) if (other !== at) moves.push({ rerun: true, hints: { ...hints, sides: new Map(hints.sides).set(node, swapped(branches, at, other)) } });
-          }
-        }
-        if (hints.nodes) {
-          const ends = [...new Set(graph.edges.filter(edge => crossing.includes(edge.id)).flatMap(edge => [edge.source, edge.target]))].sort();
-          for (const a of ends) for (const b of ends) if (a < b && graph.nodes.find(node => node.id === a).groupId === graph.nodes.find(node => node.id === b).groupId) moves.push({ rerun: true, hints: { ...hints, nodes: swapped(hints.nodes, hints.nodes.indexOf(a), hints.nodes.indexOf(b)) } });
-        }
-        if (best.fold) for (const a of crossing) for (const b of crossing) if (a < b) moves.push({ rerun: false, hints: { ...hints, lanes: swapped(hints.lanes, hints.lanes.indexOf(a), hints.lanes.indexOf(b)) } });
-        let improved = false;
-        for (const move of moves) {
-          if (evaluations >= REFINE_EVALUATIONS) break;
-          evaluations++;
-          let next;
-          try { next = move.rerun ? await solve(base.index, move.hints) : finish(base.index, here.layered, here.prepared, move.hints); }
-          catch (error) { if (expired) throw error; continue; }
-          if (compare(next, best) < 0) { best = Object.assign(next, { refined: true }); hints = move.hints; improved = true; break; }
-        }
-        if (!improved) break;
-      }
-      return best;
     };
     // A recorded or authored layout.direction pins the direction, so a regenerated view keeps its orientation.
     const directions = sequence ? [undefined] : graph.layout?.direction ? [graph.layout.direction] : layeredDirections(diagramTypeOf(graph));
@@ -559,14 +513,36 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
       }
     }
     candidates.sort(compare);
-    if (!sequence) for (const base of candidates.filter(candidate => !candidate.errors.length && candidate.score[2] > 0).slice(0, REFINE_CANDIDATES)) {
-      candidates[candidates.indexOf(base)] = await refine(base);
+    const template = templateOf(graph), templateAttempts = [], templates = [];
+    if (template?.arrange) for (let variant = 0; variant < 4; variant++) {
+      const draft = templateDraft(graph, variant);
+      if (!draft) break;
+      draft.layout = { ...draft.layout, version: LAYOUT_VERSION, strategy: `template-${template.structure}-${variant}` };
+      try {
+        const routed = routeOrthogonal(draft, { passes: 3, accept: requireDiagramQuality });
+        routed.graph.layout.strategy = `template-${template.structure}-${variant}`;
+        const candidate = { ...evaluate(routed.graph, variant), index: variant };
+        templateAttempts.push({ variant, errors: candidate.errors, cost: layoutMetrics(candidate.graph).cost });
+        if (!candidate.errors.length) templates.push(candidate);
+      } catch (error) { templateAttempts.push({ variant, errors: [error.message] }); }
     }
-    candidates.sort(compare);
-    const best = candidates[0];
+    templates.sort(compare);
+    // All legal layered and template candidates compete on the same normalized objective.
+    const layered = candidates[0];
+    const requiredTemplate = Boolean(template?.arrange && templateDraft(graph) && ['deployment', 'class', 'state', 'usecase', 'dataflow'].includes(diagramTypeOf(graph)));
+    const semanticTemplates = templates.filter(candidate => !candidate.errors.length);
+    const preferred = semanticTemplates.find(candidate => layered.errors.length || compare(candidate, layered) < 0) ?? (!layered.errors.length ? null : semanticTemplates[0]);
+    if (requiredTemplate && !preferred && layered.errors.length) throw qualityFailure(graph, 'geometry', `Semantic template ${template.structure} could not be routed:\n- ${templateAttempts.flatMap(attempt => attempt.errors).join('\n- ')}`);
+    const semanticPreferred = graph.layout?.primaryPath?.length && semanticTemplates.length ? semanticTemplates[0] : preferred;
+    const useTemplate = Boolean(semanticPreferred);
+    const best = useTemplate ? semanticPreferred : layered;
     if (best.errors.length) throw Object.assign(qualityFailure(graph, 'geometry', `No valid layout candidate for ${diagramTypeOf(graph)}:\n- ${best.errors.join('\n- ')}`, best.diagnostics), { diagnosticGraph: best.graph, candidates: candidates.map(({ graph, ...item }) => item) });
-    best.graph.layout = { ...best.graph.layout, version: LAYOUT_VERSION, strategy: `${sequence ? 'sequence' : 'layered'}-${best.index}${best.fold ? `-fold${best.fold}${best.axis === 'columns' ? 'c' : ''}` : ''}` };
-    return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, ...(best.direction ? { direction: best.direction } : {}), migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
+    best.graph.layout = { ...best.graph.layout, strategy: `${useTemplate ? `template-${template.structure}` : sequence ? 'sequence' : 'layered'}-${best.index}${best.fold ? `-fold${best.fold}${best.axis === 'columns' ? 'c' : ''}` : ''}` };
+    const refined = refineWithLegacySeed(best.graph, graph, { global: true, evaluations: REFINE_EVALUATIONS, laneAxis: best.fold ? best.axis === 'columns' ? 'x' : 'y' : null });
+    best.graph = refined.graph;
+    best.graph.layout = { ...best.graph.layout, version: LAYOUT_VERSION };
+    requireDiagramQuality(best.graph);
+    return { graph: best.graph, report: { version: LAYOUT_VERSION, mode: layout, template: template && { structure: template.structure, applied: Boolean(useTemplate || sequence), fallback: useTemplate || sequence ? null : templates.length ? 'lower-normalized-cost' : graph.layout?.direction ? 'authored-direction' : 'routing-quality', attempts: templateAttempts }, refinement: refined.report, candidateCount: CANDIDATE_COUNT, timeoutMs: timeout, selected: best.index, ...(best.direction ? { direction: best.direction } : {}), migration, semantics: semanticReport(best.graph), candidates: candidates.map(({ graph, ...item }) => item) } };
   } catch (error) { throw error.phases ? error : qualityFailure(graph, 'geometry', error.message); }
   finally { await worker.terminate(); }
 }

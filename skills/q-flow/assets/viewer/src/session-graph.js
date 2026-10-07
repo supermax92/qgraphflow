@@ -1,3 +1,4 @@
+import { viewIdOf } from './view-identity.js';
 import { cardText, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { layoutLimits } from './layout-spacing.js';
 import { requireDiagramQuality } from './layout-quality.js';
@@ -14,7 +15,7 @@ export function pageWithGraph(html, graph) {
 }
 
 export function graphInputWithEdits(input, drafts, currentGraph) {
-  const edited = graph => diagramTypeOf(graph) === diagramTypeOf(currentGraph) ? currentGraph : drafts.get(diagramTypeOf(graph)) ?? graph;
+  const edited = graph => viewIdOf(graph) === viewIdOf(currentGraph) ? currentGraph : drafts.get(viewIdOf(graph)) ?? graph;
   return Array.isArray(input.diagrams) ? { ...input, diagrams: input.diagrams.map(edited) } : currentGraph;
 }
 
@@ -28,6 +29,7 @@ export function currentGraphFromFlow(graph, nodes, edges) {
       const current = nodeState.get(node.id);
       if (!current) return node;
       const text = { label: current.data.label };
+      for (const key of ['overviewText', 'badges']) if (Object.hasOwn(current.data, key)) text[key] = current.data[key];
       if (Object.hasOwn(current.data, 'subtitle')) text.subtitle = current.data.subtitle;
       return { ...node, ...text, position: current.position, size: current.data.size };
     }),

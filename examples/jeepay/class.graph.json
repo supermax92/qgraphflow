@@ -1,0 +1,237 @@
+{
+  "meta": {
+    "title": "Jeepay 统一支付类图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "控制器与渠道支付接口",
+    "diagramType": "class",
+    "locale": "zh-CN",
+    "notes": [
+      "类成员仅展示与统一下单有关的源码声明；省略其他方法。",
+      "IPaymentService 实现由通道模块扩展，图中以支付宝和微信实现为例。"
+    ],
+    "viewId": "jeepay-class"
+  },
+  "nodes": [
+    {
+      "id": "api",
+      "label": "ApiController",
+      "kind": "abstract",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "kind": "source"
+      },
+      "methods": [
+        "#getRQByWithMchSign(Class<T>): T"
+      ]
+    },
+    {
+      "id": "base",
+      "label": "AbstractPayOrderController",
+      "kind": "abstract",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "kind": "source"
+      },
+      "methods": [
+        "#unifiedOrder(String, UnifiedOrderRQ): ApiRes",
+        "-processChannelMsg(ChannelRetMsg, PayOrder): void"
+      ]
+    },
+    {
+      "id": "unified",
+      "label": "UnifiedOrderController",
+      "kind": "class",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "kind": "source"
+      },
+      "methods": [
+        "+unifiedOrder(): ApiRes"
+      ]
+    },
+    {
+      "id": "iface",
+      "label": "IPaymentService",
+      "kind": "interface",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "kind": "source"
+      },
+      "methods": [
+        "+getIfCode(): String",
+        "+preCheck(UnifiedOrderRQ, PayOrder): String",
+        "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+      ]
+    },
+    {
+      "id": "abstractPayment",
+      "label": "AbstractPaymentService",
+      "kind": "abstract",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/AbstractPaymentService.java",
+        "lineStart": 35,
+        "lineEnd": 35,
+        "kind": "source"
+      },
+      "methods": [
+        "+customPayOrderId(UnifiedOrderRQ, PayOrder, MchAppConfigContext): String"
+      ]
+    },
+    {
+      "id": "alipay",
+      "label": "AlipayPaymentService",
+      "kind": "class",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/alipay/AlipayPaymentService.java",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "kind": "source"
+      },
+      "methods": [
+        "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+      ]
+    },
+    {
+      "id": "wxpay",
+      "label": "WxpayPaymentService",
+      "kind": "class",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/wxpay/WxpayPaymentService.java",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "kind": "source"
+      },
+      "methods": [
+        "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+      ]
+    },
+    {
+      "id": "orders",
+      "label": "PayOrderService",
+      "kind": "class",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "kind": "source"
+      },
+      "methods": [
+        "+updateInit2Ing(String, PayOrder): boolean",
+        "+updateIng2Success(String, String, String): boolean"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "cl1",
+      "source": "unified",
+      "target": "base",
+      "kind": "inheritance",
+      "label": "extends",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 44,
+        "lineEnd": 44
+      }
+    },
+    {
+      "id": "cl2",
+      "source": "base",
+      "target": "api",
+      "kind": "inheritance",
+      "label": "extends",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 64,
+        "lineEnd": 64
+      }
+    },
+    {
+      "id": "cl3",
+      "source": "abstractPayment",
+      "target": "iface",
+      "kind": "implementation",
+      "label": "implements",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/AbstractPaymentService.java",
+        "lineStart": 35,
+        "lineEnd": 35
+      }
+    },
+    {
+      "id": "cl4",
+      "source": "alipay",
+      "target": "abstractPayment",
+      "kind": "inheritance",
+      "label": "extends",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/alipay/AlipayPaymentService.java",
+        "lineStart": 36,
+        "lineEnd": 36
+      }
+    },
+    {
+      "id": "cl5",
+      "source": "wxpay",
+      "target": "abstractPayment",
+      "kind": "inheritance",
+      "label": "extends",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/wxpay/WxpayPaymentService.java",
+        "lineStart": 46,
+        "lineEnd": 46
+      }
+    },
+    {
+      "id": "cl6",
+      "source": "base",
+      "target": "iface",
+      "kind": "dependency",
+      "label": "调用渠道接口",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 205,
+        "lineEnd": 205
+      }
+    },
+    {
+      "id": "cl7",
+      "source": "base",
+      "target": "orders",
+      "kind": "association",
+      "label": "持有 PayOrderService",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 67,
+        "lineEnd": 67
+      }
+    }
+  ],
+  "layout": {
+    "direction": "down"
+  }
+}

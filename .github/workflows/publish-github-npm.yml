@@ -49,10 +49,10 @@ jobs:
         run: |
           npm install --prefix verified --ignore-scripts --no-audit --no-fund --package-lock=false "./publish/supermax92-qgraphflow-$VERSION.tgz"
           diff -r runtime verified/node_modules/@supermax92/qgraphflow
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json --input-only
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json output/order
-          # The nine-view collection is not part of the runtime package; the checkout supplies the input, the installed package generates it.
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/showcase/kafka.en.graph.json output/nine
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs verified/node_modules/@supermax92/qgraphflow/examples/jeepay/flowchart.graph.json --input-only
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs verified/node_modules/@supermax92/qgraphflow/examples/jeepay/flowchart.graph.json output/order
+          # Generate the complete real-source Jeepay collection with the installed package.
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/eleven
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -71,7 +71,7 @@ jobs:
           cmp "publish/supermax92-qgraphflow-$VERSION.tgz" "downloaded/supermax92-qgraphflow-$VERSION.tgz"
           npm install --prefix registry-check --registry=https://npm.pkg.github.com --ignore-scripts --no-audit --no-fund --package-lock=false "@supermax92/qgraphflow@$VERSION"
           diff -r runtime registry-check/node_modules/@supermax92/qgraphflow
-          node registry-check/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs registry-check/node_modules/@supermax92/qgraphflow/examples/order-flow.graph.json output/registry
+          node registry-check/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs registry-check/node_modules/@supermax92/qgraphflow/examples/jeepay/flowchart.graph.json output/registry
 
   # npmjs.com: the Release tarball itself, published through npm trusted publishing (GitHub OIDC) with provenance.
   # No npm token is stored anywhere; npmjs.com trusts this repository and this workflow file name.
@@ -121,8 +121,8 @@ jobs:
           cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"
           # Run npx outside the checkout: its package.json is qgraphflow@$VERSION itself, which npx would take for an
           # installed copy, skipping the registry and failing with "qgraphflow: not found".
-          mkdir -p "$RUNNER_TEMP/npx/examples" && cp examples/order-flow.graph.json "$RUNNER_TEMP/npx/examples/" && cd "$RUNNER_TEMP/npx"
+          mkdir -p "$RUNNER_TEMP/npx/examples/jeepay" && cp examples/jeepay/flowchart.graph.json "$RUNNER_TEMP/npx/examples/jeepay/" && cd "$RUNNER_TEMP/npx"
           npx -y "qgraphflow@$VERSION" validate --help
-          npx -y "qgraphflow@$VERSION" validate examples/order-flow.graph.json --input-only
-          npx -y "qgraphflow@$VERSION" generate examples/order-flow.graph.json output/npmjs
+          npx -y "qgraphflow@$VERSION" validate examples/jeepay/flowchart.graph.json --input-only
+          npx -y "qgraphflow@$VERSION" generate examples/jeepay/flowchart.graph.json output/npmjs
           test -f output/npmjs/diagram.svg

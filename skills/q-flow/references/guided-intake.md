@@ -1,100 +1,80 @@
 # Guided intake
 
-Used only when the invocation and the conversation together do not supply a ready request. A ready request names a **subject** and the **question** the diagram must answer. Everything else has a default and is never asked.
+Use only when the invocation, supplied material and conversation leave necessary information missing. A ready request gives each requested view a **subject** and **question**, with a usable output location. Honor supplied preferences; use defaults for the rest.
 
-## Readiness
+## Input and readiness
 
-| Item | Ready when | Never asked |
-| --- | --- | --- |
-| Subject | A repository, module, flow, entity set or document is named, at the level the question needs: behaviour questions need one flow (state: one component); structure questions accept a repository or module | — |
-| Question | The user says what the diagram must answer, or names a type that implies it | — |
-| Diagram type | — | Derived from the question by SKILL.md Author step 1; default `architecture` |
-| Granularity | — | Derived from the subject by the altitude rule below; never ask "detailed or simple" |
-| Output directory, language, graph count, CodeGraph setup | — | Existing defaults; the recap shows the directory so the user can override |
+Resolve intent before material: an audit is read-only. Inspect, validate without `--fix`, and report findings; do not generate or overwrite artifacts. Evidence drift does not authorize an update. Then identify all supplied material before building options:
 
-Only the missing item is asked. A behaviour question with a repository- or module-level subject is missing its flow: run the entry-point scan from the second round below on that subject and ask only for the flow. A request that arrived through the conversation (the skill was triggered by its description) is a ready request when it names both items.
+- **Existing graph:** read `graph.json`, including every view's metadata; inherit scope, type, granularity and directory. Follow SKILL.md Refresh for refresh, simplification or expansion. Ask only about an unresolved change, not the original drawing purpose again. Resolve which collection views the user wants changed; inherit every other view unchanged. For simplification or expansion, repeat `--view <view-id>` for the affected views during generation, keeping the others in preserve mode.
+- **Requirements:** read the supplied file, attachment or pasted text; derive subjects and questions from it. Do not scan unrelated repository modules or ask for material already supplied. Documented behaviour is not verified implementation. For mixed source/document requests, retain both and distinguish their evidence.
+- **Repository:** use the named repository or current project. Inventory only when needed to offer subjects or questions. If none of these materials is available, ask for a target repository or requirements; the plugin installation directory is not the target.
 
-## First-round inventory
+Structure questions accept a system, module or entity set. Behaviour questions need one flow (state: one component) per view, including a flow described in requirements. A named type can supply the question. An existing graph can supply the subject and question for a requested update.
 
-Run before asking so that options name real modules. Budget: directory listing to depth 2 plus manifest presence; do not read source, do not scan entry points, do not run `codegraph explore`.
+Ask only for missing information. Never ask for type, language, granularity, graph count or CodeGraph setup merely to fill a default. Document-only output uses the current project's `docs/qgraphflow/<scope>-<type>/`; honor a supplied directory. If no suitable project or supplied directory exists, ask only for the output location when that is all that is missing. Never output into the plugin cache.
+
+Explicit multiple-view requests retain **every view**: keep shared subject/preferences and resolve only each view's missing scope. "Architecture and sequence, both" is not indecision; "architecture or sequence, which helps?" invites a recommendation. Default to one graph otherwise. Repeated architecture needs unique `meta.viewId`; repeated other types use separate outputs, as specified by [graph-common.md](graph-common.md#granularity).
+
+## Repository inventory
+
+Before offering repository options, list directories to depth 2 and check manifest presence; do not read function bodies, scan entry points or run `codegraph explore` during this inventory.
 
 | Signal | Files or directories | Enables |
 | --- | --- | --- |
-| Build | `package.json`, `pom.xml`, `build.gradle*`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `*.csproj` | Module candidates; language and framework |
-| Persistence | `migrations/`, `db/migration/`, `*.sql`, `entity/`, `model/`, ORM mapping files | `er` |
-| Deployment | `Dockerfile`, `docker-compose*.yml`, `k8s/`, `helm/`, `charts/` | `deployment` |
-| State | file names containing `State`, `Status`, `Phase`, `Lifecycle` | `state` |
-| Documents | `docs/`, `requirements/`, `*.md` requirement files | `flowchart`, `usecase` |
-| CodeGraph | `.codegraph/` present | Recap says "CodeGraph" instead of "direct tracing" |
+| Build | `package.json`, `pom.xml`, `build.gradle*`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `*.csproj` | Real module candidates |
+| Persistence | `migrations/`, `db/migration/`, `*.sql`, `entity/`, `model/`, ORM mappings | ER |
+| Deployment | `Dockerfile`, `docker-compose*.yml`, `k8s/`, `helm/`, `charts/` | Deployment |
+| State | file names containing `State`, `Status`, `Phase`, `Lifecycle` | State |
+| Documents | `docs/`, `requirements/`, requirements files | Document-backed subjects and questions |
+| CodeGraph | `.codegraph/` present | Candidate index only; availability/freshness still require preflight |
 
-More than 8 top-level directories: list only subdirectories that contain a build manifest. If the working directory is empty, is not a code repository, or is this plugin's own installation directory, ask for the target repository path or requirements document instead and list no module candidates.
+For more than eight top-level directories, prefer candidates containing build manifests. Do not invent module candidates for an empty, unrelated or plugin directory.
 
 ## Intent options
 
-Phrase options as the question the diagram answers. Each option carries the subject level it needs and a one-word cost tag. Offer at most four, only those the inventory supports, and mark exactly one as recommended (default: the whole repository's structural overview).
+Phrase choices as questions the diagram answers. Offer at most four relevant options, with one recommendation; use the user's words and available material. Default a repository overview to component relationships. Derive type/view from intent without an extra selection round.
 
-| Option text | `meta.diagramType` | Needs | Cost | Offer when |
-| --- | --- | --- | --- | --- |
-| What the system is made of and who depends on whom | `architecture` | repository or module | fast | always |
-| Where it runs and how the pieces are deployed | `deployment` | repository | fast | deployment signal |
-| What is stored and how it relates | `er` | repository or module | fast | persistence signal |
-| Which types exist and how they relate | `class` | module | fast | build signal |
-| Who can do what | `usecase` | repository or module | fast | documents signal or public entry points |
-| Who calls whom, in what order | `sequence` | one flow | traces calls | always |
-| What decisions a process makes | `flowchart` | one flow | traces calls | always |
-| How data moves and changes | `dataflow` | one flow | traces calls | always |
-| What states something goes through | `state` | one component | traces calls | state signal |
+| Question | Type / architecture view | Subject |
+| --- | --- | --- |
+| What capabilities does the platform provide and how does business connect? | `architecture` / `capabilities` | system or module |
+| How are engineering layers and components organized? | `architecture` / `engineering` | system or module |
+| What is the system made of and who depends on whom? | `architecture` / `relations` | system or module |
+| Where does it run? | `deployment` | system |
+| What is stored and how does it relate? | `er` | entity set or module |
+| Which types exist and how do they relate? | `class` | module |
+| Who can do what? | `usecase` | system or module |
+| Who calls whom, in what order? | `sequence` | flow |
+| What decisions does the process make? | `flowchart` | flow |
+| How does data move and change? | `dataflow` | flow |
+| What states does something go through? | `state` | component |
 
-Structure intents (`architecture`, `deployment`, `er`, `class`, `usecase`) read manifests and declarations. Behaviour intents (`sequence`, `flowchart`, `dataflow`, `state`) trace execution paths and cost more; the tag states this, it does not change the recommendation.
+Select relevant alternatives from this table, not all eleven at once. A platform/integration question brings capability architecture forward; a layering question brings engineering architecture forward. Do not require the user to learn internal view names. Repository call/behaviour questions require execution tracing; do not promise that declarations alone prove dependencies or behaviour.
 
-## Altitude rule and view budget
+## Asking and follow-up
 
-Node unit is one level below the subject:
-
-| Subject | Node unit |
-| --- | --- |
-| Whole repository | Module or service |
-| Module | Component or class |
-| One flow | Step or function |
-| Entity set | Table |
-
-No fixed node or edge cap applies. Keep all facts needed by the requested scope; use the type-specific canvas budget and strict readability checks. A separate detail view may supplement the original model, but must not silently remove its relationships.
-
-## Asking
-
-One message asks subject and intent together. Use the client's structured question tool when one exists; otherwise number the options in plain text. Do not assume a client-specific tool name. Ask in the user's language.
-
-Plain-text shape:
+Ask subject and question together only when both are missing. Use the client's structured question tool when available, otherwise numbered plain text; do not assume a tool name. Ask in the user's language. Each question offers at most four choices and one recommendation, for example:
 
 ```
 Which part? 1 order  2 payment  3 inventory  4 whole repository (recommended)
 What should the diagram answer?
-  a  what the system is made of and who depends on whom — repository or module · fast (recommended)
-  b  who calls whom, in what order — one flow · traces calls
-  c  what is stored and how it relates — repository or module · fast
-  d  where it runs — repository · fast
+  1 system components and dependencies (recommended)
+  2 platform capabilities and business integration
+  3 engineering layers and components
+  4 the call order of a particular flow
 ```
 
-After asking, **end the turn and wait for the reply**. Do not assume an answer. Do not write `index.html`, `graph.json` or any other output before the round completes.
+After asking, **end the turn and wait for the reply**. Do not assume an answer or create graph/output files while essential information is unresolved. Usually one or two rounds suffice; readiness, not a fixed round count, ends intake.
 
-## Second round
+- **Subject still missing:** offer grounded subjects from the material, with one recommendation.
+- **Behaviour flow missing:** for a repository, use `rg --files` / `rg -l` to find entry-point files and annotations (`*Controller*`, `*Handler*`, `*Listener*`, `*Consumer*`, `main`, route decorators). Do not read function bodies yet. Offer up to four flows matching the user's words; if necessary, first group by package. Selecting a package is not selecting a flow: if several remain, ask for the specific flow next. For documents, offer the described flows instead.
+- **Several views:** retain the full list and ask only for unresolved subjects/questions; do not replace it with the primary intent. Once all are ready, proceed without another confirmation.
+- **Delegated choice:** "whatever" / "you decide" permits the grounded recommendation; state it and proceed. Do not invent an unavailable repository, document or output location.
 
-Structure intents finish in the first round. A second round happens only in these cases, and there is never a third:
+## Granularity, recap and start
 
-- **No subject yet**: offer at most three modules from the inventory, one recommended.
-- **Two intents**: take the primary one, note that the other can be a second diagram.
-- **Behaviour intent with a repository- or module-level subject**: scan the chosen subject for entry points and offer at most four flows. Use `rg -l` on file names and annotations (`*Controller*`, `*Handler*`, `*Listener*`, `*Consumer*`, `main`, `@RestController`, `@KafkaListener`, route decorators); do not read function bodies. Prefer candidates matching words the user already used. If still too many, group by package and let the user pick a package; that pick is the second round.
+Apply [Granularity](graph-common.md#granularity), including when intake is skipped. Carry the user's level and coverage into the recap; visual minimalism does not remove requested facts.
 
-"Whatever", "you decide" or an equivalent takes the recommended option; state the assumption in the recap.
+After scope is ready, determine the evidence path using [evidence-sources.md](evidence-sources.md#codegraph-preflight). A directory alone never proves CodeGraph availability. Use document evidence for document-only work; report CodeGraph only after checking the tool and current index, otherwise direct tracing. If not checked yet, say evidence preflight is pending rather than claiming either tool was used.
 
-## Recap, then start
-
-One line, then start evidence without a second confirmation. The user can correct it with a new message at any time.
-
-```
-<type> · <subject> · answers <question> · <node unit>, nodes required by the evidence · <type-specific layout> · <output directory> · <CodeGraph | direct tracing>. Say so to drill into a node later.
-```
-
-Example: `sequence · order module, OrderController.create flow · answers the call order of placing an order · step-level nodes, as required · participants across and time down · docs/qgraphflow/order-create-sequence/ · direct tracing. Say so to drill into a step later.`
-
-If bounded layout fails, report the blocking nodes and relationships and propose separate views with explicit coverage of the original model; never silently reduce the requested detail.
+Give one compact recap covering all requested views, subject/question, granularity/coverage, output directory and the actual evidence status, then start without another confirmation. Do not present internal schema fields as questions for the user. If bounded layout fails, report the blockers and propose views covering the original facts; never silently reduce detail or change an explicit graph count.

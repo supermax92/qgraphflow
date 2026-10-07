@@ -14,13 +14,11 @@
 
 </div>
 
-![agent-desk 示例的架构图、时序图与 ER 图，每类 1.5 秒](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.hero.gif)
-
-*支持九类图：【架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
+*支持十一类图：【平台能力架构图、工程分层架构图、组件关系架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
-**差异在哪：** 一个技能覆盖九类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
+**差异在哪：** 一个技能覆盖十一类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -30,21 +28,13 @@ npx skills add supermax92/qgraphflow
 
 - **探索：** 搜索定位、缩放和平移画布，查看组件职责与上下游关系。
 
-  ![探索：搜索 refund 定位到订单工具集，拉远查看上游的智能体编排器与下游的订单库、物流查询平台，再平移画布](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.explore.gif)
-
 - **核验：** 从节点或连线查看详情，核对源码文件、行号、符号和明确标注的不确定性。
-
-  ![核验：速览卡显示 src/gateway/chat-gateway.js:5-19，详情栏显示符号与证据事实，再查看标为 inference 的 POST /chat 连线](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.verify.gif)
 
 - **编辑：** 解锁后修改文字、移动元素；不满意时一键重置。
 
-  ![编辑：解除布局锁定，把 LLM 服务商改名为 LLM 网关，拖动节点带动连线，最后一键重置](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.edit.gif)
-
 - **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
 
-  ![分享：打开离线 HTML，从「更多」导出 PNG，最后展示导出的文件本身](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.zh-CN.share.gif)
-
-顶部动图依次展示架构图、时序图与 ER 图，每类 1.5 秒，完整循环 4.5 秒；下方四张能力动图各 6.5–8.5 秒。全部动图用源码构建的 Viewer 录制自 [agent-desk 示例](../../examples/showcase/agent-desk)（虚构业务、真实代码），图中文字与界面均为中文。它们作为 [showcase-v2 Release 附件](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2)托管，不进入 Git 历史与插件包，查看需要联网；生成的图形 HTML 本身可离线使用。
+The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
 
 ## 安装指南
 
@@ -164,22 +154,17 @@ $qgraphflow:q-flow 展开上一张图中的库存预占步骤，单独生成中�
 在页面里编辑后，用 Chrome 或 Edge 执行「更多 → 保存修改」并选一次图所在的文件夹，即可原地重写页面、`graph.json` 和 SVG。其他浏览器只能保存 `graph.json`：把它放回该文件夹，再用 `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` 重新生成页面和 SVG。
 
 <details>
-<summary>手动运行示例：复杂电商九类图</summary>
+<summary>Run the eleven-view Jeepay source example</summary>
 
-以下命令仅用于运行仓库自带示例，使用已安装的插件无需克隆本仓库。
-
-准备 Node.js 22 及以上版本，克隆仓库并执行：
+Select your Jeepay source checkout to verify the evidence:
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.zh-CN.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN.graph.json output/ecommerce-zh-CN
+export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
+node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-用浏览器打开 `output/ecommerce-zh-CN/index.html`，九个 SVG 就在同一目录。在顶部工具栏的「图类型」菜单切换视图，切换图类型会保留各图已保存的文字和位置。「更多 → 保存修改」按上文所述保存全部视图。同样的页面也在[在线演示](https://supermax92.github.io/qgraphflow/)里。
-
-使用预构建 Viewer 生成页面，无需安装依赖、API Key 或后端服务。让 AI 取证并编写图数据时，使用所选客户端的模型服务。
+Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](../../examples/jeepay) for the source revision and refresh procedure.
 
 </details>
 
@@ -213,11 +198,13 @@ $qgraphflow:q-flow CI 提示 docs/qgraphflow/order-sequence 的图过时了，�
 
 技能会把在文件里只找到一处的符号重新定位，只修改仍然报错的锚点，再保留你调整过的位置和文字，重新生成页面和 SVG；不会重画整张图。
 
-## 九类图各自回答什么
+## 十一类图各自回答什么
 
 | 视图 · PNG | 主要问题 | 本示例范围 |
 | --- | --- | --- |
-| 架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
+| 平台能力架构图 | 平台具备哪些能力？ | 能力分区与矩阵 |
+| 工程分层架构图 | 工程代码怎样组织？ | 工程层级与共享支撑 |
+| 组件关系架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
 | 流程图 | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
 | 时序图 | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
 | ER 图 | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
@@ -246,3 +233,15 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 [MIT](../../LICENSE) · [第三方声明](../../THIRD_PARTY_NOTICES.md)
 
 QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。
+
+## Architecture overviews / 架构总览
+
+Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
+
+```text
+$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
+$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
+```
+
+See [examples/jeepay](../../examples/jeepay) for real-source platform, engineering and component relationship architecture views. Unlock an overview to reorder cards within a layer or edit text. Save keeps all views; reset restores only the current one.

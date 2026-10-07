@@ -1,0 +1,95 @@
+{
+  "repository": "jeequan/jeepay",
+  "revision": "e1ac9086d679826bab593f20431b7ecd292eb685",
+  "files": {
+    "docker-compose.yml": "cb181e35cef43ea99e23f8dd442d53e568dd4bd86313a02685801eeb147da99d",
+    "docs/sql/init.sql": "02a962516fe0f9a7586adbf6be3366d0e51aa00e3f42093149359c7c6e102fcd",
+    "jeepay-components/jeepay-components-mq/pom.xml": "a64941c6c8b9f20ff7f14219361bce7ea8f98c4d7b6bb3d4640c46cdfd523313",
+    "jeepay-components/jeepay-components-oss/pom.xml": "3c616049b355ebcf3096a377f91b2b0810af06576d842090fbe859579757f6e4",
+    "jeepay-core/pom.xml": "18dcb61d56252c58d4d092c56deb9614235a534d2793d74fd824153928209f5f",
+    "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java": "e94a24aec836e33aec8159689d1fc53b8d215e9b21c3a06b56c4aa478b05b6a4",
+    "jeepay-manager/pom.xml": "83140aef766c74c1c6d2a16582fabec862b079169a58a4af631cd6e33834a230",
+    "jeepay-merchant/pom.xml": "4f9580e6b64d9980d1f78cc6572dc916b9adc35a3d9237f388cf24f830324ebc",
+    "jeepay-payment/pom.xml": "69dd1c0c6d3ade3f97c60c9fe7df4df47efcb8b6e712c6412324813c5be873f2",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/AbstractPaymentService.java": "eaf17da5ac7d156ce0918edd46402be512f47660a6ba78e12e5d0cd46b2f7154",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java": "ad964e47681e64947db4501cbc6743b3527a4a9313b4a78b1819d319a50ec6bd",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/alipay/AlipayPaymentService.java": "d24dc9707af4776e50caf1f47ab5de9954d633475811607b0dfd793284b0a39f",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/wxpay/WxpayPaymentService.java": "c420d79014294a406a937d5c569d350ea5df6fb5490fed9d6d1ddc3d5ece2180",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java": "e60e6940bb4a59990be79e43a16c08dab92bd06b55690ab21818a914aff38feb",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java": "de3af2d2cc3751560db87ac163c7657c9c8337d7d1383069a4af1cb5c297a903",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java": "c189361d3017554c3f642db9254f3230a426fa4f71f59b51aff0e9f5eaf82bc7",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java": "6597d98925f890d1eecfd18e0abc8af2f76ec7ea926ae813c481288f6d0a73f4",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/CloseOrderController.java": "d5ffc40a626fefd68209e2bf81dac6abb900c15937f62d3977d3a77c51395318",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/QueryOrderController.java": "5e414c97bcd2c69acc119595ad66d689039e16e18980ac8d694cd4ee84b70579",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java": "52e30d2f7841867fd41b90921a243815c801afcd896663bdbebc4d5bc57c9d26",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java": "9bac0f16748ad123dc373d02270497c05f1a83a95a05a33067db8be60ad7b38e",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java": "f68c16dd7e462f78d40ee82b2d8d48fe8ca28a5096c4664bff80e1aa896e27cc",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/ConfigContextQueryService.java": "66197a1976977c0563bc7294c681a901706d71f6f7d5c77b295e1365df0de635",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java": "7cc42aea07811ee165bb4fad82922775617225516c0061762e4f8d77b0dc355f",
+    "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java": "cab46d286815f3a466f112d348d1fa755c0664870d80600934e1a977bf299dff",
+    "jeepay-service/pom.xml": "750a710b392b85473a4a1af377ccf8cff18a860f2a54e5fb7c684a86691799c6",
+    "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/MchPayPassageService.java": "834a8d01c9d08a7480ce255b2b66b688da753a3dfd2cb09dd69b5582b040799e",
+    "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java": "1efb0a56a8fc8df768c85ef4edc4cd2ef99ca09049beded87407175e2c21db67"
+  },
+  "views": [
+    {
+      "id": "jeepay-capabilities",
+      "type": "architecture",
+      "architectureView": "capabilities"
+    },
+    {
+      "id": "jeepay-engineering",
+      "type": "architecture",
+      "architectureView": "engineering"
+    },
+    {
+      "id": "jeepay-relations",
+      "type": "architecture",
+      "architectureView": "relations"
+    },
+    {
+      "id": "jeepay-flowchart",
+      "type": "flowchart"
+    },
+    {
+      "id": "jeepay-sequence",
+      "type": "sequence"
+    },
+    {
+      "id": "jeepay-er",
+      "type": "er"
+    },
+    {
+      "id": "jeepay-deployment",
+      "type": "deployment"
+    },
+    {
+      "id": "jeepay-class",
+      "type": "class"
+    },
+    {
+      "id": "jeepay-state",
+      "type": "state"
+    },
+    {
+      "id": "jeepay-usecase",
+      "type": "usecase"
+    },
+    {
+      "id": "jeepay-dataflow",
+      "type": "dataflow"
+    }
+  ],
+  "sourceEvidence": {
+    "scope": "working-tree",
+    "references": 163,
+    "checked": 163,
+    "files": 28,
+    "relations": {
+      "sited": 79,
+      "eligible": 79
+    },
+    "status": "passed",
+    "symbols": 0
+  }
+}

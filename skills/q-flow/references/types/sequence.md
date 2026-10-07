@@ -8,15 +8,15 @@ Calls and returns along one flow, with activation bars and fragments. Read with 
 
 ## Participants (nodes)
 
-- One node per lifeline: `actor` for the human or caller, `service` / `participant` for code you read, `external` for systems outside the repository, `database` for a store or repository. Participants never have `groupId`.
+- One node per lifeline: `actor` for the human or caller, `service` / `participant` for code you read, `external` for systems outside the repository, `database` for a store. Participants never have `groupId`.
 - Left-to-right order follows first appearance in the messages; `layout.participantOrder` (all ids, once) only reproduces an existing convention.
-- Keep a view near 8 participants and 20 messages; split a longer flow by phase (`view.oversized`).
+- 8 participants / 20 messages is advisory; user detail wins. Follow common splitting rules.
 
 ## Messages (edges)
 
 - Every message has `order` (positive integer, unique, increasing in time; gaps allowed), a non-empty `label` (method or message with the important arguments), `evidence`, and `kind`: `sync` (caller waits), `async` (no wait: events, publish), `return` (reply, drawn dashed).
 - A `return` carries `"replyTo": "<call id>"`: the call is an earlier `sync` / `async` with reversed endpoints, has at most one return, and both sit in the same fragment operand.
-- Self-messages are allowed. Alternative outcomes of one call are one return (`ok | declined`), not two.
+- Self-messages are allowed. Alternative outcomes of one call are one return (`ok | declined`).
 
 ## Activation bars (`executions`)
 
@@ -32,7 +32,7 @@ Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end":
 ```
 
 - `alt`: two or more guarded operands, optional `else` last. `opt`: one guarded operand. `loop`: one guarded operand plus `loop: { "min", "max" | "*" }`. `par`: two or more operands with `label` instead of `guard` (concurrent; vertical order is not time).
-- `edgeIds` lists the operand's messages; an operand may instead or also carry `body` text or a child fragment (`parentId` + `parentOperandId`). Operand ids are required except on `alt`; a message belongs to at most one operand; successive operands' `order` ranges must not interleave. A call and its return, and a bar's start and end, stay in one operand path.
+- `edgeIds` lists the operand's messages; an operand may instead or also carry `body` text or a child fragment (`parentId` + `parentOperandId`). Operand ids are required except on `alt`; a message belongs to at most one operand; successive operands' `order` ranges must not interleave.
 - Guards are display text — copy the real condition. Only fragments the source establishes (`if`, retry loop, concurrent handlers).
 
 ## Minimal valid skeleton
@@ -64,6 +64,10 @@ Top-level array of `{ "id", "participantId", "start": { "edgeId", "at" }, "end":
   ]
 }
 ```
+
+## Layout
+
+Layout widens participant gaps for full labels; message order, reply pairing, bars and fragments stay.
 
 ## Frequent validation errors
 

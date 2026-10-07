@@ -1,0 +1,105 @@
+{
+  "audit": {
+    "diagram.svg": {
+      "before": "72c1da19ab9b15aac073b3f7c7a6c4dcd9c195cd7316c28df68499bc27677978",
+      "after": "72c1da19ab9b15aac073b3f7c7a6c4dcd9c195cd7316c28df68499bc27677978"
+    },
+    "graph.json": {
+      "before": "6d1b8c5cfabfd705a55bf067e130133915631ab31051948faddc9f0faba85a9a",
+      "after": "6d1b8c5cfabfd705a55bf067e130133915631ab31051948faddc9f0faba85a9a"
+    },
+    "index.html": {
+      "before": "6e8c1929b459bfd99fdb7316026c847cf127b7efdd320e9e449a4f47f7be2781",
+      "after": "6e8c1929b459bfd99fdb7316026c847cf127b7efdd320e9e449a4f47f7be2781"
+    }
+  },
+  "selected": {
+    "unselectedGraphIdentical": true,
+    "unselectedSvgBefore": "cd7e2ccb4d1ee9f5afbf9bd6fb9999a402981850dd52904a8b55ea1a525d0174",
+    "unselectedSvgAfter": "cd7e2ccb4d1ee9f5afbf9bd6fb9999a402981850dd52904a8b55ea1a525d0174",
+    "before": [
+      {
+        "viewId": "order-service",
+        "nodes": 4,
+        "edges": 4
+      },
+      {
+        "viewId": "unchanged-copy",
+        "nodes": 4,
+        "edges": 4
+      }
+    ],
+    "after": [
+      {
+        "viewId": "order-service",
+        "nodes": 8,
+        "edges": 8
+      },
+      {
+        "viewId": "unchanged-copy",
+        "nodes": 4,
+        "edges": 4
+      }
+    ]
+  },
+  "mixed": {
+    "nodes": 8,
+    "sourceEdges": 7,
+    "documentEdges": [
+      {
+        "id": "documented-entry",
+        "label": "Documented only: controller entry",
+        "site": {
+          "file": "requirements.md",
+          "lineStart": 3,
+          "lineEnd": 3
+        }
+      }
+    ]
+  },
+  "granularity": {
+    "detailedAndMinimalCallSitesIdentical": true,
+    "participants": 6,
+    "messages": 12,
+    "fragments": 6,
+    "executions": 6,
+    "callSites": [
+      {
+        "file": "orders/OrderService.js",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "symbol": "saveOrder"
+      },
+      {
+        "file": "orders/OrderService.js",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "symbol": "release"
+      },
+      {
+        "file": "orders/OrderService.js",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "symbol": "reserve"
+      },
+      {
+        "file": "orders/OrderService.js",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "symbol": "charge"
+      },
+      {
+        "file": "orders/controllers/checkout/CreateOrderController.js",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "symbol": "createOrder"
+      },
+      {
+        "file": "payments/PaymentService.js",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "symbol": "authorize"
+      }
+    ]
+  }
+}

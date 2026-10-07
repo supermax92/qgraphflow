@@ -37,6 +37,12 @@ The lifecycle of one component or entity: states, the events that move between t
 }
 ```
 
+## Layout
+
+Initial state, lifecycle bands, outcome branches and local self-transitions. Geometry is derived from full content; never shorten facts to fit the template.
+
+Layout keeps initial/final symbols, transition labels and the self-transition arc.
+
 ## Frequent validation errors
 
 - `edge s.guard must be a string` — guards and actions are plain text, not objects or booleans.

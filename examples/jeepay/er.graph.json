@@ -1,0 +1,482 @@
+{
+  "meta": {
+    "title": "Jeepay 支付核心数据 ER 图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "商户应用、通道、支付订单与通知记录",
+    "diagramType": "er",
+    "locale": "zh-CN",
+    "notes": [
+      "init.sql 未声明 FOREIGN KEY；连线是代码使用的逻辑关联，不代表数据库强制外键。",
+      "每个实体列出 DDL 的全部字段；仅原生 PRIMARY KEY 标记为 PK。"
+    ],
+    "viewId": "jeepay-er"
+  },
+  "nodes": [
+    {
+      "id": "t_mch_app",
+      "label": "t_mch_app",
+      "kind": "entity",
+      "module": "config",
+      "source": {
+        "file": "docs/sql/init.sql",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "kind": "schema"
+      },
+      "fields": [
+        {
+          "name": "app_id",
+          "type": "varchar(64)",
+          "key": "PK",
+          "nullable": false
+        },
+        {
+          "name": "app_name",
+          "type": "varchar(64)",
+          "nullable": false
+        },
+        {
+          "name": "mch_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "app_secret",
+          "type": "VARCHAR(128)",
+          "nullable": false
+        },
+        {
+          "name": "remark",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "created_uid",
+          "type": "BIGINT(20)",
+          "nullable": true
+        },
+        {
+          "name": "created_by",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "t_mch_pay_passage",
+      "label": "t_mch_pay_passage",
+      "kind": "entity",
+      "module": "config",
+      "source": {
+        "file": "docs/sql/init.sql",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "kind": "schema"
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "BIGINT(20)",
+          "key": "PK",
+          "nullable": false
+        },
+        {
+          "name": "mch_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "app_id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "if_code",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "way_code",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "rate",
+          "type": "DECIMAL(20,6)",
+          "nullable": false
+        },
+        {
+          "name": "risk_config",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "t_pay_order",
+      "label": "t_pay_order",
+      "kind": "entity",
+      "module": "payment",
+      "source": {
+        "file": "docs/sql/init.sql",
+        "lineStart": 251,
+        "lineEnd": 251,
+        "kind": "schema"
+      },
+      "fields": [
+        {
+          "name": "pay_order_id",
+          "type": "VARCHAR(30)",
+          "key": "PK",
+          "nullable": false
+        },
+        {
+          "name": "mch_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "isv_no",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "app_id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "mch_name",
+          "type": "VARCHAR(30)",
+          "nullable": false
+        },
+        {
+          "name": "mch_type",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "mch_order_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "if_code",
+          "type": "VARCHAR(20)",
+          "nullable": true
+        },
+        {
+          "name": "way_code",
+          "type": "VARCHAR(20)",
+          "nullable": false
+        },
+        {
+          "name": "amount",
+          "type": "BIGINT(20)",
+          "nullable": false
+        },
+        {
+          "name": "mch_fee_rate",
+          "type": "decimal(20,6)",
+          "nullable": false
+        },
+        {
+          "name": "mch_fee_amount",
+          "type": "BIGINT(20)",
+          "nullable": false
+        },
+        {
+          "name": "currency",
+          "type": "VARCHAR(3)",
+          "nullable": false
+        },
+        {
+          "name": "state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "notify_state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "client_ip",
+          "type": "VARCHAR(32)",
+          "nullable": true
+        },
+        {
+          "name": "subject",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "body",
+          "type": "VARCHAR(256)",
+          "nullable": false
+        },
+        {
+          "name": "channel_extra",
+          "type": "VARCHAR(512)",
+          "nullable": true
+        },
+        {
+          "name": "channel_user",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "channel_order_no",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "refund_state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "refund_times",
+          "type": "INT",
+          "nullable": false
+        },
+        {
+          "name": "refund_amount",
+          "type": "BIGINT(20)",
+          "nullable": false
+        },
+        {
+          "name": "division_mode",
+          "type": "TINYINT(6)",
+          "nullable": true
+        },
+        {
+          "name": "division_state",
+          "type": "TINYINT(6)",
+          "nullable": true
+        },
+        {
+          "name": "division_last_time",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "err_code",
+          "type": "VARCHAR(128)",
+          "nullable": true
+        },
+        {
+          "name": "err_msg",
+          "type": "VARCHAR(256)",
+          "nullable": true
+        },
+        {
+          "name": "ext_param",
+          "type": "VARCHAR(2048)",
+          "nullable": true
+        },
+        {
+          "name": "notify_url",
+          "type": "VARCHAR(128)",
+          "nullable": false
+        },
+        {
+          "name": "return_url",
+          "type": "VARCHAR(128)",
+          "nullable": true
+        },
+        {
+          "name": "expired_time",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "success_time",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        }
+      ]
+    },
+    {
+      "id": "t_mch_notify_record",
+      "label": "t_mch_notify_record",
+      "kind": "entity",
+      "module": "notification",
+      "source": {
+        "file": "docs/sql/init.sql",
+        "lineStart": 296,
+        "lineEnd": 296,
+        "kind": "schema"
+      },
+      "fields": [
+        {
+          "name": "notify_id",
+          "type": "BIGINT(20)",
+          "key": "PK",
+          "nullable": false
+        },
+        {
+          "name": "order_id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "order_type",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "mch_order_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "mch_no",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "isv_no",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "app_id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "notify_url",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "res_result",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "notify_count",
+          "type": "INT(11)",
+          "nullable": false
+        },
+        {
+          "name": "notify_count_limit",
+          "type": "INT(11)",
+          "nullable": false
+        },
+        {
+          "name": "state",
+          "type": "TINYINT(6)",
+          "nullable": false
+        },
+        {
+          "name": "last_notify_time",
+          "type": "DATETIME",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP(3)",
+          "nullable": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "er1",
+      "source": "t_mch_app",
+      "target": "t_mch_pay_passage",
+      "kind": "relationship",
+      "label": "配置支付通道（逻辑）",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 167,
+        "lineEnd": 167
+      },
+      "sourceCardinality": "1",
+      "targetCardinality": "0..*"
+    },
+    {
+      "id": "er2",
+      "source": "t_mch_app",
+      "target": "t_pay_order",
+      "kind": "relationship",
+      "label": "创建支付订单（逻辑）",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 242,
+        "lineEnd": 242
+      },
+      "sourceCardinality": "1",
+      "targetCardinality": "0..*"
+    },
+    {
+      "id": "er3",
+      "source": "t_pay_order",
+      "target": "t_mch_notify_record",
+      "kind": "relationship",
+      "label": "产生支付通知（逻辑）",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+        "lineStart": 76,
+        "lineEnd": 76
+      },
+      "sourceCardinality": "1",
+      "targetCardinality": "0..1"
+    }
+  ],
+  "layout": {
+    "direction": "right"
+  }
+}

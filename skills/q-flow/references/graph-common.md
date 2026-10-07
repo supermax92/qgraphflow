@@ -1,53 +1,53 @@
 # Graph JSON: rules shared by every diagram type
 
-Read this file plus `types/<diagramType>.md`. Together they are the complete authoring contract. `graph-schema.md` is the maintainers' full reference.
+Read this and `types/<diagramType>.md` for authoring; `graph-schema.md` is for maintainers.
+
+## Granularity
+
+Before Evidence, honor the user's scope, depth, required facts, node budget and view count. Minimal styling does not reduce content; "minimal styling, every call" keeps every requested call.
+
+- **Default system overview:** for system/repository architecture, use business modules (monolith) or services (distributed), one level below the system, plus relevant callers, external systems and shared infrastructure. Aim for **8–12 visible nodes**; **over 15** prompts review of real domain boundaries or a proposed split. Soft targets only: never pad small systems or drop necessary nodes.
+- **Minimal:** use the fewest elements that answer the question. Aggregate real modules/responsibilities only; retain required dependencies, boundaries, decisions and outcomes. Put supporting explanation in `facts`. State aggregation/exclusions in `meta.scope`; never turn an indirect path into a direct-call claim. An explicit success-path-only request may exclude failure paths.
+- **Detailed:** follow the requested depth; if unspecified, expand relevant units one level beyond the default. Include in-scope branches, errors, retries, guards, calls, fields or members as the type requires. Overview/type size suggestions do not cap detail. Requested topology must be visible, not only in `facts` or notes.
+
+Other defaults: module → components/classes; flow → steps/functions; entity set → tables. Preserve type semantics: sequence nodes are lifelines, calls are messages. Keep peers at comparable levels; show broader context as boundaries/external participants. Record level, coverage and exclusions in `meta.scope`. If a strict user limit conflicts with required coverage, explain the tradeoff; never silently omit facts or invent aggregation.
+
+Default to one graph; overview plus detail requests multiple views. Propose splits at real boundaries; honor explicit single-view requests. Repeated architecture needs unique `meta.viewId`; repeated other types need separate outputs. Together, views cover all requested facts with stable IDs and boundary handoffs.
+
+Before layout, map every explicit requirement to visible elements and evidence. Minimal: every element serves the question. Detailed: audit coverage at the requested depth. Report evidence gaps. Simplify during scoped authoring; never remove chosen facts to pass layout/validation.
 
 ## Shape
 
-```json
-{
-  "meta": { "title": "…", "subtitle": "…", "sourceRef": "<repo>@<rev> or a document name", "scope": "…", "diagramType": "architecture", "locale": "zh-CN", "notes": ["…"] },
-  "groups": [{ "id": "g1", "label": "…", "kind": "<group kind>" }],
-  "nodes": [{ "id": "n1", "label": "…", "kind": "<node kind>", "subtitle": "…", "groupId": "g1", "module": "order", "tags": ["core"], "facts": ["…"], "source": { "kind": "source", "file": "src/a.js", "lineStart": 10, "lineEnd": 24, "symbol": "createOrder" } }],
-  "edges": [{ "id": "e1", "source": "n1", "target": "n2", "kind": "<edge kind>", "label": "…", "evidence": "source", "site": { "file": "src/b.js", "lineStart": 31, "symbol": "reserve" } }]
-}
-```
-
-- Required: `meta.title`, `meta.sourceRef`, `meta.diagramType`, non-empty `nodes`, and `edges` (an array; it may be empty). `meta.locale` is the user's language: `zh-CN` (default), `en`, `ru`, `pt`, `ja`, `de`, `es`.
-- `meta.locale` only translates the Viewer's interface. Write every readable text yourself in that language — title, subtitle, scope, `notes`, `facts`, edge labels (relationship verbs, branch words), guards; the type pages' English sample text is a placeholder. Identifiers (class, table, field, method, route, config key, literal value) and standard notation (cardinalities, `«include»`, `alt` / `loop`) stay verbatim.
-- Write facts only: **no `position`, `size` or `route`** — layout is computed. Optional hints (`layout.rank` / `layout.order` on nodes, `layout.primaryPath` / `layout.participantOrder` on the graph) express an order that already exists in the source.
-- IDs are unique non-empty strings; every edge endpoint names a node. Keep ids short and stable.
-- One graph per file by default. Only when the user asks for several views, wrap them as `{ "diagrams": [graph, graph] }`, each with a distinct `diagramType`.
+- Required: `meta.title`, `meta.sourceRef`, `meta.diagramType`, non-empty `nodes`, and an `edges` array (may be empty). Optional `groups` hold boundaries. Collections: `{ "diagrams": [graph, graph] }`, 1–32 views.
+- `meta.locale`: user's language, `zh-CN` (default), `en`, `ru`, `pt`, `ja`, `de`, `es`. It translates only the UI: author all prose, labels and guards in that language. Keep identifiers, literal values and standard notation verbatim; samples are placeholders.
+- Facts only: **no `position`, `size` or `route`**. Node `layout.rank` / `layout.order`, graph `layout.primaryPath` / `layout.participantOrder` express existing source order only.
+- IDs are unique, stable and non-empty; edge `source` / `target` name nodes.
 
 ## Nodes
 
-- `kind` must be one of the type's node kinds (see the type file). No invented kinds, no colour fields.
-- `label` is the real name from the source (class, route, table, service). `subtitle` is one line of responsibility. `facts` are short atomic statements; put uncertainty into the wording.
-- `module`: the subsystem whose work the node performs (order, inventory, payment …). Reuse the exact same non-empty string for that subsystem across nodes and views; it drives card identity colours. It is not containment (`groupId` is). A node without `module` renders on the plain surface, so give every ordinary node one — steps, decisions, choices, start / end, and an external hub or broker that belongs to an evidenced channel; only `initial` / `final` and true outsiders (a caller, a debugger, an ops role) stay plain. Colours hash into eight slots, so two modules may share one: the module label stays authoritative and a module is never renamed for colour.
-- `groupId` declares real containment in a `groups` entry; groups nest with `parentId`. Group `kind` must be one of the type's group kinds.
-- The business centre: use the `business` kind where the type has one (architecture), otherwise add `"core"` to `tags`. Never invent a `core` kind.
+- `kind`: from the type page; no invented kinds or colour fields. `label`: real source name; `subtitle`: responsibility; `facts`: short atomic statements with uncertainty explicit.
+- `module`: subsystem doing the work, consistently named across views. Assign every ordinary node, including steps/start/end and evidenced hubs/brokers; only `initial` / `final` and true outsiders may stay plain. Colours hash into five slots; modules are never renamed for colour. A node without `module` renders on the plain surface. Module is not ownership.
+- `groupId` names a real containing group; groups nest via `parentId` and use the type's group kinds. One node per component at the chosen level; split responsibilities only when source does.
+- Business centre: `business` kind where supported, otherwise `"core"` in `tags`, never a `core` kind.
 
 ## Edges
 
-- `kind` from the type's edge kinds. `label` names the action, message or data, not the kind.
-- `evidence` (required): `source` (code you read), `code`, `config`, `schema`, `test`, `document`, `framework` (behaviour supplied by a framework, not visible in project code), `inference` (your deduction — label it, do not hide it).
-- Omit relationships you cannot support. Do not add intermediate nodes to make notation look conventional.
+- `kind`: from the type page. `label`: action, message or data.
+- Required `evidence`: `source` (read code), `code`, `config`, `schema`, `test`, `document`, `framework` (framework-owned behaviour), `inference` (explicitly labelled deduction).
+- Omit unsupported relationships; add no intermediate nodes just for conventional notation.
 
 ## Source anchors
 
-- `source.file` is repository-relative (no `..`, no absolute paths); `lineStart` / `lineEnd` are 1-based and inclusive; `symbol` is optional. With `--repo-root` the file must exist and the range fit. A node `source` and an edge `site` share this shape and these checks.
-- `symbol` is the name exactly as written at the anchor (`OrderService.createOrder`, `orders`), never a description. With `--repo-root`, its last segment must appear as a whole word inside the range, so a moved, renamed or deleted line fails validation; `--fix` re-anchors a name found once in its file.
-- Anchor a node to where it is **defined** (class, function, table, service block). Anchor an edge's `site` to the line that makes it hold: the call, write, foreign key, `extends` clause or state assignment, `symbol` naming the target. Every edge with `source`, `code`, `config`, `schema` or `test` evidence gets one; a sequence `return` follows its call, and `framework`, `document` and `inference` edges need none. Once one edge has a `site`, a missing one draws `edge.site-missing`.
-- Omit `source` for external actors, third-party systems and framework-owned runtime components. Never reuse an anchor from an example.
-- Prefer one node per real component. Split by responsibility only when the source does.
+- Node `source` / edge `site`: `{ "file": "src/a.js", "lineStart": 10, "lineEnd": 24, "symbol": "createOrder" }`. Node source also has `kind` (`source`, `config`, etc.). Files are repository-relative, without `..`; lines are 1-based, inclusive. With `--repo-root`, files must exist and ranges fit.
+- Optional `symbol` is an exact identifier, not prose; its last segment must occur as a whole word in the range. `--fix` re-anchors it only if unique in the file.
+- Anchor nodes at definitions, edges at the call/write/key/inheritance/state assignment establishing the relation; edge symbol names the target. `source`, `code`, `config`, `schema`, `test` edges require `site`; sequence returns follow their calls. `framework`, `document`, `inference` need none. Missing sites produce `edge.site-missing` once any site exists.
+- External actors, third-party systems and framework runtime nodes need no `source`. Never copy example anchors.
 
 ## Composition
 
-- The diagram must answer the question asked from the first reading view: one clear path, real component names, action / message / data names on edges. Choose the smallest set of nodes that still tells the truth; a large system is several views, not one huge graph.
-- Groups are for real boundaries only.
-- `meta.notes` (optional, max 6 items of 120 characters): what a reader must see before opening a node and the picture cannot draw — a defect or risk found, code that contradicts its docs, a claim you could not verify, scope left out. One sentence each, naming the identifier; never repeat a drawn edge. Shown as the "Key points" card and under the SVG.
-- Full labels, never abbreviated to fit: the layout expands for text and wraps long labels.
-- For a collection, reuse node ids and `module` values across views so a component stays recognisable.
+- First view answers the question with real names and labelled relationships.
+- `meta.notes`: at most 6 strings of 120 characters, for risks, doc/code contradictions, unverified claims or exclusions the reader must see first. Name identifiers; avoid repeating drawn edges. Shown in "Key points" and below SVG.
+- Templates measure full text and use compact structure, outline ports, orthogonal routes and independent labels. Preserve order, alternatives, hierarchy, cardinalities and ownership. Bounded search cannot prove crossings unavoidable.
 
 ## Delivery
 

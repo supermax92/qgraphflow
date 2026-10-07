@@ -1,43 +1,61 @@
 # architecture
 
-Components and their dependencies: who calls, reads or depends on whom, inside which runtime or ownership boundary. Read with `graph-common.md`.
+Read with `graph-common.md`. Architecture offers three views:
+
+- `meta.architectureView: "relations"` (default): 组件关系架构图 — calls and dependencies.
+- `capabilities`: 平台能力架构图 — platform foundation, capabilities, business integration and rules.
+- `engineering`: 工程分层架构图 — project organization and one component's internal layers, with parallel support.
 
 | Node `kind` | Group `kind` | Edge `kind` |
 | --- | --- | --- |
-| `external`, `config`, `framework`, `security`, `service`, `business`, `data`, `failure`, `system`, `component`, `database` | `runtime`, `security`, `ownership`, `external` | `request`, `call`, `data`, `success`, `failure`, `framework`, `optional`, `depends` |
+| `external`, `config`, `framework`, `security`, `service`, `business`, `data`, `failure`, `system`, `component`, `database` | `runtime`, `security`, `ownership`, `external` | `request`, `call`, `data`, `success`, `failure`, `framework`, `optional`, `depends`, `aggregates`, `inherits`, `provides` |
 
-## Rules
+## Components and evidence
 
-- `business` is the business centre (one or two per view); `service` for services and entry points, `component` for internal modules, `data` for repositories / caches / queues as code, `database` for the store itself, `external` for systems outside the repository (clients, gateways, third parties — no `source`), `security` for auth / filters, `config` for configuration, `framework` for framework-owned runtime pieces, `failure` for an explicit failure handler or dead-letter path, `system` for a whole subsystem shown as one box.
-- Edges follow the direction of the call or data movement: `request` for HTTP / RPC into the system, `call` for in-process or service calls, `data` for reads / writes, `depends` for configuration or library dependency, `success` / `failure` for outcome branches, `framework` for wiring supplied by a framework, `optional` for conditional paths. Label with the operation (`createOrder`, `publish order.created`), not the kind.
-- Edge `site`: the call, client construction or config read that makes the edge hold.
-- `groupId` puts a node inside a real boundary (`runtime` = one process / JVM / container, `ownership` = team or module, `security` = trust zone, `external` = outside world). Nodes outside every group are fine.
-- Card text (this replaces graph-common's real-name rule for architecture): `label` is the component's short name as the team would say it (`订单服务`, `Order API`; about 12 characters or 3 words), never a list of classes; `subtitle` is one short line naming the class, route or table it stands for, verbatim (`OrderController`). One node is one component: when several classes form it, label their shared role, name the main one or the package in `subtitle` and list the rest in `facts`. Edge labels stay within 3 words (`下单`, `扣减库存`); details go to `facts`. Draw a filter or interceptor that guards a whole area as a `security` group around that area, not as an edge to each component.
-- Keep 6–12 nodes per view; a second view beats a crowded one. Every node needs a `source` anchor except externals and framework pieces.
+Use `business` for one or two business centres, `service` for entry points, `component` for internal modules, `data` for repositories/caches/queues as code, `database` for stores, `external` for systems outside the repo (no `source`), `security` for filters/auth, `config` for configuration, `framework` for framework-owned pieces, `failure` for explicit failure handling and `system` for a subsystem shown as one box.
+
+`label` names the component at the chosen level; `subtitle` states its responsibility. Use exact class/route/table/package names when relevant; supporting detail goes in `facts` or overview body. Keep conceptual scope explicit; names/config do not prove status or runtime compatibility.
+
+Edges follow calls/data: `request` HTTP/RPC, `call` in-process/service calls, `data` reads/writes, `success`/`failure` outcome branches, `framework` wiring, `optional` conditional paths. Label with the operation, usually up to 3 words; put details in `facts`. `site` anchors the call, construction or config that establishes repository evidence.
+
+Direction is fixed: `aggregates` aggregator → member; `inherits` child → parent; `provides` provider → consumer; `depends` dependent → dependency. These are not runtime calls. Never reverse them to match the drawing's reading direction or delete them to simplify layout.
+
+`groupId` / `parentId` encode real ownership: `runtime` process/JVM/container, `ownership` module/team, `security` trust zone, `external` outside systems. Draw an area-wide filter as a security boundary, not edges to every component. Nodes may be ungrouped.
+
+## Overview structure
+
+Either overview requires non-empty `layout.sections`. Each section has a unique `id`, non-empty `title`, and `mode`: `stack` (layers), `grid` (wrapping peers), `row` (parallel regions), or `note` (explanations). Non-notes have non-empty `items`: each exactly one `{ "nodeId": "..." }`, `{ "groupId": "..." }`, or nested section. Group references include real members and child groups. Every node is placed exactly once. IDs must not collide with nodes/groups. `detailOf` optionally names the overall component represented by a detail section. Sections describe presentation only; keep real ownership unchanged.
+
+Optional section `text` contains paragraph strings and `source` uses the common anchor. A note requires non-empty text and no items. Nodes accept `overviewText` paragraph strings and `badges`: `{ "label": "JDK 17", "role": "version", "evidence": "document", "source": { ... } }`. Roles: `status`, `version`, `requirement`; evidence kinds and optional anchors follow common rules. Empty arrays are valid on nodes. Reference-image status/version/rules are document claims, not verified source.
+
+Repeated architecture views require distinct `meta.viewId`; all identities must be unique, including legacy type IDs. Collections have 1–32 views; other types stay unique. Menus show capabilities/engineering/relations as independent architecture types, adding titles for repeated templates.
+
+Use reference bands/cards/badges. Section `tone` / node `overviewTone`: `white`, `subtle`, `blue`, `green`, `lavender`, `plain`; section `frame`: `solid`, `dashed`, `none`; grid `columns`: 1–16; row `weights`: positive numbers per item (detail/support `[2,1]`); node `overviewAccent`: boolean stripe. Use tones and grids to clarify each fictional or public model. Style is not evidence.
 
 ## Minimal valid skeleton
 
 ```json
 {
-  "meta": { "title": "Order service · components", "sourceRef": "repo@main", "diagramType": "architecture", "locale": "zh-CN" },
-  "groups": [{ "id": "process", "label": "order-service process", "kind": "runtime" }],
+  "meta": { "title": "Platform integration", "diagramType": "architecture", "architectureView": "capabilities", "viewId": "platform-overview", "sourceRef": "Conceptual example", "locale": "en" },
   "nodes": [
-    { "id": "client", "label": "Web client", "kind": "external", "subtitle": "calls POST /orders" },
-    { "id": "api", "label": "Order API", "kind": "service", "groupId": "process", "module": "order", "subtitle": "OrderController", "source": { "kind": "source", "file": "src/api/orders.js", "lineStart": 1, "lineEnd": 40, "symbol": "OrderController" } },
-    { "id": "service", "label": "Order service", "kind": "business", "groupId": "process", "module": "order", "subtitle": "OrderService", "source": { "kind": "source", "file": "src/services/order-service.js", "lineStart": 6, "lineEnd": 49 } },
-    { "id": "db", "label": "Orders DB", "kind": "database", "groupId": "process", "module": "order", "subtitle": "orders table", "source": { "kind": "schema", "file": "db/schema.sql", "lineStart": 1, "lineEnd": 31 } }
+    { "id": "platform", "label": "Platform", "kind": "system", "module": "platform", "overviewText": ["Shared application capabilities"], "badges": [] },
+    { "id": "application", "label": "Application", "kind": "component", "module": "application", "overviewText": [], "badges": [] }
   ],
-  "edges": [
-    { "id": "e1", "source": "client", "target": "api", "kind": "request", "label": "HTTP", "evidence": "source", "site": { "file": "src/api/orders.js", "lineStart": 5, "symbol": "POST /orders" } },
-    { "id": "e2", "source": "api", "target": "service", "kind": "call", "label": "createOrder", "evidence": "source", "site": { "file": "src/api/orders.js", "lineStart": 14, "symbol": "createOrder" } },
-    { "id": "e3", "source": "service", "target": "db", "kind": "data", "label": "save order", "evidence": "source", "site": { "file": "src/services/order-service.js", "lineStart": 31, "symbol": "save" } }
-  ]
+  "edges": [{ "id": "capabilities", "source": "platform", "target": "application", "kind": "provides", "label": "Shared capabilities", "evidence": "inference" }],
+  "layout": { "sections": [
+    { "id": "platform-layer", "title": "Platform", "mode": "stack", "tone": "blue", "items": [{ "nodeId": "platform" }] },
+    { "id": "application-layer", "title": "Applications", "mode": "grid", "tone": "green", "items": [{ "nodeId": "application" }] },
+    { "id": "scope-note", "title": "Evidence scope", "mode": "note", "text": ["Conceptual structure, without source implementation claims."] }
+  ] }
 }
 ```
 
+For relations, omit `architectureView` and `layout.sections`.
+
+Generation measures full text. Unlock to reorder peers within the same section/group. Details edit body/badges/sections; apply relayouts, failure keeps the draft/valid canvas, cancel discards. Save keeps order/style; switch keeps each view; reset affects only the current view.
+
 ## Frequent validation errors
 
-- `node X.kind is unsupported for architecture` — you used a kind from another type (`actor`, `process`, `entity`); pick from the table.
-- `node X.groupId does not name a group` — add the group to `groups` or remove `groupId`.
-- `edge e.evidence is unsupported` — one of `source code config schema test document framework inference`.
-- Layout diagnostics after generation (`group.member-inset`, `route.*`) mean the view is too dense: split into two views rather than removing facts.
+Reject unknown kinds/evidence, missing references/geometry and duplicate/missing placements. Report blockers; never drop facts or shrink text.
+
+`layout.overviewConnections`: `within-category` (default) or `all`; categories are deepest sections. Page/export hide cross-category edges by default, retaining JSON/details. To show required cross-category dependencies, use `all` or relations.

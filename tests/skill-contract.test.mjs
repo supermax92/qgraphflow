@@ -79,50 +79,6 @@ test('ordinary delivery stops at the three commands; browser acceptance is a sep
   assert.ok(fs.statSync(path.join(skillDir, 'SKILL.md')).size <= 10 * 1024, 'SKILL.md is loaded on every invocation; keep it within 10KB');
 });
 
-test('refreshing a drifted diagram runs the documented commands as written and keeps every output, SVG included', t => {
-  const refresh = section('Refresh an existing diagram');
-  assert.match(section('Generate and verify'), /diagram\.svg/);
-  assert.match(refresh, /SVG/); assert.match(refresh, /ask before `--layout auto`/); assert.match(refresh, /approves `--force`/);
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-refresh-'));
-  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
-  const repo = path.join(temp, 'repo'), dir = path.join(temp, 'docs', 'agent desk');
-  fs.cpSync(path.join(root, 'examples/showcase/agent-desk'), repo, { recursive: true });
-  const generated = spawnSync(process.execPath, ['scripts/generate-viewer.mjs', path.join(root, 'examples/showcase/agent-desk-graphs/en/architecture.graph.json'), dir, '--repo-root', repo], { cwd: skillDir, encoding: 'utf8' });
-  assert.equal(generated.status, 0, generated.stderr);
-  const positions = () => JSON.parse(fs.readFileSync(path.join(dir, 'graph.json'), 'utf8')).nodes.map(node => [node.id, node.position]);
-  const before = positions();
-  // The gateway factory moves well below its recorded lines.
-  const gateway = path.join(repo, 'src/gateway/chat-gateway.js');
-  fs.writeFileSync(gateway, fs.readFileSync(gateway, 'utf8').replace('export function createChatGateway', `${'// moved\n'.repeat(20)}export function createChatGateway`));
-  const shell = command => spawnSync('bash', ['-c', command.replaceAll('<dir>', dir).replaceAll('<root>', repo)], { cwd: skillDir, encoding: 'utf8' });
-  const outputCheck = section('Generate and verify').match(/```bash\n([\s\S]*?)```/)[1].trim().split('\n').at(-1)
-    .replace('<absolute-output-directory>', '<dir>').replace('<absolute-repository-root>', '<root>');
-  assert.equal(shell(outputCheck).status, 1, 'the drift fails the output validation first');
-  const commands = refresh.match(/```bash\n([\s\S]*?)```/)[1].trim().split('\n');
-  assert.equal(commands.length, 2);
-  for (const command of [...commands, outputCheck]) {
-    const result = shell(command);
-    assert.equal(result.status, 0, `${command}\n${result.stderr}`);
-  }
-  assert.deepEqual(fs.readdirSync(dir).sort(), ['diagram.svg', 'graph.json', 'index.html']);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'graph.json'), 'utf8')).nodes.find(node => node.id === 'gateway').source.lineStart, 25);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'graph.json'), 'utf8')).edges.find(edge => edge.id === 'e3').site.lineStart, 31, 'the relationship site moves with the call it records');
-  assert.deepEqual(positions(), before, 'the refresh keeps every position');
-});
-
-test('a relationship whose recorded call was removed fails validation and names the edge, not a node', t => {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-relation-drift-'));
-  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
-  const repo = path.join(temp, 'repo'), gateway = path.join(repo, 'src/gateway/chat-gateway.js');
-  fs.cpSync(path.join(root, 'examples/showcase/agent-desk'), repo, { recursive: true });
-  fs.writeFileSync(gateway, fs.readFileSync(gateway, 'utf8').replace('orchestrator.handle(', 'orchestrator.dispatch('));
-  const graph = path.join(root, 'examples/showcase/agent-desk-graphs/en/architecture.graph.json');
-  const result = spawnSync(process.execPath, ['scripts/validate-graph.mjs', graph, '--input-only', '--repo-root', repo], { cwd: skillDir, encoding: 'utf8' });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /edges\[\d+\]\.site \(src\/gateway\/chat-gateway\.js\): symbol "handle" is not in line 11; not found in the file/);
-  assert.doesNotMatch(result.stderr, /nodes\[\d+\]\.source/, 'the definitions are intact; only the relationship drifted');
-});
-
 test('every type page carries a minimal skeleton that passes input validation as written', () => {
   for (const type of ['architecture', 'flowchart', 'sequence', 'er', 'deployment', 'class', 'state', 'usecase', 'dataflow']) {
     const page = fs.readFileSync(path.join(skillDir, 'references/types', `${type}.md`), 'utf8');

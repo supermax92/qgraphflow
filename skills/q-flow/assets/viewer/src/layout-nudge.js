@@ -3,6 +3,7 @@ import { forceSimulation, forceX, forceY } from 'd3-force';
 import { layoutLimits } from './layout-spacing.js';
 import { requireDiagramQuality } from './layout-quality.js';
 import { groupHeadingLayout } from './text-layout.js';
+import { preservesTemplateOrder } from './layout-templates.js';
 
 const MAX_SHIFT = 156;
 const TICKS = 160;
@@ -75,6 +76,11 @@ function rectangleCollision(sequence, clearance) {
 }
 
 export function nudgeGraphLayout(graph, focusId = null) {
+  if (!focusId) {
+    try { requireDiagramQuality(graph); return { graph: structuredClone(graph), movedNodeIds: [] }; }
+    catch { /* Invalid edits still use the repair path below. */ }
+  }
+
   const diagram = getDiagram(graph.meta.diagramType), sequence = diagram.sequence, limits = layoutLimits(diagram);
   const movable = movableIds(graph, focusId);
   const simulationNodes = graph.nodes.map(node => {
@@ -140,7 +146,7 @@ export function nudgeGraphLayout(graph, focusId = null) {
     return { ...node, position };
   });
   const candidate = { ...graph, nodes };
-  try { requireDiagramQuality(candidate); }
+  try { if (!preservesTemplateOrder(graph, candidate)) throw new Error('Arrange would invert template bands'); requireDiagramQuality(candidate); }
   catch (error) { return { graph, movedNodeIds: [], rejected: { message: error.message, diagnostics: error.diagnostics ?? [] } }; }
   return { graph: candidate, movedNodeIds };
 }

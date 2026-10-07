@@ -1,0 +1,54 @@
+{
+  "tests": [
+    {
+      "command": "node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs",
+      "summary": {
+        "tests": 276,
+        "pass": 276,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 276111.851417
+      }
+    },
+    {
+      "command": "node --test tests/skill-contract.test.mjs tests/plugin-package.test.mjs",
+      "summary": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 24484.711917
+      }
+    }
+  ],
+  "files": {
+    "skills/q-flow/SKILL.md": {
+      "bytes": 10230,
+      "sha256": "4634b51cb63fcc793aa890bfcbeac56627234529ac3814fac2233ac830e6fc1e"
+    },
+    "skills/q-flow/references/guided-intake.md": {
+      "bytes": 8240,
+      "sha256": "6101862c22ba0dde66d5a7ed754b553408d8f09c65387977e14951c24abcf8d7"
+    },
+    "skills/q-flow/scripts/generate-viewer.mjs": {
+      "bytes": 10258,
+      "sha256": "2493180be5162c13235979ba0e5b8e4a15114cd369829e5fc9239fe39c0b9799"
+    },
+    "skills/q-flow/assets/viewer/src/sequence-fragments.js": {
+      "bytes": 17868,
+      "sha256": "7e07a84ce91b2fb726a123f27bc20ae6669a64698969f662942edae6bd704714"
+    },
+    "skills/q-flow/assets/viewer/src/diagrams/sequence.js": {
+      "bytes": 3351,
+      "sha256": "780ba8ec8247c81bb40b1afe1e75c490d011feeba7024e3e531a36c399e7e1c6"
+    },
+    "skills/q-flow/assets/viewer-dist/index.html": {
+      "bytes": 909044,
+      "sha256": "71b79173ff7a90efb7161863b488f17450dd13ba219531c559b7687d4884a8e3"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 interface:
   display_name: "Q flow"
-  short_description: "Nine kinds of interactive software diagrams from source, configuration and documents"
+  short_description: "Eleven kinds of interactive software diagrams from source, configuration and documents"
   brand_color: "#203f35"
   default_prompt: "Use $q-flow to generate the right kind of interactive software diagram from the current evidence."

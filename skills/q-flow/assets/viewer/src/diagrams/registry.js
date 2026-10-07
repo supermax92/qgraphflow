@@ -1,3 +1,4 @@
+import { hasOverviewContent, overviewCardLayout } from '../architecture-overview.js';
 import architecture from './architecture.js';
 import flowchart from './flowchart.js';
 import sequence from './sequence.js';
@@ -21,7 +22,7 @@ export const getDiagram = (type = 'architecture') => byId.get(type);
 export const canvasBudgetFor = type => getDiagram(type).sequence ? null
   : ['flowchart', 'state'].includes(type) ? { width: 1600, height: 2400 } : { width: 2400, height: 1600 };
 // Card text inside the inset margins of the node's outline.
-export const cardText = (node, type, locale, classic = false) => cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - 2 * (getDiagram(type).contentInset?.(node) ?? 0) } }, locale, classic, getDiagram(type).cardCorner?.(node));
+export const cardText = (node, type, locale, classic = false) => type === 'architecture' && hasOverviewContent(node) ? overviewCardLayout(node) : cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - 2 * (getDiagram(type).contentInset?.(node) ?? 0) } }, locale, classic, getDiagram(type).cardCorner?.(node));
 // A view uses compact cards when every card fits them; geometry stored before compact cards keeps the classic cards until it
 // is laid out again, so preserved layouts stay valid and one view never mixes the two.
 export const compactCards = graph => {
