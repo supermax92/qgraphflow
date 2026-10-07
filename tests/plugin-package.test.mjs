@@ -63,7 +63,7 @@ test('the npmjs job publishes the verified Release tarball through trusted publi
   assert.ok(job, 'The npm workflow has an npmjs job');
   for (const line of [
     'id-token: write', 'registry-url: https://registry.npmjs.org', '(cd release && sha256sum --check --strict SHA256SUMS)',
-    'npm publish "release/qgraphflow-$VERSION.tgz" --provenance --access public',
+    'npm publish "./release/qgraphflow-$VERSION.tgz" --provenance --access public',
     'npm pack "qgraphflow@$VERSION"', 'cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"',
     'npx -y "qgraphflow@$VERSION" validate examples/jeepay/flowchart.graph.json --input-only', 'npx -y "qgraphflow@$VERSION" generate examples/jeepay/flowchart.graph.json'
   ]) assert.ok(job.includes(line), line);
@@ -77,7 +77,7 @@ test('the npmjs job publishes the verified Release tarball through trusted publi
 test('the npm workflow verifies a version already on npmjs.com instead of publishing it again, and prefills no version', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8');
   const job = workflow.split('\n  npmjs:\n')[1];
-  const check = job.indexOf('npm view "qgraphflow@$VERSION" version'), publish = job.indexOf('npm publish "release/');
+  const check = job.indexOf('npm view "qgraphflow@$VERSION" version'), publish = job.indexOf('npm publish "./release/');
   assert.ok(check > 0 && check < publish, 'The npmjs job checks npmjs.com before publishing');
   assert.ok(job.indexOf('cmp "release/qgraphflow-$VERSION.tgz"') > publish, 'The download comparison still follows the publish step');
   assert.doesNotMatch(workflow.split('\njobs:\n')[0], /^\s+default:/m, 'An old prefilled version could be published by accident');
@@ -240,7 +240,8 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.deepEqual(readJson(path.join(plugin, 'package.json')), expectedNpm);
   const [scoped] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], plugin));
   assert.deepEqual(scoped.files.map(file => file.path).sort(), [...files].sort(), 'npm must retain every runtime file, including hidden client metadata');
-  const publishCommand = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8').match(/^\s+run: (npm publish .+)$/m)?.[1];
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish-github-npm.yml'), 'utf8');
+  const publishCommand = workflow.match(/^\s+run: (npm publish .+)$/m)?.[1];
   assert.ok(publishCommand, 'The workflow must expose its explicit npm publish command');
   fs.mkdirSync(path.join(temp, 'publish'));
   fs.copyFileSync(path.join(temp, scoped.filename), path.join(temp, 'publish', scoped.filename));
@@ -250,6 +251,13 @@ test('the distributed plugin runs independently from its installed location', t 
   assert.equal(published.name, '@supermax92/qgraphflow');
   assert.equal(published.version, pkg.version);
   assert.deepEqual(published.files.map(file => file.path).sort(), [...files].sort());
+  const npmjsCommand = workflow.split('\n  npmjs:\n')[1].match(/^\s+(npm publish .+)$/m)?.[1];
+  assert.ok(npmjsCommand, 'The npmjs job must expose its explicit npm publish command');
+  fs.mkdirSync(path.join(temp, 'release'));
+  fs.copyFileSync(path.join(temp, packed.filename), path.join(temp, 'release', packed.filename));
+  // Provenance needs the Actions OIDC token; the dry run proves npm reads the path as the local Release tarball.
+  const npmjsOutput = JSON.parse(run('env', [`VERSION=${pkg.version}`, 'bash', '-e', '-c', `${npmjsCommand.replace(' --provenance', '')} --dry-run --json`], temp));
+  assert.equal((npmjsOutput.qgraphflow ?? npmjsOutput).version, pkg.version);
   const npmInstall = path.join(temp, 'npm-installed');
   run('npm', ['install', '--prefix', npmInstall, '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', path.join(temp, scoped.filename)], temp);
   const npmPlugin = path.join(npmInstall, 'node_modules/@supermax92/qgraphflow');
