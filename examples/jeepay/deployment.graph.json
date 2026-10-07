@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "title": "Jeepay Docker Compose 部署图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "docker-compose.yml 默认后端服务",
+    "diagramType": "deployment",
+    "locale": "zh-CN",
+    "notes": [
+      "图示为 Compose 声明的服务和依赖，未验证容器实际运行。",
+      "RabbitMQ 与 ActiveMQ 在此 Compose 中是注释的可选配置，未作为默认运行服务绘制。"
+    ],
+    "viewId": "jeepay-deployment"
+  },
+  "nodes": [
+    {
+      "id": "mysql",
+      "label": "mysql",
+      "kind": "database",
+      "module": "data",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "data"
+      }
+    },
+    {
+      "id": "redis",
+      "label": "redis",
+      "kind": "database",
+      "module": "cache",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "data"
+      }
+    },
+    {
+      "id": "namesrv",
+      "label": "rocketmq-namesrv",
+      "kind": "container",
+      "module": "mq",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "infrastructure"
+      }
+    },
+    {
+      "id": "broker",
+      "label": "rocketmq-broker",
+      "kind": "container",
+      "module": "mq",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "infrastructure"
+      }
+    },
+    {
+      "id": "payment",
+      "label": "payment",
+      "kind": "container",
+      "module": "payment",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "kind": "config"
+      },
+      "tags": [
+        "core"
+      ],
+      "groupId": "network",
+      "layout": {
+        "tier": "application"
+      }
+    },
+    {
+      "id": "manager",
+      "label": "manager",
+      "kind": "container",
+      "module": "manager",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "application"
+      }
+    },
+    {
+      "id": "merchant",
+      "label": "merchant",
+      "kind": "container",
+      "module": "merchant",
+      "source": {
+        "file": "docker-compose.yml",
+        "lineStart": 222,
+        "lineEnd": 222,
+        "kind": "config"
+      },
+      "groupId": "network",
+      "layout": {
+        "tier": "application"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "d1",
+      "source": "broker",
+      "target": "namesrv",
+      "kind": "depends",
+      "label": "NameServer",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 78,
+        "lineEnd": 78
+      }
+    },
+    {
+      "id": "d2",
+      "source": "payment",
+      "target": "mysql",
+      "kind": "depends",
+      "label": "MySQL",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 179,
+        "lineEnd": 179
+      }
+    },
+    {
+      "id": "d3",
+      "source": "payment",
+      "target": "redis",
+      "kind": "depends",
+      "label": "Redis",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 181,
+        "lineEnd": 181
+      }
+    },
+    {
+      "id": "d4",
+      "source": "payment",
+      "target": "broker",
+      "kind": "depends",
+      "label": "RocketMQ",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 183,
+        "lineEnd": 183
+      }
+    },
+    {
+      "id": "d5",
+      "source": "manager",
+      "target": "mysql",
+      "kind": "depends",
+      "label": "MySQL",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 209,
+        "lineEnd": 209
+      }
+    },
+    {
+      "id": "d6",
+      "source": "merchant",
+      "target": "mysql",
+      "kind": "depends",
+      "label": "MySQL",
+      "evidence": "config",
+      "site": {
+        "file": "docker-compose.yml",
+        "lineStart": 239,
+        "lineEnd": 239
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "network",
+      "label": "jeepay 网络",
+      "kind": "network"
+    }
+  ],
+  "layout": {
+    "direction": "down"
+  }
+}

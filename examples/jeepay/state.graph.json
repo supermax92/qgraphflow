@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "title": "PayOrder 支付状态图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "统一下单及支付回调状态",
+    "diagramType": "state",
+    "locale": "zh-CN",
+    "notes": [
+      "INIT 到 SUCCESS/FAIL 在下单响应处理里经 ING 条件更新；图按持久化状态变更展示。",
+      "PayOrder 声明了 CANCEL、REFUND 常量，但本次主线未找到相应状态迁移调用，故不绘制。"
+    ],
+    "viewId": "jeepay-state"
+  },
+  "nodes": [
+    {
+      "id": "initial",
+      "label": "创建请求",
+      "kind": "initial"
+    },
+    {
+      "id": "init",
+      "label": "STATE_INIT",
+      "kind": "state",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "ing",
+      "label": "STATE_ING",
+      "kind": "state",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "success",
+      "label": "STATE_SUCCESS",
+      "kind": "state",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "kind": "source"
+      },
+      "tags": [
+        "core"
+      ]
+    },
+    {
+      "id": "fail",
+      "label": "STATE_FAIL",
+      "kind": "state",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "kind": "source"
+      },
+      "tags": [
+        "failure"
+      ]
+    },
+    {
+      "id": "closed",
+      "label": "STATE_CLOSED",
+      "kind": "state",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "kind": "source"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "s0",
+      "source": "initial",
+      "target": "init",
+      "kind": "transition",
+      "label": "genPayOrder",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 256,
+        "lineEnd": 256
+      }
+    },
+    {
+      "id": "s1",
+      "source": "init",
+      "target": "ing",
+      "kind": "transition",
+      "label": "渠道下单返回等待/未知",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 61,
+        "lineEnd": 61
+      }
+    },
+    {
+      "id": "s2",
+      "source": "ing",
+      "target": "success",
+      "kind": "transition",
+      "label": "渠道确认成功",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 79,
+        "lineEnd": 79
+      },
+      "guard": "STATE_ING"
+    },
+    {
+      "id": "s3",
+      "source": "ing",
+      "target": "fail",
+      "kind": "transition",
+      "label": "渠道确认失败",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 113,
+        "lineEnd": 113
+      },
+      "guard": "STATE_ING"
+    },
+    {
+      "id": "s4",
+      "source": "init",
+      "target": "closed",
+      "kind": "transition",
+      "label": "关闭订单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 102,
+        "lineEnd": 102
+      },
+      "guard": "STATE_INIT"
+    },
+    {
+      "id": "s5",
+      "source": "ing",
+      "target": "closed",
+      "kind": "transition",
+      "label": "关闭订单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 92,
+        "lineEnd": 92
+      },
+      "guard": "STATE_ING"
+    }
+  ],
+  "layout": {
+    "direction": "down"
+  }
+}

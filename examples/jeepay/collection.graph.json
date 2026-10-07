@@ -1,0 +1,3057 @@
+{
+  "diagrams": [
+    {
+      "meta": {
+        "title": "Jeepay 平台能力架构",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "项目核心支付能力",
+        "diagramType": "architecture",
+        "locale": "zh-CN",
+        "notes": [
+          "能力卡片以源码中的控制器和服务为准；退款、转账和分账是独立入口。",
+          "本图呈现能力与关键支撑，不代表所有能力均在同一请求链路中。"
+        ],
+        "architectureView": "capabilities",
+        "viewId": "jeepay-capabilities"
+      },
+      "nodes": [
+        {
+          "id": "unified",
+          "label": "UnifiedOrderController",
+          "kind": "business",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "kind": "source"
+          },
+          "subtitle": "统一下单入口",
+          "tags": [
+            "core"
+          ],
+          "overviewText": [
+            "校验商户签名后选择支付方式，生成支付订单。"
+          ]
+        },
+        {
+          "id": "refund",
+          "label": "RefundOrderController",
+          "kind": "business",
+          "module": "refund",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java",
+            "lineStart": 57,
+            "lineEnd": 57,
+            "kind": "source"
+          },
+          "subtitle": "退款订单入口",
+          "overviewText": [
+            "面向已支付订单发起渠道退款。"
+          ]
+        },
+        {
+          "id": "transfer",
+          "label": "TransferOrderController",
+          "kind": "business",
+          "module": "transfer",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java",
+            "lineStart": 55,
+            "lineEnd": 55,
+            "kind": "source"
+          },
+          "subtitle": "转账订单入口",
+          "overviewText": [
+            "向渠道发起转账。"
+          ]
+        },
+        {
+          "id": "division",
+          "label": "PayOrderDivisionExecController",
+          "kind": "business",
+          "module": "division",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java",
+            "lineStart": 57,
+            "lineEnd": 57,
+            "kind": "source"
+          },
+          "subtitle": "分账执行入口",
+          "overviewText": [
+            "按商户请求执行支付订单分账。"
+          ]
+        },
+        {
+          "id": "process",
+          "label": "PayOrderProcessService",
+          "kind": "component",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 40,
+            "lineEnd": 40,
+            "kind": "source"
+          },
+          "subtitle": "支付成功后的订单处理",
+          "overviewText": [
+            "确认支付成功后处理订单业务。"
+          ]
+        },
+        {
+          "id": "notify",
+          "label": "PayMchNotifyService",
+          "kind": "component",
+          "module": "notification",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 45,
+            "lineEnd": 45,
+            "kind": "source"
+          },
+          "subtitle": "保存并推送商户通知",
+          "overviewText": [
+            "保存通知记录并推送消息。"
+          ]
+        },
+        {
+          "id": "channel",
+          "label": "IPaymentService",
+          "kind": "component",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+            "lineStart": 30,
+            "lineEnd": 30,
+            "kind": "source"
+          },
+          "subtitle": "渠道支付接口契约",
+          "overviewText": [
+            "定义渠道支付检查与支付调用。"
+          ]
+        },
+        {
+          "id": "orderdb",
+          "label": "PayOrderService",
+          "kind": "data",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 49,
+            "lineEnd": 49,
+            "kind": "source"
+          },
+          "subtitle": "支付订单持久化与条件更新",
+          "overviewText": [
+            "持久化并按原状态条件更新订单。"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "c1",
+          "source": "unified",
+          "target": "channel",
+          "kind": "call",
+          "label": "调起渠道支付",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          }
+        },
+        {
+          "id": "c2",
+          "source": "unified",
+          "target": "orderdb",
+          "kind": "data",
+          "label": "保存支付订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201
+          }
+        },
+        {
+          "id": "c3",
+          "source": "unified",
+          "target": "process",
+          "kind": "call",
+          "label": "处理支付结果",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 383,
+            "lineEnd": 383
+          }
+        },
+        {
+          "id": "c4",
+          "source": "process",
+          "target": "notify",
+          "kind": "call",
+          "label": "通知商户",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 60,
+            "lineEnd": 60
+          }
+        },
+        {
+          "id": "c5",
+          "source": "process",
+          "target": "orderdb",
+          "kind": "data",
+          "label": "查询订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 51,
+            "lineEnd": 51
+          }
+        }
+      ],
+      "layout": {
+        "sections": [
+          {
+            "id": "entry",
+            "title": "业务能力入口",
+            "mode": "grid",
+            "columns": 4,
+            "tone": "blue",
+            "items": [
+              {
+                "nodeId": "unified"
+              },
+              {
+                "nodeId": "refund"
+              },
+              {
+                "nodeId": "transfer"
+              },
+              {
+                "nodeId": "division"
+              }
+            ]
+          },
+          {
+            "id": "core",
+            "title": "支付处理",
+            "mode": "row",
+            "tone": "green",
+            "items": [
+              {
+                "nodeId": "channel"
+              },
+              {
+                "nodeId": "process"
+              }
+            ]
+          },
+          {
+            "id": "support",
+            "title": "订单与通知支撑",
+            "mode": "row",
+            "tone": "subtle",
+            "items": [
+              {
+                "nodeId": "orderdb"
+              },
+              {
+                "nodeId": "notify"
+              }
+            ]
+          }
+        ],
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "Jeepay 工程分层架构",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "Maven 模块与编译期依赖",
+        "diagramType": "architecture",
+        "locale": "zh-CN",
+        "notes": [
+          "箭头表示 pom.xml 声明的模块依赖，不表示运行时 HTTP 调用。",
+          "jeepay-z-codegen 是独立代码生成模块，不在支付主干分层中。"
+        ],
+        "architectureView": "engineering",
+        "viewId": "jeepay-engineering"
+      },
+      "nodes": [
+        {
+          "id": "manager",
+          "label": "jeepay-manager",
+          "kind": "component",
+          "module": "manager",
+          "source": {
+            "file": "jeepay-manager/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "运营管理端应用模块"
+          ]
+        },
+        {
+          "id": "merchant",
+          "label": "jeepay-merchant",
+          "kind": "component",
+          "module": "merchant",
+          "source": {
+            "file": "jeepay-merchant/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "商户管理端应用模块"
+          ]
+        },
+        {
+          "id": "payment",
+          "label": "jeepay-payment",
+          "kind": "business",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "tags": [
+            "core"
+          ],
+          "overviewText": [
+            "统一支付网关应用模块"
+          ]
+        },
+        {
+          "id": "service",
+          "label": "jeepay-service",
+          "kind": "component",
+          "module": "service",
+          "source": {
+            "file": "jeepay-service/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "数据库服务与持久化访问模块"
+          ]
+        },
+        {
+          "id": "core",
+          "label": "jeepay-core",
+          "kind": "component",
+          "module": "core",
+          "source": {
+            "file": "jeepay-core/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "公共实体、模型与工具模块"
+          ]
+        },
+        {
+          "id": "mq",
+          "label": "jeepay-components-mq",
+          "kind": "component",
+          "module": "mq",
+          "source": {
+            "file": "jeepay-components/jeepay-components-mq/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "消息队列抽象与实现模块"
+          ]
+        },
+        {
+          "id": "oss",
+          "label": "jeepay-components-oss",
+          "kind": "component",
+          "module": "oss",
+          "source": {
+            "file": "jeepay-components/jeepay-components-oss/pom.xml",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "kind": "config"
+          },
+          "subtitle": "Maven 模块",
+          "overviewText": [
+            "对象存储组件模块"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "source": "manager",
+          "target": "service",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-manager/pom.xml",
+            "lineStart": 24,
+            "lineEnd": 24
+          }
+        },
+        {
+          "id": "e2",
+          "source": "merchant",
+          "target": "service",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-merchant/pom.xml",
+            "lineStart": 24,
+            "lineEnd": 24
+          }
+        },
+        {
+          "id": "e3",
+          "source": "payment",
+          "target": "service",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/pom.xml",
+            "lineStart": 30,
+            "lineEnd": 30
+          }
+        },
+        {
+          "id": "e4",
+          "source": "payment",
+          "target": "mq",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/pom.xml",
+            "lineStart": 42,
+            "lineEnd": 42
+          }
+        },
+        {
+          "id": "e5",
+          "source": "payment",
+          "target": "oss",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/pom.xml",
+            "lineStart": 36,
+            "lineEnd": 36
+          }
+        },
+        {
+          "id": "e6",
+          "source": "service",
+          "target": "core",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/pom.xml",
+            "lineStart": 24,
+            "lineEnd": 24
+          }
+        },
+        {
+          "id": "e7",
+          "source": "mq",
+          "target": "core",
+          "kind": "depends",
+          "label": "Maven 依赖",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-components/jeepay-components-mq/pom.xml",
+            "lineStart": 25,
+            "lineEnd": 25
+          }
+        }
+      ],
+      "layout": {
+        "sections": [
+          {
+            "id": "app",
+            "title": "应用入口",
+            "mode": "grid",
+            "columns": 3,
+            "tone": "blue",
+            "items": [
+              {
+                "nodeId": "manager"
+              },
+              {
+                "nodeId": "merchant"
+              },
+              {
+                "nodeId": "payment"
+              }
+            ]
+          },
+          {
+            "id": "domain",
+            "title": "持久化与公共模型",
+            "mode": "stack",
+            "tone": "green",
+            "items": [
+              {
+                "nodeId": "service"
+              },
+              {
+                "nodeId": "core"
+              }
+            ]
+          },
+          {
+            "id": "components",
+            "title": "可复用组件",
+            "mode": "row",
+            "tone": "lavender",
+            "items": [
+              {
+                "nodeId": "mq"
+              },
+              {
+                "nodeId": "oss"
+              }
+            ]
+          }
+        ],
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "Jeepay 支付组件关系架构",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "统一下单与异步回调组件",
+        "diagramType": "architecture",
+        "locale": "zh-CN",
+        "notes": [
+          "渠道实现经 SpringBeansUtil 按 ifCode 动态获取；静态调用图不能穷举实际运行时 Bean。",
+          "回调只在订单为 STATE_ING 时执行成功/失败条件更新。"
+        ],
+        "architectureView": "relations",
+        "viewId": "jeepay-relations"
+      },
+      "nodes": [
+        {
+          "id": "unified",
+          "label": "UnifiedOrderController",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "abstract",
+          "label": "AbstractPayOrderController",
+          "kind": "business",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 64,
+            "lineEnd": 64,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "api",
+          "label": "ApiController",
+          "kind": "security",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java",
+            "lineStart": 39,
+            "lineEnd": 39,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "config",
+          "label": "ConfigContextQueryService",
+          "kind": "component",
+          "module": "config",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/ConfigContextQueryService.java",
+            "lineStart": 48,
+            "lineEnd": 48,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "passage",
+          "label": "MchPayPassageService",
+          "kind": "component",
+          "module": "config",
+          "source": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/MchPayPassageService.java",
+            "lineStart": 45,
+            "lineEnd": 45,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "orders",
+          "label": "PayOrderService",
+          "kind": "data",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 49,
+            "lineEnd": 49,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "channel",
+          "label": "IPaymentService",
+          "kind": "component",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+            "lineStart": 30,
+            "lineEnd": 30,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "process",
+          "label": "PayOrderProcessService",
+          "kind": "component",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 40,
+            "lineEnd": 40,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "notify",
+          "label": "PayMchNotifyService",
+          "kind": "component",
+          "module": "notification",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 45,
+            "lineEnd": 45,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "callback",
+          "label": "ChannelNoticeController",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 54,
+            "lineEnd": 54,
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "r1",
+          "source": "unified",
+          "target": "abstract",
+          "kind": "inherits",
+          "label": "继承下单编排",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44
+          }
+        },
+        {
+          "id": "r2",
+          "source": "abstract",
+          "target": "api",
+          "kind": "inherits",
+          "label": "继承请求校验",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 64,
+            "lineEnd": 64
+          }
+        },
+        {
+          "id": "r3",
+          "source": "unified",
+          "target": "abstract",
+          "kind": "call",
+          "label": "统一下单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 61,
+            "lineEnd": 61
+          }
+        },
+        {
+          "id": "r4",
+          "source": "abstract",
+          "target": "config",
+          "kind": "call",
+          "label": "查询商户配置",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 129,
+            "lineEnd": 129
+          }
+        },
+        {
+          "id": "r5",
+          "source": "abstract",
+          "target": "passage",
+          "kind": "call",
+          "label": "选择通道",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 167,
+            "lineEnd": 167
+          }
+        },
+        {
+          "id": "r6",
+          "source": "abstract",
+          "target": "orders",
+          "kind": "data",
+          "label": "保存支付订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201
+          }
+        },
+        {
+          "id": "r7",
+          "source": "abstract",
+          "target": "channel",
+          "kind": "call",
+          "label": "调用 pay",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          }
+        },
+        {
+          "id": "r8",
+          "source": "abstract",
+          "target": "process",
+          "kind": "call",
+          "label": "处理支付状态",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 383,
+            "lineEnd": 383
+          }
+        },
+        {
+          "id": "r9",
+          "source": "callback",
+          "target": "orders",
+          "kind": "data",
+          "label": "条件更新订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 237,
+            "lineEnd": 237
+          }
+        },
+        {
+          "id": "r10",
+          "source": "callback",
+          "target": "process",
+          "kind": "call",
+          "label": "成功后处理",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 254,
+            "lineEnd": 254
+          }
+        },
+        {
+          "id": "r11",
+          "source": "process",
+          "target": "notify",
+          "kind": "call",
+          "label": "发商户通知",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 60,
+            "lineEnd": 60
+          }
+        }
+      ],
+      "layout": {
+        "direction": "right"
+      }
+    },
+    {
+      "meta": {
+        "title": "统一下单流程图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "普通新订单分支",
+        "diagramType": "flowchart",
+        "locale": "zh-CN",
+        "notes": [
+          "展示普通新订单主线；QR_CASHIER 会先创建订单并直接返回收银台地址。",
+          "渠道返回成功、失败、等待等状态由 processChannelMsg 分流；详见状态图。"
+        ],
+        "viewId": "jeepay-flowchart"
+      },
+      "nodes": [
+        {
+          "id": "start",
+          "label": "POST /api/pay/unifiedOrder",
+          "kind": "start",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 52,
+            "lineEnd": 52,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "verify",
+          "label": "getRQByWithMchSign",
+          "kind": "input",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 56,
+            "lineEnd": 56,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "way",
+          "label": "支付方式受支持？",
+          "kind": "decision",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 100,
+            "lineEnd": 100,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "config",
+          "label": "queryMchInfoAndAppInfo",
+          "kind": "process",
+          "module": "config",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 129,
+            "lineEnd": 129,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "appok",
+          "label": "商户应用可用？",
+          "kind": "decision",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 137,
+            "lineEnd": 137,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "passage",
+          "label": "findMchPayPassage",
+          "kind": "process",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 167,
+            "lineEnd": 167,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "save",
+          "label": "payOrderService.save",
+          "kind": "process",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201,
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "pay",
+          "label": "paymentService.pay",
+          "kind": "subprocess",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "update",
+          "label": "processChannelMsg",
+          "kind": "process",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 208,
+            "lineEnd": 208,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "return",
+          "label": "ApiRes.okWithSign",
+          "kind": "end",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 78,
+            "lineEnd": 78,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "fail",
+          "label": "ApiRes.customFail / BizException",
+          "kind": "end",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 213,
+            "lineEnd": 213,
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "f1",
+          "source": "start",
+          "target": "verify",
+          "kind": "flow",
+          "label": "读取并验签",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 56,
+            "lineEnd": 56
+          }
+        },
+        {
+          "id": "f2",
+          "source": "verify",
+          "target": "way",
+          "kind": "flow",
+          "label": "构建业务请求",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 58,
+            "lineEnd": 58
+          }
+        },
+        {
+          "id": "f3",
+          "source": "way",
+          "target": "config",
+          "kind": "yes",
+          "label": "是",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 100,
+            "lineEnd": 100
+          }
+        },
+        {
+          "id": "f4",
+          "source": "way",
+          "target": "fail",
+          "kind": "no",
+          "label": "否",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 101,
+            "lineEnd": 101
+          }
+        },
+        {
+          "id": "f5",
+          "source": "config",
+          "target": "appok",
+          "kind": "flow",
+          "label": "读取应用状态",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 137,
+            "lineEnd": 137
+          }
+        },
+        {
+          "id": "f6",
+          "source": "appok",
+          "target": "passage",
+          "kind": "yes",
+          "label": "是",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 167,
+            "lineEnd": 167
+          }
+        },
+        {
+          "id": "f7",
+          "source": "appok",
+          "target": "fail",
+          "kind": "no",
+          "label": "否",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 138,
+            "lineEnd": 138
+          }
+        },
+        {
+          "id": "f8",
+          "source": "passage",
+          "target": "save",
+          "kind": "flow",
+          "label": "生成并保存订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201
+          }
+        },
+        {
+          "id": "f9",
+          "source": "save",
+          "target": "pay",
+          "kind": "flow",
+          "label": "调起渠道",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          }
+        },
+        {
+          "id": "f10",
+          "source": "pay",
+          "target": "update",
+          "kind": "flow",
+          "label": "处理渠道返回",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 208,
+            "lineEnd": 208
+          }
+        },
+        {
+          "id": "f11",
+          "source": "update",
+          "target": "return",
+          "kind": "success",
+          "label": "封装签名响应",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 78,
+            "lineEnd": 78
+          }
+        }
+      ],
+      "layout": {
+        "primaryPath": [
+          "start",
+          "verify",
+          "way",
+          "config",
+          "appok",
+          "passage",
+          "save",
+          "pay",
+          "update",
+          "return"
+        ],
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "统一下单与成功回调时序图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "普通下单及异步成功回调",
+        "diagramType": "sequence",
+        "locale": "zh-CN",
+        "notes": [
+          "图中回调阶段仅展示 CONFIRM_SUCCESS 分支；失败分支更新 STATE_FAIL。",
+          "渠道支付接口由运行时 Bean 选择；支付渠道内部调用未在仓库中展开。"
+        ],
+        "viewId": "jeepay-sequence"
+      },
+      "nodes": [
+        {
+          "id": "merchant",
+          "label": "商户系统",
+          "kind": "actor"
+        },
+        {
+          "id": "unified",
+          "label": "UnifiedOrderController",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "abstract",
+          "label": "AbstractPayOrderController",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 64,
+            "lineEnd": 64,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "orders",
+          "label": "PayOrderService",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 49,
+            "lineEnd": 49,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "channelapi",
+          "label": "IPaymentService",
+          "kind": "service",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+            "lineStart": 30,
+            "lineEnd": 30,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "channel",
+          "label": "支付渠道",
+          "kind": "external",
+          "module": "channel"
+        },
+        {
+          "id": "callback",
+          "label": "ChannelNoticeController",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 54,
+            "lineEnd": 54,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "process",
+          "label": "PayOrderProcessService",
+          "kind": "service",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 40,
+            "lineEnd": 40,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "notify",
+          "label": "PayMchNotifyService",
+          "kind": "service",
+          "module": "notification",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 45,
+            "lineEnd": 45,
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "m1",
+          "source": "merchant",
+          "target": "unified",
+          "kind": "sync",
+          "label": "POST /api/pay/unifiedOrder",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 52,
+            "lineEnd": 52
+          },
+          "order": 1
+        },
+        {
+          "id": "m2",
+          "source": "unified",
+          "target": "abstract",
+          "kind": "sync",
+          "label": "unifiedOrder(wayCode, bizRQ)",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 61,
+            "lineEnd": 61
+          },
+          "order": 2
+        },
+        {
+          "id": "m3",
+          "source": "abstract",
+          "target": "orders",
+          "kind": "sync",
+          "label": "save(payOrder)",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201
+          },
+          "order": 3
+        },
+        {
+          "id": "m4",
+          "source": "abstract",
+          "target": "channelapi",
+          "kind": "sync",
+          "label": "pay(bizRQ, payOrder, context)",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          },
+          "order": 4
+        },
+        {
+          "id": "m5",
+          "source": "channelapi",
+          "target": "abstract",
+          "kind": "return",
+          "label": "UnifiedOrderRS / ChannelRetMsg",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 208,
+            "lineEnd": 208
+          },
+          "order": 5,
+          "replyTo": "m4"
+        },
+        {
+          "id": "m6",
+          "source": "abstract",
+          "target": "unified",
+          "kind": "return",
+          "label": "ApiRes",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 210,
+            "lineEnd": 210
+          },
+          "order": 6,
+          "replyTo": "m2"
+        },
+        {
+          "id": "m7",
+          "source": "unified",
+          "target": "merchant",
+          "kind": "return",
+          "label": "signed UnifiedOrderRS",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 78,
+            "lineEnd": 78
+          },
+          "order": 7,
+          "replyTo": "m1"
+        },
+        {
+          "id": "m8",
+          "source": "channel",
+          "target": "callback",
+          "kind": "async",
+          "label": "/api/pay/notify/{ifCode}",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 169,
+            "lineEnd": 169
+          },
+          "order": 8
+        },
+        {
+          "id": "m9",
+          "source": "callback",
+          "target": "orders",
+          "kind": "sync",
+          "label": "updateIng2Success",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 237,
+            "lineEnd": 237
+          },
+          "order": 9
+        },
+        {
+          "id": "m10",
+          "source": "callback",
+          "target": "process",
+          "kind": "sync",
+          "label": "confirmSuccess(payOrder)",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 254,
+            "lineEnd": 254
+          },
+          "order": 10
+        },
+        {
+          "id": "m11",
+          "source": "process",
+          "target": "notify",
+          "kind": "sync",
+          "label": "payOrderNotify(payOrder)",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 60,
+            "lineEnd": 60
+          },
+          "order": 11
+        },
+        {
+          "id": "m12",
+          "source": "callback",
+          "target": "channel",
+          "kind": "return",
+          "label": "responseEntity",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 259,
+            "lineEnd": 259
+          },
+          "order": 12,
+          "replyTo": "m8"
+        }
+      ],
+      "groups": [
+        {
+          "id": "success",
+          "label": "渠道确认成功",
+          "kind": "opt",
+          "operands": [
+            {
+              "id": "ok",
+              "guard": "CONFIRM_SUCCESS",
+              "edgeIds": [
+                "m9",
+                "m10",
+                "m11"
+              ]
+            }
+          ]
+        }
+      ],
+      "executions": [
+        {
+          "id": "x1",
+          "participantId": "unified",
+          "start": {
+            "edgeId": "m1",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m7",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x2",
+          "participantId": "abstract",
+          "start": {
+            "edgeId": "m2",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m6",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x3",
+          "participantId": "channelapi",
+          "start": {
+            "edgeId": "m4",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m5",
+            "at": "send"
+          }
+        },
+        {
+          "id": "x4",
+          "participantId": "callback",
+          "start": {
+            "edgeId": "m8",
+            "at": "receive"
+          },
+          "end": {
+            "edgeId": "m12",
+            "at": "send"
+          }
+        }
+      ],
+      "layout": {}
+    },
+    {
+      "meta": {
+        "title": "Jeepay 支付核心数据 ER 图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "商户应用、通道、支付订单与通知记录",
+        "diagramType": "er",
+        "locale": "zh-CN",
+        "notes": [
+          "init.sql 未声明 FOREIGN KEY；连线是代码使用的逻辑关联，不代表数据库强制外键。",
+          "每个实体列出 DDL 的全部字段；仅原生 PRIMARY KEY 标记为 PK。"
+        ],
+        "viewId": "jeepay-er"
+      },
+      "nodes": [
+        {
+          "id": "t_mch_app",
+          "label": "t_mch_app",
+          "kind": "entity",
+          "module": "config",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 142,
+            "lineEnd": 142,
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "app_id",
+              "type": "varchar(64)",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "app_name",
+              "type": "varchar(64)",
+              "nullable": false
+            },
+            {
+              "name": "mch_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "app_secret",
+              "type": "VARCHAR(128)",
+              "nullable": false
+            },
+            {
+              "name": "remark",
+              "type": "varchar(128)",
+              "nullable": true
+            },
+            {
+              "name": "created_uid",
+              "type": "BIGINT(20)",
+              "nullable": true
+            },
+            {
+              "name": "created_by",
+              "type": "VARCHAR(64)",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "t_mch_pay_passage",
+          "label": "t_mch_pay_passage",
+          "kind": "entity",
+          "module": "config",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 229,
+            "lineEnd": 229,
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "id",
+              "type": "BIGINT(20)",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "mch_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "app_id",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "if_code",
+              "type": "VARCHAR(20)",
+              "nullable": false
+            },
+            {
+              "name": "way_code",
+              "type": "VARCHAR(20)",
+              "nullable": false
+            },
+            {
+              "name": "rate",
+              "type": "DECIMAL(20,6)",
+              "nullable": false
+            },
+            {
+              "name": "risk_config",
+              "type": "JSON",
+              "nullable": true
+            },
+            {
+              "name": "state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "t_pay_order",
+          "label": "t_pay_order",
+          "kind": "entity",
+          "module": "payment",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 251,
+            "lineEnd": 251,
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "pay_order_id",
+              "type": "VARCHAR(30)",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "mch_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "isv_no",
+              "type": "VARCHAR(64)",
+              "nullable": true
+            },
+            {
+              "name": "app_id",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "mch_name",
+              "type": "VARCHAR(30)",
+              "nullable": false
+            },
+            {
+              "name": "mch_type",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "mch_order_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "if_code",
+              "type": "VARCHAR(20)",
+              "nullable": true
+            },
+            {
+              "name": "way_code",
+              "type": "VARCHAR(20)",
+              "nullable": false
+            },
+            {
+              "name": "amount",
+              "type": "BIGINT(20)",
+              "nullable": false
+            },
+            {
+              "name": "mch_fee_rate",
+              "type": "decimal(20,6)",
+              "nullable": false
+            },
+            {
+              "name": "mch_fee_amount",
+              "type": "BIGINT(20)",
+              "nullable": false
+            },
+            {
+              "name": "currency",
+              "type": "VARCHAR(3)",
+              "nullable": false
+            },
+            {
+              "name": "state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "notify_state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "client_ip",
+              "type": "VARCHAR(32)",
+              "nullable": true
+            },
+            {
+              "name": "subject",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "body",
+              "type": "VARCHAR(256)",
+              "nullable": false
+            },
+            {
+              "name": "channel_extra",
+              "type": "VARCHAR(512)",
+              "nullable": true
+            },
+            {
+              "name": "channel_user",
+              "type": "VARCHAR(64)",
+              "nullable": true
+            },
+            {
+              "name": "channel_order_no",
+              "type": "VARCHAR(64)",
+              "nullable": true
+            },
+            {
+              "name": "refund_state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "refund_times",
+              "type": "INT",
+              "nullable": false
+            },
+            {
+              "name": "refund_amount",
+              "type": "BIGINT(20)",
+              "nullable": false
+            },
+            {
+              "name": "division_mode",
+              "type": "TINYINT(6)",
+              "nullable": true
+            },
+            {
+              "name": "division_state",
+              "type": "TINYINT(6)",
+              "nullable": true
+            },
+            {
+              "name": "division_last_time",
+              "type": "DATETIME",
+              "nullable": true
+            },
+            {
+              "name": "err_code",
+              "type": "VARCHAR(128)",
+              "nullable": true
+            },
+            {
+              "name": "err_msg",
+              "type": "VARCHAR(256)",
+              "nullable": true
+            },
+            {
+              "name": "ext_param",
+              "type": "VARCHAR(2048)",
+              "nullable": true
+            },
+            {
+              "name": "notify_url",
+              "type": "VARCHAR(128)",
+              "nullable": false
+            },
+            {
+              "name": "return_url",
+              "type": "VARCHAR(128)",
+              "nullable": true
+            },
+            {
+              "name": "expired_time",
+              "type": "DATETIME",
+              "nullable": true
+            },
+            {
+              "name": "success_time",
+              "type": "DATETIME",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "id": "t_mch_notify_record",
+          "label": "t_mch_notify_record",
+          "kind": "entity",
+          "module": "notification",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 296,
+            "lineEnd": 296,
+            "kind": "schema"
+          },
+          "fields": [
+            {
+              "name": "notify_id",
+              "type": "BIGINT(20)",
+              "key": "PK",
+              "nullable": false
+            },
+            {
+              "name": "order_id",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "order_type",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "mch_order_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "mch_no",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "isv_no",
+              "type": "VARCHAR(64)",
+              "nullable": true
+            },
+            {
+              "name": "app_id",
+              "type": "VARCHAR(64)",
+              "nullable": false
+            },
+            {
+              "name": "notify_url",
+              "type": "TEXT",
+              "nullable": false
+            },
+            {
+              "name": "res_result",
+              "type": "TEXT",
+              "nullable": true
+            },
+            {
+              "name": "notify_count",
+              "type": "INT(11)",
+              "nullable": false
+            },
+            {
+              "name": "notify_count_limit",
+              "type": "INT(11)",
+              "nullable": false
+            },
+            {
+              "name": "state",
+              "type": "TINYINT(6)",
+              "nullable": false
+            },
+            {
+              "name": "last_notify_time",
+              "type": "DATETIME",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMP(3)",
+              "nullable": false
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "er1",
+          "source": "t_mch_app",
+          "target": "t_mch_pay_passage",
+          "kind": "relationship",
+          "label": "配置支付通道（逻辑）",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 167,
+            "lineEnd": 167
+          },
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "er2",
+          "source": "t_mch_app",
+          "target": "t_pay_order",
+          "kind": "relationship",
+          "label": "创建支付订单（逻辑）",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 242,
+            "lineEnd": 242
+          },
+          "sourceCardinality": "1",
+          "targetCardinality": "0..*"
+        },
+        {
+          "id": "er3",
+          "source": "t_pay_order",
+          "target": "t_mch_notify_record",
+          "kind": "relationship",
+          "label": "产生支付通知（逻辑）",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 76,
+            "lineEnd": 76
+          },
+          "sourceCardinality": "1",
+          "targetCardinality": "0..1"
+        }
+      ],
+      "layout": {
+        "direction": "right"
+      }
+    },
+    {
+      "meta": {
+        "title": "Jeepay Docker Compose 部署图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "docker-compose.yml 默认后端服务",
+        "diagramType": "deployment",
+        "locale": "zh-CN",
+        "notes": [
+          "图示为 Compose 声明的服务和依赖，未验证容器实际运行。",
+          "RabbitMQ 与 ActiveMQ 在此 Compose 中是注释的可选配置，未作为默认运行服务绘制。"
+        ],
+        "viewId": "jeepay-deployment"
+      },
+      "nodes": [
+        {
+          "id": "mysql",
+          "label": "mysql",
+          "kind": "database",
+          "module": "data",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 11,
+            "lineEnd": 11,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "data"
+          }
+        },
+        {
+          "id": "redis",
+          "label": "redis",
+          "kind": "database",
+          "module": "cache",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 142,
+            "lineEnd": 142,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "data"
+          }
+        },
+        {
+          "id": "namesrv",
+          "label": "rocketmq-namesrv",
+          "kind": "container",
+          "module": "mq",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 39,
+            "lineEnd": 39,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "infrastructure"
+          }
+        },
+        {
+          "id": "broker",
+          "label": "rocketmq-broker",
+          "kind": "container",
+          "module": "mq",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 65,
+            "lineEnd": 65,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "infrastructure"
+          }
+        },
+        {
+          "id": "payment",
+          "label": "payment",
+          "kind": "container",
+          "module": "payment",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 162,
+            "lineEnd": 162,
+            "kind": "config"
+          },
+          "tags": [
+            "core"
+          ],
+          "groupId": "network",
+          "layout": {
+            "tier": "application"
+          }
+        },
+        {
+          "id": "manager",
+          "label": "manager",
+          "kind": "container",
+          "module": "manager",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 192,
+            "lineEnd": 192,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "application"
+          }
+        },
+        {
+          "id": "merchant",
+          "label": "merchant",
+          "kind": "container",
+          "module": "merchant",
+          "source": {
+            "file": "docker-compose.yml",
+            "lineStart": 222,
+            "lineEnd": 222,
+            "kind": "config"
+          },
+          "groupId": "network",
+          "layout": {
+            "tier": "application"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "broker",
+          "target": "namesrv",
+          "kind": "depends",
+          "label": "NameServer",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 78,
+            "lineEnd": 78
+          }
+        },
+        {
+          "id": "d2",
+          "source": "payment",
+          "target": "mysql",
+          "kind": "depends",
+          "label": "MySQL",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 179,
+            "lineEnd": 179
+          }
+        },
+        {
+          "id": "d3",
+          "source": "payment",
+          "target": "redis",
+          "kind": "depends",
+          "label": "Redis",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 181,
+            "lineEnd": 181
+          }
+        },
+        {
+          "id": "d4",
+          "source": "payment",
+          "target": "broker",
+          "kind": "depends",
+          "label": "RocketMQ",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 183,
+            "lineEnd": 183
+          }
+        },
+        {
+          "id": "d5",
+          "source": "manager",
+          "target": "mysql",
+          "kind": "depends",
+          "label": "MySQL",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 209,
+            "lineEnd": 209
+          }
+        },
+        {
+          "id": "d6",
+          "source": "merchant",
+          "target": "mysql",
+          "kind": "depends",
+          "label": "MySQL",
+          "evidence": "config",
+          "site": {
+            "file": "docker-compose.yml",
+            "lineStart": 239,
+            "lineEnd": 239
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "network",
+          "label": "jeepay 网络",
+          "kind": "network"
+        }
+      ],
+      "layout": {
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "Jeepay 统一支付类图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "控制器与渠道支付接口",
+        "diagramType": "class",
+        "locale": "zh-CN",
+        "notes": [
+          "类成员仅展示与统一下单有关的源码声明；省略其他方法。",
+          "IPaymentService 实现由通道模块扩展，图中以支付宝和微信实现为例。"
+        ],
+        "viewId": "jeepay-class"
+      },
+      "nodes": [
+        {
+          "id": "api",
+          "label": "ApiController",
+          "kind": "abstract",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java",
+            "lineStart": 39,
+            "lineEnd": 39,
+            "kind": "source"
+          },
+          "methods": [
+            "#getRQByWithMchSign(Class<T>): T"
+          ]
+        },
+        {
+          "id": "base",
+          "label": "AbstractPayOrderController",
+          "kind": "abstract",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 64,
+            "lineEnd": 64,
+            "kind": "source"
+          },
+          "methods": [
+            "#unifiedOrder(String, UnifiedOrderRQ): ApiRes",
+            "-processChannelMsg(ChannelRetMsg, PayOrder): void"
+          ]
+        },
+        {
+          "id": "unified",
+          "label": "UnifiedOrderController",
+          "kind": "class",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "kind": "source"
+          },
+          "methods": [
+            "+unifiedOrder(): ApiRes"
+          ]
+        },
+        {
+          "id": "iface",
+          "label": "IPaymentService",
+          "kind": "interface",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+            "lineStart": 30,
+            "lineEnd": 30,
+            "kind": "source"
+          },
+          "methods": [
+            "+getIfCode(): String",
+            "+preCheck(UnifiedOrderRQ, PayOrder): String",
+            "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+          ]
+        },
+        {
+          "id": "abstractPayment",
+          "label": "AbstractPaymentService",
+          "kind": "abstract",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/AbstractPaymentService.java",
+            "lineStart": 35,
+            "lineEnd": 35,
+            "kind": "source"
+          },
+          "methods": [
+            "+customPayOrderId(UnifiedOrderRQ, PayOrder, MchAppConfigContext): String"
+          ]
+        },
+        {
+          "id": "alipay",
+          "label": "AlipayPaymentService",
+          "kind": "class",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/alipay/AlipayPaymentService.java",
+            "lineStart": 36,
+            "lineEnd": 36,
+            "kind": "source"
+          },
+          "methods": [
+            "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+          ]
+        },
+        {
+          "id": "wxpay",
+          "label": "WxpayPaymentService",
+          "kind": "class",
+          "module": "channel",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/wxpay/WxpayPaymentService.java",
+            "lineStart": 46,
+            "lineEnd": 46,
+            "kind": "source"
+          },
+          "methods": [
+            "+pay(UnifiedOrderRQ, PayOrder, MchAppConfigContext): AbstractRS"
+          ]
+        },
+        {
+          "id": "orders",
+          "label": "PayOrderService",
+          "kind": "class",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 49,
+            "lineEnd": 49,
+            "kind": "source"
+          },
+          "methods": [
+            "+updateInit2Ing(String, PayOrder): boolean",
+            "+updateIng2Success(String, String, String): boolean"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "cl1",
+          "source": "unified",
+          "target": "base",
+          "kind": "inheritance",
+          "label": "extends",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 44,
+            "lineEnd": 44
+          }
+        },
+        {
+          "id": "cl2",
+          "source": "base",
+          "target": "api",
+          "kind": "inheritance",
+          "label": "extends",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 64,
+            "lineEnd": 64
+          }
+        },
+        {
+          "id": "cl3",
+          "source": "abstractPayment",
+          "target": "iface",
+          "kind": "implementation",
+          "label": "implements",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/AbstractPaymentService.java",
+            "lineStart": 35,
+            "lineEnd": 35
+          }
+        },
+        {
+          "id": "cl4",
+          "source": "alipay",
+          "target": "abstractPayment",
+          "kind": "inheritance",
+          "label": "extends",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/alipay/AlipayPaymentService.java",
+            "lineStart": 36,
+            "lineEnd": 36
+          }
+        },
+        {
+          "id": "cl5",
+          "source": "wxpay",
+          "target": "abstractPayment",
+          "kind": "inheritance",
+          "label": "extends",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/wxpay/WxpayPaymentService.java",
+            "lineStart": 46,
+            "lineEnd": 46
+          }
+        },
+        {
+          "id": "cl6",
+          "source": "base",
+          "target": "iface",
+          "kind": "dependency",
+          "label": "调用渠道接口",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          }
+        },
+        {
+          "id": "cl7",
+          "source": "base",
+          "target": "orders",
+          "kind": "association",
+          "label": "持有 PayOrderService",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 67,
+            "lineEnd": 67
+          }
+        }
+      ],
+      "layout": {
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "PayOrder 支付状态图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "统一下单及支付回调状态",
+        "diagramType": "state",
+        "locale": "zh-CN",
+        "notes": [
+          "INIT 到 SUCCESS/FAIL 在下单响应处理里经 ING 条件更新；图按持久化状态变更展示。",
+          "PayOrder 声明了 CANCEL、REFUND 常量，但本次主线未找到相应状态迁移调用，故不绘制。"
+        ],
+        "viewId": "jeepay-state"
+      },
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "创建请求",
+          "kind": "initial"
+        },
+        {
+          "id": "init",
+          "label": "STATE_INIT",
+          "kind": "state",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+            "lineStart": 53,
+            "lineEnd": 53,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "ing",
+          "label": "STATE_ING",
+          "kind": "state",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+            "lineStart": 54,
+            "lineEnd": 54,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "success",
+          "label": "STATE_SUCCESS",
+          "kind": "state",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+            "lineStart": 55,
+            "lineEnd": 55,
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "fail",
+          "label": "STATE_FAIL",
+          "kind": "state",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+            "lineStart": 56,
+            "lineEnd": 56,
+            "kind": "source"
+          },
+          "tags": [
+            "failure"
+          ]
+        },
+        {
+          "id": "closed",
+          "label": "STATE_CLOSED",
+          "kind": "state",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-core/src/main/java/com/jeequan/jeepay/core/entity/PayOrder.java",
+            "lineStart": 59,
+            "lineEnd": 59,
+            "kind": "source"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "s0",
+          "source": "initial",
+          "target": "init",
+          "kind": "transition",
+          "label": "genPayOrder",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 256,
+            "lineEnd": 256
+          }
+        },
+        {
+          "id": "s1",
+          "source": "init",
+          "target": "ing",
+          "kind": "transition",
+          "label": "渠道下单返回等待/未知",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 61,
+            "lineEnd": 61
+          }
+        },
+        {
+          "id": "s2",
+          "source": "ing",
+          "target": "success",
+          "kind": "transition",
+          "label": "渠道确认成功",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 79,
+            "lineEnd": 79
+          },
+          "guard": "STATE_ING"
+        },
+        {
+          "id": "s3",
+          "source": "ing",
+          "target": "fail",
+          "kind": "transition",
+          "label": "渠道确认失败",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 113,
+            "lineEnd": 113
+          },
+          "guard": "STATE_ING"
+        },
+        {
+          "id": "s4",
+          "source": "init",
+          "target": "closed",
+          "kind": "transition",
+          "label": "关闭订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 102,
+            "lineEnd": 102
+          },
+          "guard": "STATE_INIT"
+        },
+        {
+          "id": "s5",
+          "source": "ing",
+          "target": "closed",
+          "kind": "transition",
+          "label": "关闭订单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+            "lineStart": 92,
+            "lineEnd": 92
+          },
+          "guard": "STATE_ING"
+        }
+      ],
+      "layout": {
+        "direction": "down"
+      }
+    },
+    {
+      "meta": {
+        "title": "Jeepay 支付网关用例图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "支付网关公开 API 能力",
+        "diagramType": "usecase",
+        "locale": "zh-CN",
+        "notes": [
+          "商户系统与支付渠道是从 API 路由与回调入口归纳的外部角色。",
+          "图中是接口能力，不表示当前环境中已接入或已调用任一支付渠道。"
+        ],
+        "viewId": "jeepay-usecase"
+      },
+      "nodes": [
+        {
+          "id": "mch",
+          "label": "商户系统",
+          "kind": "actor"
+        },
+        {
+          "id": "channel",
+          "label": "支付渠道",
+          "kind": "actor"
+        },
+        {
+          "id": "create",
+          "label": "统一下单",
+          "kind": "usecase",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 52,
+            "lineEnd": 52,
+            "kind": "source"
+          },
+          "groupId": "system",
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "query",
+          "label": "查询支付订单",
+          "kind": "usecase",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/QueryOrderController.java",
+            "lineStart": 50,
+            "lineEnd": 50,
+            "kind": "source"
+          },
+          "groupId": "system"
+        },
+        {
+          "id": "close",
+          "label": "关闭支付订单",
+          "kind": "usecase",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/CloseOrderController.java",
+            "lineStart": 55,
+            "lineEnd": 55,
+            "kind": "source"
+          },
+          "groupId": "system"
+        },
+        {
+          "id": "refund",
+          "label": "申请退款",
+          "kind": "usecase",
+          "module": "refund",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java",
+            "lineStart": 66,
+            "lineEnd": 66,
+            "kind": "source"
+          },
+          "groupId": "system"
+        },
+        {
+          "id": "transfer",
+          "label": "发起转账",
+          "kind": "usecase",
+          "module": "transfer",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java",
+            "lineStart": 65,
+            "lineEnd": 65,
+            "kind": "source"
+          },
+          "groupId": "system"
+        },
+        {
+          "id": "division",
+          "label": "执行分账",
+          "kind": "usecase",
+          "module": "division",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java",
+            "lineStart": 66,
+            "lineEnd": 66,
+            "kind": "source"
+          },
+          "groupId": "system"
+        },
+        {
+          "id": "callback",
+          "label": "通知支付结果",
+          "kind": "usecase",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 169,
+            "lineEnd": 169,
+            "kind": "source"
+          },
+          "groupId": "system"
+        }
+      ],
+      "edges": [
+        {
+          "id": "u1",
+          "source": "mch",
+          "target": "create",
+          "kind": "association",
+          "label": "下单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 52,
+            "lineEnd": 52
+          }
+        },
+        {
+          "id": "u2",
+          "source": "mch",
+          "target": "query",
+          "kind": "association",
+          "label": "查单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/QueryOrderController.java",
+            "lineStart": 50,
+            "lineEnd": 50
+          }
+        },
+        {
+          "id": "u3",
+          "source": "mch",
+          "target": "close",
+          "kind": "association",
+          "label": "关单",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/CloseOrderController.java",
+            "lineStart": 55,
+            "lineEnd": 55
+          }
+        },
+        {
+          "id": "u4",
+          "source": "mch",
+          "target": "refund",
+          "kind": "association",
+          "label": "退款",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java",
+            "lineStart": 66,
+            "lineEnd": 66
+          }
+        },
+        {
+          "id": "u5",
+          "source": "mch",
+          "target": "transfer",
+          "kind": "association",
+          "label": "转账",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java",
+            "lineStart": 65,
+            "lineEnd": 65
+          }
+        },
+        {
+          "id": "u6",
+          "source": "mch",
+          "target": "division",
+          "kind": "association",
+          "label": "分账",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java",
+            "lineStart": 66,
+            "lineEnd": 66
+          }
+        },
+        {
+          "id": "u7",
+          "source": "channel",
+          "target": "callback",
+          "kind": "association",
+          "label": "异步回调",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 169,
+            "lineEnd": 169
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "system",
+          "label": "Jeepay 支付网关",
+          "kind": "system"
+        }
+      ],
+      "layout": {}
+    },
+    {
+      "meta": {
+        "title": "统一下单与回调数据流图",
+        "subtitle": "Jeepay 源码与配置证据",
+        "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+        "scope": "请求、渠道结果与通知记录的数据流",
+        "diagramType": "dataflow",
+        "locale": "zh-CN",
+        "notes": [
+          "渠道内部数据转换未在本仓库中展开；图仅追踪本项目可见的请求与回调路径。",
+          "商户通知通过 MQ 发送；本图止于持久化通知记录，MQ 消费与重试未展开。"
+        ],
+        "viewId": "jeepay-dataflow"
+      },
+      "nodes": [
+        {
+          "id": "merchant",
+          "label": "商户系统",
+          "kind": "external"
+        },
+        {
+          "id": "verify",
+          "label": "getRQByWithMchSign",
+          "kind": "process",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/ApiController.java",
+            "lineStart": 58,
+            "lineEnd": 58,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "order",
+          "label": "AbstractPayOrderController.unifiedOrder",
+          "kind": "process",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 80,
+            "lineEnd": 80,
+            "kind": "source"
+          },
+          "tags": [
+            "core"
+          ]
+        },
+        {
+          "id": "channel",
+          "label": "支付渠道",
+          "kind": "external",
+          "module": "channel"
+        },
+        {
+          "id": "paydb",
+          "label": "t_pay_order",
+          "kind": "dataStore",
+          "module": "payment",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 251,
+            "lineEnd": 251,
+            "kind": "schema"
+          }
+        },
+        {
+          "id": "callback",
+          "label": "ChannelNoticeController.doNotify",
+          "kind": "process",
+          "module": "payment",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 170,
+            "lineEnd": 170,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "notify",
+          "label": "PayMchNotifyService.payOrderNotify",
+          "kind": "process",
+          "module": "notification",
+          "source": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 53,
+            "lineEnd": 53,
+            "kind": "source"
+          }
+        },
+        {
+          "id": "notifydb",
+          "label": "t_mch_notify_record",
+          "kind": "dataStore",
+          "module": "notification",
+          "source": {
+            "file": "docs/sql/init.sql",
+            "lineStart": 296,
+            "lineEnd": 296,
+            "kind": "schema"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "df1",
+          "source": "merchant",
+          "target": "verify",
+          "kind": "data",
+          "label": "商户号、应用ID、签名和下单参数",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 56,
+            "lineEnd": 56
+          }
+        },
+        {
+          "id": "df2",
+          "source": "verify",
+          "target": "order",
+          "kind": "data",
+          "label": "已校验 UnifiedOrderRQ",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+            "lineStart": 61,
+            "lineEnd": 61
+          }
+        },
+        {
+          "id": "df3",
+          "source": "order",
+          "target": "paydb",
+          "kind": "data",
+          "label": "支付订单与初始状态",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 201,
+            "lineEnd": 201
+          }
+        },
+        {
+          "id": "df4",
+          "source": "order",
+          "target": "channel",
+          "kind": "data",
+          "label": "支付请求与渠道参数",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+            "lineStart": 205,
+            "lineEnd": 205
+          }
+        },
+        {
+          "id": "df5",
+          "source": "channel",
+          "target": "callback",
+          "kind": "data",
+          "label": "渠道通知参数",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 170,
+            "lineEnd": 170
+          }
+        },
+        {
+          "id": "df6",
+          "source": "callback",
+          "target": "paydb",
+          "kind": "data",
+          "label": "渠道订单号与成功状态",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+            "lineStart": 237,
+            "lineEnd": 237
+          }
+        },
+        {
+          "id": "df7",
+          "source": "paydb",
+          "target": "notify",
+          "kind": "data",
+          "label": "支付订单和通知地址",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+            "lineStart": 51,
+            "lineEnd": 51
+          }
+        },
+        {
+          "id": "df8",
+          "source": "notify",
+          "target": "notifydb",
+          "kind": "data",
+          "label": "商户通知记录",
+          "evidence": "source",
+          "site": {
+            "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+            "lineStart": 88,
+            "lineEnd": 88
+          }
+        }
+      ],
+      "layout": {
+        "direction": "right"
+      }
+    }
+  ]
+}

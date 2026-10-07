@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "title": "Jeepay 支付网关用例图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "支付网关公开 API 能力",
+    "diagramType": "usecase",
+    "locale": "zh-CN",
+    "notes": [
+      "商户系统与支付渠道是从 API 路由与回调入口归纳的外部角色。",
+      "图中是接口能力，不表示当前环境中已接入或已调用任一支付渠道。"
+    ],
+    "viewId": "jeepay-usecase"
+  },
+  "nodes": [
+    {
+      "id": "mch",
+      "label": "商户系统",
+      "kind": "actor"
+    },
+    {
+      "id": "channel",
+      "label": "支付渠道",
+      "kind": "actor"
+    },
+    {
+      "id": "create",
+      "label": "统一下单",
+      "kind": "usecase",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "kind": "source"
+      },
+      "groupId": "system",
+      "tags": [
+        "core"
+      ]
+    },
+    {
+      "id": "query",
+      "label": "查询支付订单",
+      "kind": "usecase",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/QueryOrderController.java",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "kind": "source"
+      },
+      "groupId": "system"
+    },
+    {
+      "id": "close",
+      "label": "关闭支付订单",
+      "kind": "usecase",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/CloseOrderController.java",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "kind": "source"
+      },
+      "groupId": "system"
+    },
+    {
+      "id": "refund",
+      "label": "申请退款",
+      "kind": "usecase",
+      "module": "refund",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "kind": "source"
+      },
+      "groupId": "system"
+    },
+    {
+      "id": "transfer",
+      "label": "发起转账",
+      "kind": "usecase",
+      "module": "transfer",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "kind": "source"
+      },
+      "groupId": "system"
+    },
+    {
+      "id": "division",
+      "label": "执行分账",
+      "kind": "usecase",
+      "module": "division",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "kind": "source"
+      },
+      "groupId": "system"
+    },
+    {
+      "id": "callback",
+      "label": "通知支付结果",
+      "kind": "usecase",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 169,
+        "lineEnd": 169,
+        "kind": "source"
+      },
+      "groupId": "system"
+    }
+  ],
+  "edges": [
+    {
+      "id": "u1",
+      "source": "mch",
+      "target": "create",
+      "kind": "association",
+      "label": "下单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 52,
+        "lineEnd": 52
+      }
+    },
+    {
+      "id": "u2",
+      "source": "mch",
+      "target": "query",
+      "kind": "association",
+      "label": "查单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/QueryOrderController.java",
+        "lineStart": 50,
+        "lineEnd": 50
+      }
+    },
+    {
+      "id": "u3",
+      "source": "mch",
+      "target": "close",
+      "kind": "association",
+      "label": "关单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/CloseOrderController.java",
+        "lineStart": 55,
+        "lineEnd": 55
+      }
+    },
+    {
+      "id": "u4",
+      "source": "mch",
+      "target": "refund",
+      "kind": "association",
+      "label": "退款",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/refund/RefundOrderController.java",
+        "lineStart": 66,
+        "lineEnd": 66
+      }
+    },
+    {
+      "id": "u5",
+      "source": "mch",
+      "target": "transfer",
+      "kind": "association",
+      "label": "转账",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/transfer/TransferOrderController.java",
+        "lineStart": 65,
+        "lineEnd": 65
+      }
+    },
+    {
+      "id": "u6",
+      "source": "mch",
+      "target": "division",
+      "kind": "association",
+      "label": "分账",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/division/PayOrderDivisionExecController.java",
+        "lineStart": 66,
+        "lineEnd": 66
+      }
+    },
+    {
+      "id": "u7",
+      "source": "channel",
+      "target": "callback",
+      "kind": "association",
+      "label": "异步回调",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 169,
+        "lineEnd": 169
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "system",
+      "label": "Jeepay 支付网关",
+      "kind": "system"
+    }
+  ],
+  "layout": {}
+}

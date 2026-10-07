@@ -14,8 +14,6 @@ Siga o caminho. Confira as evidências. Compartilhe um arquivo offline.
 
 </div>
 
-![Arquitetura, sequência e ER do exemplo agent-desk, 1,5 segundo por vista](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.pt.hero.gif)
-
 *Onze tipos: arquitetura de capacidades, arquitetura em camadas, arquitetura de componentes, fluxograma, sequência, ER, implantação, classes, estados, casos de uso e fluxo de dados.*
 
 QGraphFlow gera diagramas de software interativos a partir de código, esquemas, configuração e requisitos. As relações podem ser verificadas e o resultado é um HTML offline compartilhável.
@@ -30,21 +28,13 @@ Um só comando instala a habilidade para Claude Code, Codex, Cursor e Qoder; a i
 
 - **Explorar:** pesquisar, ampliar e deslocar a tela; entender responsabilidades e relações de entrada e saída.
 
-  ![Explorar: pesquisar refund, saltar para Ferramentas de pedidos, afastar até o orquestrador acima e o banco de pedidos e o rastreamento logístico abaixo, depois deslocar a tela](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.pt.explore.gif)
-
 - **Verificar:** inspecionar nós e conexões para conferir arquivos, linhas, símbolos e incertezas explícitas.
-
-  ![Verificar: cartão com src/gateway/chat-gateway.js:5-19, painel de detalhes com o símbolo e os fatos de evidência, depois a conexão POST /chat marcada como inference](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.pt.verify.gif)
 
 - **Editar:** desbloquear o layout, alterar textos e mover elementos; redefinir quando necessário.
 
-  ![Editar: desbloquear o layout, renomear Provedor LLM para Gateway LLM, arrastá-lo com suas conexões, depois redefinir](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.pt.edit.gif)
-
 - **Compartilhar:** abrir o HTML offline ou exportar o diagrama completo em SVG / PNG.
 
-  ![Compartilhar: abrir o HTML offline, exportar PNG em Mais, depois o próprio arquivo exportado](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/agent-desk.pt.share.gif)
-
-A animação do topo mostra arquitetura, sequência e ER por 1,5 segundo cada (4,5 segundos por ciclo); as quatro animações de recursos duram de 6,5 a 8,5 segundos. Todas foram gravadas no Viewer construído a partir do código-fonte sobre o [exemplo agent-desk](../../examples/showcase/agent-desk) — negócio fictício, código real — com diagramas e interface em português. Estão hospedadas como [assets da Release showcase-v2](https://github.com/supermax92/qgraphflow/releases/tag/showcase-v2), fora do histórico Git e do pacote do plugin, portanto vê-las exige rede; o HTML gerado do diagrama funciona offline.
+The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
 
 ## Guia de instalação
 
@@ -164,20 +154,17 @@ Os resultados ficam em `docs/qgraphflow/` por padrão. Abra `index.html` para ex
 Depois de editar na página, **Mais → Salvar alterações** no Chrome ou no Edge regrava a página, o `graph.json` e os SVG no lugar, depois que você escolhe a pasta do diagrama uma vez. Outros navegadores salvam só o `graph.json`: coloque-o na pasta e gere de novo a página e os SVG com `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
 
 <details>
-<summary>Executar manualmente o exemplo de comércio com nove vistas</summary>
+<summary>Run the eleven-view Jeepay source example</summary>
 
-Os comandos abaixo executam o exemplo do repositório. Usar um plugin já instalado não exige clonar este repositório. Com Node.js 22 ou posterior:
+Select your Jeepay source checkout to verify the evidence:
 
 ```bash
-git clone https://github.com/supermax92/qgraphflow.git
-cd qgraphflow
-node skills/q-flow/scripts/validate-graph.mjs examples/showcase/ecommerce.pt.graph.json
-node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.pt.graph.json output/ecommerce-pt
+export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
+node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-Abra `output/ecommerce-pt/index.html` no navegador; os nove SVG ficam ao lado. Alterne em **Tipos de diagrama** na barra superior; cada vista mantém seus textos e posições salvos. **Mais → Salvar alterações** salva todas as vistas como descrito acima. As mesmas páginas estão na [demonstração online](https://supermax92.github.io/qgraphflow/).
-
-O Viewer pré-compilado não exige instalar dependências, chave de API ou backend. A coleta de evidências e a criação de diagramas por IA usam o serviço de modelos do cliente escolhido.
+Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](../../examples/jeepay) for the source revision and refresh procedure.
 
 </details>
 

@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - 'examples/**'
+      - '.github/actions/jeepay-source/**'
       - 'skills/q-flow/scripts/**'
       - 'skills/q-flow/assets/**'
       - 'docs/pages/**'
@@ -14,6 +15,7 @@ on:
   pull_request:
     paths:
       - 'examples/**'
+      - '.github/actions/jeepay-source/**'
       - 'skills/q-flow/scripts/**'
       - 'skills/q-flow/assets/**'
       - 'docs/pages/**'
@@ -34,18 +36,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Generate and validate every demo
+      - uses: ./.github/actions/jeepay-source
+      - name: Generate and validate the Jeepay source corpus
         run: |
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.en.graph.json site/ecommerce/en
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/ecommerce.zh-CN.graph.json site/ecommerce/zh-CN
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/architecture.graph.json site/agent-desk/en/architecture --repo-root examples/showcase/agent-desk
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/sequence.graph.json site/agent-desk/en/sequence --repo-root examples/showcase/agent-desk
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/en/er.graph.json site/agent-desk/en/er --repo-root examples/showcase/agent-desk
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/architecture.graph.json site/agent-desk/zh-CN/architecture --repo-root examples/showcase/agent-desk
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/sequence.graph.json site/agent-desk/zh-CN/sequence --repo-root examples/showcase/agent-desk
-          node skills/q-flow/scripts/generate-viewer.mjs examples/showcase/agent-desk-graphs/zh-CN/er.graph.json site/agent-desk/zh-CN/er --repo-root examples/showcase/agent-desk
-          for graph in site/ecommerce/*/graph.json; do node skills/q-flow/scripts/validate-graph.mjs "$graph"; done
-          for graph in site/agent-desk/*/*/graph.json; do node skills/q-flow/scripts/validate-graph.mjs "$graph" --repo-root examples/showcase/agent-desk; done
+          node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json site/jeepay/zh-CN --repo-root output/jeepay-source
+          node skills/q-flow/scripts/validate-graph.mjs site/jeepay/zh-CN/graph.json --repo-root output/jeepay-source
           cp docs/pages/index.html site/index.html
       - uses: actions/upload-pages-artifact@v5
         with:

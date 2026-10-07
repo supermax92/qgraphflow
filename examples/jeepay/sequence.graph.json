@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "title": "统一下单与成功回调时序图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "普通下单及异步成功回调",
+    "diagramType": "sequence",
+    "locale": "zh-CN",
+    "notes": [
+      "图中回调阶段仅展示 CONFIRM_SUCCESS 分支；失败分支更新 STATE_FAIL。",
+      "渠道支付接口由运行时 Bean 选择；支付渠道内部调用未在仓库中展开。"
+    ],
+    "viewId": "jeepay-sequence"
+  },
+  "nodes": [
+    {
+      "id": "merchant",
+      "label": "商户系统",
+      "kind": "actor"
+    },
+    {
+      "id": "unified",
+      "label": "UnifiedOrderController",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "abstract",
+      "label": "AbstractPayOrderController",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "orders",
+      "label": "PayOrderService",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-service/src/main/java/com/jeequan/jeepay/service/impl/PayOrderService.java",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "channelapi",
+      "label": "IPaymentService",
+      "kind": "service",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/channel/IPaymentService.java",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "channel",
+      "label": "支付渠道",
+      "kind": "external",
+      "module": "channel"
+    },
+    {
+      "id": "callback",
+      "label": "ChannelNoticeController",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "process",
+      "label": "PayOrderProcessService",
+      "kind": "service",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "notify",
+      "label": "PayMchNotifyService",
+      "kind": "service",
+      "module": "notification",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayMchNotifyService.java",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "kind": "source"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "source": "merchant",
+      "target": "unified",
+      "kind": "sync",
+      "label": "POST /api/pay/unifiedOrder",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 52,
+        "lineEnd": 52
+      },
+      "order": 1
+    },
+    {
+      "id": "m2",
+      "source": "unified",
+      "target": "abstract",
+      "kind": "sync",
+      "label": "unifiedOrder(wayCode, bizRQ)",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 61,
+        "lineEnd": 61
+      },
+      "order": 2
+    },
+    {
+      "id": "m3",
+      "source": "abstract",
+      "target": "orders",
+      "kind": "sync",
+      "label": "save(payOrder)",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 201,
+        "lineEnd": 201
+      },
+      "order": 3
+    },
+    {
+      "id": "m4",
+      "source": "abstract",
+      "target": "channelapi",
+      "kind": "sync",
+      "label": "pay(bizRQ, payOrder, context)",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 205,
+        "lineEnd": 205
+      },
+      "order": 4
+    },
+    {
+      "id": "m5",
+      "source": "channelapi",
+      "target": "abstract",
+      "kind": "return",
+      "label": "UnifiedOrderRS / ChannelRetMsg",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 208,
+        "lineEnd": 208
+      },
+      "order": 5,
+      "replyTo": "m4"
+    },
+    {
+      "id": "m6",
+      "source": "abstract",
+      "target": "unified",
+      "kind": "return",
+      "label": "ApiRes",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 210,
+        "lineEnd": 210
+      },
+      "order": 6,
+      "replyTo": "m2"
+    },
+    {
+      "id": "m7",
+      "source": "unified",
+      "target": "merchant",
+      "kind": "return",
+      "label": "signed UnifiedOrderRS",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 78,
+        "lineEnd": 78
+      },
+      "order": 7,
+      "replyTo": "m1"
+    },
+    {
+      "id": "m8",
+      "source": "channel",
+      "target": "callback",
+      "kind": "async",
+      "label": "/api/pay/notify/{ifCode}",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 169,
+        "lineEnd": 169
+      },
+      "order": 8
+    },
+    {
+      "id": "m9",
+      "source": "callback",
+      "target": "orders",
+      "kind": "sync",
+      "label": "updateIng2Success",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 237,
+        "lineEnd": 237
+      },
+      "order": 9
+    },
+    {
+      "id": "m10",
+      "source": "callback",
+      "target": "process",
+      "kind": "sync",
+      "label": "confirmSuccess(payOrder)",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 254,
+        "lineEnd": 254
+      },
+      "order": 10
+    },
+    {
+      "id": "m11",
+      "source": "process",
+      "target": "notify",
+      "kind": "sync",
+      "label": "payOrderNotify(payOrder)",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/service/PayOrderProcessService.java",
+        "lineStart": 60,
+        "lineEnd": 60
+      },
+      "order": 11
+    },
+    {
+      "id": "m12",
+      "source": "callback",
+      "target": "channel",
+      "kind": "return",
+      "label": "responseEntity",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/ChannelNoticeController.java",
+        "lineStart": 259,
+        "lineEnd": 259
+      },
+      "order": 12,
+      "replyTo": "m8"
+    }
+  ],
+  "groups": [
+    {
+      "id": "success",
+      "label": "渠道确认成功",
+      "kind": "opt",
+      "operands": [
+        {
+          "id": "ok",
+          "guard": "CONFIRM_SUCCESS",
+          "edgeIds": [
+            "m9",
+            "m10",
+            "m11"
+          ]
+        }
+      ]
+    }
+  ],
+  "executions": [
+    {
+      "id": "x1",
+      "participantId": "unified",
+      "start": {
+        "edgeId": "m1",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m7",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x2",
+      "participantId": "abstract",
+      "start": {
+        "edgeId": "m2",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m6",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x3",
+      "participantId": "channelapi",
+      "start": {
+        "edgeId": "m4",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m5",
+        "at": "send"
+      }
+    },
+    {
+      "id": "x4",
+      "participantId": "callback",
+      "start": {
+        "edgeId": "m8",
+        "at": "receive"
+      },
+      "end": {
+        "edgeId": "m12",
+        "at": "send"
+      }
+    }
+  ],
+  "layout": {}
+}

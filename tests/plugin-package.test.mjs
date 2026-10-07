@@ -44,7 +44,7 @@ test('the qgraphflow command forwards to the skill scripts with identical output
   }
   const unknown = cli('draw');
   assert.equal(unknown.status, 2); assert.match(unknown.stderr, /^Usage: qgraphflow <command>/);
-  const valid = path.join(root, 'examples/order-flow.graph.json'), invalid = path.join(temp, 'invalid.json');
+  const valid = path.join(root, 'examples/jeepay/flowchart.graph.json'), invalid = path.join(temp, 'invalid.json');
   fs.writeFileSync(invalid, JSON.stringify({ meta: { title: 'Broken', sourceRef: 'test' }, nodes: [{ id: 'a', label: 'A', kind: 'unknown' }], edges: [] }));
   for (const args of [[valid, '--input-only'], [valid], [invalid, '--input-only'], ['--help']]) {
     const forwarded = cli('validate', ...args), expected = direct('validate-graph.mjs', ...args);
@@ -65,13 +65,13 @@ test('the npmjs job publishes the verified Release tarball through trusted publi
     'id-token: write', 'registry-url: https://registry.npmjs.org', '(cd release && sha256sum --check --strict SHA256SUMS)',
     'npm publish "release/qgraphflow-$VERSION.tgz" --provenance --access public',
     'npm pack "qgraphflow@$VERSION"', 'cmp "release/qgraphflow-$VERSION.tgz" "downloaded/qgraphflow-$VERSION.tgz"',
-    'npx -y "qgraphflow@$VERSION" validate examples/order-flow.graph.json --input-only', 'npx -y "qgraphflow@$VERSION" generate examples/order-flow.graph.json'
+    'npx -y "qgraphflow@$VERSION" validate examples/jeepay/flowchart.graph.json --input-only', 'npx -y "qgraphflow@$VERSION" generate examples/jeepay/flowchart.graph.json'
   ]) assert.ok(job.includes(line), line);
   const away = job.indexOf('cd "$RUNNER_TEMP/npx"'), npx = job.indexOf('npx -y "qgraphflow@$VERSION"');
   assert.ok(away > 0 && away < npx, 'npx runs outside the checkout, whose own package.json would shadow the registry package');
   assert.doesNotMatch(workflow, /NPM_TOKEN|secrets\./, 'No stored npm token');
   assert.doesNotMatch(job, /NODE_AUTH_TOKEN|packages: write/);
-  assert.ok(fs.existsSync(path.join(root, 'examples/order-flow.graph.json')));
+  assert.ok(fs.existsSync(path.join(root, 'examples/jeepay/flowchart.graph.json')));
 });
 
 test('the npm workflow verifies a version already on npmjs.com instead of publishing it again, and prefills no version', () => {
@@ -143,16 +143,13 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
     'skills/q-flow/assets/viewer/src/export-svg.js', 'skills/q-flow/assets/viewer/src/node-svg.js',
-    'README.md', ...guides, 'examples/order-flow.graph.json', 'bin/qgraphflow.mjs'
+    'README.md', ...guides, 'examples/jeepay/flowchart.graph.json', 'bin/qgraphflow.mjs'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
-  assert.ok(!files.has('examples/showcase/kafka.en.graph.json'), 'sample collections stay in the repository; the package ships one smoke example');
-  assert.ok(!files.has('examples/sequence-execution.graph.json'));
+  assert.ok(files.has('examples/jeepay/collection.graph.json'));
+  assert.ok([...files].filter(file => file.startsWith('examples/')).every(file => file.startsWith('examples/jeepay/')));
   assert.ok(!files.has('docs/images/order-flow.svg'));
   // Fixed ELK runtime adds about 1.6MB; retain a bounded total install budget.
   assert.ok(packed.unpackedSize < 4_000_000, `Unexpected install size: ${packed.unpackedSize}`);
-  for (const locale of ['zh-CN', 'ja', 'ko', 'de', 'fr', 'es']) {
-    assert.ok(!files.has(`examples/showcase/kafka.${locale}.graph.json`));
-  }
   for (const locale of ['zh-CN', 'ru', 'pt', 'ja', 'de', 'es']) {
     assert.ok(files.has(`docs/readme/README.${locale}.md`));
   }
@@ -189,17 +186,17 @@ test('the distributed plugin runs independently from its installed location', t 
   }
   const installedManifest = readJson(path.join(plugin, 'package.json'));
   assert.deepEqual([installedManifest.bin, installedManifest.engines], [pkg.bin, pkg.engines], 'npx and npm resolve the command and the Node range');
-  assert.match(run(process.execPath, ['bin/qgraphflow.mjs', 'validate', 'examples/order-flow.graph.json', '--input-only'], plugin), /"valid":true/);
+  assert.match(run(process.execPath, ['bin/qgraphflow.mjs', 'validate', 'examples/jeepay/flowchart.graph.json', '--input-only'], plugin), /"valid":true/);
   const graphPath = path.join(temp, '输入 graph.json');
-  fs.copyFileSync(path.join(plugin, 'examples/order-flow.graph.json'), graphPath);
+  fs.copyFileSync(path.join(plugin, 'examples/jeepay/flowchart.graph.json'), graphPath);
   const scripts = path.join(plugin, 'skills/q-flow/scripts');
   run(process.execPath, [path.join(scripts, 'validate-graph.mjs'), graphPath, '--input-only'], temp);
   const output = path.join(temp, '项目输出');
   const args = [path.join(scripts, 'generate-viewer.mjs'), graphPath, output];
   run(process.execPath, args, temp);
   assert.deepEqual(fs.readdirSync(output).sort(), ['diagram.svg', 'graph.json', 'index.html'], 'the installed package renders SVG without a build');
-  run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(root, 'examples/showcase/kafka.en.graph.json'), path.join(temp, 'kafka')], temp);
-  assert.equal(readJson(path.join(temp, 'kafka/graph.json')).diagrams.length, 9);
+  run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(root, 'examples/jeepay/collection.graph.json'), path.join(temp, 'jeepay')], temp);
+  assert.equal(readJson(path.join(temp, 'jeepay/graph.json')).diagrams.length, 11);
   const before = fs.readdirSync(output).map(file => fs.readFileSync(path.join(output, file)));
   const again = spawnSync(process.execPath, args, { cwd: temp, encoding: 'utf8', timeout: 30_000 });
   assert.equal(again.status, 1, again.stderr);
@@ -260,6 +257,6 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), fs.readFileSync(path.join(plugin, file)), file);
     if (file !== 'package.json') assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), originalRuntime.get(file), file);
   }
-  run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(npmPlugin, 'examples/order-flow.graph.json'), path.join(temp, 'npm-graph')], temp);
+  run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(npmPlugin, 'examples/jeepay/flowchart.graph.json'), path.join(temp, 'npm-graph')], temp);
   assert.deepEqual(fs.readdirSync(path.join(temp, 'npm-graph')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
 });

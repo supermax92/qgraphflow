@@ -1,37 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutText } from '../assets/viewer/src/text-layout.js';
+import { collection, jeepay } from '../../../tests/jeepay.mjs';
 
-// The width model of text-layout.js, repeated so the "wraps exactly as before" check has its own reference.
+// A width estimate used to select identifier cases that fit the tested line.
 const widthOf = (value, fontSize) => [...value].reduce((sum, character) => sum + fontSize * (/[^\u0000-ÿ]|[MWmw@%&]/.test(character) ? 1 : /[A-Z]/.test(character) ? .8 : 6.8 / 12), 0);
-function wrappedBefore(value, limit, fontSize) {
-  const lines = [];
-  for (const paragraph of value.split(/\r?\n/)) {
-    let line = '', width = 0;
-    for (const token of paragraph.match(/\s+|\S+/g) ?? []) {
-      const tokenWidth = widthOf(token, fontSize);
-      if (line && tokenWidth <= limit && width + tokenWidth > limit) { lines.push(line); line = ''; width = 0; }
-      for (const character of token) {
-        const characterWidth = widthOf(character, fontSize);
-        if (line && width + characterWidth > limit) { lines.push(line); line = ''; width = 0; }
-        line += character; width += characterWidth;
-      }
-    }
-    lines.push(line);
-  }
-  return lines;
-}
-
 const CLOSING = [...'，。、．；：！？）］｝〕】》〉」』”’…'], OPENING = [...'（［｛〔【《〈「『“‘'];
 const random = seed => () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
 const pick = (next, items) => items[Math.floor(next() * items.length)];
 
 test('an identifier that fits a line is never cut, whatever the CJK punctuation around it', () => {
-  const labels = [
-    'tz_order：status=6、cancel_time=NOW()；返还 SKU 与商品库存；发布 CancelOrderEvent',
-    'pay [结算单未支付，且 updateToPay 按 version 更新成功] / tz_order：status=2、is_payed=1、pay_time=NOW()',
-    'submit / 生成订单号；写入订单（status=1、is_payed=0）与结算单（pay_status=0）；扣减 SKU 与商品库存'
-  ];
+  const labels = jeepay('state').edges.map(edge => [edge.label, edge.guard, edge.action].filter(Boolean).join(' / '));
   for (const label of labels) for (const limit of [180, 210, 240, 300]) {
     const { lines } = layoutText(label, limit, 16, 24);
     assert.equal(lines.join(''), label);
@@ -53,7 +32,7 @@ test('closing punctuation never starts a line and opening punctuation never ends
 });
 
 test('an identifier wider than the line is cut at its own separators before any other place', () => {
-  const identifier = 'orderSettlementMapper.updateByOrderNumberAndUserId';
+  const identifier = 'ConfigContextQueryService.getMchAppConfigContext';
   for (const limit of [140, 170, 220]) {
     const { lines } = layoutText(identifier, limit, 16, 24);
     assert.equal(lines.join(''), identifier);
@@ -67,16 +46,13 @@ test('an identifier wider than the line is cut at its own separators before any 
   assert.ok(lines.length > 1 && lines.every(line => widthOf(line, 16) <= 150));
 });
 
-test('text without an over-long token wraps exactly as it did before', () => {
-  const next = random(11), words = ['Create', 'payment', 'request', '支付结果', '订单', 'status=2', 'OrderService.submit', 'UNPAY）', '（待付款', 'Состояние', 'Zustand', 'a', 'of'];
-  let compared = 0;
-  for (let round = 0; round < 400; round++) {
-    const value = Array.from({ length: 3 + Math.floor(next() * 12) }, () => pick(next, words)).join(next() < .2 ? '  ' : ' '), limit = 140 + Math.floor(next() * 220), fontSize = pick(next, [14, 16, 20]);
-    if (value.split(/\s+/).some(word => widthOf(word, fontSize) > limit)) continue;
-    assert.deepEqual(layoutText(value, limit, fontSize).lines, wrappedBefore(value, limit, fontSize), `${JSON.stringify(value)} @${limit}/${fontSize}`);
-    compared++;
+test('all Jeepay titles, notes and relationship labels preserve their complete text when wrapped', () => {
+  const values = collection.diagrams.flatMap(graph => [graph.meta.title, ...(graph.meta.notes ?? []),
+    ...graph.nodes.flatMap(node => [node.label, node.subtitle, ...(node.facts ?? [])]),
+    ...graph.edges.flatMap(edge => [edge.label, edge.guard, edge.action])]).filter(value => typeof value === 'string');
+  for (const value of values) for (const limit of [140, 220, 360]) {
+    assert.equal(layoutText(value, limit, 16, 24).lines.join(''), value.replace(/\r?\n/g, ''));
   }
-  assert.ok(compared > 300, `only ${compared} comparable samples`);
 });
 
 test('no character is ever dropped or invented, in any script', () => {

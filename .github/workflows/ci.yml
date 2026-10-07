@@ -13,6 +13,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      JEEPAY_REPO_ROOT: ${{ github.workspace }}/output/jeepay-source
     strategy:
       fail-fast: false
       matrix:
@@ -24,9 +26,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
           cache-dependency-path: skills/q-flow/assets/viewer/package-lock.json
+      - uses: ./.github/actions/jeepay-source
       - run: npm ci --prefix skills/q-flow/assets/viewer
       - run: npm run build --prefix skills/q-flow/assets/viewer
       - run: node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
-      - run: node skills/q-flow/scripts/validate-graph.mjs examples/order-flow.graph.json --input-only
-      - run: node skills/q-flow/scripts/generate-viewer.mjs examples/order-flow.graph.json output/example
+      - run: node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.json --input-only --repo-root "$JEEPAY_REPO_ROOT"
+      - run: node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
       - run: npm run package

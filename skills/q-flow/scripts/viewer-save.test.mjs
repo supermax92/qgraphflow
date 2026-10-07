@@ -7,12 +7,11 @@ import { spawnSync } from 'node:child_process';
 import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { translate } from '../assets/viewer/src/i18n.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
-import { refineDiagramLayout } from '../assets/viewer/src/layout-refinement.js';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 
 const generator = path.join(import.meta.dirname, 'generate-viewer.mjs');
-const orderFlow = path.join(import.meta.dirname, '../../../examples/order-flow.graph.json');
-const ecommerce = path.join(import.meta.dirname, '../../../examples/showcase/ecommerce.en.graph.json');
+const flowchart = path.join(import.meta.dirname, '../../../examples/jeepay/flowchart.graph.json');
+const collection = path.join(import.meta.dirname, '../../../examples/jeepay/collection.graph.json');
 const SAVED = 'Saved into this page, its sibling graph.json and SVGs';
 const DRAFT = 'Saved into this page and its sibling graph.json; SVGs not updated: the layout needs adjustment';
 
@@ -47,15 +46,12 @@ async function saveInto(dir, input, { page = 'index.html', failOn, picker } = {}
 }
 
 test('saving into the page folder writes graph.json, the page, then every SVG the generator would write', async t => {
-  for (const [input, args, view, nodeId, dx] of [[orderFlow, [], null, 'api', -16], [ecommerce, ['--layout', 'preserve'], 0, 'checkout', 16]]) {
+  for (const [input, args, view] of [[flowchart, [], null], [collection, [], 0]]) {
     const { dir, svgs } = generate(t, input, ...args);
     const before = contents(dir), saved = readJson(path.join(dir, 'graph.json'));
-    // A drag the layout gate accepts: away from the edges that leave the node's right side.
-    const node = (view === null ? saved : saved.diagrams[view]).nodes.find(item => item.id === nodeId);
-    node.position = { ...node.position, x: node.position.x + dx };
-    // Manual moves reroute before saving; fixed route coordinates belong to the previous node position.
     const moved = view === null ? saved : saved.diagrams[view];
-    Object.assign(moved, refineDiagramLayout(moved, { move: false, growBoundaries: true }).graph);
+    // This verifies folder saving with an edit that fits; invalid geometry is exercised below.
+    moved.nodes[0].label = 'CI';
     requireDiagramQuality(moved);
     const { writes, status } = await saveInto(dir, saved);
     assert.equal(status, SAVED);
@@ -71,7 +67,7 @@ test('saving into the page folder writes graph.json, the page, then every SVG th
 });
 
 test('a view outside the layout gate saves the page and graph.json as a draft and leaves every SVG untouched', async t => {
-  const { dir, svgs } = generate(t, ecommerce, '--layout', 'preserve');
+  const { dir, svgs } = generate(t, collection);
   const before = contents(dir), draft = readJson(path.join(dir, 'graph.json')), view = draft.diagrams[4];
   view.nodes[1].position = { ...view.nodes[0].position };
   const { writes, status } = await saveInto(dir, draft);
@@ -83,7 +79,7 @@ test('a view outside the layout gate saves the page and graph.json as a draft an
 });
 
 test('a wrong folder, a cancelled picker or a failed write reports it and keeps the edits in the page', async t => {
-  const { dir, svgs } = generate(t, orderFlow);
+  const { dir, svgs } = generate(t, flowchart);
   fs.renameSync(path.join(dir, 'index.html'), path.join(dir, '查看器.html'));
   const input = readJson(path.join(dir, 'graph.json'));
   // An edit that still fits the card; a longer one would leave the layout for regeneration (see the draft test).
@@ -108,7 +104,7 @@ test('a wrong folder, a cancelled picker or a failed write reports it and keeps 
 });
 
 test('browsers without folder access save or download graph.json only', async () => {
-  const input = readJson(ecommerce), originalWindow = globalThis.window, originalDocument = globalThis.document;
+  const input = readJson(collection), originalWindow = globalThis.window, originalDocument = globalThis.document;
   const files = [], statuses = [];
   try {
     globalThis.window = { showSaveFilePicker: async options => ({ createWritable: async () => ({

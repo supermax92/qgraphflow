@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "title": "统一下单流程图",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "普通新订单分支",
+    "diagramType": "flowchart",
+    "locale": "zh-CN",
+    "notes": [
+      "展示普通新订单主线；QR_CASHIER 会先创建订单并直接返回收银台地址。",
+      "渠道返回成功、失败、等待等状态由 processChannelMsg 分流；详见状态图。"
+    ],
+    "viewId": "jeepay-flowchart"
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "label": "POST /api/pay/unifiedOrder",
+      "kind": "start",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "verify",
+      "label": "getRQByWithMchSign",
+      "kind": "input",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "way",
+      "label": "支付方式受支持？",
+      "kind": "decision",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "config",
+      "label": "queryMchInfoAndAppInfo",
+      "kind": "process",
+      "module": "config",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 129,
+        "lineEnd": 129,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "appok",
+      "label": "商户应用可用？",
+      "kind": "decision",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "passage",
+      "label": "findMchPayPassage",
+      "kind": "process",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 167,
+        "lineEnd": 167,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "save",
+      "label": "payOrderService.save",
+      "kind": "process",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 201,
+        "lineEnd": 201,
+        "kind": "source"
+      },
+      "tags": [
+        "core"
+      ]
+    },
+    {
+      "id": "pay",
+      "label": "paymentService.pay",
+      "kind": "subprocess",
+      "module": "channel",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "update",
+      "label": "processChannelMsg",
+      "kind": "process",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "return",
+      "label": "ApiRes.okWithSign",
+      "kind": "end",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "kind": "source"
+      }
+    },
+    {
+      "id": "fail",
+      "label": "ApiRes.customFail / BizException",
+      "kind": "end",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 213,
+        "lineEnd": 213,
+        "kind": "source"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "f1",
+      "source": "start",
+      "target": "verify",
+      "kind": "flow",
+      "label": "读取并验签",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 56,
+        "lineEnd": 56
+      }
+    },
+    {
+      "id": "f2",
+      "source": "verify",
+      "target": "way",
+      "kind": "flow",
+      "label": "构建业务请求",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 58,
+        "lineEnd": 58
+      }
+    },
+    {
+      "id": "f3",
+      "source": "way",
+      "target": "config",
+      "kind": "yes",
+      "label": "是",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 100,
+        "lineEnd": 100
+      }
+    },
+    {
+      "id": "f4",
+      "source": "way",
+      "target": "fail",
+      "kind": "no",
+      "label": "否",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 101,
+        "lineEnd": 101
+      }
+    },
+    {
+      "id": "f5",
+      "source": "config",
+      "target": "appok",
+      "kind": "flow",
+      "label": "读取应用状态",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 137,
+        "lineEnd": 137
+      }
+    },
+    {
+      "id": "f6",
+      "source": "appok",
+      "target": "passage",
+      "kind": "yes",
+      "label": "是",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 167,
+        "lineEnd": 167
+      }
+    },
+    {
+      "id": "f7",
+      "source": "appok",
+      "target": "fail",
+      "kind": "no",
+      "label": "否",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 138,
+        "lineEnd": 138
+      }
+    },
+    {
+      "id": "f8",
+      "source": "passage",
+      "target": "save",
+      "kind": "flow",
+      "label": "生成并保存订单",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 201,
+        "lineEnd": 201
+      }
+    },
+    {
+      "id": "f9",
+      "source": "save",
+      "target": "pay",
+      "kind": "flow",
+      "label": "调起渠道",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 205,
+        "lineEnd": 205
+      }
+    },
+    {
+      "id": "f10",
+      "source": "pay",
+      "target": "update",
+      "kind": "flow",
+      "label": "处理渠道返回",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/AbstractPayOrderController.java",
+        "lineStart": 208,
+        "lineEnd": 208
+      }
+    },
+    {
+      "id": "f11",
+      "source": "update",
+      "target": "return",
+      "kind": "success",
+      "label": "封装签名响应",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/src/main/java/com/jeequan/jeepay/pay/ctrl/payorder/UnifiedOrderController.java",
+        "lineStart": 78,
+        "lineEnd": 78
+      }
+    }
+  ],
+  "layout": {
+    "primaryPath": [
+      "start",
+      "verify",
+      "way",
+      "config",
+      "appok",
+      "passage",
+      "save",
+      "pay",
+      "update",
+      "return"
+    ],
+    "direction": "down"
+  }
+}

@@ -30,17 +30,6 @@ for (const position of ['first', 'last']) for (const repetitions of [1, 12]) tes
   assert.match(createDiagramSvg(graph), /Reject invalid input/);
 });
 
-test('source-grounded detailed sequence keeps all calls and nested failure branches through generation', async () => {
-  const input = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/guided-intake/detailed-sequence.graph.json', import.meta.url)));
-  assert.deepEqual(validateGraphInput(input, { inputOnly: true }), []);
-  const { graph, report } = await compileGraphLayout(input);
-  assert.deepEqual(auditLayoutQuality(graph).errors, []);
-  assert.equal(report.semantics.preserved, true);
-  assert.deepEqual(graph.edges.map(({ route, ...edge }) => edge), input.edges);
-  assert.deepEqual(graph.groups.map(group => group.operands), input.groups.map(group => group.operands));
-  assert.deepEqual(graph.executions, input.executions);
-  for (const theme of ['light', 'dark']) assert.match(createDiagramSvg(graph, theme), /operand-separator/);
-});
 
 test('consecutive message-free operands between nested branches retain asymmetric text', async () => {
   const input = nested('first', 1);

@@ -1,0 +1,14 @@
+name: Jeepay source corpus
+description: Read the corpus revision and check out its real source for evidence verification.
+runs:
+  using: composite
+  steps:
+    - id: source
+      shell: bash
+      run: node -e 'const s=require("./examples/jeepay/source.json");require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT,`repository=${s.repository}\nrevision=${s.revision}\n`);'
+    - uses: actions/checkout@v7
+      with:
+        repository: ${{ steps.source.outputs.repository }}
+        ref: ${{ steps.source.outputs.revision }}
+        path: output/jeepay-source
+        persist-credentials: false

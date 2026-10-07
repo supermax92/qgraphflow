@@ -152,23 +152,17 @@ export function templateDraft(input, variant = 0) {
   graph.nodes.forEach(node => { node.size = minimumNodeSize(node, type, graph.meta.locale); });
   graph.edges.forEach(edge => { delete edge.route; });
   const allGroups = graph.groups ?? [];
-  const mixedTierBoundaries = type === 'deployment' && allGroups.length && allGroups.every(group => !group.parentId && group.layout?.order === undefined)
-    && graph.nodes.every(node => node.layout?.rank === undefined && node.layout?.order === undefined)
-    && allGroups.some(group => new Set(graph.nodes.filter(node => node.groupId === group.id).map(deploymentTierOf)).size > 1);
   function compose(parentId) {
     const children = allGroups.filter(group => group.parentId === parentId).sort(stable).map(group => {
       const body = compose(group.id), heading = groupHeadingLayout({ ...group, size: undefined });
-      const pad = limits.groupInset;
-      group.size = { width: Math.max(heading.width + 2 * pad, body.width + 2 * pad), height: 0 };
-      const top = groupHeadingLayout(group).height + limits.groupHeadingGap;
-      group.size.height = top + body.height + pad;
+      const top = heading.height + limits.groupHeadingGap, pad = limits.groupInset;
+      group.size = { width: Math.max(heading.width + 2 * pad, body.width + 2 * pad), height: top + body.height + pad };
       return { ...group, members: body.members, ids: new Set(body.members.map(node => node.id)), children: body.items, inset: { x: pad, y: top }, original: group };
     });
     const nodes = graph.nodes.filter(node => node.groupId === parentId).sort(stable).map(node => ({ ...node, members: [node], ids: new Set([node.id]), original: node }));
     const items = [...children, ...nodes].sort(stable);
     const ranked = items.length > 0 && items.every(item => item.members.length && item.members.every(node => node.layout?.rank !== undefined && node.layout.rank === item.members[0].layout.rank));
     let rows = template.arrange(items, graph, variant);
-    if (parentId === undefined && mixedTierBoundaries) rows = [items];
     if (ranked) {
       const ranks = new Map();
       for (const item of items) { const rank = item.members[0].layout.rank; ranks.set(rank, [...(ranks.get(rank) ?? []), item]); }
@@ -243,31 +237,6 @@ export function templateDraft(input, variant = 0) {
   // External return corridors may extend above/left of the first node. The export bounds crop this origin.
   const margin = Math.max(64, ...graph.edges.map(edge => estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta.locale)).width + 64));
   place(body.items, { x: margin, y: margin });
-  if (mixedTierBoundaries) {
-    const bands = new Map();
-    for (const node of graph.nodes) {
-      const tier = deploymentTierOf(node), owners = bands.get(tier) ?? new Map(), owner = node.groupId ?? '$root';
-      owners.set(owner, [...(owners.get(owner) ?? []), node]); bands.set(tier, owners);
-    }
-    const heading = Math.max(...allGroups.map(group => groupHeadingLayout(group).height + limits.groupHeadingGap));
-    const gap = Math.max(heading + target.nodeGap, target.layerGap, ...graph.edges.map(edge => estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta.locale)).height + 2 * limits.labelGap)) + variant * 24;
-    let y = margin + heading;
-    for (const [, owners] of [...bands].sort(([a], [b]) => a - b)) {
-      let height = 0;
-      for (const nodes of owners.values()) {
-        const top = Math.min(...nodes.map(node => node.position.y));
-        height = Math.max(height, ...nodes.map(node => node.position.y + node.size.height - top));
-        for (const node of nodes) node.position.y += y - top;
-      }
-      y += height + gap;
-    }
-    for (const group of allGroups) {
-      const members = graph.nodes.filter(node => node.groupId === group.id);
-      if (!members.length) continue;
-      group.position.y = Math.min(...members.map(node => node.position.y)) - groupHeadingLayout(group).height - limits.groupHeadingGap;
-      group.size.height = Math.max(...members.map(node => node.position.y + node.size.height)) + limits.groupInset - group.position.y;
-    }
-  }
   if (type === 'architecture' && variant >= 2) {
     const axis = graph.layout?.direction === 'right' ? 'y' : 'x', cross = axis === 'x' ? 'y' : 'x';
     const extent = axis === 'x' ? 'width' : 'height';

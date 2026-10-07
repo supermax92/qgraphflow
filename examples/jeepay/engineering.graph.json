@@ -1,0 +1,277 @@
+{
+  "meta": {
+    "title": "Jeepay 工程分层架构",
+    "subtitle": "Jeepay 源码与配置证据",
+    "sourceRef": "jeequan/jeepay@e1ac9086d679826bab593f20431b7ecd292eb685",
+    "scope": "Maven 模块与编译期依赖",
+    "diagramType": "architecture",
+    "locale": "zh-CN",
+    "notes": [
+      "箭头表示 pom.xml 声明的模块依赖，不表示运行时 HTTP 调用。",
+      "jeepay-z-codegen 是独立代码生成模块，不在支付主干分层中。"
+    ],
+    "architectureView": "engineering",
+    "viewId": "jeepay-engineering"
+  },
+  "nodes": [
+    {
+      "id": "manager",
+      "label": "jeepay-manager",
+      "kind": "component",
+      "module": "manager",
+      "source": {
+        "file": "jeepay-manager/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "运营管理端应用模块"
+      ]
+    },
+    {
+      "id": "merchant",
+      "label": "jeepay-merchant",
+      "kind": "component",
+      "module": "merchant",
+      "source": {
+        "file": "jeepay-merchant/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "商户管理端应用模块"
+      ]
+    },
+    {
+      "id": "payment",
+      "label": "jeepay-payment",
+      "kind": "business",
+      "module": "payment",
+      "source": {
+        "file": "jeepay-payment/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "tags": [
+        "core"
+      ],
+      "overviewText": [
+        "统一支付网关应用模块"
+      ]
+    },
+    {
+      "id": "service",
+      "label": "jeepay-service",
+      "kind": "component",
+      "module": "service",
+      "source": {
+        "file": "jeepay-service/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "数据库服务与持久化访问模块"
+      ]
+    },
+    {
+      "id": "core",
+      "label": "jeepay-core",
+      "kind": "component",
+      "module": "core",
+      "source": {
+        "file": "jeepay-core/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "公共实体、模型与工具模块"
+      ]
+    },
+    {
+      "id": "mq",
+      "label": "jeepay-components-mq",
+      "kind": "component",
+      "module": "mq",
+      "source": {
+        "file": "jeepay-components/jeepay-components-mq/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "消息队列抽象与实现模块"
+      ]
+    },
+    {
+      "id": "oss",
+      "label": "jeepay-components-oss",
+      "kind": "component",
+      "module": "oss",
+      "source": {
+        "file": "jeepay-components/jeepay-components-oss/pom.xml",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "kind": "config"
+      },
+      "subtitle": "Maven 模块",
+      "overviewText": [
+        "对象存储组件模块"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "manager",
+      "target": "service",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-manager/pom.xml",
+        "lineStart": 24,
+        "lineEnd": 24
+      }
+    },
+    {
+      "id": "e2",
+      "source": "merchant",
+      "target": "service",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-merchant/pom.xml",
+        "lineStart": 24,
+        "lineEnd": 24
+      }
+    },
+    {
+      "id": "e3",
+      "source": "payment",
+      "target": "service",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/pom.xml",
+        "lineStart": 30,
+        "lineEnd": 30
+      }
+    },
+    {
+      "id": "e4",
+      "source": "payment",
+      "target": "mq",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/pom.xml",
+        "lineStart": 42,
+        "lineEnd": 42
+      }
+    },
+    {
+      "id": "e5",
+      "source": "payment",
+      "target": "oss",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-payment/pom.xml",
+        "lineStart": 36,
+        "lineEnd": 36
+      }
+    },
+    {
+      "id": "e6",
+      "source": "service",
+      "target": "core",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-service/pom.xml",
+        "lineStart": 24,
+        "lineEnd": 24
+      }
+    },
+    {
+      "id": "e7",
+      "source": "mq",
+      "target": "core",
+      "kind": "depends",
+      "label": "Maven 依赖",
+      "evidence": "source",
+      "site": {
+        "file": "jeepay-components/jeepay-components-mq/pom.xml",
+        "lineStart": 25,
+        "lineEnd": 25
+      }
+    }
+  ],
+  "layout": {
+    "sections": [
+      {
+        "id": "app",
+        "title": "应用入口",
+        "mode": "grid",
+        "columns": 3,
+        "tone": "blue",
+        "items": [
+          {
+            "nodeId": "manager"
+          },
+          {
+            "nodeId": "merchant"
+          },
+          {
+            "nodeId": "payment"
+          }
+        ]
+      },
+      {
+        "id": "domain",
+        "title": "持久化与公共模型",
+        "mode": "stack",
+        "tone": "green",
+        "items": [
+          {
+            "nodeId": "service"
+          },
+          {
+            "nodeId": "core"
+          }
+        ]
+      },
+      {
+        "id": "components",
+        "title": "可复用组件",
+        "mode": "row",
+        "tone": "lavender",
+        "items": [
+          {
+            "nodeId": "mq"
+          },
+          {
+            "nodeId": "oss"
+          }
+        ]
+      }
+    ],
+    "direction": "down"
+  }
+}

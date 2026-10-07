@@ -5,10 +5,11 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { compileGraphLayout } from './compile-layout.mjs';
+import { jeepay, compiled } from '../../../tests/jeepay.mjs';
 import { diagramSvgFiles } from '../assets/viewer/src/export-svg.js';
 
 const generator = path.join(import.meta.dirname, 'generate-viewer.mjs');
-const fixture = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/guided-intake/existing-architecture.graph.json', import.meta.url)));
+const fixture = jeepay('relations');
 const baseline = (await compileGraphLayout(fixture)).graph;
 
 async function setup(t) {
@@ -78,14 +79,10 @@ test('an unknown selection, incompatible mode or invalid unselected view never r
 
 test('selecting a view never migrates ownership in an unselected legacy view', async t => {
   const { input, output, write, run } = await setup(t);
-  const nodes = input.diagrams[0].nodes;
-  for (const node of nodes) node.position.y += 200;
-  for (const edge of input.diagrams[0].edges) {
-    for (const point of edge.route.via) point.y += 200;
-    if (edge.route.labelAt) edge.route.labelAt.y += 200;
-  }
-  const left = Math.min(...nodes.map(n => n.position.x)) - 32, top = Math.min(...nodes.map(n => n.position.y)) - 80;
-  input.diagrams[0].groups = [{ id: 'legacy', kind: 'ownership', label: 'Service layer', position: { x: left, y: top }, size: { width: Math.max(...nodes.map(n => n.position.x + n.size.width)) + 32 - left, height: Math.max(...nodes.map(n => n.position.y + n.size.height)) + 32 - top } }];
+  // Simulate an older saved copy of the real Compose boundary, without inventing a new frame.
+  input.diagrams[0] = (await compiled('deployment')).graph;
+  input.diagrams[0].meta.viewId = 'first';
+  for (const node of input.diagrams[0].nodes) delete node.groupId;
   write();
   const migrated = await compileGraphLayout(input.diagrams[0], { layout: 'preserve' });
   assert.ok(migrated.report.migration.length > 0);

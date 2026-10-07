@@ -43,8 +43,6 @@
     "README.md",
     "docs/clients*.md",
     "docs/readme/",
-    "examples/order-flow.graph.json",
-    "examples/architecture-overviews/",
     "skills/q-flow/scripts/compile-layout.mjs",
     "skills/q-flow/scripts/compile-sequence.mjs",
     "skills/q-flow/assets/layout-dist/",
@@ -65,7 +63,8 @@
     "skills/q-flow/assets/viewer/src/layout-refinement.js",
     "skills/q-flow/assets/viewer/src/layout-templates.js",
     "skills/q-flow/assets/viewer/src/presentation-graph.js",
-    "skills/q-flow/assets/viewer/src/layout-semantics.js"
+    "skills/q-flow/assets/viewer/src/layout-semantics.js",
+    "examples/jeepay/"
   ],
   "scripts": {
     "package": "node scripts/package.mjs"

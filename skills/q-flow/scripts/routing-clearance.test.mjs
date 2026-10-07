@@ -44,34 +44,6 @@ test('boundary clearance permits perpendicular crossings and rejects parallel ne
   assert.equal(boundaryClearance({x:80,y:160},{x:120,y:160},group).distance,60);
   assert.equal(boundaryClearance({x:102,y:130},{x:102,y:250},group).distance,2);
 });
-test('cross-boundary routes reserve outer label space without moving runtime nodes',()=>{
-  const collection=JSON.parse(fs.readFileSync(new URL('../../../examples/showcase/ecommerce.en.graph.json',import.meta.url),'utf8'));
-  const input=collection.diagrams.find(graph=>graph.meta.diagramType==='deployment');
-  input.nodes=input.nodes.filter(node=>['gateway','commerce','payment'].includes(node.id));
-  const ids=new Set(input.nodes.map(node=>node.id));
-  input.edges=input.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target));
-  const original=templateDraft(input);original.layout.version=LAYOUT_VERSION;
-  for(const offset of [0,Math.min(...original.groups.map(group=>group.position.x))-24]) {
-    const draft=structuredClone(original);
-    for(const item of [...draft.nodes,...draft.groups])item.position.x-=offset;
-    const output=routeOrthogonal(draft,{accept:requireDiagramQuality}).graph;
-    assert.deepEqual(output.nodes,draft.nodes);assert.deepEqual(output.groups,draft.groups);
-    assert.deepEqual(output.edges.map(edge=>edge.id),input.edges.map(edge=>edge.id));
-    assert.ok([...createEdgeRoutes(output).values()].every(route=>route.points.every(point=>point.x>=0&&point.y>=0)));
-    requireDiagramQuality(output);
-  }
-});
-test('mixed deployment boundaries keep every runtime tier and ownership relationship',()=>{
-  const collection=JSON.parse(fs.readFileSync(new URL('../../../examples/showcase/ecommerce.en.graph.json',import.meta.url),'utf8'));
-  const input=collection.diagrams.find(graph=>graph.meta.diagramType==='deployment'),before=structuredClone(input);
-  const draft=templateDraft(input);draft.layout.version=LAYOUT_VERSION;
-  const output=routeOrthogonal(draft,{accept:requireDiagramQuality}).graph;
-  const nodeModel=({position,size,...model})=>model,edgeModel=({route,...model})=>model;
-  assert.deepEqual(output.nodes.map(nodeModel),input.nodes.map(nodeModel));
-  assert.deepEqual(output.edges.map(edgeModel),input.edges.map(edgeModel));
-  assert.deepEqual(output.groups.map(({position,size,...model})=>model),input.groups.map(({position,size,...model})=>model));
-  assert.deepEqual(input,before);requireDiagramQuality(output);
-});
 test('diamond, circle and ellipse clearance follows the outline rather than its bounding box',()=>{
   const node={...card('shape',100,100),size:{width:100,height:100}};
   for(const [type,kind] of [['flowchart','decision'],['usecase','usecase']]) {
@@ -144,15 +116,6 @@ test('template peer refinement is independent of input arrays',()=>{
   const reversed=structuredClone(input);for(const key of ['nodes','edges','groups'])reversed[key].reverse();
   const geometry=g=>g.nodes.map(({id,position,size})=>({id,position,size})).sort((a,b)=>a.id.localeCompare(b.id));
   for(const variant of [2,3])assert.deepEqual(geometry(templateDraft(input,variant)),geometry(templateDraft(reversed,variant)));
-});
-test('overview local edits retain their legacy version and every unrelated slot',()=>{
-  const input=JSON.parse(fs.readFileSync(new URL('../../../examples/architecture-overviews/capabilities.zh-CN.graph.json',import.meta.url)));
-  const baseline=fitArchitectureOverview(input,requireDiagramQuality);baseline.layout.version='templates-v3-aligned-inline-elkjs-0.11.0';
-  const edited=structuredClone(baseline),node=edited.nodes[0];node.label='Updated';
-  const output=maintainArchitectureOverview(edited,baseline,requireDiagramQuality);
-  assert.equal(output.layout.version,baseline.layout.version);assert.deepEqual(output.edges,baseline.edges);
-  assert.deepEqual(output.nodes.map(n=>n.position),baseline.nodes.map(n=>n.position));
-  assert.equal(output.nodes[0].label,'Updated');assert.equal(fitArchitectureOverview(edited,requireDiagramQuality).layout.version,LAYOUT_VERSION);
 });
 test('actual actor-arm ports align to an ellipse without a tiny staircase',()=>{
   const input=current({...graph([{...card('reader',100,100),kind:'actor',size:{width:160,height:128}},{...card('borrow',500,103),kind:'usecase',size:{width:240,height:160}}],[{...relation('use','reader','borrow'),kind:'association'}]),meta:{title:'Arm alignment',diagramType:'usecase',sourceRef:'conceptual:arm-alignment'}});

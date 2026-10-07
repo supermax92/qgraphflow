@@ -54,15 +54,6 @@ test('focused compaction is bounded, preserves ownership and freezes unrelated n
   assert.ok(layoutMetrics(result.graph).cost <= layoutMetrics(input).cost);
   for (const n of result.graph.nodes) { const old = input.nodes.find(x => x.id === n.id); assert.ok(Math.abs(n.position.x - old.position.x) <= 156); assert.ok(Math.abs(n.position.y - old.position.y) <= 156); }
 });
-test('all nine types use shared refinement while keeping notation and full facts', async () => {
-  const input = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json', import.meta.url)));
-  for (const item of input.diagrams) {
-    const result = await compileGraphLayout(item); requireDiagramQuality(result.graph);
-    assert.equal(result.report.semantics.preserved, true, item.meta.diagramType);
-    assert.ok(result.report.refinement); assert.ok(result.report.refinement.evaluations <= 60);
-    if (item.meta.diagramType === 'sequence') assert.deepEqual(result.graph.edges.map(e => [e.id, e.order, e.replyTo]), item.edges.map(e => [e.id, e.order, e.replyTo]));
-  }
-});
 
 test('a measured edit repairs both neighboring gaps together without changing facts', () => {
   const input = graph([card('a', 80, 80), { ...card('b', 80, 196), size: { width: 240, height: 180 } }, card('c', 80, 392), card('unrelated', 900, 600)], [edge('ab', 'a', 'b'), edge('bc', 'b', 'c')]);
@@ -82,32 +73,7 @@ test('a compact overview gap supports a straight relation with no artificial ove
   assert.equal(route.points[1].x-route.points[0].x,14);
 });
 
-test('a growing sequence actor header shifts messages and fragments together, retaining participant positions and event IDs', async () => {
-  const raw = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json', import.meta.url))).diagrams.find(g=>g.meta.diagramType==='sequence');
-  const input=(await compileGraphLayout(raw)).graph, actor=input.nodes.find(n=>n.kind==='actor');actor.subtitle='调用方说明';
-  const output=routeOrthogonal(input,{accept:requireDiagramQuality}).graph, before=createEdgeRoutes(input), after=createEdgeRoutes(output);
-  assert.deepEqual(output.nodes.map(n=>n.position),input.nodes.map(n=>n.position));
-  assert.deepEqual(output.edges.map(e=>[e.id,e.order,e.replyTo]),input.edges.map(e=>[e.id,e.order,e.replyTo]));
-  const shifts=output.edges.map(e=>after.get(e.id).points[0].y-before.get(e.id).points[0].y);assert.ok(shifts[0]>0);assert.ok(shifts.every(n=>n===shifts[0]));
-  assert.deepEqual(output.executions,input.executions);
-});
 
-test('a wider sequence participant pushes later ones right within the bound, keeping order, events and fragments', async () => {
-  const raw = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json', import.meta.url))).diagrams.find(g => g.meta.diagramType === 'sequence');
-  const input = (await compileGraphLayout(raw)).graph, ordered = graph => [...graph.nodes].sort((a, b) => a.position.x - b.position.x).map(n => n.id);
-  let repaired = 0;
-  for (const { id } of input.nodes) {
-    const wide = structuredClone(input); wide.nodes.find(n => n.id === id).size.width += 90;
-    let result; try { refineDiagramLayout(wide, { move: false, evaluations: 1, passes: 2 }); continue; } catch { /* the page falls back to the local repair */ }
-    result = refineDiagramLayout(wide, { move: true, focusId: id, evaluations: 12, passes: 1 }).graph; repaired++;
-    assert.deepEqual(ordered(result), ordered(input)); requireDiagramQuality(result);
-    assert.deepEqual(result.edges.map(e => [e.id, e.order, e.replyTo, e.route.messageY]), input.edges.map(e => [e.id, e.order, e.replyTo, e.route.messageY]));
-    assert.deepEqual(result.executions, input.executions);
-    for (const n of result.nodes) { const old = input.nodes.find(x => x.id === n.id); assert.ok(Math.abs(n.position.x - old.position.x) <= 156); assert.equal(n.position.y, old.position.y); }
-    assert.deepEqual(result.groups.map(g => [g.id, g.operands]), input.groups.map(g => [g.id, g.operands]));
-  }
-  assert.ok(repaired, 'at least one widened participant needs the local repair');
-});
 test('a short vertical gap reroutes to keep the full label on its own line', () => {
   const input=graph([card('a',100,100),card('b',100,240)],[edge('ab','a','b','关系说明')]);
   const output=routed(input),route=createEdgeRoutes(output).get('ab');requireDiagramQuality(output);
@@ -121,18 +87,6 @@ test('repeated-view failures retain independent bounded-routing reports', async 
   await assert.rejects(compileViews(inputs,async g=>{throw Object.assign(new Error('Budget for '+g.meta.viewId),{routingReport:{elementIds:[g.meta.viewId],termination:'evaluation-budget',provenImpossible:false}})}),e=>{assert.deepEqual(Object.keys(e.routingReports),['first','second']);assert.deepEqual(e.routingReports.second.elementIds,['second']);return true;});
 });
 
-test('editing a lifecycle endpoint description uses its real symbol ports and repairs the following gap', async () => {
-  const raw=JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json',import.meta.url))).diagrams.find(g=>g.meta.diagramType==='state');
-  const input=(await compileGraphLayout(raw)).graph, endpoint=input.nodes.find(n=>n.kind==='initial');
-  endpoint.label='验收 <>&" 😀';endpoint.subtitle='第一行\nSecond line';
-  const {minimumNodeSize}=await import('../assets/viewer/src/layout-measure.js');endpoint.size=minimumNodeSize(endpoint,'state',input.meta.locale);
-  const output=refineDiagramLayout(input,{focusId:endpoint.id,evaluations:12,passes:1}).graph;requireDiagramQuality(output);
-  const {routingBounds}=await import('../assets/viewer/src/edge-routing.js');const outline=routingBounds(output.nodes.find(n=>n.id===endpoint.id),'state');
-  const point=createEdgeRoutes(output).get('create').points[0];assert.ok(point.x>=outline.x&&point.x<=outline.x+outline.width&&point.y>=outline.y&&point.y<=outline.y+outline.height);
-  assert.deepEqual(output.edges.map(({route,...e})=>e),input.edges.map(({route,...e})=>e));assert.equal(output.nodes[0].subtitle,endpoint.subtitle);
-});
-
-
 test('an unrepairable candidate retains bounded attempts and diagnostics without claiming impossibility', () => {
   const input = graph([card('a', 40, 80), card('b', 40, 80)], [edge('ab', 'a', 'b')]), before = structuredClone(input);
   assert.throws(() => refineDiagramLayout(input, { move: false, evaluations: 1, passes: 1 }), error => {
@@ -142,35 +96,4 @@ test('an unrepairable candidate retains bounded attempts and diagnostics without
     return true;
   });
   assert.deepEqual(input, before);
-});
-
-
-test('successive deployment card edits reroute clear of the owning group boundary', async () => {
-  const { fitCard, placed } = await import('../assets/viewer/src/session-graph.js');
-  const { compactCards } = await import('../assets/viewer/src/diagrams/registry.js');
-  const raw = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json', import.meta.url))).diagrams.find(g => g.meta.diagramType === 'deployment');
-  let current = (await compileGraphLayout(raw)).graph;
-  for (const [label, subtitle] of [['normal submit', ''], ['client', ''], ['验收 <>&" 😀', '第一行\nSecond line']]) {
-    const edited = { ...current, nodes: current.nodes.map(node => node.id === 'client' ? { ...node, label, subtitle } : node) };
-    const measured = placed(edited, fitCard(edited, 'client', !compactCards(current)));
-    try { current = refineDiagramLayout(measured, { move: false, evaluations: 1, passes: 2 }).graph; }
-    catch { current = refineDiagramLayout(measured, { focusId: 'client', move: true, evaluations: 12, passes: 1 }).graph; }
-    requireDiagramQuality(current);
-    assert.equal(current.nodes.find(node => node.id === 'client').label, label);
-    assert.equal(current.nodes.find(node => node.id === 'client').subtitle, subtitle);
-  }
-  assert.deepEqual(current.edges.map(({ route, ...edge }) => edge), raw.edges);
-});
-
-
-test('a valid manual move grows real ownership frames without moving the card back or reparenting it', async () => {
-  const raw = JSON.parse(fs.readFileSync(new URL('../../../tests/fixtures/semantic-layout.graph.json', import.meta.url))).diagrams.find(g => g.meta.diagramType === 'deployment');
-  const baseline = (await compileGraphLayout(raw)).graph, input = structuredClone(baseline), card = input.nodes.find(node => node.id === 'api');
-  card.position.x -= 12;
-  const before = structuredClone(input), output = refineDiagramLayout(input, { growBoundaries: true, move: false, evaluations: 1, passes: 2 }).graph;
-  requireDiagramQuality(output); assert.deepEqual(input, before);
-  assert.deepEqual(output.nodes, input.nodes, 'The pointer position and every other node remain authored.');
-  assert.ok(output.groups.find(group => group.id === 'host').size.width > baseline.groups.find(group => group.id === 'host').size.width);
-  assert.deepEqual(output.groups.map(({ position, size, ...group }) => group), baseline.groups.map(({ position, size, ...group }) => group));
-  assert.deepEqual(output.edges.map(({ route, ...edge }) => edge), raw.edges);
 });

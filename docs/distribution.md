@@ -28,7 +28,7 @@ Use new output directories. Packaging refuses to overwrite existing outputs. `np
 
 1. Confirm the GitHub repository URL, commit author name/email, commit message, and the changes to include. `main` accepts changes only through a pull request (ruleset `main-pr-required-no-bypass`); commit on a branch, open the pull request and merge it once CI is green.
 2. Keep the media Releases `showcase-v1` (historical) and `showcase-v2` (current README recordings) separate from software `v0.0.6`. Their attachments stay on GitHub until their removal is confirmed separately; do not move old tags or mark a media-only Release as the latest software release.
-3. The seven READMEs embed the `showcase-v2` recordings (agent-desk example, `scripts/showcase-record.mjs`); the `showcase-v1` media were removed from them on 2026-09-19. Verify every new public attachment URL and checksum before linking it.
+3. The READMEs link the real-source Jeepay corpus. Public examples and smoke tests use this corpus; historical sample recordings are no longer linked.
 4. Re-run checks, commit the confirmed source changes, and merge them into `main` through the pull request. Do not force-push or mirror-push. Media must not enter the commit; Codex's private `refs/codex/` snapshots are not release refs.
 5. Build runtime archives from the confirmed commit, record their SHA-256 checksums, verify the extracted package, and attach them to software Release `v0.0.6`. GitHub's automatic **Source code** archives are full source snapshots, not the slim plugin installer.
 
@@ -42,7 +42,7 @@ Track marketplace releases separately from GitHub Releases and npm packages. For
 
 ## Online demo
 
-`.github/workflows/pages.yml` builds the [live demo](https://supermax92.github.io/qgraphflow/) from the repository examples with the committed prebuilt Viewer, the one an installed plugin uses: the nine-view e-commerce collection and the agent-desk architecture, sequence and ER diagrams (checked against `examples/showcase/agent-desk` with `--repo-root`), each in English and Simplified Chinese, with `docs/pages/index.html` as the home page. Every page folder also serves its `graph.json` and SVGs.
+`.github/workflows/pages.yml` checks out the Jeepay revision recorded in `examples/jeepay/source.json`, builds all eleven coordinate-free views with the committed prebuilt Viewer and verifies their source anchors with `--repo-root`. It serves `site/jeepay/zh-CN/` and uses `docs/pages/index.html` as the home page. The page folder also serves its `graph.json` and SVGs.
 
 Pull requests that touch the examples, the generator, the prebuilt Viewer, `docs/pages/` or the workflow run the build as a smoke test; pushes to `main` also deploy it. The site is uploaded as a Pages artifact and never enters a branch, and a failed build leaves the previous deployment online. Before the first deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 
@@ -66,7 +66,7 @@ Set it up once:
 2. On npmjs.com, open the package's **Settings → Trusted Publisher**, choose **GitHub Actions** and enter user `supermax92`, repository `qgraphflow` and workflow file `publish-github-npm.yml`; leave the environment empty. Renaming the workflow file stops publication until this setting changes too.
 3. Optionally set **Publishing access** to require two-factor authentication and disallow tokens; trusted publishing keeps working.
 
-For every later version, trigger the workflow from `main` and type the exact stable Release version; the field has no default, so an old version cannot go out by accident. A version already on npmjs.com is never published again; the job only verifies it. After publishing, the job downloads `qgraphflow@<version>` from npmjs.com, compares it byte for byte with the Release tarball (`cmp`), and runs `npx -y qgraphflow@<version>` for `validate --help`, `validate` and `generate` on `examples/order-flow.graph.json`. Check the provenance badge on the package page, or run `npm audit signatures` in a project that installs it. Published versions are never deleted or overwritten; deprecate a broken version with `npm deprecate` and release a fix.
+For every later version, trigger the workflow from `main` and type the exact stable Release version; the field has no default, so an old version cannot go out by accident. A version already on npmjs.com is never published again; the job only verifies it. After publishing, the job downloads `qgraphflow@<version>` from npmjs.com, compares it byte for byte with the Release tarball (`cmp`), and runs `npx -y qgraphflow@<version>` for `validate --help`, `validate` and `generate` on `examples/jeepay/flowchart.graph.json`. Check the provenance badge on the package page, or run `npm audit signatures` in a project that installs it. Published versions are never deleted or overwritten; deprecate a broken version with `npm deprecate` and release a fix.
 
 ## GitHub npm package
 

@@ -12,11 +12,6 @@ const sides = ['top', 'right', 'bottom', 'left'];
 const vector = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] };
 const distance = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const box = item => ({ ...item.position, ...item.size });
-const labelBorderBoxes = graph => (graph.groups ?? []).flatMap(group => {
-  const r = box(group);
-  return [{ x: r.x, y: r.y, width: r.width, height: 1 }, { x: r.x, y: r.y + r.height, width: r.width, height: 1 },
-    { x: r.x, y: r.y, width: 1, height: r.height }, { x: r.x + r.width, y: r.y, width: 1, height: r.height }];
-});
 const expand = (r, p) => ({ x: r.x - p, y: r.y - p, width: r.width + p * 2, height: r.height + p * 2 });
 const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 const parts = points => points.slice(1).map((b, i) => [points[i], b]);
@@ -178,13 +173,12 @@ export function priorCost(previous, limits) {
 function corridor(pair, graph, obstacles, previous, limits, budget, label, ceiling = Infinity) {
   const starts = pair.starts, ends = pair.ends, type = diagramTypeOf(graph), labelSize = estimateLabelSize(label);
   const labelNodes = graph.nodes.map(n => occupiedBox(n, type)), labelLines = previous.flatMap(parts);
-  const labelObstacles = [...obstacles, ...labelBorderBoxes(graph)];
   const borders = (graph.groups ?? []).flatMap(groupBorders), crossesNode = nodeProbe(graph, type), conflictWith = priorCost(previous, limits);
   const lacksClearance = clearanceProbe(graph, pair.sourceId, pair.targetId, starts.map(p=>p.point), ends.map(p=>p.point));
   const overlapsBoundary = (a, b) => lacksClearance(a,b) || borders.some(([c, d]) => sharedSegmentLength(a, b, c, d) > limits.endpoint);
   // Crossing costs only add, so a path whose length and bends already reach `ceiling` cannot win and is not checked.
   const clearCost = (points, ceiling = Infinity) => {
-    if (points.length < 2 || points.some(p => p.x < 0 || p.y < 0)) return Infinity;
+    if (points.length < 2) return Infinity;
     const first = points[0], second = points[1], last = points.at(-1), penultimate = points.at(-2);
     const outward = (a,b,side) => (b.x-a.x)*vector[side][0]+(b.y-a.y)*vector[side][1] > 0;
     if (!outward(first,second,pair.sourceSide) || !outward(last,penultimate,pair.targetSide)) return Infinity;
@@ -197,12 +191,10 @@ function corridor(pair, graph, obstacles, previous, limits, budget, label, ceili
       if (cost === Infinity) return Infinity;
     }
     cost += previous.reduce((sum, prior) => sum + pathCrossings(points, prior), 0) * limits.crossingCost;
-    if (label && !inlineLabelCandidates(points, labelSize, labelNodes, labelObstacles, labelLines, limits).length) return Infinity;
+    if (label && !inlineLabelCandidates(points, labelSize, labelNodes, obstacles, labelLines, limits).length) return Infinity;
     return cost;
   };
-  const sourceGroup = graph.nodes.find(n => n.id === pair.sourceId).groupId, targetGroup = graph.nodes.find(n => n.id === pair.targetId).groupId;
-  const boundaryExtent = sourceGroup && targetGroup && sourceGroup !== targetGroup ? (graph.groups ?? []).map(box) : [];
-  const extent = [...graph.nodes.map(n => occupiedBox(n, type)), ...boundaryExtent, ...obstacles, ...previous.flat().map(p => ({ ...p, width: 0, height: 0 }))];
+  const extent = [...graph.nodes.map(n => occupiedBox(n, type)), ...obstacles, ...previous.flat().map(p => ({ ...p, width: 0, height: 0 }))];
   const xGap = Math.max(limits.preferredClearance, labelSize.width / 2 + limits.labelGap + 4), yGap = Math.max(limits.preferredClearance, labelSize.height / 2 + limits.labelGap + 4);
   const left = Math.min(...extent.map(r => r.x)) - xGap, right = Math.max(...extent.map(r => r.x + r.width)) + xGap;
   const top = Math.min(...extent.map(r => r.y)) - yGap, bottom = Math.max(...extent.map(r => r.y + r.height)) + yGap;
@@ -268,7 +260,7 @@ function corridor(pair, graph, obstacles, previous, limits, budget, label, ceili
       if (!Number.isFinite(segmentCost(end.stub, end.point))) continue;
       const path = []; for (let h = here; h; h = h.before) path.push(position(h.id)); path.reverse();
       const complete = simplifyCorridor([here.start.point, ...path, end.point], clearCost);
-      if (label && !inlineLabelCandidates(complete, labelSize, labelNodes, labelObstacles, labelLines, limits).length) continue;
+      if (label && !inlineLabelCandidates(complete, labelSize, labelNodes, obstacles, labelLines, limits).length) continue;
       const cost = clearCost(complete);
       if (!Number.isFinite(cost)) continue;
       if (fast && fast.cost <= cost) return fast;
@@ -317,7 +309,11 @@ function inlineLabelCandidates(points, size, nodeBoxes, textObstacles, otherPart
 export function placeEdgeLabels(graph, edgeIds = null) {
   const type = diagramTypeOf(graph), limits = routingLimits(graph), routes = createEdgeRoutes(graph);
   const labels = edgeIds ? [...routes].filter(([id]) => !edgeIds.has(id)).flatMap(([, r]) => r.label ? [r.labelBox] : []) : [];
-  const borders = labelBorderBoxes(graph);
+  const borders = (graph.groups ?? []).flatMap(group => {
+    const r = box(group);
+    return [{ x: r.x, y: r.y, width: r.width, height: 1 }, { x: r.x, y: r.y + r.height, width: r.width, height: 1 },
+      { x: r.x, y: r.y, width: 1, height: r.height }, { x: r.x + r.width, y: r.y, width: 1, height: r.height }];
+  });
   const headings = [...borders, ...(graph.groups ?? []).flatMap(groupHeadingBoxes), ...overviewSections(graph).flatMap(sectionTextBoxes)];
   const nodeBoxes = graph.nodes.map(n => occupiedBox(n, type));
   for (const edge of [...graph.edges].filter(e => !edgeIds || edgeIds.has(e.id)).sort(stable)) {
