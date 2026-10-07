@@ -200,7 +200,9 @@ function corridor(pair, graph, obstacles, previous, limits, budget, label, ceili
     if (label && !inlineLabelCandidates(points, labelSize, labelNodes, labelObstacles, labelLines, limits).length) return Infinity;
     return cost;
   };
-  const extent = [...graph.nodes.map(n => occupiedBox(n, type)), ...(graph.groups ?? []).map(box), ...obstacles, ...previous.flat().map(p => ({ ...p, width: 0, height: 0 }))];
+  const sourceGroup = graph.nodes.find(n => n.id === pair.sourceId).groupId, targetGroup = graph.nodes.find(n => n.id === pair.targetId).groupId;
+  const boundaryExtent = sourceGroup && targetGroup && sourceGroup !== targetGroup ? (graph.groups ?? []).map(box) : [];
+  const extent = [...graph.nodes.map(n => occupiedBox(n, type)), ...boundaryExtent, ...obstacles, ...previous.flat().map(p => ({ ...p, width: 0, height: 0 }))];
   const xGap = Math.max(limits.preferredClearance, labelSize.width / 2 + limits.labelGap + 4), yGap = Math.max(limits.preferredClearance, labelSize.height / 2 + limits.labelGap + 4);
   const left = Math.min(...extent.map(r => r.x)) - xGap, right = Math.max(...extent.map(r => r.x + r.width)) + xGap;
   const top = Math.min(...extent.map(r => r.y)) - yGap, bottom = Math.max(...extent.map(r => r.y + r.height)) + yGap;
