@@ -10,15 +10,25 @@
 
 [English](../../README.md) · [中文](../../docs/readme/README.zh-CN.md) · [Русский](../../docs/readme/README.ru.md) · [Português](../../docs/readme/README.pt.md) · [日本語](../../docs/readme/README.ja.md) · [Deutsch](../../docs/readme/README.de.md) · [Español](../../docs/readme/README.es.md)
 
-[オンラインデモ](https://supermax92.github.io/qgraphflow/) · [クライアントへの導入](#インストールガイド) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
+[オンラインデモ](https://supermax92.github.io/qgraphflow/) · [はじめに](#はじめに) · [クライアントへの導入](#インストールガイド) · [問題を報告](https://github.com/supermax92/qgraphflow/issues) · [MIT](../../LICENSE)
 
 </div>
 
-*11種類の図に対応：プラットフォーム機能アーキテクチャ、工程階層アーキテクチャ、コンポーネント関係アーキテクチャ、フローチャート、シーケンス、ER、配置、クラス、状態、ユースケース、データフロー。*
+*11 種類の図に対応：プラットフォーム機能アーキテクチャ図、エンジニアリング層アーキテクチャ図、コンポーネント関係アーキテクチャ図、フローチャート、シーケンス図、ER 図、配置図、クラス図、状態図、ユースケース図、データフロー図。*
 
 QGraphFlow はソースコード、データ構造、設定、要件から対話型のソフトウェア図を生成します。関係の根拠を確認し、共有可能なオフライン HTML として届けます。
 
 **ここが違う：** 1 つのスキルで 11 種類の図、すべての関係に根拠の種別、コードで裏付けられた関係にはその根拠となるソース行、自動レイアウト、ページ上での編集。プラグインのスクリプトと Viewer 自体はネットワーク通信を一切行いません。
+
+![Jeepay の複数ビュー操作デモ：コンポーネント関係アーキテクチャ図、シーケンス図、ER 図](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+
+Jeepay の実際のソースを例に、コンポーネント関係アーキテクチャ図、シーケンス図、ER 図を切り替えて、コンポーネントと呼び出し関係を探索します。 [原寸の GIF を見る](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+
+**複雑なシーケンス図の紹介**
+
+![複雑なシーケンス図の段階的な描画：参加者、ライフライン、メッセージ、活性区間、入れ子の結合フラグメント](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
+
+架空の EC シナリオに 9 人の参加者、29 件のメッセージ、6 個の結合フラグメントを含め、在庫の再試行、入れ子の分岐、並行処理、失敗時の補償、非同期コールバックを扱います。生成済みの図をアニメーションで段階的に表示し、複雑なシーケンス図の構造と詳細を紹介します。 [原寸の GIF を見る](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -34,7 +44,61 @@ npx skills add supermax92/qgraphflow
 
 - **共有：** オフライン HTML を開くか、図全体を SVG / PNG に出力。
 
-The real-source [Jeepay corpus](../../examples/jeepay) contains all eleven views used by CI and the live demo.
+実際のソースに基づく [Jeepay コーパス](../../examples/jeepay)には、CI とオンラインデモで使う 11 種類のビューがすべて含まれます。
+
+## はじめに
+
+インストール後、クライアントで業務プロジェクトを開き、`q-flow` スキルを選択します。以下は Claude Code の `/q-flow` を使う例です。Codex ではクライアントが実際に提供する `$q-flow` または `$qgraphflow:q-flow` を使ってください。まだインストールしていない場合は、先に[インストールガイド](#インストールガイド)を参照してください。
+
+### 1. 空の入力：どこから始めるか分からない
+
+要件を付けずにスキルだけを呼び出します。
+
+```text
+/q-flow
+```
+
+スキルが、分析する部分と図で答えてほしい問いの選択を案内します。必要な情報が明確になったら描画を始めます。
+
+### 2. 機能を尋ねる：何を描けるか知る
+
+```text
+/q-flow どの種類の図を描けますか？各種類はどのような問いに答えるのに適していますか？プロジェクトを引き継いだばかりなので、まず機能を紹介し、始める場所を提案してください。
+```
+
+まず 11 種類の図の用途を知り、それからプロジェクト構造、呼び出し順序、データ関係など、何を見るかを決めます。
+
+### 3. 曖昧な入力：大まかな目的だけがある
+
+```text
+/q-flow このプロジェクトを図にしてください。できるだけ早く理解したいです。
+```
+
+先に図の種類を指定する必要はありません。スキルがプロジェクトと目的に応じて適したビューを決め、必要な情報が不足している場合に質問します。
+
+### 4. 正確な入力：範囲を明示して描画の詳細を求める
+
+次の業務名と手順を、プロジェクトに実際に存在するフローに置き換えてください。
+
+```text
+/q-flow 現在のプロジェクトの注文作成フローを分析し、中国語のシーケンス図を生成してください。
+リクエスト入口、価格計算、在庫引当、支払い承認、注文の永続化を含めてください。
+ソースに実際に存在する同期呼び出し、非同期メッセージ、対応する戻り、活性区間、条件分岐、再試行、失敗時の補償を残し、簡潔さのために詳細を省略しないでください。
+コンポーネントと呼び出しのソースファイルと行番号を示し、結果を docs/qgraphflow/order-sequence/ に保存してください。
+```
+
+対象、問い、詳細度、出力先を明確に伝えると、そのまま開始できます。図には根拠のある事実だけを残します。
+
+### 5. さらに詳しく：前の図の一部分を展開する
+
+結果の生成後、同じ会話で続けます。
+
+```text
+/q-flow 前のシーケンス図の在庫引当ステップを展開し、独立した中国語のフローチャートを生成してください。
+在庫確認、引当成功、再試行可能な失敗、再試行上限、在庫解放の分岐をすべて示してください。ソースコードに従い、コードにない手順は追加しないでください。
+```
+
+まず全体を見てから、ひとつの手順を掘り下げます。既存の図の詳細追加や、関係の検証を続けて依頼することもできます。
 
 ## インストールガイド
 
@@ -113,7 +177,7 @@ qodercli plugins install .
 
 ### 3. 使い始める
 
-クライアントで対象のプロジェクトを開き、新しいセッションでスキルを選択します。下の[すぐに使う](#すぐに使う)の例を参考に依頼し、生成された HTML をブラウザで開いてください。
+クライアントで業務プロジェクトを開き、新しいセッションでスキルを選択します。[はじめに](#はじめに)の例を参考に要件を伝えてください。生成後、出力された HTML をブラウザで開きます。
 
 自分でビルドする場合は、[ソースからのビルド手順](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)を参照してください。
 
@@ -132,7 +196,7 @@ $qgraphflow:q-flow
 ### 例1：プロジェクト構造を理解する
 
 ```text
-$qgraphflow:q-flow 現在のプロジェクトを分析し、主要モジュールの責務、依存関係、システム境界を示す日本語のアーキテクチャ図を作成してください。
+$qgraphflow:q-flow 現在のプロジェクトを分析し、主要モジュールの責務、依存関係、システム境界を示す中国語のアーキテクチャ図を作成してください。
 ```
 
 初めて触れるプロジェクトの全体像をつかむのに適しています。
@@ -140,13 +204,13 @@ $qgraphflow:q-flow 現在のプロジェクトを分析し、主要モジュー�
 ### 例2：業務の呼び出しを追う
 
 ```text
-$qgraphflow:q-flow 注文作成フローを分析し、価格計算、在庫引当、支払い、注文保存の呼び出し順と失敗分岐を示す日本語のシーケンス図を作成してください。
+$qgraphflow:q-flow 注文作成フローを分析し、価格計算、在庫引当、支払い、注文保存の呼び出し順と失敗分岐を示す中国語のシーケンス図を作成してください。
 ```
 
 「注文作成」と各手順を実際の業務フローに置き換えてください。同じ会話で続けて依頼できます。
 
 ```text
-$qgraphflow:q-flow 前の図の在庫引当を掘り下げ、成功時と失敗時の処理を示す日本語のフローチャートを別に作成してください。
+$qgraphflow:q-flow 前の図の在庫引当を掘り下げ、成功時と失敗時の処理を示す中国語のフローチャートを別に作成してください。
 ```
 
 既定の保存先は `docs/qgraphflow/` 配下です。`index.html` を開いて探索・編集・出力でき、`graph.json` に図データが残ります。各ビューは SVG（`diagram.svg`、複数ビューでは `diagram-<n>-<type>.svg`）としても書き出され、README、プルリクエスト、Wiki に画像として埋め込めます。
@@ -154,9 +218,9 @@ $qgraphflow:q-flow 前の図の在庫引当を掘り下げ、成功時と失敗�
 ページで編集したあと、Chrome または Edge で「その他 → 変更を保存」を実行し、図のフォルダーを一度選ぶと、ページ、`graph.json`、SVG がその場で書き換わります。ほかのブラウザーは `graph.json` だけを保存します。そのフォルダーに置いてから `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` でページと SVG を再生成してください。
 
 <details>
-<summary>Run the eleven-view Jeepay source example</summary>
+<summary>Jeepay のソースに基づく 11 ビューの例を実行する</summary>
 
-Select your Jeepay source checkout to verify the evidence:
+根拠を検証するため、ローカルの Jeepay ソースチェックアウトを指定してください。
 
 ```bash
 export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
@@ -164,7 +228,7 @@ node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.j
 node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](../../examples/jeepay) for the source revision and refresh procedure.
+`output/jeepay/index.html` を開いてください。11 個の SVG も同じディレクトリにあります。ソースのリビジョンと更新手順は[コーパスの README](../../examples/jeepay)を参照してください。
 
 </details>
 
@@ -198,19 +262,21 @@ $qgraphflow:q-flow CI で docs/qgraphflow/order-sequence の図が古いと出�
 
 スキルは、ファイル内で 1 か所だけ見つかったシンボルのアンカーを移し、なお失敗するアンカーだけを修正し、編集した位置と文字を保ったままページと SVG を再生成します。図を描き直すことはしません。
 
-## 9種類の図が答えること
+## 11 種類の図がそれぞれ答えること
 
-| 図 · PNG | 主な問い | サンプルの範囲 |
+| ビュー · PNG | 主な問い | 本サンプルの範囲 |
 | --- | --- | --- |
-| アーキテクチャ | どの責務が協調するか？ | チャネル、決済、価格、リスク、在庫、支払い、注文、イベント、出荷 |
-| フローチャート | 判断はどこで分岐・合流するか？ | 欠品、リスク拒否、支払い補償、正常コミット |
-| シーケンス | 呼び出しと戻りの順序は？ | 決済成功経路と非同期 OrderPaid |
-| ER | 主要データはどう関連するか？ | カート、注文、明細、支払い、引当、荷物 |
-| 配置 | 実行単位をどこに置き、どう接続するか？ | エッジ、Kubernetes、データサービス、支払い、倉庫配送ネットワーク |
-| クラス | ドメインオブジェクトと契約はどう依存するか？ | 決済サービス、Order、4つのポート |
-| 状態 | どのイベントとガードが注文を進めるか？ | 支払い、出荷、取消、返金、終了 |
-| ユースケース | 各利用者に何ができるか？ | 購入者、店舗、倉庫、サポート |
-| データフロー | データをどう変換・保存するか？ | カート、取引判断、注文イベント、倉庫、配送受領記録 |
+| プラットフォーム機能アーキテクチャ図 | プラットフォームにはどんな機能があるか？ | 機能の区分とマトリクス |
+| エンジニアリング層アーキテクチャ図 | プロジェクトのコードはどう構成されているか？ | エンジニアリング層と共通の支援機能 |
+| コンポーネント関係アーキテクチャ図 | システムのどの責務境界が協調するか？ | チャネル、取引のオーケストレーション、価格、リスク、在庫、支払い、注文、イベント、注文履行 |
+| フローチャート | 各判断点はどう分岐・合流するか？ | 欠品、リスク拒否、支払い失敗時の補償、正常コミット |
+| シーケンス図 | ひとつのリクエストはどの順序で呼び出しと戻りを行うか？ | 決済成功の主経路と非同期 OrderPaid |
+| ER 図 | 主要データはどう関連するか？ | カート、注文、明細、支払い、在庫引当、荷物 |
+| 配置図 | 実行単位をどこに置き、どう接続するか？ | エッジ、Kubernetes、データサービス、支払い、倉庫配送ネットワーク |
+| クラス図 | ドメインオブジェクトとコードの契約はどう依存するか？ | Checkout アプリケーションサービス、Order、4 つのポート |
+| 状態図 | どのイベントとガード条件が注文を進めるか？ | 支払い、注文履行、取消、返金、終了 |
+| ユースケース図 | 各参加者にはどんな機能があるか？ | 購入者、店舗、倉庫、カスタマーサポート |
+| データフロー図 | データ資産はどの変換と保存を経るか？ | カート、取引判断、注文イベント、倉庫配送、配送受領記録 |
 
 これは QGraphFlow の機能を示す概念モデルで、特定の EC リポジトリに対応しません。サンプルの `graph.json` に架空のソースパスは入れず、関係の証拠を `inference` に統一しています。実際のプロジェクトでは、追跡可能なソース、DDL、設定、テスト、合意済み要件を使ってください。
 
@@ -224,10 +290,22 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 開発には Node.js 22 以降、npm、tar、zip、unzip が必要です。問題報告には、機密情報を除いた最小限の図データ、クライアントとブラウザーのバージョン、再現手順を添えてください。
 
-リファレンス（英語）：[証拠の出典](../../skills/q-flow/references/evidence-sources.md) · [図データ形式](../../skills/q-flow/references/graph-schema.md) · [対話による要件確認](../../skills/q-flow/references/guided-intake.md) · [Viewer の開発](../../skills/q-flow/references/viewer-development.md) · [図の構成](../../skills/q-flow/references/visual-contract.md)
+リファレンス（英語）：[証拠の出典](../../skills/q-flow/references/evidence-sources.md) · [図データ形式](../../skills/q-flow/references/graph-schema.md) · [対話による要件確認](../../skills/q-flow/references/guided-intake.md) · [Viewer の開発と受け入れ検証](../../skills/q-flow/references/viewer-development.md) · [図の構成](../../skills/q-flow/references/visual-contract.md)
 
 ## ライセンスと帰属
 
 [MIT](../../LICENSE) · [第三者の表示](../../THIRD_PARTY_NOTICES.md)
 
-QGraphFlow は MIT ライセンスの独立プロジェクトです。本文のシナリオは概念例で、実在する企業の本番構成を表しません。提携、後援、推奨を意味するものでもありません。
+QGraphFlow は MIT ライセンスを採用する独立したプロジェクトです。本文のシナリオは概念例で、実在する企業の本番アーキテクチャを表しません。
+
+## アーキテクチャの全体像
+
+アーキテクチャには、コンポーネント関係、プラットフォーム機能、エンジニアリング層が含まれます。対象と問いを伝えると、スキルがテンプレートを選びます。依頼したコレクションには、個別に編集できる複数のアーキテクチャビューを含められます。
+
+```text
+$qgraphflow:q-flow 現在のプロジェクトのプラットフォーム機能と業務の接続方法を分析し、中国語のプラットフォーム機能全体図を生成してください。
+$qgraphflow:q-flow 現在のプロジェクト構成とコンポーネントの階層を分析し、プロジェクト全体とひとつのコンポーネント断面の中国語の全体図を生成してください。
+$qgraphflow:q-flow このプロジェクトのプラットフォーム機能の全体図を英語で生成し、アプリケーションモジュールがどのように統合されるかを示してください。
+```
+
+実際のソースに基づくプラットフォーム、エンジニアリング、コンポーネント関係のアーキテクチャビューは [examples/jeepay](../../examples/jeepay)を参照してください。全体図のロックを解除すると、同じ層のカードの並べ替えや文字の編集ができます。保存は全ビューを保持し、リセットは現在のビューだけを戻します。

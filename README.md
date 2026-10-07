@@ -10,7 +10,7 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 [English](README.md) · [中文](docs/readme/README.zh-CN.md) · [Русский](docs/readme/README.ru.md) · [Português](docs/readme/README.pt.md) · [日本語](docs/readme/README.ja.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
 
-[Live demo](https://supermax92.github.io/qgraphflow/) · [Client installation](#installation-guide) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
+[Live demo](https://supermax92.github.io/qgraphflow/) · [Getting started](#getting-started) · [Client installation](#installation-guide) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
 
 </div>
 
@@ -19,6 +19,16 @@ Follow the path. Inspect the evidence. Share one offline file.
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
 **What sets it apart:** eleven diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+
+![Jeepay multi-view interaction demo: component relationship architecture, sequence and ER diagrams](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+
+Using real Jeepay source code, switch between component relationship architecture, sequence and ER diagrams to explore components and call relationships. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+
+**Complex sequence diagram showcase**
+
+![Complex sequence diagram drawn step by step: participants, lifelines, messages, activation bars and nested combined fragments](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
+
+A fictional e-commerce scenario contains 9 participants, 29 messages and 6 combined fragments, covering stock retries, nested branches, parallel processing, failure compensation and asynchronous callbacks. The animation progressively reveals the generated diagram to show its structure and details. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
 
 ```bash
 npx skills add supermax92/qgraphflow
@@ -35,6 +45,60 @@ One command installs the skill for Claude Code, Codex, Cursor and Qoder; the [in
 - **Share:** open offline HTML or export the complete diagram as SVG / PNG.
 
 The real-source [Jeepay corpus](examples/jeepay) contains all eleven views used by CI and the live demo.
+
+## Getting started
+
+After installation, open your application project in the client and select the `q-flow` skill. These examples use Claude Code's `/q-flow`; in Codex, use the `$q-flow` or `$qgraphflow:q-flow` entry actually provided by your client. Not installed yet? Read the [installation guide](#installation-guide) first.
+
+### 1. Empty input: Not sure where to start
+
+Invoke the skill without adding a request:
+
+```text
+/q-flow
+```
+
+The skill guides you to choose the part to analyze and the question the diagram should answer. Drawing starts once the necessary information is clear.
+
+### 2. Ask about capabilities: Learn what it can draw
+
+```text
+/q-flow What types of diagrams can you draw? What questions does each type answer? I have just taken over a project; introduce your capabilities and suggest a starting point.
+```
+
+Learn what the eleven diagram types are for, then decide whether to explore project structure, call order, data relationships or something else.
+
+### 3. Vague input: Only a general goal
+
+```text
+/q-flow Help me draw this project. I want to understand it as quickly as possible.
+```
+
+You do not need to specify a diagram type first. The skill selects a suitable view based on the project and your goal, and asks follow-up questions when necessary information is missing.
+
+### 4. Precise input: Define the scope and request drawing details
+
+Replace the business names and steps below with flows that actually exist in your project:
+
+```text
+/q-flow Analyze the order creation flow in the current project and generate a sequence diagram in Chinese.
+Cover the request entry point, pricing, stock reservation, payment authorization and order persistence.
+Retain the synchronous calls, asynchronous messages, paired returns, activation bars, conditional branches, retries and failure compensation that actually exist in the source. Do not omit details for brevity.
+Mark the source files and line numbers for components and calls, and save the result to docs/qgraphflow/order-sequence/.
+```
+
+State the subject, question, level of detail and output location clearly to start directly. The diagram retains only facts supported by evidence.
+
+### 5. Refine further: Expand part of the previous diagram
+
+After the result is generated, continue in the same conversation:
+
+```text
+/q-flow Expand the stock reservation step in the previous sequence diagram into a separate flowchart in Chinese.
+Show all branches for stock validation, successful reservation, retryable failures, the retry limit and stock release. Follow the source code and add no steps absent from it.
+```
+
+Start with the overall picture, then explore one step in depth. You can also request more detail in an existing diagram or verify its relationships.
 
 ## Installation guide
 
@@ -113,11 +177,11 @@ Confirm that `.cursor-plugin/plugin.json` exists there, reload the window, and f
 
 ### 3. Start using it
 
-Open your project in the client, start a new session, and select the skill. Describe your task using the [Quick start](#quick-start) examples below. Open the generated HTML in your browser.
+Open your application project in the client, start a new session and select the skill. Describe your request using the [Getting started](#getting-started) examples. Open the generated HTML in your browser.
 
 Building it yourself? See the [source build instructions](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally).
 
-## Quick start
+## Quick usage
 
 These examples use `$qgraphflow:q-flow` in Codex. If your client shows `$q-flow`, select that entry instead. For other clients, use the skill entry described above.
 
@@ -132,7 +196,7 @@ $qgraphflow:q-flow
 ### Example 1: Understand the architecture
 
 ```text
-$qgraphflow:q-flow Analyze this project and create an architecture diagram in English showing module responsibilities, dependencies and system boundaries.
+$qgraphflow:q-flow Analyze the current project and generate an architecture diagram in Chinese, showing the responsibilities of the main modules, dependencies and system boundaries.
 ```
 
 Useful when joining a project and learning its overall structure.
@@ -140,13 +204,13 @@ Useful when joining a project and learning its overall structure.
 ### Example 2: Trace a business flow
 
 ```text
-$qgraphflow:q-flow Analyze order creation and create a sequence diagram in English showing pricing, stock reservation, payment and order persistence, including failure branches.
+$qgraphflow:q-flow Analyze order creation and generate a sequence diagram in Chinese, showing the call order for pricing, stock reservation, payment and order persistence, and mark failure branches.
 ```
 
 Replace order creation and its steps with your project's actual flow. Continue in the same conversation:
 
 ```text
-$qgraphflow:q-flow Expand stock reservation from the previous diagram into a separate flowchart in English, showing success and failure handling.
+$qgraphflow:q-flow Expand the stock reservation step in the previous diagram into a separate flowchart in Chinese, showing success and failure handling.
 ```
 
 Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, edit and export; `graph.json` retains the graph data. Each view is also written as an SVG (`diagram.svg`, or `diagram-<n>-<type>.svg` for several views) that you can embed as an image in a README, pull request or wiki.
@@ -198,21 +262,21 @@ $qgraphflow:q-flow CI says docs/qgraphflow/order-sequence is out of date. Refres
 
 The skill moves anchors whose symbol it finds once, corrects only the anchors still reported, and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
 
-## What each of the nine views answers
+## What each of the eleven diagram types answers
 
 | View · PNG | Main question | Example scope |
 | --- | --- | --- |
-| Platform capability architecture | What capabilities does the platform provide? | Capability bands and matrices |
-| Engineering layer architecture | How is the project organized? | Layers and parallel support |
-| Component relationship architecture | Which responsibilities collaborate? | Channels, checkout, pricing, risk, stock, payment, orders, events and fulfillment |
-| Flowchart | Where does the process branch and converge? | Stock shortage, risk rejection, payment compensation and successful commit |
-| Sequence | In what order do calls and returns occur? | Successful checkout and asynchronous OrderPaid |
-| ER | How does core data relate? | Cart, orders, items, payments, reservations and parcels |
-| Deployment | Where do runtime units run and connect? | Edge, Kubernetes, data services, payments and logistics networks |
-| Class | How do domain objects and contracts depend on each other? | Checkout service, Order and four ports |
+| Platform capability architecture | What capabilities does the platform provide? | Capability zones and matrices |
+| Engineering layer architecture | How is the engineering code organized? | Engineering layers and shared support |
+| Component relationship architecture | Which responsibility boundaries collaborate in the system? | Channels, transaction orchestration, pricing, risk, stock, payment, orders, events and fulfillment |
+| Flowchart | How does each decision point branch and converge? | Stock shortage, risk rejection, compensation for payment failure and successful commit |
+| Sequence | In what order does a request make calls and receive returns? | Successful checkout main flow and asynchronous OrderPaid |
+| ER | How does core data relate? | Cart, orders, items, payments, stock reservations and parcels |
+| Deployment | Where are runtime units placed and how are they connected? | Edge, Kubernetes, data services, payment and warehouse/logistics networks |
+| Class | How do domain objects and code contracts depend on each other? | Checkout application service, Order and four ports |
 | State | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
-| Use case | What can each actor do? | Buyer, merchant, warehouse and support |
-| Data flow | How is data transformed and stored? | Cart, transaction decisions, events, warehouse and delivery receipts |
+| Use case | What capabilities does each actor have? | Buyer, merchant, warehouse and customer support |
+| Data flow | What transformations and stores do data assets pass through? | Cart, transaction decisions, order events, warehouse/logistics and delivery receipts |
 
 This is a concept model demonstrating QGraphFlow, not a particular e-commerce repository. The example `graph.json` invents no source paths and marks relationship evidence as `inference`. Real project diagrams need traceable source, DDL, configuration, tests and accepted requirements.
 
@@ -226,21 +290,21 @@ node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 
 Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minimal redacted graph, client/browser versions and reproduction steps in issue reports.
 
-[Evidence sources](skills/q-flow/references/evidence-sources.md) · [Graph format](skills/q-flow/references/graph-schema.md) · [Guided intake](skills/q-flow/references/guided-intake.md) · [Viewer development](skills/q-flow/references/viewer-development.md) · [Diagram composition](skills/q-flow/references/visual-contract.md)
+Reference documentation (English): [Evidence sources](skills/q-flow/references/evidence-sources.md) · [Graph data format](skills/q-flow/references/graph-schema.md) · [Guided intake](skills/q-flow/references/guided-intake.md) · [Viewer development and acceptance](skills/q-flow/references/viewer-development.md) · [Visual conventions](skills/q-flow/references/visual-contract.md)
 
 ## License and attribution
 
 [MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual and do not represent any company's production architecture; no affiliation, sponsorship or endorsement is implied.
+QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual examples and do not represent any real company's production architecture.
 
-## Architecture overviews / 架构总览
+## Architecture overviews
 
 Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
 
 ```text
-$qgraphflow:q-flow 分析当前项目的平台能力和业务接入方式，生成中文平台能力总览。
-$qgraphflow:q-flow 分析当前工程组织和组件分层，生成工程整体与一个组件剖面的中文总览。
+$qgraphflow:q-flow Analyze this project's platform capabilities and business integration methods, and generate a platform capability overview in Chinese.
+$qgraphflow:q-flow Analyze the organization and component layers of the current project, and generate Chinese overviews of the whole project and a cross-section of one component.
 $qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
 ```
 

@@ -57,8 +57,11 @@ test('IDE metadata is ignored', () => {
   assert.match(read('.gitignore'), /^\.idea\/$/m);
 });
 
-test('the README identifies QGraphFlow as an independent project', () => {
+test('the READMEs identify project independence and the conceptual example boundary', () => {
   const readme = read('README.md');
   assert.match(readme, /independent MIT-licensed project/);
-  assert.match(readme, /no affiliation, sponsorship or endorsement is implied/);
+  assert.match(readme, /conceptual examples and do not represent any real company's production architecture/);
+  const chinese = read('docs/readme/README.zh-CN.md');
+  assert.match(chinese, /独立项目/);
+  assert.match(chinese, /概念示例，不代表任何真实公司的生产架构/);
 });
