@@ -114,7 +114,8 @@ jobs:
           # Trusted publishing needs npm 11.5.1 or later; Node 22 bundles npm 10.
           npm install -g npm@^11.5.1
           # "./" keeps npm from reading release/<file> as a GitHub owner/repo shorthand.
-          npm publish "./release/qgraphflow-$VERSION.tgz" --provenance --access public --ignore-scripts
+          # npm logs a refused trusted-publishing token exchange only at verbose level, then fails the upload with a bare 404.
+          npm publish "./release/qgraphflow-$VERSION.tgz" --provenance --access public --ignore-scripts --loglevel verbose
       - name: Verify the npmjs download and run it through npx
         run: |
           mkdir downloaded
