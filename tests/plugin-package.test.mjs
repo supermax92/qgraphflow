@@ -143,10 +143,9 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
     'skills/q-flow/assets/viewer/src/export-svg.js', 'skills/q-flow/assets/viewer/src/node-svg.js',
-    'README.md', ...guides, 'examples/jeepay/flowchart.graph.json', 'bin/qgraphflow.mjs'
+    'README.md', ...guides, 'bin/qgraphflow.mjs'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
-  assert.ok(files.has('examples/jeepay/collection.graph.json'));
-  assert.ok([...files].filter(file => file.startsWith('examples/')).every(file => file.startsWith('examples/jeepay/')));
+  assert.ok(![...files].some(file => file.startsWith('examples/')), 'Example corpora stay in the repository');
   assert.ok(!files.has('docs/images/order-flow.svg'));
   // Fixed ELK runtime adds about 1.6MB; retain a bounded total install budget.
   assert.ok(packed.unpackedSize < 4_000_000, `Unexpected install size: ${packed.unpackedSize}`);
@@ -186,9 +185,9 @@ test('the distributed plugin runs independently from its installed location', t 
   }
   const installedManifest = readJson(path.join(plugin, 'package.json'));
   assert.deepEqual([installedManifest.bin, installedManifest.engines], [pkg.bin, pkg.engines], 'npx and npm resolve the command and the Node range');
-  assert.match(run(process.execPath, ['bin/qgraphflow.mjs', 'validate', 'examples/jeepay/flowchart.graph.json', '--input-only'], plugin), /"valid":true/);
+  assert.match(run(process.execPath, ['bin/qgraphflow.mjs', 'validate', path.join(root, 'examples/jeepay/flowchart.graph.json'), '--input-only'], plugin), /"valid":true/);
   const graphPath = path.join(temp, '输入 graph.json');
-  fs.copyFileSync(path.join(plugin, 'examples/jeepay/flowchart.graph.json'), graphPath);
+  fs.copyFileSync(path.join(root, 'examples/jeepay/flowchart.graph.json'), graphPath);
   const scripts = path.join(plugin, 'skills/q-flow/scripts');
   run(process.execPath, [path.join(scripts, 'validate-graph.mjs'), graphPath, '--input-only'], temp);
   const output = path.join(temp, '项目输出');
@@ -265,6 +264,6 @@ test('the distributed plugin runs independently from its installed location', t 
     assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), fs.readFileSync(path.join(plugin, file)), file);
     if (file !== 'package.json') assert.deepEqual(fs.readFileSync(path.join(npmPlugin, file)), originalRuntime.get(file), file);
   }
-  run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(npmPlugin, 'examples/jeepay/flowchart.graph.json'), path.join(temp, 'npm-graph')], temp);
+  run(process.execPath, [path.join(npmPlugin, 'skills/q-flow/scripts/generate-viewer.mjs'), path.join(root, 'examples/jeepay/flowchart.graph.json'), path.join(temp, 'npm-graph')], temp);
   assert.deepEqual(fs.readdirSync(path.join(temp, 'npm-graph')).sort(), ['diagram.svg', 'graph.json', 'index.html']);
 });

@@ -63,8 +63,7 @@
     "skills/q-flow/assets/viewer/src/layout-refinement.js",
     "skills/q-flow/assets/viewer/src/layout-templates.js",
     "skills/q-flow/assets/viewer/src/presentation-graph.js",
-    "skills/q-flow/assets/viewer/src/layout-semantics.js",
-    "examples/jeepay/"
+    "skills/q-flow/assets/viewer/src/layout-semantics.js"
   ],
   "scripts": {
     "package": "node scripts/package.mjs"
