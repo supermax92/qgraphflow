@@ -1,4 +1,4 @@
-import { visibleEdges } from './presentation-graph.js';
+import { presentationGraph, visibleEdges } from './presentation-graph.js';
 import { overviewSections, sectionSvg } from './architecture-overview.js';
 import React, { useId } from 'react';
 import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position } from '@xyflow/react';
@@ -101,13 +101,13 @@ export function initialNodes(graph, diagramType) {
     connectable: false,
     zIndex: -(graph.groups?.length ?? 0) + fragmentDepth(group, graph.groups ?? [])
   }));
-  const classicCard = !compactCards(graph);
+  const classicCard = !compactCards(graph), drawn = new Map(presentationGraph(graph).nodes.map(node => [node.id, node]));
   return [...overviewSections(graph).map((section, index) => ({ id: section.id, type: 'overview', position: section.position, data: { ...section }, style: { width: section.size.width, height: section.size.height, pointerEvents: 'none' }, draggable: false, selectable: false, zIndex: -100 + index })), ...boundaries, ...graph.nodes.map(node => ({
     id: node.id,
     type: 'diagram',
     className: diagramType === 'sequence' ? 'sequence-column' : undefined,
     position: node.position,
-    data: { ...node, diagramType, locale: graph.meta.locale, classicCard },
+    data: { ...drawn.get(node.id), diagramType, locale: graph.meta.locale, classicCard },
     style: { width: node.size.width, height: node.size.height, ...(diagramType === 'sequence' ? { pointerEvents: 'none' } : {}) },
     zIndex: 2
   }))];

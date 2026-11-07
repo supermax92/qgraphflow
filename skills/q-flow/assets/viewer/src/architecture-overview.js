@@ -12,7 +12,8 @@ export const overviewSections = graph => {
 };
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const strings = value => Array.isArray(value) && value.every(item => typeof item === 'string' && item.trim());
-export const hasOverviewContent = node => node.overviewText !== undefined || node.badges !== undefined || node.overviewTone !== undefined;
+// Badges alone do not make an overview card: relations and deployment cards draw them as tags under the source line.
+export const hasOverviewContent = node => node.overviewText !== undefined || node.overviewTone !== undefined;
 
 export function validateOverview(graph, { inputOnly = true, validateAnchor, evidenceKinds } = {}) {
   const errors = [], overview = isArchitectureOverview(graph);

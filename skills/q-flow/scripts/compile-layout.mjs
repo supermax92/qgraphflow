@@ -7,13 +7,13 @@ import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
 import { getDiagram, canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
 import { stateSymbolX } from '../assets/viewer/src/diagrams/state.js';
-import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { graphBounds, occupiedBox, visibleEdgeLabel, groupHeadingBoxes, segmentCrossesBox, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { groupHeadingLayout, estimateLabelSize } from '../assets/viewer/src/text-layout.js';
 import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, OVERVIEW_AREA, layeredDirections, layeredDown, layoutLimits, layoutTargets, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
-import { templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
+import { layoutNodeSize, templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
+import { hasSharedDependencies, presentationGraph, restorePresentation } from '../assets/viewer/src/presentation-graph.js';
 
 import { LAYOUT_VERSION } from '../assets/viewer/src/layout-policy.js';
 export { LAYOUT_VERSION };
@@ -109,7 +109,7 @@ function elkInput(graph, candidate, hints = {}) {
       'elk.nodeSize.constraints': 'MINIMUM_SIZE', 'elk.nodeSize.minimum': `(${heading.width + 64},0)` } }];
   }));
   const ordered = items => hints.nodes ? [...items].sort((a, b) => hints.nodes.indexOf(a.id) - hints.nodes.indexOf(b.id)) : stable(items);
-  const nodes = new Map(ordered(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...minimumNodeSize(node, type, graph.meta.locale), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
+  const nodes = new Map(ordered(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...layoutNodeSize(node, graph, type), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
   if (type === 'state') for (const node of graph.nodes) {
     if (node.kind === 'initial' || node.kind === 'final') nodes.get(node.id).layoutOptions['elk.layered.layering.layerConstraint'] = node.kind === 'initial' ? 'FIRST_SEPARATE' : 'LAST_SEPARATE';
     if (node.kind === 'initial') for (const edge of graph.edges.filter(edge => edge.source === node.id)) {
@@ -431,6 +431,12 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     let output;
     try { output = fitArchitectureOverview(graph, requireDiagramQuality); } catch (error) { throw error.diagnostics ? error : Object.assign(qualityFailure(graph, 'geometry', error.message), { routingReport: error.routingReport }); }
     return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, template: { structure: templateOf(graph).structure, applied: true, fallback: null }, refinement: overviewLayoutReports.get(output), semantics: semanticReport(output) } };
+  }
+  // Shared dependencies: lay out the drawn graph (folded edges out, their tags on source cards), then restore the model.
+  if (hasSharedDependencies(graph)) {
+    const { graph: laid, report } = await compileGraphLayout(presentationGraph(graph), { layout, timeoutMs });
+    const output = restorePresentation(graph, laid);
+    return { graph: output, report: { ...report, semantics: semanticReport(output) } };
   }
   const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });

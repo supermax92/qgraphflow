@@ -28,7 +28,7 @@ Either overview requires non-empty `layout.sections`. Each section has a unique 
 
 Optional section `text` contains paragraph strings and `source` uses the common anchor. A note requires non-empty text and no items. Nodes accept `overviewText` paragraph strings and `badges`: `{ "label": "JDK 17", "role": "version", "evidence": "document", "source": { ... } }`. Roles: `status`, `version`, `requirement`; evidence kinds and optional anchors follow common rules. Empty arrays are valid on nodes. Reference-image status/version/rules are document claims, not verified source.
 
-Repeated architecture views require distinct `meta.viewId`; all identities must be unique, including legacy type IDs. Collections have 1–32 views; other types stay unique. Menus show capabilities/engineering/relations as independent architecture types, adding titles for repeated templates.
+Repeated views of any type require distinct `meta.viewId`; all identities must be unique, including legacy type IDs. Collections have 1–32 views.
 
 Use reference bands/cards/badges. Section `tone` / node `overviewTone`: `white`, `subtle`, `blue`, `green`, `lavender`, `plain`; section `frame`: `solid`, `dashed`, `none`; grid `columns`: 1–16; row `weights`: positive numbers per item (detail/support `[2,1]`); node `overviewAccent`: boolean stripe. Use tones and grids to clarify each fictional or public model. Style is not evidence.
 
@@ -50,7 +50,7 @@ Use reference bands/cards/badges. Section `tone` / node `overviewTone`: `white`,
 }
 ```
 
-For relations, omit `architectureView` and `layout.sections`.
+For relations, omit `architectureView` and `layout.sections`. List components nearly every card uses in `layout.sharedDependencies`: edges into them become caller tags, kept in data. Cards show `badges`; `layout.rank` sets columns.
 
 Generation measures full text. Unlock to reorder peers within the same section/group. Details edit body/badges/sections; apply relayouts, failure keeps the draft/valid canvas, cancel discards. Save keeps order/style; switch keeps each view; reset affects only the current view.
 

@@ -14,7 +14,7 @@ Structure questions accept a system, module or entity set. Behaviour questions n
 
 Ask only for missing information. Never ask for type, language, granularity, graph count or CodeGraph setup merely to fill a default. Document-only output uses the current project's `docs/qgraphflow/<scope>-<type>/`; honor a supplied directory. If no suitable project or supplied directory exists, ask only for the output location when that is all that is missing. Never output into the plugin cache.
 
-Explicit multiple-view requests retain **every view**: keep shared subject/preferences and resolve only each view's missing scope. "Architecture and sequence, both" is not indecision; "architecture or sequence, which helps?" invites a recommendation. Default to one graph otherwise. Repeated architecture needs unique `meta.viewId`; repeated other types use separate outputs, as specified by [graph-common.md](graph-common.md#granularity).
+Explicit multiple-view requests retain **every view**: keep shared subject/preferences and resolve only each view's missing scope. "Architecture and sequence, both" is not indecision; "architecture or sequence, which helps?" invites a recommendation. Default to one graph otherwise. Repeated views of any type need unique `meta.viewId`, as specified by [graph-common.md](graph-common.md#granularity).
 
 ## Repository inventory
 

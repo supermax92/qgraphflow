@@ -141,6 +141,16 @@ export const LAYOUT_TEMPLATES = Object.freeze({
 });
 export const templateOf = graph => LAYOUT_TEMPLATES[viewTypeOf(graph)];
 
+// The size a node is laid out at: its text minimum, made tall enough for a self-transition's label to sit on the
+// side loop (orthogonal-routing selfCorridor keeps the loop 12px inside the node's side; the label needs 4px at
+// each end of that leg). Taller than the text minimum, so the quality gate's minimum still holds.
+export function layoutNodeSize(node, graph, type = diagramTypeOf(graph)) {
+  const size = minimumNodeSize(node, type, graph.meta?.locale);
+  const loops = graph.edges.filter(edge => edge.source === node.id && edge.target === node.id);
+  const room = Math.max(0, ...loops.map(edge => estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta?.locale)).height + 32));
+  return room > size.height ? { ...size, height: Math.ceil(room) } : size;
+}
+
 // A measured template supplies positions only. Routing and acceptance are the same as for ELK and browser edits.
 // No virtual groups, rank hints, inferred relationships or shortened text are persisted into the semantic model.
 export function templateDraft(input, variant = 0) {
@@ -149,7 +159,7 @@ export function templateDraft(input, variant = 0) {
   const linear = input.edges.length === input.nodes.length - 1 && input.nodes.every(node => input.edges.filter(edge => edge.source === node.id).length <= 1 && input.edges.filter(edge => edge.target === node.id).length <= 1);
   if (linear && !['flowchart', 'class', 'state', 'deployment', 'dataflow', 'usecase'].includes(viewTypeOf(input))) return null;
   const graph = structuredClone(input), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = layoutLimits(diagram), target = layoutTargets(diagram);
-  graph.nodes.forEach(node => { node.size = minimumNodeSize(node, type, graph.meta.locale); });
+  graph.nodes.forEach(node => { node.size = layoutNodeSize(node, graph, type); });
   graph.edges.forEach(edge => { delete edge.route; });
   const allGroups = graph.groups ?? [];
   function compose(parentId) {
@@ -190,9 +200,16 @@ export function templateDraft(input, variant = 0) {
     const along = sideways ? 'x' : 'y', across = sideways ? 'y' : 'x', height = sideways ? 'width' : 'height', width = sideways ? 'height' : 'width';
     // Shared column tracks and row baselines are measured once for the whole ownership scope.
     const columnWidths = Array.from({ length: Math.max(0, ...rows.map(row => row.length)) }, (_, column) => Math.max(0, ...rows.map(row => row[column]?.size[width] ?? 0)));
-    const lateral = graph.edges.filter(edge => rows.some(row => row.some(item => item.ids.has(edge.source)) && row.some(item => item.ids.has(edge.target)) && !row.some(item => item.ids.has(edge.source) && item.ids.has(edge.target))));
-    const widestLabel = Math.max(0, ...lateral.map(edge => estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta.locale))[width]));
-    const gap = Math.max(target.nodeGap, Math.min(widestLabel + 2 * limits.labelGap, 240)) + variant * 24;
+    // Labels between row neighbours need the column gap; so does a self-transition beside a neighbour, whose loop
+    // and label leave its node sideways (orthogonal-routing selfCorridor) and must clear the next column.
+    const lateral = graph.edges.filter(edge => edge.source === edge.target
+      ? rows.some(row => row.length > 1 && row.some(item => item.ids.has(edge.source)))
+      : rows.some(row => row.some(item => item.ids.has(edge.source)) && row.some(item => item.ids.has(edge.target)) && !row.some(item => item.ids.has(edge.source) && item.ids.has(edge.target))));
+    const labelSpan = edge => estimateLabelSize(visibleEdgeLabel(edge, type, graph.meta.locale))[width];
+    const widestLabel = Math.max(0, ...lateral.filter(edge => edge.source !== edge.target).map(labelSpan));
+    // A side loop's label sits on the loop's outer leg, so it needs its whole width plus clearance; never capped.
+    const loopRoom = Math.max(0, ...lateral.filter(edge => edge.source === edge.target).map(edge => labelSpan(edge) + 2 * limits.labelGap + 8));
+    const gap = Math.max(target.nodeGap, Math.min(widestLabel + 2 * limits.labelGap, 240), loopRoom) + variant * 24;
     const tracks = columnWidths.map((_, column) => columnWidths.slice(0, column).reduce((sum, size) => sum + size + gap, 0));
     const extent = columnWidths.reduce((sum, size) => sum + size, 0) + Math.max(0, columnWidths.length - 1) * gap;
     let cursor = 0;

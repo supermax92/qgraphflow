@@ -345,6 +345,8 @@ button:disabled { cursor: not-allowed; }
 .drawer li + li { margin-top: 5px; }
 .drawer li::marker { color: var(--accent); }
 .drawer code { white-space: normal; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+.folded-edge { padding: 0; border: 0; background: none; color: var(--label); font: inherit; text-align: left; cursor: pointer; }
+.folded-edge:hover, .folded-edge:focus-visible { color: var(--accent); text-decoration: underline; }
 .source-path { max-width: 100%; display: block; padding: 8px 10px; border-radius: var(--r-field); color: var(--accent); background: var(--fill); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
 .symbol { margin-top: 6px !important; color: var(--label-2); font: 12px/1.55 ui-monospace, SFMono-Regular, monospace; }
 .tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 5px; }

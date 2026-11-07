@@ -3,15 +3,17 @@ import { cardTextLayout, text, coreNode, dataKinds, paint } from './drawing.js';
 
 export function genericCard(node, x, y, fill, stroke, palette, locale, outline, contentInset = 0, corner = 0) {
   if (node.classicCard) return classicCard(node, x, y, fill, stroke, palette, locale, outline, contentInset);
-  const { title, subtitle, source, tag, contentHeight } = cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - contentInset * 2 } }, locale, false, corner);
+  const { title, subtitle, source, tag, chips, contentHeight } = cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - contentInset * 2 } }, locale, false, corner);
   // Baselines sit 20/17/14px below the top of their 26/24/20px lines.
   const left = x + contentInset, row = y + Math.max(0, (node.size.height - contentHeight) / 2) + CARD.pad, column = left + CARD.textX;
   const subtitleTop = row + title.height + (subtitle.height ? 4 : 0), sourceTop = subtitleTop + subtitle.height + (source.height ? 6 : 0);
+  const chipsTop = sourceTop + source.height + (chips.length ? 6 : 0);
+  const chipText = chips.map(chip => { const top = chipsTop + chip.row * CARD.chipLine; return `<rect x="${column + chip.x}" y="${top}" width="${chip.width}" height="20" rx="6" fill="${palette.badge}"/>${text(column + chip.x + chip.width / 2, top + 15, chip.text, 'stereotype', ' text-anchor="middle"')}`; }).join('');
   const titleText = title.lines.map((line, index) => text(column, row + 20 + index * title.lineHeight, line, 'title')).join('');
   const subtitleText = subtitle.lines.map((line, index) => text(column, subtitleTop + 17 + index * subtitle.lineHeight, line, 'body')).join('');
   const sourceText = source.lines.map((line, index) => text(column, sourceTop + 14 + index * source.lineHeight, line, 'meta')).join('');
   const plate = { x: left + CARD.pad, y: row + (CARD.titleLine - CARD.plate) / 2 }, tagX = x + node.size.width - contentInset - CARD.pad - tag.width - corner;
-  return `<g filter="url(#node-shadow)">${frame(node, x, y, fill, stroke, outline)}${iconPlate(node, plate.x, plate.y, CARD.plate, palette)}<rect x="${tagX}" y="${row + 3}" width="${tag.width}" height="20" rx="6" fill="${palette.badge}"/>${text(tagX + tag.width / 2, row + 18, tag.text, 'stereotype', ' text-anchor="middle"')}${titleText}${subtitleText}${sourceText}</g>`;
+  return `<g filter="url(#node-shadow)">${frame(node, x, y, fill, stroke, outline)}${iconPlate(node, plate.x, plate.y, CARD.plate, palette)}<rect x="${tagX}" y="${row + 3}" width="${tag.width}" height="20" rx="6" fill="${palette.badge}"/>${text(tagX + tag.width / 2, row + 18, tag.text, 'stereotype', ' text-anchor="middle"')}${titleText}${subtitleText}${sourceText}${chipText}</g>`;
 }
 
 const frame = (node, x, y, fill, stroke, outline) => paint(outline(node, x, y), { fill, stroke, 'stroke-width': node.appearance?.moduleColor || node.appearance?.ring ? 1.5 : 1 });

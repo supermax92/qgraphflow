@@ -12,7 +12,7 @@ Before Evidence, honor the user's scope, depth, required facts, node budget and 
 
 Other defaults: module → components/classes; flow → steps/functions; entity set → tables. Preserve type semantics: sequence nodes are lifelines, calls are messages. Keep peers at comparable levels; show broader context as boundaries/external participants. Record level, coverage and exclusions in `meta.scope`. If a strict user limit conflicts with required coverage, explain the tradeoff; never silently omit facts or invent aggregation.
 
-Default to one graph; overview plus detail requests multiple views. Propose splits at real boundaries; honor explicit single-view requests. Repeated architecture needs unique `meta.viewId`; repeated other types need separate outputs. Together, views cover all requested facts with stable IDs and boundary handoffs.
+Default to one graph; overview plus detail requests multiple views. Propose splits at real boundaries; honor explicit single-view requests. Repeated views of any type need unique `meta.viewId`. Together, views cover all requested facts with stable IDs and boundary handoffs.
 
 Before layout, map every explicit requirement to visible elements and evidence. Minimal: every element serves the question. Detailed: audit coverage at the requested depth. Report evidence gaps. Simplify during scoped authoring; never remove chosen facts to pass layout/validation.
 
@@ -20,7 +20,7 @@ Before layout, map every explicit requirement to visible elements and evidence. 
 
 - Required: `meta.title`, `meta.sourceRef`, `meta.diagramType`, non-empty `nodes`, and an `edges` array (may be empty). Optional `groups` hold boundaries. Collections: `{ "diagrams": [graph, graph] }`, 1–32 views.
 - `meta.locale`: user's language, `zh-CN` (default), `en`, `ru`, `pt`, `ja`, `de`, `es`. It translates only the UI: author all prose, labels and guards in that language. Keep identifiers, literal values and standard notation verbatim; samples are placeholders.
-- Facts only: **no `position`, `size` or `route`**. Node `layout.rank` / `layout.order`, graph `layout.primaryPath` / `layout.participantOrder` express existing source order only.
+- Facts only: **no `position`, `size` or `route`**. Node `layout.order`, graph `layout.primaryPath` / `layout.participantOrder` express source order; `layout.rank` (0, 1, …) also sets reading columns with `layout.direction: "right"`.
 - IDs are unique, stable and non-empty; edge `source` / `target` name nodes.
 
 ## Nodes

@@ -67,7 +67,7 @@ Flowchart main paths must run top-to-bottom, with left/right branches and outsid
 }
 ```
 
-Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–32 graphs in `diagrams`. Other types keep a unique `meta.diagramType`; repeated architecture views require unique `meta.viewId` values. The toolbar menu follows the fixed presentation order `capabilities`, `engineering`, `relations`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. The three architecture entries retain the `architecture` semantic type. The view menu lists the requested types vertically.
+Use one graph by default; a standalone page has no diagram-type menu. For a requested multi-diagram viewer, wrap 1–32 graphs in `diagrams`. Repeated views of one type require unique `meta.viewId` values. The toolbar menu follows the fixed presentation order `capabilities`, `engineering`, `relations`, `flowchart`, `sequence`, `er`, `deployment`, `class`, `state`, `usecase`, `dataflow` regardless of input order. The three architecture entries retain the `architecture` semantic type. The view menu lists the requested types vertically.
 
 ```json
 {
@@ -230,6 +230,8 @@ Template placement never creates ownership, relationships or evidence. Authored 
 ## Semantic presentation rules
 
 Architecture overviews default to `layout.overviewConnections: "within-category"`: edges only draw when their endpoints belong to the same deepest presentation section. Cross-category edges remain in JSON, source evidence and relationship details. Set `"all"` to draw all relations. Viewer and SVG/PNG export use the same projection.
+
+Relations views may set `layout.sharedDependencies`: a non-empty list of distinct node IDs for components nearly every card depends on (configuration, data access). Edges into those nodes are presentation-only folded: they are not laid out or drawn, and each source card shows a tag `→ <target label>` under its source line instead. The edges keep their `site`, evidence and source-drift checks, the node details list them and open each edge, and layout output restores them without a route; the shared nodes themselves are still drawn. The list is rejected outside a relations view, for unknown or repeated IDs, and when `layout.primaryPath` enters a shared node. Relations and deployment cards also draw node `badges` as tags; badges alone no longer turn a node into an overview card. Collections may repeat any diagram type (for example a long sequence split by phase); every repeated view needs a unique `meta.viewId`.
 
 Deployment nodes may declare `layout.tier`: `external`, `application`, `infrastructure`, or `data`. Auto layout orders these tiers from top to bottom within real runtime boundaries. Without a hint, databases use data, external nodes use external, queues/caches use infrastructure and other runtime nodes use application. This hint never adds a host, service or dependency.
 

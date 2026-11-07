@@ -102,3 +102,16 @@ test('a self-transition keeps its polyline when its ends sit on two sides or on 
   const plain = createEdgeRoutes(view('state', { width: 240, height: 80 }, [{ x: 352, y: 224 }, { x: 384, y: 224 }, { x: 384, y: 256 }, { x: 352, y: 256 }])).get('loop');
   assert.match(plain.path, /^M [\d.]+ [\d.]+ C /, 'an ordinary loop on one side is still an arc');
 });
+
+test('a self-transition beside an isolated state still routes: its label gets column room and side height', async () => {
+  const { jeepay } = await import('../../../tests/jeepay.mjs');
+  const { templateDraft, layoutNodeSize } = await import('../assets/viewer/src/layout-templates.js');
+  const { routeOrthogonal } = await import('../assets/viewer/src/orthogonal-routing.js');
+  const graph = jeepay('state'); delete graph.layout;
+  graph.nodes.push({ id: 'refund', label: 'REFUND', kind: 'state', module: 'payment' }, { id: 'cancel', label: 'CANCEL', kind: 'state', module: 'payment' });
+  graph.edges.push({ id: 's6', source: 'success', target: 'refund', kind: 'transition', label: '退款单成功', evidence: 'source', guard: '累计退款 ≥ 订单金额', action: 'refund_state=2' },
+    { id: 's7', source: 'success', target: 'success', kind: 'transition', label: '退款单成功', evidence: 'source', guard: 'refund_amount + 本次 < amount', action: 'refund_state=1，refund_times+1，累加 refund_amount' });
+  const success = graph.nodes.find(node => node.id === 'success');
+  assert.ok(layoutNodeSize(success, graph).height > minimumNodeSize(success, 'state').height, 'a long loop label makes its state taller than its text needs');
+  for (let variant = 0; variant < 4; variant++) assert.doesNotThrow(() => routeOrthogonal(templateDraft(graph, variant), { passes: 3, accept: requireDiagramQuality }), `template variant ${variant}`);
+});

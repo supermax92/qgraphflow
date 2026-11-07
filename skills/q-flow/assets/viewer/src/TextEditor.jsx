@@ -4,7 +4,7 @@ import { translate } from './i18n.js';
 
 export function useTextEditor(node, edge, onSaveNode, onSaveEdge, locale, overviewView = false, onCancel = () => {}) {
   const object = edge ?? node, key = object ? `${edge ? 'edge' : 'node'}:${object.id}` : null;
-  const overview = Boolean(node && (overviewView || node.section || node.overviewText !== undefined || node.badges !== undefined));
+  const overview = Boolean(node && (overviewView || node.section || node.overviewText !== undefined));
   const saveToken = useRef(0);
   const [draft, setDraft] = useState({ editing: false, pending: false, label: '', subtitle: '', overviewText: '', badges: [], error: '' });
   const reset = (returnFocus = false) => setDraft({ editing: false, pending: false, label: object?.label ?? '', subtitle: node?.subtitle ?? '', overviewText: (node?.overviewText ?? []).join('\n'), badges: structuredClone(node?.badges ?? []), error: '', returnFocus });

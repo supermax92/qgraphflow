@@ -1,4 +1,4 @@
-// Legacy collections use their unique diagram type as identity. Repeated architecture views require authored IDs.
+// A view without an ID is known by its diagram type; repeated views of any type require authored IDs.
 export const viewIdOf = graph => graph?.meta?.viewId ?? graph?.meta?.diagramType ?? 'architecture';
 export const architectureViewOf = graph => graph?.meta?.architectureView ?? 'relations';
 export const isArchitectureOverview = graph => (graph?.meta?.diagramType ?? 'architecture') === 'architecture' && architectureViewOf(graph) !== 'relations';

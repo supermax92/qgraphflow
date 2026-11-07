@@ -209,6 +209,13 @@ function validateLayoutSemantics(graph) {
   if (graph.layout !== undefined && !isObject(graph.layout)) errors.push('layout must be an object');
   else if (graph.layout?.direction !== undefined && !layeredDirections(type).includes(graph.layout.direction)) errors.push(`layout.direction must be one of ${layeredDirections(type).join(', ')} for ${type}`);
   if (graph.layout?.overviewConnections !== undefined && (!isArchitectureOverview(graph) || !['within-category', 'all'].includes(graph.layout.overviewConnections))) errors.push('layout.overviewConnections requires an architecture overview and within-category or all');
+  if (graph.layout?.sharedDependencies !== undefined) {
+    // Edges into these nodes are drawn as tags on their source cards; a path through one would lose its line.
+    const list = graph.layout.sharedDependencies;
+    if (type !== 'architecture' || isArchitectureOverview(graph)) errors.push('layout.sharedDependencies requires an architecture relations view');
+    else if (!Array.isArray(list) || !list.length || list.some(id => typeof id !== 'string' || !nodes.has(id)) || new Set(list).size !== list.length) errors.push('layout.sharedDependencies must be a non-empty list of distinct node IDs');
+    else if (Array.isArray(graph.layout.primaryPath) && graph.layout.primaryPath.slice(1).some(id => list.includes(id))) errors.push('layout.primaryPath cannot enter a shared dependency');
+  }
   if (isObject(graph.layout)) for (const key of ['primaryPath', 'participantOrder']) {
     const list = graph.layout?.[key];
     if (list === undefined) continue;
@@ -250,17 +257,15 @@ export function validateGraphInput(input, options = {}) {
     return [`diagrams must contain between 1 and 32 graphs`];
   }
 
-  const errors = [];
-  const types = new Set(), viewIds = new Set();
-  const architectureCount = input.diagrams.filter(graph => diagramTypeOf(graph) === 'architecture').length;
+  // Any type may repeat (a long flow split by phase, two architecture templates); repeated views name themselves.
+  const errors = [], viewIds = new Set(), counts = new Map();
+  for (const graph of input.diagrams) counts.set(diagramTypeOf(graph), (counts.get(diagramTypeOf(graph)) ?? 0) + 1);
   input.diagrams.forEach((graph, index) => {
     const type = diagramTypeOf(graph);
-    if (types.has(type) && type !== 'architecture') errors.push(`diagrams[${index}].meta.diagramType duplicates ${type}`);
-    if (type === 'architecture' && architectureCount > 1 && !graph?.meta?.viewId) errors.push(`diagrams[${index}].meta.viewId is required for repeated architecture views`);
+    if (counts.get(type) > 1 && !graph?.meta?.viewId) errors.push(`diagrams[${index}].meta.viewId is required for repeated ${type} views`);
     const viewId = viewIdOf(graph);
     if (viewIds.has(viewId)) errors.push(`diagrams[${index}].meta.viewId duplicates ${viewId}`);
     viewIds.add(viewId);
-    types.add(type);
     errors.push(...authored(graph).map(error => `diagrams[${index}].${error}`));
   });
   return errors;

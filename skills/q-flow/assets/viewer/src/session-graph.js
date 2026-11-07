@@ -3,6 +3,7 @@ import { cardText, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { layoutLimits } from './layout-spacing.js';
 import { requireDiagramQuality } from './layout-quality.js';
 import { groupHeadingLayout } from './text-layout.js';
+import { presentationGraph } from './presentation-graph.js';
 
 // The generator embeds the graph as escaped JSON inside this script element; saving from the page rewrites the same
 // element, so the saved page reopens with its edits and the generator and the page never disagree about the encoding.
@@ -65,7 +66,9 @@ export function placed(graph, boxes) {
 // (compactCards of the graph before the edit). Returns id -> { position, size } for every box that changed.
 export function fitCard(graph, id, classic) {
   const type = diagramTypeOf(graph), diagram = getDiagram(type), node = graph.nodes.find(item => item.id === id);
-  const grow = diagram.cardLayout ? cardText(node, type, graph.meta.locale, classic).minHeight - node.size.height : 0;
+  // Measure the card as drawn, with its folded shared-dependency tags.
+  const drawn = presentationGraph(graph).nodes.find(item => item.id === id);
+  const grow = diagram.cardLayout ? cardText(drawn, type, graph.meta.locale, classic).minHeight - node.size.height : 0;
   if (grow <= 0) return new Map();
   const { groupInset, groupHeadingGap } = layoutLimits(diagram), groups = new Map((graph.groups ?? []).map(group => [group.id, group]));
   // `above` is the share of the extra height that goes over the card's top edge; each boundary then takes in its member's box.

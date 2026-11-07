@@ -8,6 +8,7 @@ import { diagramLabels, diagramTypeOf } from './diagrams/registry.js';
 import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual-style.js';
+import { foldedEdges } from './presentation-graph.js';
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
@@ -108,6 +109,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
         <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
         {inspectedNode.overviewText?.length > 0 && <><h3>{t('Overview text')}</h3><ul>{inspectedNode.overviewText.map((line, i) => <li key={i}>{line}</li>)}</ul></>}
         {inspectedNode.badges?.length > 0 && <><h3>{t('Badges')}</h3><ul>{inspectedNode.badges.map((badge, i) => <li key={i}>{badge.label} · {t(evidenceLabels[badge.evidence])}{badge.source && <code className="source-path">{anchorText(badge.source)}</code>}</li>)}</ul></>}
+        {(folded => folded.length > 0 && <><h3>{t('Shared dependencies')}</h3><ul>{folded.map(edge => <li key={edge.id}><button type="button" className="folded-edge" onClick={() => selectEdge(edge)}>{edge.label ?? edge.kind} → {currentGraph.nodes.find(node => node.id === edge.target)?.label}</button>{edge.site && <code className="source-path">{anchorText(edge.site)}</code>}</li>)}</ul></>)(foldedEdges(currentGraph).filter(edge => edge.source === inspectedNode.id))}
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
         {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
         {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}

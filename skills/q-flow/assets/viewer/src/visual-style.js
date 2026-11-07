@@ -109,7 +109,7 @@ const STATE_TONE_LABELS = { goal: 'Core state', ended: 'Ended state', failed: 'F
 // Text never follows either: titles stay ink. A failure keeps its red frame over any module. A state in a state
 // diagram wears its lifecycle tone instead of the module's frame and wash; the ring and the module's lines stay.
 export function nodeAppearance(node, palette, moduleColors) {
-  if (node.overviewText !== undefined || node.badges !== undefined || node.overviewTone !== undefined) return overviewAppearance(node, palette);
+  if (node.overviewText !== undefined || node.overviewTone !== undefined) return overviewAppearance(node, palette);
   const tone = moduleColors?.get(node.module);
   const stateRole = node.kind === 'state' ? moduleColors?.stateTones?.get(node.id) : undefined;
   if (stateRole) {
