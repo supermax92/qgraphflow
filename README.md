@@ -234,7 +234,7 @@ Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See 
 
 ## Keep diagrams in sync with code
 
-A diagram generated with a repository root records where each component is defined and the line behind each code-backed relationship (a call, a foreign key). Validating it with `--repo-root` fails when a recorded file is gone, a line range no longer fits, or a recorded symbol has left its lines, and the error names the lines where the symbol is now. Add this job to your CI; it needs no build, login or token:
+A diagram generated with a repository root records where each component is defined, the line behind each code-backed relationship (a call, a foreign key) and a fingerprint of every file it points into. Validating it with `--repo-root` lets lines that only moved pass and fails when the code behind the diagram changed: a recorded line was rewritten, a call was removed, new code touches a drawn component that no relationship covers, or a name the diagram uses is gone. The error shows the old and new code and names the elements and text to update. Add this job to your CI; it needs no build, login or token, and full history (`fetch-depth: 0`) lets it compare against those fingerprints:
 
 ```yaml
 name: Diagrams
@@ -244,6 +244,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -260,7 +262,7 @@ When it fails, ask the skill to refresh that diagram:
 $qgraphflow:q-flow CI says docs/qgraphflow/order-sequence is out of date. Refresh it.
 ```
 
-The skill moves anchors whose symbol it finds once, corrects only the anchors still reported, and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
+The skill realigns every anchor, lists each change in the graph's `meta.sourceDrift`, updates only the elements those items name and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
 
 ## What each of the eleven diagram types answers
 

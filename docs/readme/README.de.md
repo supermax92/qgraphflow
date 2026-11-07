@@ -234,7 +234,7 @@ node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.
 
 ## Diagramme mit dem Code synchron halten
 
-Ein mit Repository-Wurzel erzeugtes Diagramm hält fest, wo jede Komponente definiert ist, und die Zeile hinter jeder durch Code gestützten Beziehung (ein Aufruf, ein Fremdschlüssel). Die Prüfung mit `--repo-root` schlägt fehl, wenn eine erfasste Datei fehlt, ein Zeilenbereich nicht mehr in die Datei passt oder ein erfasstes Symbol seine Zeilen verlassen hat; die Meldung nennt die Zeilen, in denen das Symbol jetzt steht. Diesen Job in die CI aufnehmen; er braucht keinen Build, keine Anmeldung und kein Token:
+Ein mit Repository-Wurzel erzeugtes Diagramm hält fest, wo jede Komponente definiert ist, die Zeile hinter jeder durch Code gestützten Beziehung (ein Aufruf, ein Fremdschlüssel) und einen Fingerabdruck jeder Datei, auf die es verweist. Die Prüfung mit `--repo-root` lässt Zeilen, die nur verschoben wurden, passieren und schlägt fehl, wenn sich der Code hinter dem Diagramm geändert hat: Eine erfasste Zeile wurde umgeschrieben, ein Aufruf entfernt, neuer Code berührt eine gezeichnete Komponente ohne passende Beziehung, oder ein im Diagramm verwendeter Name ist verschwunden. Die Meldung zeigt alten und neuen Code und nennt die Elemente und Texte, die anzupassen sind. Diesen Job in die CI aufnehmen; er braucht keinen Build, keine Anmeldung und kein Token, und die vollständige Historie (`fetch-depth: 0`) erlaubt den Vergleich mit diesen Fingerabdrücken:
 
 ```yaml
 name: Diagrams
@@ -244,6 +244,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -260,7 +262,7 @@ Schlägt er fehl, den Skill bitten, dieses Diagramm zu aktualisieren:
 $qgraphflow:q-flow Laut CI ist docs/qgraphflow/order-sequence veraltet. Bitte aktualisieren.
 ```
 
-Der Skill verschiebt Anker, deren Symbol er genau einmal in der Datei findet, korrigiert nur die weiterhin gemeldeten Anker und erzeugt Seite und SVGs neu, wobei bearbeitete Positionen und Texte erhalten bleiben. Er zeichnet das Diagramm nicht neu.
+Der Skill richtet alle Anker am aktuellen Code aus, listet jede Änderung in `meta.sourceDrift` des Graphen, aktualisiert nur die dort genannten Elemente und erzeugt Seite und SVGs neu, wobei bearbeitete Positionen und Texte erhalten bleiben. Er zeichnet das Diagramm nicht neu.
 
 ## Welche Fragen die elf Diagrammarten beantworten
 

@@ -27,6 +27,7 @@
     "skills/q-flow/references/",
     "skills/q-flow/scripts/generate-viewer.mjs",
     "skills/q-flow/scripts/validate-graph.mjs",
+    "skills/q-flow/scripts/source-drift.mjs",
     "skills/q-flow/assets/viewer-dist/index.html",
     "skills/q-flow/assets/viewer/package.json",
     "skills/q-flow/assets/viewer/src/diagrams/",

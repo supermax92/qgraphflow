@@ -234,7 +234,7 @@ Abra `output/jeepay/index.html`; os onze SVG estão no mesmo diretório. Consult
 
 ## Mantenha os diagramas em sincronia com o código
 
-Um diagrama gerado com a raiz do repositório registra onde cada componente é definido e a linha por trás de cada relação sustentada pelo código (uma chamada, uma chave estrangeira). A validação com `--repo-root` falha quando um arquivo registrado sumiu, um intervalo de linhas não cabe mais no arquivo ou um símbolo registrado saiu das suas linhas, e o erro indica as linhas em que o símbolo está agora. Adicione este job ao seu CI; ele não precisa de build, login nem token:
+Um diagrama gerado com a raiz do repositório registra onde cada componente é definido, a linha por trás de cada relação sustentada pelo código (uma chamada, uma chave estrangeira) e uma impressão digital de cada arquivo para o qual aponta. A validação com `--repo-root` deixa passar as linhas que apenas mudaram de lugar e falha quando o código por trás do diagrama mudou: uma linha registrada foi reescrita, uma chamada foi removida, código novo toca um componente desenhado sem relação que o cubra, ou um nome usado pelo diagrama desapareceu. O erro mostra o código antigo e o novo e indica os elementos e textos a atualizar. Adicione este job ao seu CI; ele não precisa de build, login nem token, e o histórico completo (`fetch-depth: 0`) permite comparar com essas impressões digitais:
 
 ```yaml
 name: Diagrams
@@ -244,6 +244,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -260,7 +262,7 @@ Quando falhar, peça à habilidade para atualizar o diagrama:
 $qgraphflow:q-flow O CI diz que docs/qgraphflow/order-sequence está desatualizado. Atualize-o.
 ```
 
-A habilidade move as âncoras cujo símbolo aparece uma única vez no arquivo, corrige apenas as âncoras que ainda falham e gera de novo a página e os SVG, mantendo as posições e os textos que você editou. Ela não redesenha o diagrama.
+A habilidade realinha todas as âncoras, lista cada mudança em `meta.sourceDrift` do grafo, atualiza apenas os elementos que esses itens indicam e gera de novo a página e os SVG, mantendo as posições e os textos que você editou. Ela não redesenha o diagrama.
 
 ## O que cada um dos onze tipos de diagrama responde
 

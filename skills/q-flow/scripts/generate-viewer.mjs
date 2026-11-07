@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
-import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
+import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, stampSourceFiles, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
@@ -104,6 +104,8 @@ async function main() {
   for (let i = 0; i < views.length; i++) if (selected.size && !selected.has(viewIdOf(views[i])) && !isDeepStrictEqual(compiled[i].graph, views[i])) throw new Error(`Unselected view ${viewIdOf(views[i])} requires migration; update it explicitly before changing this collection`);
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
+  // Record what the anchors point at now, so validate can later tell moved lines from changed code.
+  if (values['repo-root'] !== undefined) stampSourceFiles(graph, values['repo-root']);
   const oversized = printViewReview(graph, { print: true }); // geometry exists only now; the input review could not see it
   const contents = { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
   for (const { name, svg } of diagramSvgFiles(graph)) contents[name] = svg;

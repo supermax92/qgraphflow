@@ -234,7 +234,7 @@ Abre `output/jeepay/index.html`; sus once SVG están en el mismo directorio. Con
 
 ## Mantener los diagramas sincronizados con el código
 
-Un diagrama generado con la raíz del repositorio registra dónde se define cada componente y la línea detrás de cada relación respaldada por código (una llamada, una clave foránea). La validación con `--repo-root` falla cuando falta un archivo registrado, un rango de líneas ya no cabe en el archivo o un símbolo registrado salió de sus líneas, y el error indica en qué líneas está ahora el símbolo. Añadir este trabajo a la CI; no necesita compilación, inicio de sesión ni token:
+Un diagrama generado con la raíz del repositorio registra dónde se define cada componente, la línea detrás de cada relación respaldada por código (una llamada, una clave foránea) y una huella de cada archivo al que apunta. La validación con `--repo-root` deja pasar las líneas que solo se desplazaron y falla cuando cambió el código detrás del diagrama: se reescribió una línea registrada, se eliminó una llamada, código nuevo toca un componente dibujado sin una relación que lo cubra, o desapareció un nombre que usa el diagrama. El error muestra el código anterior y el nuevo e indica los elementos y textos que hay que actualizar. Añadir este trabajo a la CI; no necesita compilación, inicio de sesión ni token, y el historial completo (`fetch-depth: 0`) permite compararlo con esas huellas:
 
 ```yaml
 name: Diagrams
@@ -244,6 +244,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -260,7 +262,7 @@ Si falla, pedir a la habilidad que actualice ese diagrama:
 $qgraphflow:q-flow La CI dice que docs/qgraphflow/order-sequence está desactualizado. Actualízalo.
 ```
 
-La habilidad mueve los anclajes cuyo símbolo encuentra una sola vez en el archivo, corrige solo los que siguen fallando y vuelve a generar la página y los SVG conservando las posiciones y los textos editados. No redibuja el diagrama.
+La habilidad realinea todos los anclajes, enumera cada cambio en `meta.sourceDrift` del grafo, actualiza solo lo que esas entradas señalan y vuelve a generar la página y los SVG conservando las posiciones y los textos editados. No redibuja el diagrama.
 
 ## Qué responde cada uno de los once tipos de diagramas
 
