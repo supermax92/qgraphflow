@@ -19,6 +19,8 @@ test('CI, Pages and release smoke tests use only Jeepay inputs', () => {
   assert.match(workflow, /--repo-root output\/jeepay-source/);
   assert.match(workflow, /uses: \.\/\.github\/actions\/jeepay-source/);
   assert.match(home, /href="jeepay\/zh-CN\/"/);
+  for (const locale of ['zh-CN', 'en']) assert.match(home, new RegExp(`href="jeepay/changes/${locale}/"`));
+  assert.match(workflow, /scripts\/showcase-changes\.mjs "\$locale"[\s\S]*--compare/);
   assert.doesNotMatch(home, /ecommerce|agent-desk|kafka/);
 });
 

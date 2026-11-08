@@ -14,21 +14,19 @@
 
 </div>
 
+![Jeepay 多视图交互演示：组件关系架构图、时序图与 ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.hero.gif)
+
+以 Jeepay 真实源码为例：整图缩小后仍能读出组件名，点开卡片就是对应的源码行，同一个文件里切换组件关系、时序与 ER 图。[观看 MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.hero.mp4)
+
 *支持九类图：【组件关系架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
 QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
 **差异在哪：** 一个技能覆盖九类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
 
-![Jeepay 多视图交互演示：组件关系架构图、时序图与 ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.zh-CN.hero.gif)
+![代码改动标到图上：新增组件带绿框，改名的调用带蓝框，右侧列出本次更新](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.changes.gif)
 
-以 Jeepay 真实源码为例，在组件关系架构图、时序图与 ER 图之间切换，探索组件与调用关系。[查看原尺寸 GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.zh-CN.hero.gif)
-
-**复杂时序图展示**
-
-![复杂时序图逐步绘制：参与者、生命线、消息、激活条与嵌套组合片段](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.zh-CN.sequence-drawing.gif)
-
-虚构电商场景包含 9 个参与者、29 条消息和 6 个组合片段，覆盖库存重试、嵌套分支、并行处理、失败补偿与异步回调。动画逐步呈现已生成的图形，展示复杂时序图的结构与细节。[查看原尺寸 GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.zh-CN.sequence-drawing.gif)
+代码变了，图上直接标出变了什么：`generate --compare` 对比上一版，把新增、改动和删除的元素标在图上，并列在右侧"本次更新"里，每一项都能点开看源码出处。演示里的上一版是虚构的，用来展示三种标记。[在线体验](https://supermax92.github.io/qgraphflow/jeepay/changes/zh-CN/) · [观看 MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.changes.mp4)
 
 ```bash
 npx skills add supermax92/qgraphflow

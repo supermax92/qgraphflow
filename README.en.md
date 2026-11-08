@@ -14,21 +14,19 @@ Follow the path. Inspect the evidence. Share one offline file.
 
 </div>
 
+![Jeepay multi-view interaction demo: component relationship architecture, sequence and ER diagrams](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.en.hero.gif)
+
+Real Jeepay source: component names stay readable with the whole diagram on screen, each card opens on its source line, and one file switches between component relationship architecture, sequence and ER diagrams. [Watch the MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.en.hero.mp4)
+
 *Nine diagram types: component relationship architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
 
 QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
 
 **What sets it apart:** nine diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
 
-![Jeepay multi-view interaction demo: component relationship architecture, sequence and ER diagrams](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+![Code changes marked on the diagram: the added component framed in green, the renamed call in blue, this update listed on the right](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.en.changes.gif)
 
-Using real Jeepay source code, switch between component relationship architecture, sequence and ER diagrams to explore components and call relationships. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
-
-**Complex sequence diagram showcase**
-
-![Complex sequence diagram drawn step by step: participants, lifelines, messages, activation bars and nested combined fragments](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
-
-A fictional e-commerce scenario contains 9 participants, 29 messages and 6 combined fragments, covering stock retries, nested branches, parallel processing, failure compensation and asynchronous callbacks. The animation progressively reveals the generated diagram to show its structure and details. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
+When the code changes, the diagram shows what changed: `generate --compare` checks against the previous version, marks added, changed and removed elements on the diagram and lists them under "This update", each with its source. The earlier version in this demo is fictional, made to show all three marks. [Try it online](https://supermax92.github.io/qgraphflow/jeepay/changes/en/) · [Watch the MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.en.changes.mp4)
 
 ```bash
 npx skills add supermax92/qgraphflow

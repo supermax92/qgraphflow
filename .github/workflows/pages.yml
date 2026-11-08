@@ -11,6 +11,7 @@ on:
       - 'skills/q-flow/scripts/**'
       - 'skills/q-flow/assets/**'
       - 'docs/pages/**'
+      - 'scripts/showcase-changes.mjs'
       - '.github/workflows/pages.yml'
   pull_request:
     paths:
@@ -19,6 +20,7 @@ on:
       - 'skills/q-flow/scripts/**'
       - 'skills/q-flow/assets/**'
       - 'docs/pages/**'
+      - 'scripts/showcase-changes.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -42,6 +44,13 @@ jobs:
           node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json site/jeepay/zh-CN --repo-root output/jeepay-source
           node skills/q-flow/scripts/validate-graph.mjs site/jeepay/zh-CN/graph.json --repo-root output/jeepay-source
           cp docs/pages/index.html site/index.html
+      - name: Generate the update comparison shown in the README clip
+        run: |
+          for locale in zh-CN en; do
+            node scripts/showcase-changes.mjs "$locale" "output/changes-$locale"
+            node skills/q-flow/scripts/generate-viewer.mjs "output/changes-$locale/current.graph.json" "site/jeepay/changes/$locale" --compare "output/changes-$locale/earlier.graph.json" --repo-root output/jeepay-source
+            node skills/q-flow/scripts/validate-graph.mjs "site/jeepay/changes/$locale/graph.json" --repo-root output/jeepay-source
+          done
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
