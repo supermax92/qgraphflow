@@ -13,7 +13,7 @@ import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, OVERVIEW_AREA, layeredDire
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
 import { layoutNodeSize, templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
-import { hasSharedDependencies, presentationGraph, restorePresentation } from '../assets/viewer/src/presentation-graph.js';
+import { foldedEdges, hasSharedDependencies, presentationGraph, restorePresentation } from '../assets/viewer/src/presentation-graph.js';
 
 import { LAYOUT_VERSION } from '../assets/viewer/src/layout-policy.js';
 export { LAYOUT_VERSION };
@@ -407,6 +407,36 @@ function candidateScore(graph, audit, index) {
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 
+// Preserve keeps every placed node. A refreshed graph that no longer passes (a new edge without a route, a label that grew
+// into its neighbour, a sequence message without a row) is repaired locally before the quality error stands: the named
+// edges are rerouted with every node fixed, then their endpoints may move a little; a sequence keeps its columns and
+// recomputes its rows. A graph that passes is returned untouched.
+function preserveLayout(graph) {
+  const sequence = getDiagram(diagramTypeOf(graph)).sequence;
+  const folded = new Set(foldedEdges(graph).map(edge => edge.id));
+  const placed = graph.edges.every(edge => folded.has(edge.id) || (sequence ? Number.isFinite(edge.route?.messageY) : edge.route));
+  let failure;
+  if (placed) { try { requireDiagramQuality(graph); return { graph }; } catch (error) { failure = error; } }
+  const check = output => { requireDiagramQuality(output); return output; };
+  if (sequence) {
+    try { return { graph: check(compileSequence(graph, Number(/^sequence-(\d+)$/.exec(graph.layout?.strategy ?? '')?.[1] ?? 0), { keepColumns: true })), repair: { rows: true, rerouted: [], movedNodeIds: [] } }; }
+    catch { /* the original diagnostics below */ }
+  } else if (!isArchitectureOverview(graph)) {
+    const shown = hasSharedDependencies(graph) ? presentationGraph(graph) : graph;
+    const named = new Set((failure?.diagnostics ?? []).filter(item => item.severity === 'error').flatMap(item => item.elementIds));
+    const edgeIds = shown.edges.filter(edge => !edge.route || named.has(edge.id)).map(edge => edge.id);
+    const ends = [...new Set(shown.edges.filter(edge => edgeIds.includes(edge.id)).flatMap(edge => [edge.source, edge.target]))];
+    for (const options of [{ move: false, evaluations: 4, passes: 2 }, ...ends.map(focusId => ({ move: true, focusId, evaluations: 12, passes: 1 }))]) {
+      try {
+        const result = refineDiagramLayout(shown, { ...options, edgeIds });
+        return { graph: check(shown === graph ? result.graph : restorePresentation(graph, result.graph)), repair: { rerouted: edgeIds, movedNodeIds: result.movedNodeIds } };
+      } catch { /* next: let an endpoint move */ }
+    }
+  }
+  requireDiagramQuality(graph); // repair found nothing better: the original diagnostics stand
+  return { graph };
+}
+
 export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = LAYOUT_TIMEOUT_MS } = {}) {
   if (!['auto', 'preserve'].includes(layout)) throw new Error('layout must be auto or preserve');
   const errors = validateGraph(input, { inputOnly: true });
@@ -424,8 +454,8 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   const ownershipErrors = validateGraph(graph, { inputOnly: true });
   if (ownershipErrors.length) throw qualityFailure(graph, 'semantic', ownershipErrors.join('\n'));
   if (layout === 'preserve') {
-    requireDiagramQuality(graph);
-    return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
+    const { graph: output, repair } = preserveLayout(graph);
+    return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, migration, ...(repair ? { repair } : {}), semantics: semanticReport(output) } };
   }
   if (isArchitectureOverview(graph)) {
     let output;

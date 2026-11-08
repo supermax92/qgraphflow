@@ -122,6 +122,9 @@ async function main() {
     semantic: { status: status('semantic') }, geometry: { status: status('geometry') }, rendering: { status: status('rendering') },
     ...(warnings.length + oversized.length ? { warnings: warnings.length + oversized.length } : {})
   };
+  // Preserve repairs are reported so the author can see which routes or rows changed without rendering the page.
+  const repaired = compiled.flatMap((item, i) => item.report?.repair ? [{ view: viewIdOf(views[i]) ?? i, ...(item.report.repair.rows ? { rows: true } : { rerouted: item.report.repair.rerouted, moved: item.report.repair.movedNodeIds }) }] : []);
+  if (repaired.length) summary.repaired = repaired;
   const detail = values.verbose ? { layoutComposition: graphs.map(layoutComposition), layout: compiled.map(item => item.report), quality } : {};
   console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')
     ? { generated: true, diagramType: diagramTypeOf(graphs[0]), outputDir, files, ...summary, ...detail, sourceEvidence }

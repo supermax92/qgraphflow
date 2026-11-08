@@ -240,3 +240,43 @@ test('folded shared dependencies keep every edge in the model and draw as tags o
   assert.match(svg, />v2</, 'an authored badge draws on a relations card');
   assert.doesNotMatch(svg, /data-diagram-edge-id="e2"/, 'the folded edge draws no line');
 });
+
+test('preserve routes a new or crowded edge itself, never moves a placed node, and returns a passing graph untouched', async () => {
+  const { createEdgeRoutes } = await import('../assets/viewer/src/edge-routing.js');
+  const state = { meta: meta('state'), nodes: [{ id: 'i', label: 'start', kind: 'initial' }, ...['a', 'b', 'c'].map(id => ({ id, label: `state ${id}`, kind: 'state', module: 'order' })), { id: 'f', label: 'done', kind: 'final' }],
+    edges: [['i', 'a'], ['a', 'b'], ['b', 'c'], ['c', 'f']].map(([source, target], i) => ({ id: `s${i}`, source, target, kind: 'transition', label: 'next', evidence: 'inference' })) };
+  const { graph: laid } = await compileGraphLayout(state);
+  const same = await compileGraphLayout(laid, { layout: 'preserve' });
+  assert.deepEqual(same.graph, laid); assert.equal(same.report.repair, undefined);
+  const grown = structuredClone(laid);
+  grown.edges.push({ id: 'cancel', source: 'a', target: 'c', kind: 'transition', label: 'cancel after six polls', evidence: 'inference' });
+  const added = await compileGraphLayout(grown, { layout: 'preserve' });
+  assert.deepEqual(added.graph.nodes.map(node => node.position), laid.nodes.map(node => node.position));
+  assert.ok(added.graph.edges.find(edge => edge.id === 'cancel').route);
+  assert.deepEqual(added.report.repair.movedNodeIds, []);
+  const crowded = structuredClone(laid);
+  crowded.edges[2].route = { ...crowded.edges[2].route, labelAt: createEdgeRoutes(laid).get('s1').labelPoint };
+  assert.throws(() => requireDiagramQuality(crowded));
+  const moved = await compileGraphLayout(crowded, { layout: 'preserve' });
+  assert.deepEqual(moved.graph.nodes.map(node => node.position), laid.nodes.map(node => node.position));
+  assert.ok(moved.report.repair.rerouted.includes('s2'));
+});
+
+test('preserve gives a new sequence message its row without moving a column; auto keeps the column order a reader knows', async () => {
+  const { graph: laid } = await compileGraphLayout(longSequence(4, 6));
+  const grown = structuredClone(laid);
+  for (const edge of grown.edges) if (edge.order >= 4) edge.order++;
+  grown.edges.push({ id: 'late', source: 'p0', target: 'p2', kind: 'async', label: 'late event', order: 4, evidence: 'source' });
+  const { graph: kept, report } = await compileGraphLayout(grown, { layout: 'preserve' });
+  assert.equal(report.repair.rows, true);
+  assert.deepEqual(kept.nodes.map(node => node.position.x), laid.nodes.map(node => node.position.x));
+  const rows = [...kept.edges].sort((a, b) => a.order - b.order).map(edge => edge.route.messageY);
+  assert.ok(rows.every((y, i) => !i || y > rows[i - 1]), 'rows follow message order');
+  const talk = { meta: meta('sequence'), nodes: ['a', 'b', 'c'].map(id => ({ id, label: `Service ${id}`, kind: 'service' })),
+    edges: [['a', 'c'], ['c', 'b'], ['a', 'b']].map(([source, target], i) => ({ id: `m${i}`, source, target, kind: 'async', label: `event ${i}`, order: i + 1, evidence: 'source' })) };
+  const columns = graph => [...graph.nodes].sort((x, y) => x.position.x - y.position.x).map(node => node.id);
+  const { graph: first } = await compileGraphLayout(talk);
+  assert.deepEqual(columns(first), ['a', 'c', 'b']);
+  const { graph: again } = await compileGraphLayout({ ...first, edges: first.edges.filter(edge => edge.id !== 'm0') });
+  assert.deepEqual(columns(again), ['a', 'c', 'b'], 'removing a participant\'s first message keeps its column');
+});
