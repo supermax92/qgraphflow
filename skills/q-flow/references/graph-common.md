@@ -46,8 +46,8 @@ Before layout, map every explicit requirement to visible elements and evidence. 
 ## Composition
 
 - First view answers the question with real names and labelled relationships.
-- `meta.notes`: at most 6 strings of 120 characters, for risks, doc/code contradictions, unverified claims or exclusions the reader must see first. Name identifiers; avoid repeating drawn edges. Shown in "Key points" and below SVG.
-- Templates measure full text and use compact structure, outline ports, orthogonal routes and independent labels. Preserve order, alternatives, hierarchy, cardinalities and ownership. Bounded search cannot prove crossings unavoidable.
+- `meta.notes`: at most 6 strings of 120 characters, for risks, doc/code contradictions, unverified claims or exclusions the reader must see first. Name identifiers; avoid repeating drawn edges. Notes are claims: check each all/only/same/none against every case in code, each "see …" against the graph; state current code, not the change.
+- Preserve order, alternatives, hierarchy, cardinalities and ownership. Bounded search cannot prove crossings unavoidable.
 
 ## Delivery
 
