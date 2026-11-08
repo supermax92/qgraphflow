@@ -8,7 +8,7 @@ export function groupHeadingSvg(group, x = 0, y = 0) {
 
 export function groupFrameSvg(group, appearance, x = 0, y = 0) {
   const radius = ['loop', 'par'].includes(group.kind) ? 5 : 14;
-  // A security boundary is a trust line, drawn dashed like Archify's security groups and UML trust boundaries.
+  // A security boundary is a trust line, drawn dashed like UML trust boundaries.
   const dash = group.kind === 'security' ? ' stroke-dasharray="6 4"' : '';
   return `<rect class="boundary-frame" x="${x}" y="${y}" width="${group.size.width}" height="${group.size.height}" rx="${radius}" fill="${appearance.fill}" stroke="${appearance.stroke}" stroke-width="1"${dash}/>`;
 }

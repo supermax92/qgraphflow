@@ -1,8 +1,8 @@
 # 安装指南
 
-[English](clients.md) · [中文](clients.zh-CN.md) · [Русский](clients.ru.md) · [Português](clients.pt.md) · [日本語](clients.ja.md) · [Deutsch](clients.de.md) · [Español](clients.es.md)
+[English](clients.md) · [中文](clients.zh-CN.md)
 
-[返回 README](readme/README.zh-CN.md)
+[返回 README](../README.md)
 
 Qoder Desktop 可从插件商城安装，跳过第 1 步（见下方对应小节）。其他客户端安装从 npmjs.com 下载的插件包。
 

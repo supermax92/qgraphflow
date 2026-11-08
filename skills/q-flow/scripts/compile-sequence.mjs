@@ -6,21 +6,26 @@ import { sequenceMessageLabel, sequenceExecutions, spreadParticipants } from '..
 import { layoutText } from '../assets/viewer/src/text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from '../assets/viewer/src/layout-spacing.js';
 
-export function compileSequence(input, candidate) {
+export function compileSequence(input, candidate, { keepColumns = false } = {}) {
   const graph = structuredClone(input), groups = graph.groups ?? [], edges = new Map(graph.edges.map(edge => [edge.id, edge]));
-  // Without declared order, participants stand in the order the messages first reach them, initiator leftmost.
-  const firstSeen = new Map();
+  // Without declared order, participants stand in the order the messages first reach them, initiator leftmost. A laid-out
+  // view keeps the order its reader already knows, so removing a participant's first message never reshuffles columns.
+  const firstSeen = new Map(), placed = graph.nodes.every(node => node.position);
   for (const edge of [...graph.edges].sort((a, b) => a.order - b.order)) for (const id of [edge.source, edge.target]) if (!firstSeen.has(id)) firstSeen.set(id, firstSeen.size);
-  const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (firstSeen.get(a.id) ?? Infinity) - (firstSeen.get(b.id) ?? Infinity) || (a.id < b.id ? -1 : 1)).map(node => node.id);
+  const rank = node => placed ? node.position.x : firstSeen.get(node.id) ?? Infinity;
+  const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || rank(a) - rank(b) || (a.id < b.id ? -1 : 1)).map(node => node.id);
   const nodes = ordered.map(id => graph.nodes.find(node => node.id === id));
-  const spacing = 32 + candidate * 8, gap = 12 + candidate * 4;
+  // Participant spacing starts at the quality floor, so the tightest message gap is not discarded with a too-narrow row.
+  const spacing = LAYOUT_LIMITS.nodeGap + candidate * 8, gap = 12 + candidate * 4;
   const guardText = (group, operand) => group.kind === 'par' ? operand.label : `${group.kind === 'loop' ? `${group.loop.min}..${group.loop.max} ` : ''}[${operand.guard}]`;
   const guardLayout = (group, operand) => layoutText(guardText(group, operand), LAYOUT_TARGETS.labelWidth, 14, 20);
   const bodyLayout = operand => layoutText(operand.body, LAYOUT_TARGETS.labelWidth, 16, 24);
+  // keepColumns (preserve repair): placed participants stay where they are unless a wider head needs room; rows are recomputed.
   let x = 32;
   for (const node of nodes) {
-    node.size = minimumNodeSize(node, 'sequence', graph.meta.locale); node.position = { x, y: 48 };
-    x += node.size.width + spacing;
+    const kept = keepColumns && placed ? node.position.x : x;
+    node.size = minimumNodeSize(node, 'sequence', graph.meta.locale); node.position = { x: Math.max(x, kept), y: 48 };
+    x = node.position.x + node.size.width + spacing;
   }
   spreadParticipants(graph, nodes);
   // Provisional order-preserving times let the shared router measure actual

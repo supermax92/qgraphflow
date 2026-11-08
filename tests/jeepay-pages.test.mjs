@@ -19,11 +19,13 @@ test('CI, Pages and release smoke tests use only Jeepay inputs', () => {
   assert.match(workflow, /--repo-root output\/jeepay-source/);
   assert.match(workflow, /uses: \.\/\.github\/actions\/jeepay-source/);
   assert.match(home, /href="jeepay\/zh-CN\/"/);
+  for (const locale of ['zh-CN', 'en']) assert.match(home, new RegExp(`href="jeepay/changes/${locale}/"`));
+  assert.match(workflow, /scripts\/showcase-changes\.mjs "\$locale"[\s\S]*--compare/);
   assert.doesNotMatch(home, /ecommerce|agent-desk|kafka/);
 });
 
 test('all public README local links exist after replacing the old corpora', () => {
-  for (const file of ['README.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/readme/README.${locale}.md`)]) {
+  for (const file of ['README.md', 'README.en.md']) {
     const markdown = fs.readFileSync(path.join(root, file), 'utf8');
     for (const [, target] of markdown.matchAll(/!?\[[^\]]*\]\(([^\s)]+)\)/g)) {
       if (/^(https?:|#)/.test(target)) continue;

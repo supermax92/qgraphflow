@@ -1,4 +1,4 @@
-import { isArchitectureOverview, viewIdOf, viewTypeOf, viewTypeLabel } from './view-identity.js';
+import { viewIdOf, viewTypeOf, viewTypeLabel } from './view-identity.js';
 import { translate } from './i18n.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
@@ -8,6 +8,9 @@ import { diagramLabels, diagramTypeOf } from './diagrams/registry.js';
 import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual-style.js';
+import { foldedEdges } from './presentation-graph.js';
+import { sourceChanges } from './source-changes.js';
+import { comparisonOf, elementName, updateCount } from './graph-diff.js';
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
@@ -43,7 +46,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     diagramType, palette, reduceMotion,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
-    locked, setLocked, canvasRef, currentGraph, acceptedGraph, nodes, onNodesChange, onNodeDragStop, onOverviewKeyDown, layoutPending, cancelLayout, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
+    locked, setLocked, canvasRef, currentGraph, acceptedGraph, nodes, onNodesChange, onNodeDragStop, layoutPending, cancelLayout, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
     visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, layoutWarnings, focusProblem,
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
@@ -51,15 +54,25 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const [navShown, navState] = usePresence(toolbarOpen, reduceMotion, panelRef);
   const [drawerShown, drawerState] = usePresence(drawerOpen, reduceMotion, inspectorRef);
   const drawerFrozen = useRef(null);
-  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, isArchitectureOverview(graph), cancelLayout);
+  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, cancelLayout);
   const { open, toggle, close } = usePopover();
   // meta.notes: a card over the top of the right side, open on wide screens until the reader hides it. It is a panel in
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
   // and it waits for that drawer (even while it slides out) to be gone before it appears. Fullscreen has no panels, so
   // there it simply floats over the canvas until it is hidden.
-  const notes = graph.meta.notes ?? [];
+  // Unresolved source changes (meta.sourceDrift) and what generate --compare found changed share the card: they follow
+  // the key points, or the first of them stands alone.
+  const notes = graph.meta.notes ?? [], changes = sourceChanges(graph), update = comparisonOf(graph), updates = updateCount(update);
+  const side = notes.length ? { title: t('Key points'), count: notes.length, hide: t('Hide key points'), show: t('Show key points') }
+    : changes.length ? { title: t('Source changes'), count: changes.length, hide: t('Hide source changes'), show: t('Show source changes') }
+    : { title: t('This update'), count: updates, hide: t('Hide this update'), show: t('Show this update') };
+  const elementButton = id => {
+    const node = currentGraph.nodes.find(entry => entry.id === id), edge = node ? null : currentGraph.edges.find(entry => entry.id === id);
+    return node || edge ? <button key={id} type="button" className="folded-edge" onClick={() => node ? selectNode(node) : selectEdge(edge, true)}>{elementName(currentGraph, id)}</button>
+      : <span key={id} className="update-group">{currentGraph.groups?.find(group => group.id === id)?.label ?? id}</span>;
+  };
   const [notesOpen, setNotesOpen] = useState(true);
-  const notesShown = notes.length > 0 && notesOpen && !drawerShown;
+  const notesShown = side.count > 0 && notesOpen && !drawerShown;
   const rightReserved = drawerOpen || (notesShown && !isFullscreen);
   // The hide and show buttons replace each other, so a reader's toggle hands focus to whichever one appears.
   const notesToggled = useRef(false), notesFocusRef = useRef(null);
@@ -103,11 +116,11 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const drawerBody = <>
     <div className="side-head"><p className="panel-title">{t('Details')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('Close details')} title={t('Close details')}><Icon name="close" /></button></div>
     <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
-        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(inspectedNode.section ? 'Section' : kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
+        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
         <h2>{inspectedNode.label}</h2>
         <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
-        {inspectedNode.overviewText?.length > 0 && <><h3>{t('Overview text')}</h3><ul>{inspectedNode.overviewText.map((line, i) => <li key={i}>{line}</li>)}</ul></>}
         {inspectedNode.badges?.length > 0 && <><h3>{t('Badges')}</h3><ul>{inspectedNode.badges.map((badge, i) => <li key={i}>{badge.label} · {t(evidenceLabels[badge.evidence])}{badge.source && <code className="source-path">{anchorText(badge.source)}</code>}</li>)}</ul></>}
+        {(folded => folded.length > 0 && <><h3>{t('Shared dependencies')}</h3><ul>{folded.map(edge => <li key={edge.id}><button type="button" className="folded-edge" onClick={() => selectEdge(edge)}>{edge.label ?? edge.kind} → {currentGraph.nodes.find(node => node.id === edge.target)?.label}</button>{edge.site && <code className="source-path">{anchorText(edge.site)}</code>}</li>)}</ul></>)(foldedEdges(currentGraph).filter(edge => edge.source === inspectedNode.id))}
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
         {inspectedNode.attributes?.length > 0 && <><h3>{t('Attributes')}</h3><ul>{inspectedNode.attributes.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
         {inspectedNode.methods?.length > 0 && <><h3>{t('Methods')}</h3><ul>{inspectedNode.methods.map(item => <li key={item}><code>{item}</code></li>)}</ul></>}
@@ -192,8 +205,9 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
 
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
-        <div ref={canvasRef} aria-busy={layoutPending} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={event => { onOverviewKeyDown(event); if (!event.defaultPrevented) handleCanvasKeyDown(event); }} aria-label={t('Interactive {type}', { type: t(viewTypeLabel(graph)) })}>
+        <div ref={canvasRef} aria-busy={layoutPending} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('Interactive {type}', { type: t(viewTypeLabel(graph)) })}>
           <ReactFlow
+            nodeExtent={[[0, 0], [Infinity, Infinity]]}
             nodes={visibleNodes}
             edges={visibleEdges}
             nodeTypes={nodeTypes}
@@ -234,12 +248,23 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             </div>}
           </div>
 
-          {notes.length > 0 && !drawerShown && (notesShown
-            ? <section className="float notes-anchor notes-card" aria-label={t('Key points')}>
-              <div className="side-head"><p className="panel-title">{t('Key points')} · {notes.length}</p><button className="side-close" ref={notesFocusRef} onClick={() => { notesToggled.current = true; setNotesOpen(false); }} aria-label={t('Hide key points')} title={t('Hide key points')}><Icon name="close" /></button></div>
-              <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>
+          {side.count > 0 && !drawerShown && (notesShown
+            ? <section className="float notes-anchor notes-card" aria-label={side.title}>
+              <div className="side-head"><p className="panel-title">{side.title} · {side.count}</p><button className="side-close" ref={notesFocusRef} onClick={() => { notesToggled.current = true; setNotesOpen(false); }} aria-label={side.hide} title={side.hide}><Icon name="close" /></button></div>
+              {notes.length > 0 && <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
+              {changes.length > 0 && <>{notes.length > 0 && <p className="panel-title source-changes-title">{t('Source changes')} · {changes.length}</p>}<ul className="source-changes">{changes.map((item, index) => <li key={index}>
+                <code>{String(item?.file ?? '').split('/').pop()}:{item?.line}</code> {item?.change}
+                {(item?.elements ?? []).map(elementButton)}
+                {(item?.removed?.length > 0 || item?.added?.length > 0) && <pre>{[...(item.removed ?? []).slice(0, 3).map(line => `- ${line}`), ...(item.added ?? []).slice(0, 3).map(line => `+ ${line}`)].join('\n')}</pre>}
+              </li>)}</ul></>}
+              {updates > 0 && <>{(notes.length > 0 || changes.length > 0) && <p className="panel-title source-changes-title">{t('This update')} · {updates}</p>}<ul className="graph-update">
+                {update.added.length > 0 && <li className="update-added">{t('Added')} · {update.added.length}{update.added.map(elementButton)}</li>}
+                {update.changed.length > 0 && <li className="update-changed">{t('Changed')} · {update.changed.length}{update.changed.map(elementButton)}</li>}
+                {update.removed.length > 0 && <li className="update-removed">{t('Removed')} · {update.removed.length}{update.removed.map(item => <s key={item.id}>{item.label}</s>)}</li>}
+                {update.meta && <li>{t('View notes updated')}</li>}
+              </ul></>}
             </section>
-            : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={t('Show key points')} title={t('Show key points')}><Icon name="notes" /><span>{t('Key points')} · {notes.length}</span></button>)}
+            : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={side.show} title={side.show}><Icon name="notes" /><span>{side.title} · {side.count}</span></button>)}
 
           {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} editor={editor} graph={currentGraph} isFullscreen={isFullscreen} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;

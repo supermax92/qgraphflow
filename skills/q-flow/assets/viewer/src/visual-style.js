@@ -1,5 +1,4 @@
 import { IDENTITY, IDENTITY_SCALES, RADIX } from './radix-colors.js';
-import { overviewAppearance, overviewPalette } from './architecture-overview-theme.js';
 
 // Mix a color over a background: identity washes and headers stay tied to their chip color.
 export function mix(color, background, amount) {
@@ -109,7 +108,6 @@ const STATE_TONE_LABELS = { goal: 'Core state', ended: 'Ended state', failed: 'F
 // Text never follows either: titles stay ink. A failure keeps its red frame over any module. A state in a state
 // diagram wears its lifecycle tone instead of the module's frame and wash; the ring and the module's lines stay.
 export function nodeAppearance(node, palette, moduleColors) {
-  if (node.overviewText !== undefined || node.badges !== undefined || node.overviewTone !== undefined) return overviewAppearance(node, palette);
   const tone = moduleColors?.get(node.module);
   const stateRole = node.kind === 'state' ? moduleColors?.stateTones?.get(node.id) : undefined;
   if (stateRole) {
@@ -131,7 +129,6 @@ export function nodeAppearance(node, palette, moduleColors) {
 export const sequenceGroupColor = (pair, palette) => pair ? palette.sequenceTones[pair.index % palette.sequenceTones.length] : undefined;
 
 export function edgeColor(edge, target, palette, moduleColors, source, pair) {
-  if (source?.overviewTone !== undefined) return overviewPalette(palette).edge;
   if (pair) return sequenceGroupColor(pair, palette);
   if (edge.kind === 'failure') return palette.warn;
   if (edge.kind === 'success') return palette.accent;

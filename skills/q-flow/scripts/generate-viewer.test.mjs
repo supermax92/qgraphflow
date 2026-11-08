@@ -18,7 +18,7 @@ import { saveGraphJson } from '../assets/viewer/src/features/download.js';
 import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
 import { DIAGRAM_TYPES, validateGraph, validateGraphInput, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { getDiagram, edgeMarkers, isDashed } from '../assets/viewer/src/diagrams/registry.js';
-import { appleEase, readingRect, readingViewport, locateViewport, readableViewport, readingStart, LEGEND } from '../assets/viewer/src/reading-area.js';
+import { appleEase, readingRect, readingViewport, locateViewport, readableViewport, readingStart, overviewFloor, LEGEND } from '../assets/viewer/src/reading-area.js';
 import { sequenceFragment, renderFragment } from '../assets/viewer/src/sequence-fragments.js';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
@@ -225,6 +225,7 @@ test('opens a graph too large to fit at the readable floor on its reading start'
   const area = { left: 24, top: 76, right: 1416, bottom: 764, width: 1392, height: 688 }, top = area.top + LEGEND;
   assert.equal(readableViewport({ x: 0, y: 0, width: 1500, height: 700 }, undefined, area), null, 'a graph that reads at the floor keeps fit-all');
   assert.equal(readableViewport({ x: 0, y: 0, width: 2600, height: 1300 }, undefined, area), null, 'a whole view that still reads at the overview floor opens whole');
+  assert.equal(readableViewport({ x: 0, y: 0, width: 2600, height: 1300 }, undefined, area, undefined, overviewFloor({ meta: { diagramType: 'sequence' } })).zoom, READABLE_ZOOM, 'a sequence opens whole only at the readable floor');
   assert.deepEqual(readableViewport({ x: 10, y: 20, width: 6000, height: 6840 }, undefined, area),
     { zoom: READABLE_ZOOM, x: area.left - 10 * READABLE_ZOOM, y: top - 20 * READABLE_ZOOM }, 'without a start the top-left corner opens below the legend button');
   const wide = readableViewport({ x: 0, y: 0, width: 2000, height: 1800 }, box('init', 'Start', 'initial', 1800, 0, 100, 80), area);

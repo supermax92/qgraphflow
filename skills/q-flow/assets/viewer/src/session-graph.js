@@ -3,11 +3,22 @@ import { cardText, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { layoutLimits } from './layout-spacing.js';
 import { requireDiagramQuality } from './layout-quality.js';
 import { groupHeadingLayout } from './text-layout.js';
+import { presentationGraph } from './presentation-graph.js';
 
 // The generator embeds the graph as escaped JSON inside this script element; saving from the page rewrites the same
 // element, so the saved page reopens with its edits and the generator and the page never disagree about the encoding.
 const DATA_ELEMENT = /(<script\b[^>]*\bid="graph-data"[^>]*>)([\s\S]*?)(<\/script>)/;
 export const safeJson = graph => JSON.stringify(graph).replaceAll('&', '\\u0026').replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
+
+// generate-viewer --compare: the structural comparison sits in its own element after the graph, so a page saved from the
+// Viewer (which rewrites only graph-data) keeps it and graph.json never carries it.
+const COMPARE_ELEMENT = /<script\b[^>]*\bid="graph-compare"[^>]*>[\s\S]*?<\/script>/;
+export function pageWithComparison(html, comparison) {
+  const element = `<script id="graph-compare" type="application/json">${safeJson(comparison)}</script>`;
+  if (COMPARE_ELEMENT.test(html)) return html.replace(COMPARE_ELEMENT, () => element);
+  if (!DATA_ELEMENT.test(html)) throw new Error('page has no graph-data element');
+  return html.replace(DATA_ELEMENT, match => `${match}${element}`);
+}
 
 export function pageWithGraph(html, graph) {
   if (!DATA_ELEMENT.test(html)) throw new Error('page has no graph-data element');
@@ -29,7 +40,7 @@ export function currentGraphFromFlow(graph, nodes, edges) {
       const current = nodeState.get(node.id);
       if (!current) return node;
       const text = { label: current.data.label };
-      for (const key of ['overviewText', 'badges']) if (Object.hasOwn(current.data, key)) text[key] = current.data[key];
+      if (Object.hasOwn(current.data, 'badges')) text.badges = current.data.badges;
       if (Object.hasOwn(current.data, 'subtitle')) text.subtitle = current.data.subtitle;
       return { ...node, ...text, position: current.position, size: current.data.size };
     }),
@@ -65,7 +76,9 @@ export function placed(graph, boxes) {
 // (compactCards of the graph before the edit). Returns id -> { position, size } for every box that changed.
 export function fitCard(graph, id, classic) {
   const type = diagramTypeOf(graph), diagram = getDiagram(type), node = graph.nodes.find(item => item.id === id);
-  const grow = diagram.cardLayout ? cardText(node, type, graph.meta.locale, classic).minHeight - node.size.height : 0;
+  // Measure the card as drawn, with its folded shared-dependency tags.
+  const drawn = presentationGraph(graph).nodes.find(item => item.id === id);
+  const grow = diagram.cardLayout ? cardText(drawn, type, graph.meta.locale, classic).minHeight - node.size.height : 0;
   if (grow <= 0) return new Map();
   const { groupInset, groupHeadingGap } = layoutLimits(diagram), groups = new Map((graph.groups ?? []).map(group => [group.id, group]));
   // `above` is the share of the extra height that goes over the card's top edge; each boundary then takes in its member's box.

@@ -21,7 +21,7 @@ function sequenceNode(node, x, y, fill, stroke, palette, locale) {
   const label = (actorNode ? '' : text(cx, y + 20, translate(locale, kindLabels[node.kind] ?? node.kind), 'stereotype', ' text-anchor="middle"')) + titleLines.map((line, i) => text(cx, titleY + i * 26, line, 'participant-title', ' text-anchor="middle"')).join('');
   const subtitle = node.subtitle ? layoutText(node.subtitle, node.size.width - 28, 16, 22).lines.map((line, i) => text(cx, titleY + (titleLines.length - 1) * 26 + (actorNode ? 28 : 22) + i * 22, line, 'body', ' text-anchor="middle"')).join('') : '';
   const executions = (node.executionRects ?? []).map(item => `<rect class="sequence-execution" data-execution-id="${escapeXml(item.id)}" x="${x + item.x}" y="${y + item.y}" width="${item.width}" height="${item.height}" fill="${mix(item.color, palette.surface, .14)}" stroke="${item.color}" stroke-width="1.5"/>`).join('');
-  return `<g><title>${escapeXml([node.label, node.subtitle].filter(Boolean).join(" · "))}</title><g class="sequence-head"><g class="${actorNode ? 'actor-figure' : 'participant-head'}">${head}</g>${label}${subtitle}</g><path class="lifeline" d="M ${cx} ${y + header}V ${y + node.size.height}" stroke="${palette.edge}" stroke-width="1" stroke-dasharray="4 6"/>${executions}</g>`;
+  return `<g><g class="sequence-head"><g class="${actorNode ? 'actor-figure' : 'participant-head'}">${head}</g>${label}${subtitle}</g><path class="lifeline" d="M ${cx} ${y + header}V ${y + node.size.height}" stroke="${palette.edge}" stroke-width="1" stroke-dasharray="4 6"/>${executions}</g>`;
 }
 
 export default {

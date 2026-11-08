@@ -27,7 +27,7 @@ Use new output directories. Packaging refuses to overwrite existing outputs. `np
 ## Publish only after confirmation
 
 1. Confirm the GitHub repository URL, commit author name/email, commit message, and the changes to include. `main` accepts changes only through a pull request (ruleset `main-pr-required-no-bypass`); commit on a branch, open the pull request and merge it once CI is green.
-2. Keep the media Releases `showcase-v1` (historical) and `showcase-v2` (current README recordings) separate from software `v0.0.7`. Their attachments stay on GitHub until their removal is confirmed separately; do not move old tags or mark a media-only Release as the latest software release.
+2. Keep the media Releases `showcase-v1`, `showcase-v2` (historical) and `showcase-v3` (current README recordings, made with `scripts/record-showcase.mjs`) separate from software `v0.0.7`. Their attachments stay on GitHub until their removal is confirmed separately; do not move old tags or mark a media-only Release as the latest software release.
 3. The READMEs link the real-source Jeepay corpus. Public examples and smoke tests use this corpus; historical sample recordings are no longer linked.
 4. Re-run checks, commit the confirmed source changes, and merge them into `main` through the pull request. Do not force-push or mirror-push. Media must not enter the commit; Codex's private `refs/codex/` snapshots are not release refs.
 5. Build runtime archives from the confirmed commit, record their SHA-256 checksums, verify the extracted package, and attach them to software Release `v0.0.7`. GitHub's automatic **Source code** archives are full source snapshots, not the slim plugin installer.
@@ -42,7 +42,7 @@ Track marketplace releases separately from GitHub Releases and npm packages. For
 
 ## Online demo
 
-`.github/workflows/pages.yml` checks out the Jeepay revision recorded in `examples/jeepay/source.json`, builds all eleven coordinate-free views with the committed prebuilt Viewer and verifies their source anchors with `--repo-root`. It serves `site/jeepay/zh-CN/` and uses `docs/pages/index.html` as the home page. The page folder also serves its `graph.json` and SVGs.
+`.github/workflows/pages.yml` checks out the Jeepay revision recorded in `examples/jeepay/source.json`, builds all nine coordinate-free views with the committed prebuilt Viewer and verifies their source anchors with `--repo-root`. It serves `site/jeepay/zh-CN/` and uses `docs/pages/index.html` as the home page. `scripts/showcase-changes.mjs` derives an earlier version of the component relations view, and `generate-viewer.mjs --compare` marks what changed in `site/jeepay/changes/zh-CN/` and `site/jeepay/changes/en/`; the README `changes` clip records the same comparison. The page folder also serves its `graph.json` and SVGs.
 
 Pull requests that touch the examples, the generator, the prebuilt Viewer, `docs/pages/` or the workflow run the build as a smoke test; pushes to `main` also deploy it. The site is uploaded as a Pages artifact and never enters a branch, and a failed build leaves the previous deployment online. Before the first deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 

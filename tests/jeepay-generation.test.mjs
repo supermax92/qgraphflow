@@ -12,7 +12,7 @@ const run = (...args) => spawnSync(process.execPath, [path.join(root, 'bin/qgrap
 const temporary = t => { const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-jeepay-')); t.after(() => fs.rmSync(dir, { recursive: true, force: true })); return dir; };
 const contents = dir => Object.fromEntries(fs.readdirSync(dir).sort().map(name => [name, fs.readFileSync(path.join(dir, name))]));
 
-test('Jeepay CLI validates sources and generates all eleven views from facts', t => {
+test('Jeepay CLI validates sources and generates all nine views from facts', t => {
   const dir = temporary(t), output = path.join(dir, 'output');
   const validation = run('validate', collectionPath, '--input-only', '--repo-root', repoRoot);
   assert.equal(validation.status, 0, validation.stderr);
@@ -46,9 +46,9 @@ test('Jeepay failed validation preserves existing output, even with --force', as
 });
 
 test('Jeepay collection edits isolate views and retain fields, sources and all relationships', async () => {
-  const input = { diagrams: [(await compiled('capabilities')).graph, (await compiled('engineering')).graph, (await compiled('er')).graph] };
+  const input = { diagrams: [(await compiled('relations')).graph, (await compiled('flowchart')).graph, (await compiled('er')).graph] };
   const before = structuredClone(input), edited = structuredClone(input.diagrams[0]);
-  edited.nodes[0].overviewText.push('CI edit');
+  edited.nodes[0].subtitle = 'CI edit';
   const saved = graphInputWithEdits(input, new Map([[edited.meta.viewId, edited]]), input.diagrams[1]);
   assert.deepEqual(saved.diagrams[0], edited);
   assert.deepEqual(saved.diagrams.slice(1), input.diagrams.slice(1));

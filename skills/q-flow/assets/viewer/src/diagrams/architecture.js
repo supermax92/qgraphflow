@@ -1,4 +1,3 @@
-import { hasOverviewContent, overviewCardSvg } from '../architecture-overview.js';
 import { genericCard } from './card.js';
 import { cylinder, polygonAnchor, rectAnchor, roundedRectAnchor, rectangle, HEXAGON, polygon } from './drawing.js';
 
@@ -7,7 +6,6 @@ const SLANT = [[.08, 0], [1, 0], [.92, 1], [0, 1]];
 
 export function architectureOutline(node, x, y) {
   const { width: w, height: h } = node.size;
-  if (hasOverviewContent(node)) return rectangle(node, x, y, 16);
   if (node.kind === 'external') return polygon(node, x, y, HEXAGON);
   if (node.kind === 'security') return rectangle(node, x, y, 22);
   if (node.kind === 'failure') return polygon(node, x, y, OCTAGON);
@@ -23,7 +21,6 @@ export function architectureOutline(node, x, y) {
 }
 
 const anchor = (node, side, offset) => {
-  if (hasOverviewContent(node)) return roundedRectAnchor(node, side, offset, 16);
   if (node.kind === 'external') return polygonAnchor(node, side, offset, HEXAGON);
   if (node.kind === 'security') return roundedRectAnchor(node, side, offset, 22);
   if (node.kind === 'failure') return polygonAnchor(node, side, offset, OCTAGON);
@@ -41,6 +38,6 @@ export default {
   nodeKinds: ["external", "config", "framework", "security", "service", "business", "data", "failure", "system", "component", "database"],
   groupKinds: ["runtime", "security", "ownership", "external"],
   edgeKinds: ["request", "call", "data", "success", "failure", "framework", "optional", "depends", "aggregates", "inherits", "provides"],
-  render: (node, x, y, fill, stroke, palette, locale) => hasOverviewContent(node) ? overviewCardSvg(node, x, y, palette, fill, stroke) : genericCard(node, x, y, fill, stroke, palette, locale, architectureOutline, contentInset(node)), outline: architectureOutline, anchor,
+  render: (node, x, y, fill, stroke, palette, locale) => genericCard(node, x, y, fill, stroke, palette, locale, architectureOutline, contentInset(node)), outline: architectureOutline, anchor,
   cardLayout: true, contentInset,
 };

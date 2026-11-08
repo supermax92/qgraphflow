@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import { templateDraft } from '../assets/viewer/src/layout-templates.js';
-import { fitArchitectureOverview, maintainArchitectureOverview } from '../assets/viewer/src/architecture-overview.js';
 import { refineDiagramLayout } from '../assets/viewer/src/layout-refinement.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -123,13 +122,6 @@ test('actual actor-arm ports align to an ellipse without a tiny staircase',()=>{
   assert.equal(createEdgeRoutes(output).get('use').points.length,2);requireDiagramQuality(output);
 });
 
-test('a database overview card uses its actual rounded outline and invalidates cached cylinder geometry',()=>{
- const node={...card('store',100,100),kind:'database',size:{width:300,height:100}};
- const a={x:100,y:125},b={x:100,y:175};
- assert.ok(nodeClearance(node,'architecture')(a,b)>0);
- node.overviewText=['Durable records'];
- assert.equal(nodeClearance(node,'architecture')(a,b),0);
-});
 test('growing an ownership boundary repairs newly affected nonincident legacy routes',()=>{
  const input=graph([card('a',280,40),card('b',280,800),{...card('c',100,400),groupId:'g'}],[{...relation('ab','a','b'),route:{via:[{x:400,y:152},{x:400,y:788}]}}]);
  input.groups=[{id:'g',kind:'ownership',label:'Group',position:{x:76,y:342},size:{width:288,height:182}}];

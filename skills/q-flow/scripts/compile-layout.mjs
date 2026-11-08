@@ -1,19 +1,17 @@
 import { routeOrthogonal, placeEdgeLabels } from '../assets/viewer/src/orthogonal-routing.js';
 import { refineDiagramLayout, refineWithLegacySeed, layoutMetrics } from '../assets/viewer/src/layout-refinement.js';
-import { isArchitectureOverview } from '../assets/viewer/src/view-identity.js';
-import { overviewSections, fitArchitectureOverview, overviewLayoutReports } from '../assets/viewer/src/architecture-overview.js';
 import { Worker } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
 import { getDiagram, canvasBudgetFor } from '../assets/viewer/src/diagrams/registry.js';
 import { stateSymbolX } from '../assets/viewer/src/diagrams/state.js';
-import { minimumNodeSize } from '../assets/viewer/src/layout-measure.js';
 import { graphBounds, occupiedBox, visibleEdgeLabel, groupHeadingBoxes, segmentCrossesBox, createEdgeRoutes } from '../assets/viewer/src/edge-routing.js';
 import { groupHeadingLayout, estimateLabelSize } from '../assets/viewer/src/text-layout.js';
 import { ASPECT_SLACK, LAYOUT_LIMITS, LAYOUT_TARGETS, OVERVIEW_AREA, layeredDirections, layeredDown, layoutLimits, layoutTargets, ratioExcess } from '../assets/viewer/src/layout-spacing.js';
 import { auditLayoutQuality, qualityFailure, requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 import { compileSequence } from './compile-sequence.mjs';
-import { templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
+import { layoutNodeSize, templateDraft, templateOf } from '../assets/viewer/src/layout-templates.js';
+import { foldedEdges, hasSharedDependencies, presentationGraph, restorePresentation } from '../assets/viewer/src/presentation-graph.js';
 
 import { LAYOUT_VERSION } from '../assets/viewer/src/layout-policy.js';
 export { LAYOUT_VERSION };
@@ -39,7 +37,6 @@ function semanticDigest(graph, migration = []) {
   for (const item of [...model.nodes, ...(model.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of model.edges) delete edge.route;
   for (const item of migration) delete [...model.nodes, ...(model.groups ?? [])].find(element => element.id === item.elementId)[item.field];
-  for (const section of overviewSections(model)) { delete section.position; delete section.size; }
   if (model.layout) { delete model.layout.version; delete model.layout.strategy; delete model.layout.direction; if (!Object.keys(model.layout).length) delete model.layout; }
   const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
   return createHash('sha256').update(JSON.stringify(canonical(model))).digest('hex');
@@ -109,7 +106,7 @@ function elkInput(graph, candidate, hints = {}) {
       'elk.nodeSize.constraints': 'MINIMUM_SIZE', 'elk.nodeSize.minimum': `(${heading.width + 64},0)` } }];
   }));
   const ordered = items => hints.nodes ? [...items].sort((a, b) => hints.nodes.indexOf(a.id) - hints.nodes.indexOf(b.id)) : stable(items);
-  const nodes = new Map(ordered(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...minimumNodeSize(node, type, graph.meta.locale), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
+  const nodes = new Map(ordered(graph.nodes).map(node => [node.id, { id: `n:${node.id}`, ...layoutNodeSize(node, graph, type), ports: [], layoutOptions: { 'elk.portConstraints': 'FIXED_POS', ...(node.layout?.rank === undefined ? {} : { 'elk.partitioning.partition': String(node.layout.rank) }) } }]));
   if (type === 'state') for (const node of graph.nodes) {
     if (node.kind === 'initial' || node.kind === 'final') nodes.get(node.id).layoutOptions['elk.layered.layering.layerConstraint'] = node.kind === 'initial' ? 'FIRST_SEPARATE' : 'LAST_SEPARATE';
     if (node.kind === 'initial') for (const edge of graph.edges.filter(edge => edge.source === node.id)) {
@@ -407,6 +404,36 @@ function candidateScore(graph, audit, index) {
 }
 const compare = (a, b) => { for (let i = 0; i < a.score.length; i++) if (a.score[i] !== b.score[i]) return a.score[i] - b.score[i]; return 0; };
 
+// Preserve keeps every placed node. A refreshed graph that no longer passes (a new edge without a route, a label that grew
+// into its neighbour, a sequence message without a row) is repaired locally before the quality error stands: the named
+// edges are rerouted with every node fixed, then their endpoints may move a little; a sequence keeps its columns and
+// recomputes its rows. A graph that passes is returned untouched.
+function preserveLayout(graph) {
+  const sequence = getDiagram(diagramTypeOf(graph)).sequence;
+  const folded = new Set(foldedEdges(graph).map(edge => edge.id));
+  const placed = graph.edges.every(edge => folded.has(edge.id) || (sequence ? Number.isFinite(edge.route?.messageY) : edge.route));
+  let failure;
+  if (placed) { try { requireDiagramQuality(graph); return { graph }; } catch (error) { failure = error; } }
+  const check = output => { requireDiagramQuality(output); return output; };
+  if (sequence) {
+    try { return { graph: check(compileSequence(graph, Number(/^sequence-(\d+)$/.exec(graph.layout?.strategy ?? '')?.[1] ?? 0), { keepColumns: true })), repair: { rows: true, rerouted: [], movedNodeIds: [] } }; }
+    catch { /* the original diagnostics below */ }
+  } else {
+    const shown = hasSharedDependencies(graph) ? presentationGraph(graph) : graph;
+    const named = new Set((failure?.diagnostics ?? []).filter(item => item.severity === 'error').flatMap(item => item.elementIds));
+    const edgeIds = shown.edges.filter(edge => !edge.route || named.has(edge.id)).map(edge => edge.id);
+    const ends = [...new Set(shown.edges.filter(edge => edgeIds.includes(edge.id)).flatMap(edge => [edge.source, edge.target]))];
+    for (const options of [{ move: false, evaluations: 4, passes: 2 }, ...ends.map(focusId => ({ move: true, focusId, evaluations: 12, passes: 1 }))]) {
+      try {
+        const result = refineDiagramLayout(shown, { ...options, edgeIds });
+        return { graph: check(shown === graph ? result.graph : restorePresentation(graph, result.graph)), repair: { rerouted: edgeIds, movedNodeIds: result.movedNodeIds } };
+      } catch { /* next: let an endpoint move */ }
+    }
+  }
+  requireDiagramQuality(graph); // repair found nothing better: the original diagnostics stand
+  return { graph };
+}
+
 export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = LAYOUT_TIMEOUT_MS } = {}) {
   if (!['auto', 'preserve'].includes(layout)) throw new Error('layout must be auto or preserve');
   const errors = validateGraph(input, { inputOnly: true });
@@ -424,13 +451,14 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
   const ownershipErrors = validateGraph(graph, { inputOnly: true });
   if (ownershipErrors.length) throw qualityFailure(graph, 'semantic', ownershipErrors.join('\n'));
   if (layout === 'preserve') {
-    requireDiagramQuality(graph);
-    return { graph, report: { version: LAYOUT_VERSION, mode: layout, migration, semantics: semanticReport(graph) } };
+    const { graph: output, repair } = preserveLayout(graph);
+    return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, migration, ...(repair ? { repair } : {}), semantics: semanticReport(output) } };
   }
-  if (isArchitectureOverview(graph)) {
-    let output;
-    try { output = fitArchitectureOverview(graph, requireDiagramQuality); } catch (error) { throw error.diagnostics ? error : Object.assign(qualityFailure(graph, 'geometry', error.message), { routingReport: error.routingReport }); }
-    return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, template: { structure: templateOf(graph).structure, applied: true, fallback: null }, refinement: overviewLayoutReports.get(output), semantics: semanticReport(output) } };
+  // Shared dependencies: lay out the drawn graph (folded edges out, their tags on source cards), then restore the model.
+  if (hasSharedDependencies(graph)) {
+    const { graph: laid, report } = await compileGraphLayout(presentationGraph(graph), { layout, timeoutMs });
+    const output = restorePresentation(graph, laid);
+    return { graph: output, report: { ...report, semantics: semanticReport(output) } };
   }
   const sequence = getDiagram(diagramTypeOf(graph)).sequence;
   const worker = new Worker(new URL('../assets/layout-dist/worker.mjs', import.meta.url), { execArgv: [] });
@@ -451,7 +479,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     const evaluate = (candidate, index, errors = []) => {
       // New auto layouts obey tiers; preserve mode keeps legacy coordinates and their recorded version.
       if (diagramTypeOf(candidate) === 'deployment') candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
-      if (!sequence && !isArchitectureOverview(candidate)) {
+      if (!sequence) {
         candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
         try { placeEdgeLabels(candidate); } catch { /* Routing below must supply an inline corridor. */ }
       }

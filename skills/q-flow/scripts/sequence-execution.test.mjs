@@ -9,6 +9,8 @@ import { createDiagramSvg } from '../assets/viewer/src/export-svg.js';
 import { PALETTES, sequenceGroupColor, edgeColor } from '../assets/viewer/src/visual-style.js';
 import { currentGraphFromFlow, graphInputWithEdits } from '../assets/viewer/src/session-graph.js';
 import { isDashed } from '../assets/viewer/src/diagrams/registry.js';
+import { edgeLabelLayout } from '../assets/viewer/src/text-layout.js';
+import { compileGraphLayout } from './compile-layout.mjs';
 
 
 test('fragments with and without operands share crossing checks and the final heading obstacle', () => {
@@ -66,4 +68,27 @@ test('pair numbers follow message order even when call ids sort differently as s
   const pairs = sequencePairs(graph);
   assert.equal(pairs.get('m2').label, 'C1'); assert.equal(pairs.get('m3').label, '↩ C1');
   assert.equal(pairs.get('m12').label, 'C2'); assert.equal(pairs.get('m13').label, '↩ C2');
+});
+
+test('a message across a wide idle gap uses it; a bar under the wide label keeps the reserved width', () => {
+  const label = 'chargeAccount(merchantNo, appId, wayCode, amount): create the order';
+  const graph = { meta: { title: 'Wide gap', sourceRef: 'test', diagramType: 'sequence', locale: 'en' },
+    nodes: [['a', 100], ['b', 900], ['c', 1100]].map(([id, x]) => ({ id, label: id, kind: 'service', position: { x, y: 0 }, size: { width: 120, height: 600 } })),
+    edges: [
+      { id: 'e1', source: 'a', target: 'b', kind: 'sync', label: 'start()', order: 1, evidence: 'test', route: { messageY: 200 } },
+      { id: 'e2', source: 'a', target: 'c', kind: 'async', label, order: 2, evidence: 'test', route: { messageY: 320 } },
+      { id: 'e3', source: 'b', target: 'a', kind: 'return', label: 'ok', order: 3, replyTo: 'e1', evidence: 'test', route: { messageY: 440 } }] };
+  const reserved = edgeLabelLayout(`02 · ${label}`, 320).lines.length;
+  assert.ok(reserved > 1, 'The reserved width wraps this label.');
+  assert.equal(createEdgeRoutes(graph).get('e2').labelLines.length, 1, 'An idle wide gap holds the label on one line.');
+  graph.executions = [{ id: 'b-work', participantId: 'b', start: { edgeId: 'e1', at: 'receive' }, end: { edgeId: 'e3', at: 'send' } }];
+  assert.equal(createEdgeRoutes(graph).get('e2').labelLines.length, reserved, 'A bar under the wide label keeps the reserved wrap.');
+});
+
+test('the tightest message gap is kept when participants need only the minimum spacing', async () => {
+  const graph = { meta: { title: 'Compact', sourceRef: 'test', diagramType: 'sequence', locale: 'en' },
+    nodes: ['a', 'b', 'c'].map(id => ({ id, label: id, kind: 'service' })),
+    edges: [['a', 'b'], ['b', 'c'], ['c', 'a']].map(([source, target], i) => ({ id: `m${i}`, source, target, kind: 'async', label: `m${i}()`, order: i + 1, evidence: 'test' })) };
+  const { graph: output } = await compileGraphLayout(graph);
+  assert.equal(output.layout.strategy, 'sequence-0');
 });

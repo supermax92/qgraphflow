@@ -12,8 +12,8 @@ test('the root package is publishable', () => {
   assert.equal(Object.hasOwn(readJson('package.json'), 'private'), false);
 });
 
-test('seven installation guides preserve the Chinese commands and working links', () => {
-  const guides = ['docs/clients.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/clients.${locale}.md`)];
+test('both installation guides preserve the Chinese commands and working links', () => {
+  const guides = ['docs/clients.md', 'docs/clients.zh-CN.md'];
   const commands = markdown => [...markdown.matchAll(/```bash\n([\s\S]*?)```/g)].map(match => match[1]);
   const expected = commands(read('docs/clients.zh-CN.md'));
   assert.equal(expected.length, 5);
@@ -58,10 +58,10 @@ test('IDE metadata is ignored', () => {
 });
 
 test('the READMEs identify project independence and the conceptual example boundary', () => {
-  const readme = read('README.md');
+  const readme = read('README.en.md');
   assert.match(readme, /independent MIT-licensed project/);
   assert.match(readme, /conceptual examples and do not represent any real company's production architecture/);
-  const chinese = read('docs/readme/README.zh-CN.md');
+  const chinese = read('README.md');
   assert.match(chinese, /独立项目/);
   assert.match(chinese, /概念示例，不代表任何真实公司的生产架构/);
 });

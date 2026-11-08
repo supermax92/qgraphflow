@@ -10,9 +10,9 @@ import { requireDiagramQuality } from '../skills/q-flow/assets/viewer/src/layout
 import { createDiagramSvg } from '../skills/q-flow/assets/viewer/src/export-svg.js';
 import { PALETTES } from '../skills/q-flow/assets/viewer/src/visual-style.js';
 
-test('Jeepay is the single coordinate-free corpus, with all eleven distinct templates', () => {
+test('Jeepay is the single coordinate-free corpus, with all nine distinct templates', () => {
   assert.deepEqual(collection.diagrams.map(g => g.meta.architectureView ?? g.meta.diagramType),
-    ['capabilities', 'engineering', 'relations', 'flowchart', 'sequence', 'er', 'deployment', 'class', 'state', 'usecase', 'dataflow']);
+    ['relations', 'flowchart', 'sequence', 'er', 'deployment', 'class', 'state', 'usecase', 'dataflow']);
   assert.deepEqual(validateGraphInput(collection, { inputOnly: true }), []);
   assert.doesNotMatch(JSON.stringify(collection), /"(?:position|size|route)":/);
   for (const graph of collection.diagrams) assert.equal(graph.meta.sourceRef, `${source.repository}@${source.revision}`);

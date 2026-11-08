@@ -10,8 +10,10 @@ import { moduleColorMap, PALETTES, themeVariables, withoutWash } from './visual-
 import { usePanels } from './features/usePanels.js';
 import { graphInputWithEdits } from './session-graph.js';
 import { DEFAULT_LOCALE } from './i18n.js';
+import { setComparison } from './graph-diff.js';
 
 const input = JSON.parse(document.querySelector('#graph-data').textContent);
+setComparison(JSON.parse(document.querySelector('#graph-compare')?.textContent ?? 'null'));
 const diagrams = [...(Array.isArray(input.diagrams) ? input.diagrams : [input])]
   .sort(compareViews);
 

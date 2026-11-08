@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 
 import { viewIdOf } from '../assets/viewer/src/view-identity.js';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
-import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
+import { diagramTypeOf, graphsOf, printCompositionReview, printViewReview, readAndValidateGraph, stampSourceFiles, verifySourceEvidence, layoutComposition } from './validate-graph.mjs';
 import { compileGraphLayout } from './compile-layout.mjs';
 import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
-import { pageWithGraph } from '../assets/viewer/src/session-graph.js';
+import { pageWithComparison, pageWithGraph } from '../assets/viewer/src/session-graph.js';
+import { compareGraphs } from '../assets/viewer/src/graph-diff.js';
 import { SVG_FILE, diagramSvgFiles } from '../assets/viewer/src/export-svg.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -59,18 +61,32 @@ export async function compileViews(graphs, compile) {
   return compiled;
 }
 
+// The earlier version for --compare: a file, or the input graph as stored at a git revision of its repository. A graph
+// with no such version (not committed yet, or outside git) is generated without a comparison.
+function earlierGraph(value, inputPath) {
+  if (fs.existsSync(value) && fs.statSync(value).isFile()) return JSON.parse(fs.readFileSync(value, 'utf8'));
+  const file = fs.realpathSync(inputPath), dir = path.dirname(file);
+  const top = spawnSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+  if (top.status !== 0) { console.warn(`--compare ${value}: not a file, and ${inputPath} is not in a git repository; generating without a comparison`); return null; }
+  const shown = spawnSync('git', ['-C', dir, 'show', `${value}:${path.relative(top.stdout.trim(), file).split(path.sep).join('/')}`], { encoding: 'utf8', maxBuffer: 256 << 20 });
+  if (shown.status !== 0) { console.warn(`--compare ${value}: ${inputPath} has no version at that revision; generating without a comparison`); return null; }
+  return JSON.parse(shown.stdout);
+}
+
 const USAGE = `Usage: node generate-viewer.mjs <graph.json> <output-directory> [options]
   --repo-root <dir>     verify every node source (file, line range, symbol) against this working tree
   --layout auto|preserve  auto (default) computes positions; preserve keeps authored geometry under the same gate
   --view <view-id>      auto-layout only this view; repeat for several; all other views must pass preserve
   --force               replace existing index.html / graph.json / diagram*.svg in the output directory (needs approval)
+  --compare <file|rev>  mark what changed against an earlier version: a graph.json file, or a git revision of the input
+                        (HEAD = as last committed); the page colors added and changed elements and lists removed ones
   --verbose             print the full receipt (layout candidates, folds, diagnostics) instead of one summary line
   -h, --help            this text
 Writes index.html, graph.json and one SVG per view (diagram.svg, or diagram-<n>-<type>.svg for a collection).
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.`;
 
 async function main() {
-  const { positionals: positional, values } = parseArgs({ allowPositionals: true, options: { force: { type: 'boolean' }, 'repo-root': { type: 'string' }, layout: { type: 'string', default: 'auto' }, view: { type: 'string', multiple: true }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
+  const { positionals: positional, values } = parseArgs({ allowPositionals: true, options: { force: { type: 'boolean' }, 'repo-root': { type: 'string' }, layout: { type: 'string', default: 'auto' }, view: { type: 'string', multiple: true }, compare: { type: 'string' }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
   const force = values.force;
   if (values.help) { console.log(USAGE); process.exit(0); }
   if (positional.length !== 2) {
@@ -82,11 +98,14 @@ async function main() {
   const outputDir = path.resolve(outputArg);
   if (outputDir === path.parse(outputDir).root || outputDir === os.homedir()) throw new Error('Refusing broad output directory');
   const input = readAndValidateGraph(inputPath, { inputOnly: true });
+  const earlier = values.compare === undefined ? null : earlierGraph(values.compare, inputPath);
   const selected = new Set(values.view ?? []), views = graphsOf(input);
   if (selected.size && values.layout !== 'auto') throw new Error('--view requires --layout auto');
   const unknown = [...selected].filter(id => !views.some(graph => viewIdOf(graph) === id));
   if (unknown.length) throw new Error(`Unknown view: ${unknown.join(', ')}; available views: ${views.map(viewIdOf).join(', ')}`);
-  const sourceEvidence = verifySourceEvidence(input, values['repo-root']);
+  const sourceEvidence = verifySourceEvidence(input, values['repo-root'], { pendingDrift: 'show' });
+  const pendingDrift = views.reduce((sum, graph) => sum + (Array.isArray(graph.meta?.sourceDrift) ? graph.meta.sourceDrift.length : 0), 0);
+  if (pendingDrift) console.warn(`${pendingDrift} source change${pendingDrift === 1 ? '' : 's'} listed in meta.sourceDrift: the Viewer marks the named elements; validation fails until each item is resolved and deleted.`);
   const warnings = printCompositionReview(input, { print: false }); // already printed by the input validation step
   if (!fs.existsSync(shellPath)) throw new Error(`Viewer shell missing: ${shellPath}`);
 
@@ -104,8 +123,11 @@ async function main() {
   for (let i = 0; i < views.length; i++) if (selected.size && !selected.has(viewIdOf(views[i])) && !isDeepStrictEqual(compiled[i].graph, views[i])) throw new Error(`Unselected view ${viewIdOf(views[i])} requires migration; update it explicitly before changing this collection`);
   const quality = compiled.map(item => requireDiagramQuality(item.graph));
   const graph = Array.isArray(input.diagrams) ? { ...input, diagrams: compiled.map(item => item.graph) } : compiled[0].graph;
+  // Record what the anchors point at now, so validate can later tell moved lines from changed code.
+  if (values['repo-root'] !== undefined) stampSourceFiles(graph, values['repo-root']);
   const oversized = printViewReview(graph, { print: true }); // geometry exists only now; the input review could not see it
-  const contents = { 'index.html': pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
+  const comparison = earlier && compareGraphs(earlier, graph);
+  const contents = { 'index.html': comparison ? pageWithComparison(pageWithGraph(shell, graph), comparison) : pageWithGraph(shell, graph), 'graph.json': `${JSON.stringify(graph, null, 2)}\n` };
   for (const { name, svg } of diagramSvgFiles(graph)) contents[name] = svg;
   writeOutputs(outputDir, contents, svgs.filter(name => !Object.hasOwn(contents, name)));
   const files = Object.keys(contents);
@@ -120,6 +142,14 @@ async function main() {
     semantic: { status: status('semantic') }, geometry: { status: status('geometry') }, rendering: { status: status('rendering') },
     ...(warnings.length + oversized.length ? { warnings: warnings.length + oversized.length } : {})
   };
+  // Preserve repairs are reported so the author can see which routes or rows changed without rendering the page.
+  const repaired = compiled.flatMap((item, i) => item.report?.repair ? [{ view: viewIdOf(views[i]) ?? i, ...(item.report.repair.rows ? { rows: true } : { rerouted: item.report.repair.rerouted, moved: item.report.repair.movedNodeIds }) }] : []);
+  if (repaired.length) summary.repaired = repaired;
+  if (pendingDrift) summary.sourceDrift = pendingDrift;
+  if (comparison) {
+    const diffs = Object.values(comparison.views), total = key => diffs.reduce((sum, diff) => sum + diff[key].length, 0);
+    summary.compare = { added: total('added'), changed: total('changed'), removed: total('removed'), ...(comparison.removedViews ? { removedViews: comparison.removedViews.length } : {}) };
+  }
   const detail = values.verbose ? { layoutComposition: graphs.map(layoutComposition), layout: compiled.map(item => item.report), quality } : {};
   console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')
     ? { generated: true, diagramType: diagramTypeOf(graphs[0]), outputDir, files, ...summary, ...detail, sourceEvidence }

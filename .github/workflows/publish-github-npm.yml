@@ -52,7 +52,7 @@ jobs:
           node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/validate-graph.mjs examples/jeepay/flowchart.graph.json --input-only
           node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/flowchart.graph.json output/order
           # Generate the complete real-source Jeepay collection with the installed package.
-          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/eleven
+          node verified/node_modules/@supermax92/qgraphflow/skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay
       - uses: actions/setup-node@v7
         with:
           node-version: '22'

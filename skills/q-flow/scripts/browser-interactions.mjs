@@ -4,10 +4,13 @@ import { visibleEdges, presentationGraph } from '../assets/viewer/src/presentati
 // quick-look cards and the legend popover. Uses an existing Playwright installation.
 // Usage: node browser-interactions.mjs GENERATED_DIRECTORY REPORT_DIRECTORY
 // Optional: PLAYWRIGHT_MODULE, CHROME_PATH, QA_HEADED=1, QA_TYPES, QA_VIEWS, QA_WIDTHS, QA_DPR=1, QA_MOTION_CALIBRATION=1, QA_ONLY_EXTRAS=1, QA_LAYOUT_ONLY=1,
-// QA_EXTRAS=none|all|edit-persistence|overview|manual-ownership|layout-worker|save-failures|strict-draft|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|notes|sequence-reading|file-url, QA_FIXTURE_DIR.
-import { overviewSections, fitArchitectureOverview, hasOverviewContent } from '../assets/viewer/src/architecture-overview.js';
-import { isArchitectureOverview, viewIdOf, compareViews, viewTypeLabel } from '../assets/viewer/src/view-identity.js';
-import { overviewPalette } from '../assets/viewer/src/architecture-overview-theme.js';
+// QA_EXTRAS=none|all|edit-persistence|manual-ownership|layout-worker|save-failures|strict-draft|acceptance|acceptance-details|editor-boundaries|flow-direction|export-failures|motion-matrix|motion-preferences|selection-entrypoints|ambient-flow|flow-contrast|inspector-sync|information-layout|facts-layout|fullscreen|fullscreen-errors|quick-details|repeat-notice|long-preview|text-bounds|relationship-card-avoidance|edge-site|notes|sequence-reading|file-url, QA_FIXTURE_DIR.
+// A local edit may widen a card but never pushes a neighbour away (the draft is kept instead): edit the
+// target only when ~110px to its right are clear, else the first ordinary node that has that room.
+const roomy = node => graph => !graph.nodes.some(other => other !== node && other.position && node.position && other.position.y < node.position.y + node.size.height && other.position.y + other.size.height > node.position.y && other.position.x >= node.position.x + node.size.width - 1 && other.position.x < node.position.x + node.size.width + 110);
+const roomyNode = graph => [target(graph), ...graph.nodes].find(node => !['initial', 'final'].includes(node.kind) && roomy(node)(graph)) ?? target(graph);
+const editableNode = graph => graph.nodes.find(node => !['initial', 'final'].includes(node.kind)) ?? graph.nodes[0];
+import { viewIdOf, compareViews, viewTypeLabel } from '../assets/viewer/src/view-identity.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -181,6 +184,7 @@ async function selection(page, graph, id) {
   assert.equal(await count(page, '.diagram-node.is-selected'), 1);
   assert.equal(await count(page, '.selection-outline'), 1);
   const edges = visibleEdges(graph).filter(edge => edge.source === id || edge.target === id).map(edge => edge.id).sort();
+  await page.waitForFunction(expected => JSON.stringify([...document.querySelectorAll('.react-flow__edge')].filter(element => element.querySelector('.selection-edge-shine')).map(element => element.dataset.id).sort()) === JSON.stringify(expected), edges, { timeout: 2000 }).catch(() => {});
   const actual = await page.locator('.react-flow__edge').evaluateAll(elements => elements.filter(element => element.querySelector('.selection-edge-shine')).map(element => element.dataset.id).sort());
   assert.deepEqual(actual, edges, 'Exactly the directly incident relationships are highlighted, including each self-loop once.');
   const feedback = await page.locator('.react-flow__edge').evaluateAll(elements => elements.map(element => {
@@ -422,7 +426,10 @@ async function assertNodeDrawing(page, graph, colorTheme) {
     assert.equal(await page.locator(`[data-edge-id=${JSON.stringify(id)}] .pair-label`).innerText(), pair.label);
   }
   for (const node of graph.nodes) {
-    const expected = renderNode({ ...node, classicCard: !compactCards(graph), executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
+    // Zoomed out, cards draw their summary (diagrams/card.js): the page states which drawing it shows, and the shared
+    // renderer must produce exactly that one.
+    const summary = await nodeElement(page, node.id).locator('.diagram-node').getAttribute('data-summary') === 'true';
+    const expected = renderNode({ ...node, summary, classicCard: !compactCards(graph), executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
     const same = await nodeElement(page, node.id).locator('.node-drawing').evaluate((element, xml) => {
       const expected = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${xml}</svg>`, 'image/svg+xml').querySelector('.node-drawing');
       // Compare parsed DOMs: serialization differences must not hide drawing differences.
@@ -446,7 +453,7 @@ async function assertNodeDrawing(page, graph, colorTheme) {
       assert.ok(text.font >= TYPOGRAPHY.small, `Readable shared typography: ${node.id} ${text.cls}`);
       assert.ok(text.x >= -1 && text.y >= -1 && text.x + text.width <= node.size.width + 1 && text.y + text.height <= node.size.height + 1, `Node text stays inside its authored bounds: ${node.id} ${text.text}`);
       if (['title', 'shape-title', 'participant-title', 'entity-title'].includes(text.cls)) {
-        const color = graph.meta.diagramType === 'architecture' && hasOverviewContent(node) ? overviewPalette(palette).ink : palette.ink;
+        const color = palette.ink;
         const rgb = `rgb(${color.slice(1).match(/../g).map(value => parseInt(value, 16)).join(', ')})`;
         assert.equal(text.fill, rgb, `Title preserves its semantic contrast: ${node.id}`);
       }
@@ -573,7 +580,7 @@ async function exportsMatch(page, graph, name) {
   return { svgFile, pngFile };
 }
 async function runCase(browser, name, viewport, options, run, extra = false) {
-  if (extra && process.env.QA_EXTRAS && !process.env.QA_EXTRAS.split(',').some(value => name === value || name.endsWith('-' + value) || value === 'acceptance' && name.endsWith('-overview'))) return;
+  if (extra && process.env.QA_EXTRAS && !process.env.QA_EXTRAS.split(',').some(value => value === 'all' || name === value || name.endsWith('-' + value))) return;
   const context = await browser.newContext({ viewport, deviceScaleFactor: Number(process.env.QA_DPR ?? 1), acceptDownloads: true, reducedMotion: 'no-preference', ...options });
   const traced=!/motion-matrix|motion-preferences|flow-contrast/.test(name);
   if(traced)await context.tracing.start({ screenshots: false, snapshots: false });
@@ -663,7 +670,6 @@ async function exportFailureChecks(browser, url, graph, viewport=viewports[0], c
 function modelAfterLabel(identity, id, label) {
   const expected = structuredClone(input), view = (expected.diagrams ?? [expected]).find(item => viewIdOf(item) === identity);
   view.nodes.find(node => node.id === id).label = label;
-  if (isArchitectureOverview(view)) { Object.assign(view, fitArchitectureOverview(view, requireDiagramQuality)); return expected; }
   for (const [key, box] of fitCard(view, id, !compactCards(graphs.find(item => viewIdOf(item) === identity)))) Object.assign([...view.nodes, ...(view.groups ?? [])].find(item => item.id === key), box);
   return expected;
 }
@@ -722,8 +728,7 @@ async function strictDraftChecks(browser, url, graph) {
           if (window.rejectLayoutFixture) {
             // Submit an unrepairable geometry fixture to the real solver, without changing the displayed model.
             data = structuredClone(data);
-            if (data.overview) data.graph.edges[0].target = "missing-layout-test-node";
-            else for (const node of data.graph.nodes) node.position = { x: 0, y: 0 };
+            for (const node of data.graph.nodes) node.position = { x: 0, y: 0 };
             data.options = { move: false, evaluations: 1, passes: 1 };
           }
           return super.postMessage(data, ...args);
@@ -731,7 +736,7 @@ async function strictDraftChecks(browser, url, graph) {
       };
     });
     await page.goto(url); await theme(page, 'light'); await chooseGraph(page, graph, false);
-    const selected = graph.nodes.find(node => !['initial', 'final'].includes(node.kind)) ?? graph.nodes[0];
+    const selected = editableNode(graph);
     await searchSelect(page, graph, selected); await setLocked(page, false);
     await button(page, '编辑文字').click();
     const label = page.getByRole('textbox', { name: '名称', exact: true });
@@ -743,7 +748,7 @@ async function strictDraftChecks(browser, url, graph) {
     await page.evaluate(() => { window.rejectLayoutFixture = true; });
     await button(page, '保存').click(); await page.waitForFunction(() => !document.querySelector('.card-form[aria-busy="true"]'));
     await page.getByRole('alert').waitFor(); assert.equal(await label.inputValue(), value);
-    const diagnostic = await page.getByRole('alert').innerText(); assert.match(diagnostic, isArchitectureOverview(graph) ? /target does not name a node: missing-layout-test-node/ : /quality|overlap|routing|node|布局|重叠/i);
+    const diagnostic = await page.getByRole('alert').innerText(); assert.match(diagnostic, /quality|overlap|routing|node|布局|重叠/i);
     await page.screenshot({ path: path.join(outputRoot, 'screens', `${viewIdOf(graph)}-retained-draft.png`) });
     const save = async suffix => {
       await openMore(page); const [file] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
@@ -758,7 +763,7 @@ async function strictDraftChecks(browser, url, graph) {
     const applied = await save('valid-edit'), current = (applied.diagrams ?? [applied]).find(view => viewIdOf(view) === viewIdOf(graph));
     requireDiagramQuality(current); assert.equal(current.nodes.find(node => node.id === selected.id).label, selected.label + ' QA');
     await openMore(page); await menuItem(page, '重置').click(); assert.deepEqual(await save('reset-draft'), input);
-    return { viewId: viewIdOf(graph), failureFixture: graph.meta.architectureView && graph.meta.architectureView !== 'relations' ? 'missing endpoint candidate sent to the real offline Worker' : 'overlapping candidate sent to the real offline Worker', diagnostic, formDraftRetained: true, wholeCanvasRetained: true, cancel: true, recovery: true, resetComplete: true, actualDownloads: true };
+    return { viewId: viewIdOf(graph), failureFixture: 'overlapping candidate sent to the real offline Worker', diagnostic, formDraftRetained: true, wholeCanvasRetained: true, cancel: true, recovery: true, resetComplete: true, actualDownloads: true };
   }, true);
 }
 async function flowDirectionChecks(browser, url, viewport, colorTheme) {
@@ -809,7 +814,6 @@ async function matrix(browser, url, graph, viewport, colorTheme) {
   await runCase(browser, name, viewport, {}, async page => {
     await page.goto(url); await page.locator('.diagram-node').first().waitFor();
     await theme(page, colorTheme); const branding = await chooseGraph(page, graph);
-    if (isArchitectureOverview(graph)) await page.screenshot({ path: path.join(outputRoot, 'screens', name + '-opening.png'), animations: 'disabled' });
     const openZoom = await page.locator('.react-flow__viewport').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
     if (process.env.QA_LAYOUT_ONLY === '1') {
       requireDiagramQuality(graph);
@@ -1362,7 +1366,8 @@ async function nodePointerTarget(page, node) {
   if (!point) {
     const shift = await element.evaluate(element => {
       const node = element.getBoundingClientRect(), banner = document.querySelector('.layout-problems')?.getBoundingClientRect();
-      return banner && node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top ? banner.bottom - node.top + 24 : 0;
+      // The banner sits at the bottom of the canvas: lift a node it covers above it.
+      return banner && node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top ? banner.top - node.bottom - 24 : 0;
     });
     if (shift) {
       const blank = await blankPoint(page);
@@ -1397,6 +1402,18 @@ async function pointerNode(page, node, drag = false) {
   await page.mouse.up();
   if (drag) await page.waitForFunction(() => !document.querySelector('.canvas[aria-busy="true"]'));
 }
+async function dragUntilKept(page, node, vectors = [[36, 22], [36, -22], [-36, 22], [-36, -22], [0, 30], [0, -30], [36, 0], [-36, 0]]) {
+  for (const [index, vector] of vectors.entries()) {
+    if (index && await count(page, '.node-card')) { await page.locator('.node-card .card-close').click(); await page.locator('.node-card').waitFor({ state: 'detached' }); }
+    const boxes = async () => (await geometry(page)).nodes.map(({ id, position, width, height }) => ({ id, position, width, height }));
+    const before = await boxes(), edgeCount = await count(page, '.react-flow__edge-path'); await pointerNode(page, node, vector);
+    // A rollback reinstalls the accepted graph; React Flow redraws its edges once the reinstalled nodes are measured.
+    await page.waitForFunction(n => document.querySelectorAll('.react-flow__edge-path').length === n, edgeCount);
+    const after = await boxes();
+    if (JSON.stringify(after) !== JSON.stringify(before)) return { attempts: index + 1, kept: true };
+  }
+  return { attempts: vectors.length, kept: false };
+}
 async function entrypoints(browser, url, graph) {
   if (graph.meta.diagramType === 'sequence') return; // Native sequence entry points and Inspector fallback are checked by sequence-reading/persistence.
   await runCase(browser, `${viewIdOf(graph)}-selection-entrypoints`, viewports[0], {}, async page => {
@@ -1426,7 +1443,7 @@ async function entrypoints(browser, url, graph) {
       return { current, blocked: true, savedFile };
     };
     const legendAnchor = await assertLegendLayout(page);
-    const selected = target(graph);
+    const selected = roomyNode(graph);
     const viewBeforeClick = await page.locator('.react-flow__viewport').getAttribute('style'); await pointerNode(page, selected);
     await selection(page, graph, selected.id); await assertFlow(page);
     const card = page.locator('.node-card'); await card.waitFor();
@@ -1455,15 +1472,19 @@ async function entrypoints(browser, url, graph) {
     await clear(page); await searchSelect(page, graph, selected, true);
     const searchPulse = await pulse(page); await clear(page);
     await hidePanels(page); await fit(page); await setLocked(page, false);
-    const geometryBeforeDrag = await geometry(page); await pointerNode(page, selected, true);
-    await selection(page, graph, selected.id); await assertFlow(page); assert.equal(await count(page, '.inspector'), 0); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), searchPulse + 1, 'Dragging selects once.');
+    const geometryBeforeDrag = await geometry(page);
+    const dragged = await dragUntilKept(page, selected);
+    await selection(page, graph, selected.id); await assertFlow(page); assert.equal(await count(page, '.inspector'), 0); await assertSelectedDetails(page, graph); assert.equal(await pulse(page), searchPulse + dragged.attempts, 'Each drag selects once.');
     const geometryAfterDrag = await geometry(page);
-    assert.notDeepEqual(geometryAfterDrag.nodes, geometryBeforeDrag.nodes, 'Unlocked drag moves a node.');
+    assert.ok(dragged.kept, 'Unlocked drag moves a node.');
     if (graph.meta.diagramType === 'sequence') assert.equal(geometryAfterDrag.nodes.find(node => node.id === selected.id).position.y, geometryBeforeDrag.nodes.find(node => node.id === selected.id).position.y, 'Sequence participants only move horizontally.');
     await selection(page, graph, selected.id); await exportCurrentDraft('dragged');
     const beforeSpacing = await geometry(page);
-    await openMore(page); await menuItem(page, '整理间距').click(); const spacingStatus = await status(page);
-    assert.match(spacingStatus, /移动 \d+ 个节点|当前间距无需调整|当前约束下无法继续整理|仍有.*(?:问题|手动)/);
+    const spacingResult = /移动 \d+ 个节点|当前间距无需调整|当前约束下无法继续整理|仍有.*(?:问题|手动)|总览已对齐/;
+    await openMore(page); await menuItem(page, '整理间距').click();
+    await page.waitForFunction(source => new RegExp(source).test(document.querySelector('.toast')?.textContent ?? ''), spacingResult.source).catch(() => {});
+    const spacingStatus = await status(page);
+    assert.match(spacingStatus, spacingResult);
     if (spacingStatus === '当前约束下无法继续整理') assert.deepEqual(await geometry(page), beforeSpacing, 'A rejected spacing candidate does not partially change geometry.');
     await openMore(page); await menuItem(page, '重置').click(); await hidePanels(page); await fit(page);
     const authored = await geometry(page);
@@ -1489,8 +1510,8 @@ async function entrypoints(browser, url, graph) {
     await editCard.getByRole('button', { name: '查看详情', exact: true }).click();
     assert.equal(await page.locator('.drawer-body h2').innerText(), editedNodeLabel); assert.equal(await page.locator('.drawer-subtitle').innerText(), '会话说明');
     await clear(page, 'close'); await hidePanels(page);
-    if (graph.edges.length) {
-      const edge = page.locator('.react-flow__edge').first();
+    if (visibleEdges(graph).length) {
+      const edge = page.locator('.react-flow__edge').first(), editedEdgeId = await edge.getAttribute('data-id');
       await edge.focus(); await page.keyboard.press('Enter');
       await assertFlow(page); const relationCard = page.locator('.relation-card'); await relationCard.waitFor();
       assert.equal(await count(page, '.inspector'), 0, 'Relationship click opens quick look before details.');
@@ -1507,7 +1528,7 @@ async function entrypoints(browser, url, graph) {
       // 45019fc too (text.node-size, spacing.label-node) and keep the blocked branch until their own edits are fixed.
       const downloads = await exportCurrentDraft('edited', Boolean(getDiagram(graph.meta.diagramType).cardLayout));
       assert.equal(downloads.current.nodes.find(node => node.id === selected.id).label, editedNodeLabel);
-      assert.equal(downloads.current.edges[0].label, editedEdgeLabel);
+      assert.equal(downloads.current.edges.find(item => item.id === editedEdgeId).label, editedEdgeLabel);
       if (downloads.svgFile) {
         const editedSvg = fs.readFileSync(downloads.svgFile, 'utf8');
         assert.ok(editedSvg.includes(editedNodeLabel) && editedSvg.includes(editedEdgeLabel), 'SVG export uses current session text.');
@@ -1515,6 +1536,9 @@ async function entrypoints(browser, url, graph) {
       await openMore(page); await menuItem(page, '重置').click();
       await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: selected.label });
       assert.ok(!(await page.locator('.canvas').innerText()).includes(editedEdgeLabel), 'Reset restores authored relationship text.');
+    } else {
+      await openMore(page); await menuItem(page, '重置').click();
+      await page.waitForFunction(({ id, label }) => document.querySelector(`.react-flow__node[data-id="${CSS.escape(id)}"] .node-visual title`)?.textContent.startsWith(label), { id: selected.id, label: selected.label });
     }
     const viewport = page.locator('.react-flow__viewport');
     const beforeZoom = await viewport.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
@@ -1624,7 +1648,10 @@ async function notesCheck(browser, url) {
     await button(page, '退出全屏').click(); await fullscreenState(page, false);
     return { notes: notes.length, openingRight: Math.round(opening) };
   }, true);
+  const plain = structuredClone(input); for (const view of plain.diagrams ?? [plain]) delete view.meta.notes;
+  const plainHtml = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script id="graph-data" type="application\/json">)[\s\S]*?(<\/script>)/, (_, open, close) => open + JSON.stringify(plain).replaceAll('<', '\\u003c') + close);
   await runCase(browser, 'plain-notes', viewports[0], {}, async page => {
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: plainHtml }));
     await page.goto(url); await page.locator('.diagram-node').first().waitFor();
     assert.equal(await count(page, '.notes-anchor'), 0, 'A graph without notes shows no card and no button.');
     assert.equal(await page.locator('.canvas').getAttribute('data-drawer-open'), 'false');
@@ -1912,7 +1939,7 @@ async function flowContrastChecks(browser, url, graph) {
       if (graph.meta.diagramType === 'sequence') { await hidePanels(page); await fit(page); }
       await page.waitForTimeout(800);
       const stable = await geometry(page), sequence = getDiagram(graph.meta.diagramType).sequence;
-      const linked = sequence ? graph.edges : graph.edges.filter(e => e.source === selected.id || e.target === selected.id);
+      const linked = visibleEdges(graph).filter(e => sequence || e.source === selected.id || e.target === selected.id);
       const directedLinked = linked.filter(edge => hasArrow(edge, graph.meta.diagramType));
       const checked = [];
       for (const edge of linked) {
@@ -2068,7 +2095,7 @@ async function inspectorChecks(browser, url, graph) {
 async function flowChecks(browser, url, graph) {
   await runCase(browser, `${viewIdOf(graph)}-ambient-flow`, viewports[0], {}, async page => {
     await page.goto(url); await chooseGraph(page, graph, false);
-    const directed = graph.edges.filter(edge => hasArrow(edge, graph.meta.diagramType));
+    const directed = visibleEdges(graph).filter(edge => hasArrow(edge, graph.meta.diagramType));
     const assertDashMotion = async running => {
       if (graph.meta.diagramType !== 'sequence') return;
       const offsets = () => page.locator('.flow-edge--sequence.flow-edge--dashed .react-flow__edge-path').evaluateAll(paths => paths.map(path => getComputedStyle(path).strokeDashoffset));
@@ -2086,7 +2113,7 @@ async function flowChecks(browser, url, graph) {
       await assertDashMotion(true);
       const flow = page.locator('.edge-flow').first();
       const before = await flow.evaluate(element => getComputedStyle(element).strokeDashoffset);
-      await page.waitForTimeout(350);
+      await page.waitForTimeout(230); // not a whole number of either dash period (.35s sequence, .7s others)
       assert.notEqual(await flow.evaluate(element => getComputedStyle(element).strokeDashoffset), before);
       await openLegend(page); await page.getByRole('switch', { name: '连线流动', exact: true }).click(); await dismiss(page);
       assert.equal(await count(page, '.edge-flow'), 0, 'Stopping flow removes the overlay instead of freezing it.');
@@ -2169,7 +2196,7 @@ async function sequenceReadingChecks(browser, url, graph) {
         const position=await nodeElement(page,node.id).locator('.sequence-head').evaluate(head=>{
           const r=head.getBoundingClientRect(),nav=document.querySelector('.nav')?.getBoundingClientRect(),drawer=document.querySelector('.inspector')?.getBoundingClientRect();
           const left=nav?nav.right+12:24,right=drawer?drawer.left-12:innerWidth-24;
-          return {visible:r.left>=left-1&&r.right<=right+1&&r.top>=64,left:r.left,right:r.right};
+          const centre=(r.left+r.right)/2;return {visible:(right-left>=r.width?r.left>=left-1&&r.right<=right+1:Math.abs(centre-(left+right)/2)<=1)&&r.top>=64,left:r.left,right:r.right};
         });
         assert.ok(position.visible, `${node.id}: visible head at readable scale ${JSON.stringify(position)}`);
         located.push({id:node.id,zoom:await zoom(),...position});
@@ -2207,16 +2234,14 @@ async function sequenceReadingChecks(browser, url, graph) {
       await overview(); await page.locator(`.edge-label[data-edge-id="${graph.edges[0].id}"]`).click();
       await button(page,'编辑文字').click(); const labelInput=page.getByRole('textbox',{name:'名称',exact:true});
       const excessive='Long message '.repeat(150).trim(); await labelInput.fill(excessive); await button(page,'保存').click();await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));
-      await page.locator('.layout-problems').waitFor();
-      assert.equal(await labelInput.count(),0,'Saving a draft closes the editor even when its layout needs repair.');
+      assert.equal(await labelInput.count(),0,'A long message label is accepted and closes the editor.');
+      assert.equal(await count(page,'.layout-problems'),0,'The sequence grows its rows instead of reporting a layout problem.');
       await openMore(page);
       const [draftDownload]=await Promise.all([page.waitForEvent('download'),menuItem(page,'保存修改').click()]);
       const draftFile=path.join(outputRoot,'exports',`sequence-reading-${page.viewportSize().width}-draft.json`);
       await draftDownload.saveAs(draftFile);
       const draftModel=JSON.parse(fs.readFileSync(draftFile,'utf8'));
       assert.equal((draftModel.diagrams??[draftModel]).find(item=>item.meta.diagramType==='sequence').edges.find(edge=>edge.id===graph.edges[0].id).label,excessive);
-      await openMore(page);await menuItem(page,'导出 SVG').click();
-      await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('Diagram quality failed'));
       await openMore(page);await menuItem(page,'重置').click();await hidePanels(page);
       assert.deepEqual((await geometry(page)).nodes.map(({id,position})=>({id,position})),authored);
       await nodeElement(page,graph.nodes[0].id).focus(); await page.keyboard.press('Enter');
@@ -2241,7 +2266,7 @@ async function sequenceReadingChecks(browser, url, graph) {
 async function sequenceEditorHandoffCheck(browser,url,graph){
   if(graph.meta.diagramType!=='sequence')return;
   await runCase(browser,'sequence-editor-handoff',viewports[1],{reducedMotion:'reduce'},async page=>{
-    const fixture={meta:{title:'Sequence editor handoff',diagramType:'sequence',locale:'zh-CN',sourceRef:'Browser regression fixture; no business evidence'},groups:[],nodes:[100,800,1200].map((x,i)=>({id:`n${i}`,label:`Participant ${i}`,subtitle:'Short description',kind:'participant',position:{x,y:50},size:{width:220,height:900}})),edges:[{id:'m1',source:'n1',target:'n2',kind:'sync',order:1,label:'Message',evidence:'test',route:{messageY:180}}]};
+    const fixture={meta:{title:'Sequence editor handoff',diagramType:'sequence',locale:'zh-CN',sourceRef:'Browser regression fixture; no business evidence'},groups:[],nodes:[1100,100,800].map((x,i)=>({id:`n${i}`,label:`Participant ${i}`,subtitle:'Short description',kind:'participant',position:{x,y:50},size:{width:220,height:900}})),edges:[{id:'m1',source:'n2',target:'n0',kind:'sync',order:1,label:'Message',evidence:'test',route:{messageY:180}}]};
     assert.deepEqual(validateGraph(fixture),[]);await openFixture(page,fixture,viewports[1],url);await hidePanels(page);await fit(page);await setLocked(page,false);await pointerNode(page,fixture.nodes[0]);
     await page.locator('.node-card:visible').waitFor();await button(page,'编辑文字').click();
     await page.getByRole('textbox',{name:'名称',exact:true}).fill('   ');await button(page,'保存').click();await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));assert.equal(await page.getByRole('alert').innerText(),'名称不能为空');
@@ -2285,9 +2310,10 @@ async function sequencePersistenceChecks(browser, url, graph) {
     assert.ok((await nodeElement(page,selected.id).locator('.node-visual title').textContent()).includes('JSON 往返说明'));
     const download=async(suffix)=>{await openMore(page);const pending=page.waitForEvent('download');pending.catch(()=>{});await menuItem(page,'保存修改').click();const result=await pending,file=path.join(outputRoot,'exports',`sequence-${suffix}.json`);await result.saveAs(file);assert.equal(await result.failure(),null);return file;};
     const savedFile=await download('saved'),saved=JSON.parse(fs.readFileSync(savedFile,'utf8')),savedGraph=(saved.diagrams??[saved]).find(g=>g.meta.diagramType==='sequence');
-    assert.deepEqual(savedGraph.groups,graph.groups);assert.deepEqual(savedGraph.edges,graph.edges.map(edge=>edge.id===editedEdge?.id?{...edge,label:'配对标签 QA'}:edge));assert.deepEqual(savedGraph.executions,graph.executions);
+    const facts=item=>{const {position,size,route,...rest}=item;return rest;};
+    assert.deepEqual(savedGraph.groups.map(facts),graph.groups.map(facts));assert.deepEqual(savedGraph.edges.map(facts),graph.edges.map(edge=>edge.id===editedEdge?.id?{...edge,label:'配对标签 QA'}:edge).map(facts));assert.deepEqual(savedGraph.executions,graph.executions);
     assert.equal(savedGraph.nodes[0].label,selected.label+' QA');assert.equal(savedGraph.nodes[0].subtitle,'JSON 往返说明');assert.ok(Math.abs(savedGraph.nodes[0].position.x-position.x)<.001);
-    for(let i=1;i<graph.nodes.length;i++)assert.deepEqual(savedGraph.nodes[i],graph.nodes[i]);
+    for(let i=1;i<graph.nodes.length;i++){assert.deepEqual(facts(savedGraph.nodes[i]),facts(graph.nodes[i]));assert.equal(savedGraph.nodes[i].position.x,graph.nodes[i].position.x,'Columns stay put.');}
     if(other)assert.deepEqual(saved.diagrams.find(g=>viewIdOf(g)===viewIdOf(other)),other,'Reset in another view is isolated.');
     const regenerated=path.join(outputRoot,'sequence-regenerated');
     const args=[path.join(import.meta.dirname,'generate-viewer.mjs'),savedFile,regenerated,'--force','--verbose'];
@@ -2360,7 +2386,8 @@ async function fileUrlSequenceCheck(browser, graph) {
   }, true);
 }
 async function openFixture(page, fixture, viewport, url) {
-  const model = input.diagrams ? { ...input, diagrams: graphs.map(g => g.meta.diagramType === fixture.meta.diagramType ? fixture : g) } : fixture;
+  const slot = graphs.find(g => viewIdOf(g) === viewIdOf(fixture)) ?? graphs.find(g => g.meta.diagramType === fixture.meta.diagramType);
+  const model = input.diagrams ? { ...input, diagrams: graphs.map(g => g === slot ? fixture : g) } : fixture;
   const html = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/,
     (_, start, end) => start + JSON.stringify(model).replaceAll('<', '\\u003c') + end);
   await page.route(url, route => route.fulfill({ contentType: 'text/html', body: html }));
@@ -2368,7 +2395,7 @@ async function openFixture(page, fixture, viewport, url) {
 }
 
 async function assertTextBounds(page) {
-  const result = await page.locator('.node-visual text').evaluateAll(texts => ({
+  const result = await page.locator('.diagram-node .node-visual text').evaluateAll(texts => ({
     hidden: texts.filter(text => text.textContent.trim() && getComputedStyle(text).opacity === '0').map(text => text.textContent),
     failures: texts.flatMap(text => {
     const node = text.closest('.diagram-node'), box = text.getBoundingClientRect(), bounds = node.getBoundingClientRect();
@@ -2418,7 +2445,7 @@ async function textBoundsChecks(browser, url, graph) {
     uppercase.edges.forEach(edge => { edge.label = 'FOUND_VALUE FOUND_NULL KEY_NOT_EXIST（不回填）'; });
     uppercase.groups?.forEach(group => { group.label = '完整边界 LongMixedIdentifier_'.repeat(20); });
     const compiledUppercase = (await compileGraphLayout(uppercase)).graph;
-    for (const fixture of [graph, compiledStress, compiledUppercase]) {
+    for (const fixture of [graph, compiledStress, compiledUppercase].filter(Boolean)) {
       await openFixture(page, fixture, viewports[0], url);
       await searchSelect(page, fixture, target(fixture)); await hidePanels(page); await clear(page);
       for (const clicks of [0, 4, 2]) {
@@ -2664,9 +2691,7 @@ async function fullscreenChecks(browser, url, graph) {
         assert.notEqual((await snapshot()).viewport, panned);
       }
       await button(page, '适应画布').click(); await page.waitForTimeout(360);
-      const beforeDrag = (await snapshot()).positions;
-      await pointerNode(page, target(graph), [-24, 12]);
-      assert.notDeepEqual((await snapshot()).positions, beforeDrag, 'Unlocked nodes can be moved in fullscreen.');
+      assert.ok((await dragUntilKept(page, target(graph), [[-24, 12], [24, -12], [24, 12], [-24, -12], [0, 20], [0, -20]])).kept, 'Unlocked nodes can be moved in fullscreen.');
       await pointerNode(page, target(graph));
       const selected = graph.nodes.find(node => node.id !== target(graph).id) ?? target(graph);
       await nodeElement(page, selected.id).focus(); await page.keyboard.press('Enter');
@@ -2999,118 +3024,7 @@ async function detailBoundaryChecks(browser, url, graph, viewport, colorTheme) {
   }, true);
 }
 
-async function overviewInteractions(browser, url, graph, viewport, colorTheme) {
-  const displayedEdges = visibleEdges(graph), editedEdge = displayedEdges[0];
-  const name = `${viewIdOf(graph)}-${viewport.width}-${colorTheme}-overview`;
-  await runCase(browser, name, viewport, {}, async page => {
-    await page.goto(url + '?automation=1'); await chooseGraph(page, graph); await theme(page, colorTheme);
-    await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
-    await page.evaluate(() => { window.showSaveFilePicker = undefined; });
-    const save = async suffix => {
-      await page.waitForFunction(() => !document.querySelector('.canvas[aria-busy="true"]'));
-      await openMore(page); const [file] = await Promise.all([page.waitForEvent('download'), menuItem(page, '保存修改').click()]);
-      const filename = path.join(outputRoot, 'exports', `${name}-${suffix}.json`); await file.saveAs(filename); return JSON.parse(fs.readFileSync(filename));
-    };
-    const view = input => (input.diagrams ?? [input]).find(item => viewIdOf(item) === viewIdOf(graph));
-    const selected = graph.nodes[0]; await searchSelect(page, graph, selected);
-    assert.equal(await button(page, '编辑文字').isDisabled(), true); await setLocked(page, false);
-    await button(page, '编辑文字').click();
-    const title = page.getByRole('textbox', { name: '名称', exact: true });
-    await title.fill('取消的中文草稿'); await page.keyboard.press('Escape');
-    await button(page, '编辑文字').click(); assert.equal(await title.inputValue(), selected.label);
-    await title.fill(selected.label + ' · 中文编辑');
-    await title.evaluate(element => { element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })); element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true })); });
-    assert.equal(await count(page, '.card-form'), 1, 'Composition Enter does not submit');
-    await title.evaluate(element => element.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })));
-    const oversized = '完整的中文职责与 LongIdentifierThatMustRemainReadable '.repeat(8);
-    const bodyField = page.getByRole('textbox', { name: '总览正文', exact: true });
-    await bodyField.fill(oversized); await button(page, '保存').click();
-    await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));
-    assert.equal(await bodyField.inputValue(), oversized, 'An oversized local edit retains its complete draft.');
-    assert.deepEqual(view(await save('oversized-model')), graph, 'A local edit cannot move the whole overview to make room.');
-    const body = selected.overviewText.join('\n') + ' QA';
-    await bodyField.fill(body);
-    await button(page, '添加徽章').click();
-    await page.getByRole('textbox', { name: `徽章 ${selected.badges.length + 1}`, exact: true }).fill('接入规范 · 已编辑');
-    await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));
-    assert.equal(await count(page, '.card-form'), 1, 'A new badge that exceeds the local frame retains the draft.');
-    assert.deepEqual(view(await save('badge-growth-model')), graph, 'Badge growth cannot silently rearrange adjacent sections.');
-    await button(page, '移除徽章').nth(selected.badges.length).click();
-    await page.getByRole('textbox', { name: `徽章 ${selected.badges.length}`, exact: true }).fill('接入规范 · 已编辑');
-    await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]')); await page.locator('.card-form').waitFor({ state: 'detached' });
-    if (displayedEdges.length) {
-      await hidePanels(page); await fit(page); const edge = editedEdge;
-      await page.locator('.react-flow__edge').and(page.locator(`[data-id=${JSON.stringify(edge.id)}]`)).focus(); await page.keyboard.press('Enter'); await ensureInspector(page);
-      await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill(edge.label + ' · 已编辑'); await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]')); await page.locator('.card-form').waitFor({ state: 'detached' });
-    }
-    const edited = await save('edited'), editedView = view(edited);
-    if (displayedEdges.length) assert.equal(editedView.edges.find(edge => edge.id === editedEdge.id).label, editedEdge.label + ' · 已编辑');
-    assert.equal(editedView.nodes[0].overviewText[0], body.trim()); assert.equal(editedView.nodes[0].badges.at(-1).label, '接入规范 · 已编辑');
-    requireDiagramQuality(editedView);
-    assert.equal(editedView.edges.length, graph.edges.length, 'Hidden relations remain in saved JSON');
-    for (const edge of graph.edges.filter(edge => !displayedEdges.some(item => item.id === edge.id))) assert.deepEqual(editedView.edges.find(item => item.id === edge.id), edge);
-    const other = graphs.find(item => viewIdOf(item) !== viewIdOf(graph));
-    if (other) { await chooseGraph(page, other); await chooseGraph(page, graph); const retained = await save('switched'); assert.deepEqual(view(retained), editedView); assert.deepEqual((retained.diagrams ?? []).find(item => viewIdOf(item) === viewIdOf(other)), other); }
-    await setLocked(page, false); await hidePanels(page);
-    const note = overviewSections(editedView).find(item => item.mode === 'note');
-    if (note) {
-      await page.evaluate(section => window.__qgraphflowAutomation.setCenter(section.position.x + section.size.width / 2, section.position.y + 50, { zoom: .65, duration: 0 }), note);
-      await page.getByRole('button', { name: note.title, exact: true }).click();
-      await button(page, '编辑文字').click(); const text = page.getByRole('textbox', { name: '总览正文', exact: true });
-      await text.fill(''); await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]')); assert.equal(await count(page, '.card-form'), 1); assert.ok(await count(page, '.card-error'));
-      await text.fill('说明区中文正文 · 保存与导出保留全部内容'); await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]')); await page.locator('.card-form').waitFor({ state: 'detached' });
-    }
-    await hidePanels(page); await fit(page);
-    const grid = overviewSections(graph).find(section => section.mode === 'grid' && section.items?.filter(item => item.nodeId).length > 1);
-    if (grid) {
-      const beforeDrag = view(await save('drag-before'));
-      const peers = grid.items.filter(item => item.nodeId), a = await nodeElement(page, peers[0].nodeId).boundingBox(), b = await nodeElement(page, peers[1].nodeId).boundingBox();
-      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 15 }); await page.mouse.up();
-      const moved = view(await save('reordered')); requireDiagramQuality(moved);
-      assert.deepEqual(moved, beforeDrag, 'Dropping onto an occupied card restores the accepted canvas rather than silently reordering the grid.');
-    }
-    if (grid) {
-      const baseline = view(await save('keyboard-before')), section = overviewSections(baseline).find(item => item.id === grid.id);
-      const id = section.items.find(item => item.nodeId).nodeId;
-      await nodeElement(page, id).focus(); await setLocked(page, true); await nodeElement(page, id).focus(); await page.keyboard.press('ArrowRight'); assert.deepEqual(view(await save('keyboard-locked')), baseline);
-      await setLocked(page, false); await nodeElement(page, id).focus(); await page.keyboard.press('ArrowRight');
-      const moved = view(await save('keyboard-reordered')); requireDiagramQuality(moved); assert.notDeepEqual(overviewSections(moved).find(item => item.id === grid.id).items, section.items);
-      await nodeElement(page, id).focus(); await page.keyboard.press('ArrowLeft'); assert.deepEqual(view(await save('keyboard-restored')), baseline);
-    }
-    const snapshot = await save('final'), finalView = view(snapshot); requireDiagramQuality(finalView);
-    if (displayedEdges.length) assert.equal(finalView.edges.find(edge => edge.id === editedEdge.id).label, editedView.edges.find(edge => edge.id === editedEdge.id).label, 'Relation edits survive drag and keyboard reorder');
-    // Real file-picker failures and cancellation retain the edited collection.
-    for (const phase of ['cancel', 'open', 'write', 'close']) {
-      await page.evaluate(phase => { window.overviewSave = { phase }; window.showSaveFilePicker = async () => { if (phase === 'cancel') throw new DOMException('Cancel', 'AbortError'); return { createWritable: async () => { if (phase === 'open') throw new Error('Open failure'); return { write: async contents => { window.overviewSave.contents = contents; if (phase === 'write') throw new Error('Write failure'); }, close: async () => { throw new Error('Close failure'); }, abort: async () => {} }; } }; }; }, phase);
-      await openMore(page); await menuItem(page, '保存修改').click(); await page.waitForFunction(phase => document.querySelector('.toast')?.textContent.includes(phase === 'cancel' ? '已取消保存' : '保存失败'), phase);
-      const contents = await page.evaluate(() => window.overviewSave.contents); if (contents) assert.deepEqual(JSON.parse(contents), snapshot);
-    }
-    await page.evaluate(() => { window.showSaveFilePicker = undefined; });
-    const files = await exportsMatch(page, finalView, name);
-    const savedHtml = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/, (_, start, end) => start + safeJson(snapshot) + end);
-    const reloadUrl = url + 'overview-reopen'; await page.route(reloadUrl, route => route.fulfill({ contentType: 'text/html', body: savedHtml }));
-    await page.goto(reloadUrl); await chooseGraph(page, finalView);
-    assert.equal(await page.locator('.diagram-node').filter({ hasText: body.trim().slice(0, 30) }).count(), 1);
-    await openMore(page); await menuItem(page, '重置').click(); const resetModel = await save('reset'); assert.deepEqual(view(resetModel), finalView, 'A reopened page resets to its saved originals');
-    await page.goto(url); await chooseGraph(page, graph);
-    await setLocked(page, false); await searchSelect(page, graph, selected); await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill('一次性修改'); await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));
-    await openMore(page); await menuItem(page, '重置').click(); assert.deepEqual(view(await save('original-reset')), graph);
-    if (graphs.length === 2) {
-      const duplicate = structuredClone(graph); duplicate.meta.viewId = viewIdOf(graph) + '-same-template'; duplicate.meta.title += ' · 同模板副本';
-      const repeated = { diagrams: [graph, duplicate] }, repeatHtml = fs.readFileSync(path.join(inputRoot, 'index.html'), 'utf8').replace(/(<script\b[^>]*\bid="graph-data"[^>]*>)[\s\S]*?(<\/script>)/, (_, start, end) => start + safeJson(repeated) + end);
-      const repeatUrl = url + 'same-template'; await page.route(repeatUrl, route => route.fulfill({ contentType: 'text/html', body: repeatHtml }));
-      await page.goto(repeatUrl); await chooseGraph(page, duplicate); await setLocked(page, false); await searchSelect(page, duplicate, duplicate.nodes[0]);
-      await button(page, '编辑文字').click(); await page.getByRole('textbox', { name: '名称', exact: true }).fill('副本的独立编辑'); await button(page, '保存').click(); await page.waitForFunction(()=>!document.querySelector('.card-form[aria-busy="true"]'));
-      await chooseGraph(page, graph); const model = await save('same-template'); assert.deepEqual(view(model), graph); assert.equal(model.diagrams[1].nodes[0].label, '副本的独立编辑');
-      await openMore(page); await menuItem(page, '重置').click(); const isolated = await save('same-template-reset'); assert.equal(isolated.diagrams[1].nodes[0].label, '副本的独立编辑');
-      await chooseGraph(page, duplicate); await openMore(page); await menuItem(page, '重置').click(); const reset = await save('same-template-original'); assert.deepEqual(reset.diagrams[1], duplicate);
-    }
-    return { viewId: viewIdOf(graph), colorTheme, files, editing: ['body', 'badges', 'notes', 'cancel', 'composition', 'ordering'], persistence: ['switch', 'reopen', 'reset', 'cancel', 'open', 'write', 'close'] };
-  }, true);
-}
-
 async function manualOwnershipChecks(browser, url, graph) {
-  if (isArchitectureOverview(graph)) return;
   await runCase(browser, viewIdOf(graph) + '-manual-ownership', viewports[0], {}, async page => {
     await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { value: undefined, configurable: true }));
     await page.goto(url); await chooseGraph(page, graph, false); await hidePanels(page); await setLocked(page, false); await fit(page); await settledViewport(page);
@@ -3209,7 +3123,7 @@ try {
   if (process.env.QA_EXTRAS?.split(',').includes('export-failures')) await Promise.all(matrixViewports.map(async viewport=>{for(const colorTheme of ['light','dark'])for(const graph of filtered)await exportFailureChecks(browser,url,graph,viewport,colorTheme);}));
   if (filtered.length && extraEnabled('save-failures')) await saveFailureChecks(browser, url, filtered[0]);
   if (extraEnabled('strict-draft')) for (const graph of filtered) await strictDraftChecks(browser, url, graph);
-  if (filtered.length && extraEnabled('fullscreen')) await fullscreenChecks(browser, url, filtered.find(graph => !isArchitectureOverview(graph)) ?? filtered[0]);
+  if (filtered.length && extraEnabled('fullscreen')) await fullscreenChecks(browser, url, filtered[0]);
   if (filtered.length && extraEnabled('edit-persistence')) await editPersistenceChecks(browser, url);
   if (filtered.length && extraEnabled('relationship-card-avoidance')) await relationshipCardAvoidanceCheck(browser, url);
   if (filtered.length && extraEnabled('edge-site')) await edgeSiteCheck(browser, url);
@@ -3220,14 +3134,14 @@ try {
   if (process.env.QA_EXTRAS?.split(',').includes('motion-matrix')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await motionMatrix(browser, url, graph, viewport, colorTheme); }));
   if (process.env.QA_EXTRAS?.split(',').includes('manual-ownership')) for (const graph of filtered) await manualOwnershipChecks(browser, url, graph);
   if (process.env.QA_EXTRAS?.split(',').includes('layout-worker')) for (const graph of filtered) await layoutWorkerChecks(browser, url, graph);
-  if (process.env.QA_EXTRAS?.split(',').includes('acceptance')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of (process.env.QA_THEMES ?? 'light,dark').split(',')) for (const graph of filtered.filter(graph => !isArchitectureOverview(graph))) await completeInteractions(browser, url, graph, viewport, colorTheme); }));
+  if (process.env.QA_EXTRAS?.split(',').includes('acceptance')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of (process.env.QA_THEMES ?? 'light,dark').split(',')) for (const graph of filtered) await completeInteractions(browser, url, graph, viewport, colorTheme); }));
   if (process.env.QA_EXTRAS?.split(',').includes('acceptance-details')) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await detailBoundaryChecks(browser, url, graph, viewport, colorTheme); }));
-  if (process.env.QA_EXTRAS?.split(',').some(extra => ['overview', 'acceptance'].includes(extra))) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered.filter(isArchitectureOverview)) await overviewInteractions(browser, url, graph, viewport, colorTheme); }));
   if (!process.env.QA_ONLY_EXTRAS) await Promise.all(matrixViewports.map(async viewport => { for (const colorTheme of ['light', 'dark']) for (const graph of filtered) await matrix(browser, url, graph, viewport, colorTheme); }));
   if (extraEnabled('sequence-reading')) for (const graph of filtered) await sequenceReadingChecks(browser, url, graph);
   if (extraEnabled('sequence-persistence')) for (const graph of filtered) { await sequencePersistenceChecks(browser, url, graph); await sequenceFullscreenChecks(browser, url, graph); await sequenceEditorHandoffCheck(browser, url, graph); }
   if (extraEnabled('file-url')) for (const graph of filtered) await fileUrlSequenceCheck(browser, graph);
-  if (extraEnabled('all')) for (const graph of filtered) {
+  // runCase picks the named cases inside; QA_EXTRAS naming any of them must enter this loop.
+  if (['text-bounds', 'selection-entrypoints', 'ambient-flow', 'flow-contrast', 'inspector-sync', 'reduced-motion', 'offline'].some(extraEnabled)) for (const graph of filtered) {
     await textBoundsChecks(browser, url, graph);
     await entrypoints(browser, url, graph);
     await flowChecks(browser, url, graph);

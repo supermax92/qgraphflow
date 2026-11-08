@@ -1,7 +1,6 @@
 import { alignedLayout } from './layout-policy.js';
 import { presentationGraph } from './presentation-graph.js';
 import { TYPOGRAPHY } from './visual-style.js';
-import { overviewSections, hasOverviewContent, overviewCardLayout } from './architecture-overview.js';
 import { CARD, cardTextLayout, estimateLabelSize, edgeLabelLayout, groupHeadingLayout, labelRunsByLine, layoutText } from './text-layout.js';
 import { LAYOUT_LIMITS, LAYOUT_TARGETS } from './layout-spacing.js';
 import { compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
@@ -45,7 +44,7 @@ export function cardinalityMarks(cardinality, point, neighbor) {
 
 export function graphBounds(graph, routes = createEdgeRoutes(graph)) {
   graph = presentationGraph(graph);
-  const items = [...overviewSections(graph), ...(graph.groups ?? []), ...graph.nodes, ...sequenceExecutions(graph).map(item => ({ position: { x: item.x, y: item.y }, size: { width: item.width, height: item.height } }))];
+  const items = [...(graph.groups ?? []), ...graph.nodes, ...sequenceExecutions(graph).map(item => ({ position: { x: item.x, y: item.y }, size: { width: item.width, height: item.height } }))];
   const points = [...routes.values()].flatMap(route => [...route.points, { x: route.labelBox.x, y: route.labelBox.y }, { x: route.labelBox.x + route.labelBox.width, y: route.labelBox.y + route.labelBox.height }]);
   for (const route of routes.values()) for (const label of route.endpointLabels ?? []) points.push({ x: label.labelBox.x, y: label.labelBox.y }, { x: label.labelBox.x + label.labelBox.width, y: label.labelBox.y + label.labelBox.height });
   if (getDiagram(graph.meta?.diagramType).cardinalities) for (const edge of graph.edges) {
@@ -227,8 +226,14 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const sourceX = sourceExecution ? sourceExecution.x + (forward ? sourceExecution.width : 0) : center(source).x;
   const targetX = targetExecution ? targetExecution.x + (source.id === target.id || !forward ? targetExecution.width : 0) : center(target).x;
   const label = sequenceMessageLabel(graph, edge, pairs, scopes);
-  const available = source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, Math.abs(targetX - sourceX) - 32 - 12));
-  const layout = edgeLabelLayout(label, available);
+  const span = Math.abs(targetX - sourceX);
+  const narrow = edgeLabelLayout(label, source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, span - 32 - 12)));
+  // Spacing reserves a 320px label; a message across a wider gap uses that room when it saves lines and still passes the
+  // participant-gap and label-execution checks below, so stored layouts stay valid.
+  const wide = source.id === target.id ? null : edgeLabelLayout(label, Math.max(1, span - 64));
+  const wideAt = wide && (edge.route?.labelAt ?? { x: (sourceX + targetX) / 2, y: y - 6 - wide.height / 2 });
+  const layout = wide && wide.lines.length < narrow.lines.length && wide.width + 32 <= Math.abs(center(target).x - center(source).x)
+    && !executions.some(bar => intersects({ x: wideAt.x - wide.width / 2, y: wideAt.y - wide.height / 2, width: wide.width, height: wide.height }, bar, 2)) ? wide : narrow;
   const labelSize = { width: layout.width, height: layout.height };
   if (source.id === target.id) {
     const extent = 48 + selfIndex * LAYOUT_LIMITS.parallelGap;
@@ -507,7 +512,7 @@ export function auditGraphLayout(graph) {
   const classicCard = getDiagram(type).cardLayout && !compactCards(graph);
   if (getDiagram(type).cardLayout) for (const node of graph.nodes) {
     if (node.size.height < (classicCard ? 100 : CARD.minHeight)) continue;
-    const { minHeight } = type === 'architecture' && hasOverviewContent(node) ? overviewCardLayout(node) : cardTextLayout(node, graph.meta.locale, classicCard);
+    const { minHeight } = cardTextLayout(node, graph.meta.locale, classicCard);
     if (node.size.height < minHeight) fail('text.card-height', [node.id], `layout: node ${node.id} text needs at least ${minHeight}px height at 20/16px; enlarge the node and check its route clearance`);
   }
   for (let left = 0; left < graph.nodes.length; left += 1) {

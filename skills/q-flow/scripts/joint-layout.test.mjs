@@ -65,15 +65,6 @@ test('a measured edit repairs both neighboring gaps together without changing fa
   assert.ok(result.graph.nodes[2].position.y > input.nodes[2].position.y);
 });
 
-test('a compact overview gap supports a straight relation with no artificial overlapping stubs', async () => {
-  const { fitArchitectureOverview } = await import('../assets/viewer/src/architecture-overview.js');
-  const input = { ...graph([{id:'a',kind:'component',label:'A'},{id:'b',kind:'component',label:'B'}],[edge('ab','a','b')]), meta:{title:'Narrow overview gap',diagramType:'architecture',architectureView:'capabilities',viewId:'gap',sourceRef:'conceptual:gap'},layout:{sections:[{id:'row',title:'Measured cards',mode:'grid',columns:2,items:[{nodeId:'a'},{nodeId:'b'}]}]} };
-  const result = fitArchitectureOverview(input, requireDiagramQuality), route=createEdgeRoutes(result).get('ab');
-  assert.equal(route.points.length,2);
-  assert.equal(route.points[1].x-route.points[0].x,14);
-});
-
-
 test('a short vertical gap reroutes to keep the full label on its own line', () => {
   const input=graph([card('a',100,100),card('b',100,240)],[edge('ab','a','b','关系说明')]);
   const output=routed(input),route=createEdgeRoutes(output).get('ab');requireDiagramQuality(output);

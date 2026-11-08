@@ -80,7 +80,7 @@ QA_HEADED=1 QA_ONLY_EXTRAS=1 QA_EXTRAS=fullscreen,fullscreen-errors \
 node scripts/browser-interactions.mjs /tmp/new-viewer /tmp/fullscreen-check
 ```
 
-The browser script covers every supplied type at three sizes, in light and dark themes, with interactions. Use a eleven-view collection for the full matrix. `QA_FIXTURE_DIR` adds special-shape fixtures. The script needs adjacent source modules and cannot be copied as a standalone script.
+The browser script covers every supplied type at three sizes, in light and dark themes, with interactions. Use a nine-view collection for the full matrix. `QA_FIXTURE_DIR` adds special-shape fixtures. The script needs adjacent source modules and cannot be copied as a standalone script.
 
 Details follow the user's selection: `useSelection` owns selection and `useViewerController` derives `inspectedNode`; the quick-look card and Inspector in `ViewerShell` consume it. There is no autoplay, step-by-step reading or flow orchestration. The legend is in a floating button at the canvas's top left; `.inspector-facts` remains the last details section. `DiagramCanvas`'s `has-flow` and `styles.css` control static-layer contrast during edge motion; selection must not fill the moving dash gaps.
 
@@ -89,7 +89,7 @@ QA_ONLY_EXTRAS=1 QA_EXTRAS=flow-contrast,inspector-sync \
 node scripts/browser-interactions.mjs /tmp/new-viewer /tmp/new-viewer-sync-check
 ```
 
-`diagram-modules.test.mjs` adds a tenth test type in a temporary copy, changes only that copy's module and registry, and performs validation, build and generation. The product supports eleven presentation types over nine compatible semantic types. Set `MODULE_TEST_OUTPUT=/tmp/new-module-check` to retain the copy and use its `skills/q-flow/scripts/browser-interactions.mjs` to check `page/`. The copy preserves repository hierarchy and root third-party notices to verify actual build dependencies. The directory must not already exist.
+`diagram-modules.test.mjs` adds a tenth test type in a temporary copy, changes only that copy's module and registry, and performs validation, build and generation. The product supports nine diagram types, one presentation each. Set `MODULE_TEST_OUTPUT=/tmp/new-module-check` to retain the copy and use its `skills/q-flow/scripts/browser-interactions.mjs` to check `page/`. The copy preserves repository hierarchy and root third-party notices to verify actual build dependencies. The directory must not already exist.
 
 Rebuild `assets/viewer-dist/index.html` after Viewer changes. After installation, check the actual cache and generate acceptance output with the installed version in a new session. Existing standalone HTML embeds old code and must be regenerated.
 
@@ -104,7 +104,7 @@ Rebuild `assets/viewer-dist/index.html` after Viewer changes. After installation
 | Private Viewer package | `codegraph-flow-viewer` | `qgraphflow-viewer` |
 | Default delivery directory | `docs/codegraph-flow/<scope>-<diagram-type>/` | `docs/qgraphflow/<scope>-<diagram-type>/` |
 
-The package keeps only the new skill entry, without old aliases. Its scope remains eleven presentation diagram types. Renaming MapSprig / QMindFlow is outside this migration.
+The package keeps only the new skill entry, without old aliases. Its scope is nine diagram types. Renaming MapSprig / QMindFlow is outside this migration.
 
 From the repository root, use the new paths:
 
@@ -213,7 +213,7 @@ Read this section only for Viewer maintenance or interaction audits. Graph autho
 
 ### Browser acceptance
 
-- Run the full browser matrix only when Viewer source, edge routing, graph schema, or validation behavior changed. Cover all eleven templates at 1440×900, 1920×1080 and 768×1024 in light and dark themes; check default directed flow, absence of playback controls, stable manual selection with still-moving edges, the independent flow switch, dynamic semantic legends, pan/zoom, ranked search, linked node/edge emphasis without geometry changes or duplicate pulses, complete Inspector wrapping, layout lock and spacing-result feedback, reset, SVG/PNG download without transient effects, keyboard use, reduced motion, and horizontal overflow. Check each type's own notation and core emphasis. Standalone pages have no diagram-type menu; requested collections use a vertical view menu. Both desktop panels can remain open together.
+- Run the full browser matrix only when Viewer source, edge routing, graph schema, or validation behavior changed. Cover all nine templates at 1440×900, 1920×1080 and 768×1024 in light and dark themes; check default directed flow, absence of playback controls, stable manual selection with still-moving edges, the independent flow switch, dynamic semantic legends, pan/zoom, ranked search, linked node/edge emphasis without geometry changes or duplicate pulses, complete Inspector wrapping, layout lock and spacing-result feedback, reset, SVG/PNG download without transient effects, keyboard use, reduced motion, and horizontal overflow. Check each type's own notation and core emphasis. Standalone pages have no diagram-type menu; requested collections use a vertical view menu. Both desktop panels can remain open together.
 - Open downloaded images to check complete labels, notation, uncropped boundaries, and theme parity. Reuse installed browser tooling and close temporary HTTP servers in `finally`.
 
 ### Sequence rendering and interaction
@@ -236,7 +236,7 @@ State colors come from the lifecycle, not from the module (one machine is one mo
 
 Nodes, routes, arrows and stroke widths scale together. Sequence screen dash periods have a 6 CSS px minimum to avoid low-DPI aliasing; baseline, mask and phase share this adjustment. Static SVG/PNG exports retain graph-unit notation. Sequence motion uses a 3.2-unit stroke over a 1.6-unit baseline; other directed edges use 2.8 units. Both the main rules and the motion-effects block at the end of `styles.css` participate. The graph collection owns the user's flow choice so switching diagrams preserves it. Keep live reduced-motion behavior. Sync uses a solid baseline independently of evidence; non-sequence notation and undirected kinds remain unchanged. Default include/extend labels sit beside their path so short use-case relationships remain visible; explicit label positions still win.
 
-Run `node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs`, build the Viewer, generate the sample and use `QA_ONLY_EXTRAS=1 QA_EXTRAS=motion-matrix node skills/q-flow/scripts/browser-interactions.mjs GENERATED REPORT` for actual screenshot profiles and video. Eleven views × two themes × three viewports give 66 cases. Check default and selected overview plus readable local paths for every actual line kind, opposite directions and self messages. ER is a static control. A CSS clock or structure validation does not prove perceptible movement. Preserve historical media recording hashes; write a new report.
+Run `node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs`, build the Viewer, generate the sample and use `QA_ONLY_EXTRAS=1 QA_EXTRAS=motion-matrix node skills/q-flow/scripts/browser-interactions.mjs GENERATED REPORT` for actual screenshot profiles and video. Nine views × two themes × three viewports give 54 cases. Check default and selected overview plus readable local paths for every actual line kind, opposite directions and self messages. ER is a static control. A CSS clock or structure validation does not prove perceptible movement. Preserve historical media recording hashes; write a new report.
 
 Use `QA_EXTRAS=motion-preferences` for user flow choice, live reduced motion, diagram switching, high contrast and reduced transparency. `QA_TYPES` and `QA_WIDTHS` narrow matrix retries. Frame sampling excludes labels, overlaid edges and bends; correlate the changing ink across 0/70/140 ms and retain the actual images for review.
 
@@ -266,6 +266,6 @@ node scripts/validate-graph.mjs output-directory/graph.json
 
 ## Shared compact layout and routing
 
-See [layout-routing.md](layout-routing.md) when maintaining layout, movement, editing or exports. This applies to all eleven templates over nine compatible semantic types; generation and the Viewer use the same source.
+See [layout-routing.md](layout-routing.md) when maintaining layout, movement, editing or exports. This applies to all nine templates, one per semantic type; generation and the Viewer use the same source.
 
-The eleven-template catalog is in `view-identity.js`; measured composition strategies are in `layout-templates.js`. The type selector lives at the toolbar right. Template order constraints also apply to local Arrange operations.
+The nine-template catalog is in `view-identity.js`; measured composition strategies are in `layout-templates.js`. The type selector lives at the toolbar right. Template order constraints also apply to local Arrange operations.

@@ -82,7 +82,7 @@ export function layoutText(value, maxWidth, fontSize = TYPOGRAPHY.body, lineHeig
 
 // Component card: the icon plate, the title and the kind tag share the first row; the subtitle and the source anchor (file
 // name and lines) follow in the same text column. The whole block is centred vertically in a taller card.
-export const CARD = Object.freeze({ pad: 14, plate: 24, textX: 48, tagGap: 8, tagPad: 8, titleLine: 26, subtitleLine: 24, sourceLine: 20, minHeight: 64, maxWidth: 360 });
+export const CARD = Object.freeze({ pad: 14, plate: 24, textX: 48, tagGap: 8, tagPad: 8, titleLine: 26, subtitleLine: 24, sourceLine: 20, chipLine: 24, chipGap: 6, minHeight: 64, maxWidth: 360 });
 // The card shows where a component is defined (file name and first line); the quick look and Inspector give the full path and range.
 export const cardSourceText = node => node.source?.file ? `${node.source.file.split('/').at(-1)}:${node.source.lineStart}` : '';
 // A source line never wraps: a file name too long for the column keeps its start and end around an ellipsis.
@@ -109,8 +109,24 @@ export function cardTextLayout(node, locale, classic = false, corner = 0) {
   const title = layoutText(node.label, column - tag.width - CARD.tagGap - corner, TYPOGRAPHY.title, CARD.titleLine);
   const subtitle = layoutText(node.subtitle ?? '', column, TYPOGRAPHY.body, CARD.subtitleLine);
   const source = layoutText(oneLine(cardSourceText(node), column, TYPOGRAPHY.small), column, TYPOGRAPHY.small, CARD.sourceLine);
-  const contentHeight = CARD.pad + title.height + (subtitle.height ? 4 + subtitle.height : 0) + (source.height ? 6 + source.height : 0) + CARD.pad;
-  return { title, subtitle, source, tag, contentHeight, minHeight: Math.max(CARD.minHeight, contentHeight) };
+  const chips = cardChips(node, column), chipsHeight = chips.length ? (chips.at(-1).row + 1) * CARD.chipLine : 0;
+  const contentHeight = CARD.pad + title.height + (subtitle.height ? 4 + subtitle.height : 0) + (source.height ? 6 + source.height : 0) + (chipsHeight ? 6 + chipsHeight : 0) + CARD.pad;
+  return { title, subtitle, source, tag, chips, contentHeight, minHeight: Math.max(CARD.minHeight, contentHeight) };
+}
+
+// Badges and folded shared dependencies (dependencyTags, display only) as tags under the source line, wrapped to the
+// text column; a tag wider than the column keeps the column width.
+function cardChips(node, column) {
+  const chips = [];
+  let x = 0, row = 0;
+  for (const value of [...(node.badges ?? []).map(badge => badge.label), ...(node.dependencyTags ?? [])]) {
+    // Same measure as the kind tag: stereotype letter spacing .6px per character.
+    const width = Math.min(column, Math.ceil(textWidth(value, TYPOGRAPHY.small) + value.length * .6) + 2 * CARD.tagPad);
+    if (x && x + width > column) { row++; x = 0; }
+    chips.push({ text: value, x, row, width });
+    x += width + CARD.chipGap;
+  }
+  return chips;
 }
 
 export function edgeLabelLayout(value, maxWidth = LAYOUT_TARGETS.labelWidth) {

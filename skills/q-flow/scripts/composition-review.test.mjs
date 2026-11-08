@@ -6,6 +6,8 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { reviewComposition, validateGraphInput } from './validate-graph.mjs';
 import { compileViews } from './generate-viewer.mjs';
+import { compileGraphLayout } from './compile-layout.mjs';
+import { requireDiagramQuality } from '../assets/viewer/src/layout-quality.js';
 
 const script = path.join(import.meta.dirname, 'validate-graph.mjs');
 const skillDir = path.join(import.meta.dirname, '..');
@@ -177,4 +179,104 @@ test('the authoring pages and the skill carry the card-identity rules the review
   assert.match(read('references/types/state.md'), /`choice` takes the module/);
   assert.match(read('SKILL.md'), /never rename a module for colour/);
   assert.match(read('references/graph-common.md'), /never renamed for colour/);
+});
+
+test('a collection may hold several views of one type when each names itself, and each gets its own SVG', t => {
+  const phase = (viewId, offset) => ({ ...longSequence(3, 4), meta: { ...meta('sequence'), ...(viewId ? { viewId } : {}), title: `phase ${offset}` } });
+  assert.deepEqual(validateGraphInput({ diagrams: [phase(undefined, 1), phase(undefined, 2)] }, { inputOnly: true }), [
+    'diagrams[0].meta.viewId is required for repeated sequence views',
+    'diagrams[1].meta.viewId is required for repeated sequence views',
+    'diagrams[1].meta.viewId duplicates sequence'
+  ]);
+  const collection = { diagrams: [phase('order', 1), phase('callback', 2)] };
+  assert.deepEqual(validateGraphInput(collection, { inputOnly: true }), []);
+  const output = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-repeated-'));
+  t.after(() => fs.rmSync(output, { recursive: true, force: true }));
+  const result = spawnSync(process.execPath, [path.join(skillDir, 'scripts/generate-viewer.mjs'), temp(t, collection), output, '--force'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(fs.readdirSync(output).filter(name => name.endsWith('.svg')).sort(), ['diagram-1-sequence.svg', 'diagram-2-sequence.svg']);
+});
+
+test('authored ranks lay a relations view out in reading columns from left to right', async () => {
+  const node = (id, rank, kind = 'component') => ({ id, label: id, kind, module: 'mq', layout: { rank } });
+  const graph = { meta: meta('architecture'), layout: { direction: 'right' },
+    nodes: [node('order-api', 0, 'service'), node('notify-service', 0), node('queue', 1, 'data'), node('notify-consumer', 2), node('reissue-consumer', 2)],
+    edges: [['order-api', 'queue'], ['notify-service', 'queue'], ['queue', 'notify-consumer'], ['queue', 'reissue-consumer']].map(([source, target], i) => ({ id: `e${i}`, source, target, kind: 'data', label: 'send', evidence: 'inference' })) };
+  const { graph: laid } = await compileGraphLayout(graph);
+  requireDiagramQuality(laid);
+  const column = rank => laid.nodes.filter(item => item.layout.rank === rank).map(item => [item.position.x, item.position.x + item.size.width]);
+  for (const rank of [0, 1]) assert.ok(Math.max(...column(rank).map(([, right]) => right)) < Math.min(...column(rank + 1).map(([left]) => left)), `column ${rank} ends before column ${rank + 1} starts`);
+});
+
+const hubGraph = () => ({ meta: meta('architecture'), layout: { sharedDependencies: ['config'] },
+  nodes: [
+    { id: 'api', label: 'Order API', kind: 'service', module: 'order', badges: [{ label: 'v2', role: 'version', evidence: 'document' }] },
+    { id: 'worker', label: 'Notify worker', kind: 'component', module: 'order' },
+    { id: 'config', label: 'Config service', kind: 'config', module: 'platform' },
+    { id: 'store', label: 'Order store', kind: 'database', module: 'platform' }],
+  edges: [['api', 'worker', 'call'], ['worker', 'store', 'data'], ['api', 'config', 'call'], ['worker', 'config', 'call']]
+    .map(([source, target, kind], i) => ({ id: `e${i}`, source, target, kind, label: 'uses', evidence: 'inference' })) });
+
+test('shared dependencies are only for relations views, name real nodes and never sit inside a primary path', () => {
+  const errors = graph => validateGraphInput(graph, { inputOnly: true });
+  assert.deepEqual(errors(hubGraph()), []);
+  assert.match(errors({ ...hubGraph(), layout: { sharedDependencies: ['missing'] } }).join('\n'), /sharedDependencies must be a non-empty list of distinct node IDs/);
+  assert.match(errors({ ...hubGraph(), layout: { sharedDependencies: ['config'], primaryPath: ['api', 'config'] } }).join('\n'), /primaryPath cannot enter a shared dependency/);
+  const flow = { meta: meta('flowchart'), layout: { sharedDependencies: ['a'] }, nodes: [{ id: 'a', label: 'A', kind: 'start' }, { id: 'b', label: 'B', kind: 'end' }], edges: [{ id: 'f', source: 'a', target: 'b', kind: 'flow', evidence: 'inference' }] };
+  assert.match(errors(flow).join('\n'), /sharedDependencies requires an architecture relations view/);
+});
+
+test('folded shared dependencies keep every edge in the model and draw as tags on the source cards', async () => {
+  const { createDiagramSvg } = await import('../assets/viewer/src/export-svg.js');
+  const { graph } = await compileGraphLayout(hubGraph());
+  requireDiagramQuality(graph);
+  assert.deepEqual(graph.edges.map(edge => edge.id), ['e0', 'e1', 'e2', 'e3'], 'no edge is dropped');
+  for (const id of ['e2', 'e3']) assert.equal(graph.edges.find(edge => edge.id === id).route, undefined, `${id} is folded, not drawn`);
+  for (const id of ['e0', 'e1']) assert.ok(graph.edges.find(edge => edge.id === id).route, `${id} stays a line`);
+  assert.deepEqual(graph.layout.sharedDependencies, ['config']);
+  assert.ok(graph.nodes.every(node => node.dependencyTags === undefined), 'display tags never reach the saved model');
+  const svg = createDiagramSvg(graph);
+  assert.equal(svg.match(/→ Config service/g)?.length, 2, 'both callers carry the tag');
+  assert.match(svg, />v2</, 'an authored badge draws on a relations card');
+  assert.doesNotMatch(svg, /data-diagram-edge-id="e2"/, 'the folded edge draws no line');
+});
+
+test('preserve routes a new or crowded edge itself, never moves a placed node, and returns a passing graph untouched', async () => {
+  const { createEdgeRoutes } = await import('../assets/viewer/src/edge-routing.js');
+  const state = { meta: meta('state'), nodes: [{ id: 'i', label: 'start', kind: 'initial' }, ...['a', 'b', 'c'].map(id => ({ id, label: `state ${id}`, kind: 'state', module: 'order' })), { id: 'f', label: 'done', kind: 'final' }],
+    edges: [['i', 'a'], ['a', 'b'], ['b', 'c'], ['c', 'f']].map(([source, target], i) => ({ id: `s${i}`, source, target, kind: 'transition', label: 'next', evidence: 'inference' })) };
+  const { graph: laid } = await compileGraphLayout(state);
+  const same = await compileGraphLayout(laid, { layout: 'preserve' });
+  assert.deepEqual(same.graph, laid); assert.equal(same.report.repair, undefined);
+  const grown = structuredClone(laid);
+  grown.edges.push({ id: 'cancel', source: 'a', target: 'c', kind: 'transition', label: 'cancel after six polls', evidence: 'inference' });
+  const added = await compileGraphLayout(grown, { layout: 'preserve' });
+  assert.deepEqual(added.graph.nodes.map(node => node.position), laid.nodes.map(node => node.position));
+  assert.ok(added.graph.edges.find(edge => edge.id === 'cancel').route);
+  assert.deepEqual(added.report.repair.movedNodeIds, []);
+  const crowded = structuredClone(laid);
+  crowded.edges[2].route = { ...crowded.edges[2].route, labelAt: createEdgeRoutes(laid).get('s1').labelPoint };
+  assert.throws(() => requireDiagramQuality(crowded));
+  const moved = await compileGraphLayout(crowded, { layout: 'preserve' });
+  assert.deepEqual(moved.graph.nodes.map(node => node.position), laid.nodes.map(node => node.position));
+  assert.ok(moved.report.repair.rerouted.includes('s2'));
+});
+
+test('preserve gives a new sequence message its row without moving a column; auto keeps the column order a reader knows', async () => {
+  const { graph: laid } = await compileGraphLayout(longSequence(4, 6));
+  const grown = structuredClone(laid);
+  for (const edge of grown.edges) if (edge.order >= 4) edge.order++;
+  grown.edges.push({ id: 'late', source: 'p0', target: 'p2', kind: 'async', label: 'late event', order: 4, evidence: 'source' });
+  const { graph: kept, report } = await compileGraphLayout(grown, { layout: 'preserve' });
+  assert.equal(report.repair.rows, true);
+  assert.deepEqual(kept.nodes.map(node => node.position.x), laid.nodes.map(node => node.position.x));
+  const rows = [...kept.edges].sort((a, b) => a.order - b.order).map(edge => edge.route.messageY);
+  assert.ok(rows.every((y, i) => !i || y > rows[i - 1]), 'rows follow message order');
+  const talk = { meta: meta('sequence'), nodes: ['a', 'b', 'c'].map(id => ({ id, label: `Service ${id}`, kind: 'service' })),
+    edges: [['a', 'c'], ['c', 'b'], ['a', 'b']].map(([source, target], i) => ({ id: `m${i}`, source, target, kind: 'async', label: `event ${i}`, order: i + 1, evidence: 'source' })) };
+  const columns = graph => [...graph.nodes].sort((x, y) => x.position.x - y.position.x).map(node => node.id);
+  const { graph: first } = await compileGraphLayout(talk);
+  assert.deepEqual(columns(first), ['a', 'c', 'b']);
+  const { graph: again } = await compileGraphLayout({ ...first, edges: first.edges.filter(edge => edge.id !== 'm0') });
+  assert.deepEqual(columns(again), ['a', 'c', 'b'], 'removing a participant\'s first message keeps its column');
 });

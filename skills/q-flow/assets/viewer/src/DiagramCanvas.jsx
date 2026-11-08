@@ -1,7 +1,6 @@
-import { visibleEdges } from './presentation-graph.js';
-import { overviewSections, sectionSvg } from './architecture-overview.js';
+import { presentationGraph, visibleEdges } from './presentation-graph.js';
 import React, { useId } from 'react';
-import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position, useStore } from '@xyflow/react';
 import SelectionOutline from './SelectionOutline.jsx';
 import { renderNode } from './node-svg.js';
 import { compactCards, getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
@@ -9,6 +8,8 @@ import { cardinalityMarks } from './edge-routing.js';
 import { renderFragment, fragmentDepth } from './sequence-fragments.js';
 import { isCore, TYPOGRAPHY } from './visual-style.js';
 import { groupHeadingSvg, groupFrameSvg } from './diagrams/drawing.js';
+import { driftedElements } from './source-changes.js';
+import { comparisonOf } from './graph-diff.js';
 
 function NodeHandles({ sequence = false }) {
   if (sequence) return <>
@@ -27,10 +28,14 @@ function NodeHandles({ sequence = false }) {
   </>;
 }
 
+// Cards whose body text would read under 10px on screen draw only their name, enlarged (diagrams/card.js summaryCard).
+// The boolean subscription redraws a card only when zoom crosses that point, not on every zoom step.
+const SUMMARY_TYPES = new Set(['architecture', 'deployment']);
 function DiagramNode({ data, selected }) {
   const moduleColor = data.moduleColors?.get(data.module);
-  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
-  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${selected ? 'is-selected' : ''}`} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
+  const summary = useStore(state => SUMMARY_TYPES.has(data.diagramType) && state.transform[2] * TYPOGRAPHY.body < 10);
+  const markup = renderNode({ ...data, summary, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
+  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${data.diff ? `is-${data.diff}` : ''} ${data.drifted ? 'is-drifted' : ''} ${selected ? 'is-selected' : ''}`} data-summary={summary || undefined} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
     <NodeHandles sequence={getDiagram(data.diagramType).sequence} />
     <svg className="node-visual" viewBox={`0 0 ${data.size.width} ${data.size.height}`} aria-label={data.label} dangerouslySetInnerHTML={{ __html: markup }} />
     {selected && <SelectionOutline key={data.selectionPulse} data={data} pulse={data.selectionPulse} />}
@@ -79,15 +84,18 @@ function RoutedEdge({ id, markerEnd, style, data }) {
       <rect {...label.labelBox} rx="4" fill="var(--canvas)" />
       <text x={label.labelPoint.x} y={label.labelBox.y + 3 + TYPOGRAPHY.body} fontSize={TYPOGRAPHY.body} fontWeight="500" textAnchor="middle" fill={data.labelColor}>{label.label}</text>
     </g>)}
-    {route.label && <EdgeLabelRenderer><button type="button" className="edge-label nodrag nopan" data-edge-id={id} onClick={event => { event.stopPropagation(); data.onSelect(); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.stopPropagation(); if (event.repeat) event.preventDefault(); } }} style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, background: data.labelSurface, fontWeight: data.selectionLinked ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{route.labelRuns ? route.labelRuns[index].map((run, k) => <span key={k} style={{ color: data.roleColors?.[run.role] }}>{run.text}</span>) : index === 0 && data.pair && line.startsWith(data.pair.label) ? <><b className="pair-label" style={{ borderColor: style.stroke }}>{data.pair.label}</b>{line.slice(data.pair.label.length)}</> : line}</span>)}</button></EdgeLabelRenderer>}
+    {route.label && <EdgeLabelRenderer><button type="button" className={`edge-label nodrag nopan${data.diff ? ` is-${data.diff}` : ''}${data.drifted ? ' is-drifted' : ''}`} data-edge-id={id} onClick={event => { event.stopPropagation(); data.onSelect(); }} onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.stopPropagation(); if (event.repeat) event.preventDefault(); } }} style={{ width: route.labelBox.width, height: route.labelBox.height, color: data.labelColor, background: data.labelSurface, fontWeight: data.selectionLinked ? 650 : 500, transform: `translate(-50%, -50%) translate(${route.labelPoint.x}px, ${route.labelPoint.y}px)` }}>{route.labelLines.map((line, index) => <span key={index}>{route.labelRuns ? route.labelRuns[index].map((run, k) => <span key={k} style={{ color: data.roleColors?.[run.role] }}>{run.text}</span>) : index === 0 && data.pair && line.startsWith(data.pair.label) ? <><b className="pair-label" style={{ borderColor: style.stroke }}>{data.pair.label}</b>{line.slice(data.pair.label.length)}</> : line}</span>)}</button></EdgeLabelRenderer>}
   </>;
 }
 
-function OverviewSection({ data }) {
-  return <section className="overview-section"><svg className="node-visual" width={data.size.width} height={data.size.height} aria-label={data.title} dangerouslySetInnerHTML={{ __html: sectionSvg(data, data.palette, -data.position.x, -data.position.y) }} /><button className="overview-section-select nodrag nopan" onClick={event => { event.stopPropagation(); data.onSelect?.(); }} aria-label={data.title}>{data.title}</button></section>;
-}
-export const nodeTypes = { diagram: DiagramNode, boundary: BoundaryNode, overview: OverviewSection };
+export const nodeTypes = { diagram: DiagramNode, boundary: BoundaryNode };
 export const edgeTypes = { routed: RoutedEdge };
+
+// generate-viewer --compare: 'added' or 'changed' for an element of this view, else undefined.
+function diffOf(graph) {
+  const compared = comparisonOf(graph);
+  return id => compared?.added.includes(id) ? 'added' : compared?.changed.includes(id) ? 'changed' : undefined;
+}
 
 export function initialNodes(graph, diagramType) {
   const boundaries = [...(graph.groups ?? [])].sort((a, b) => fragmentDepth(a, graph.groups ?? []) - fragmentDepth(b, graph.groups ?? [])).map(group => ({
@@ -101,19 +109,20 @@ export function initialNodes(graph, diagramType) {
     connectable: false,
     zIndex: -(graph.groups?.length ?? 0) + fragmentDepth(group, graph.groups ?? [])
   }));
-  const classicCard = !compactCards(graph);
-  return [...overviewSections(graph).map((section, index) => ({ id: section.id, type: 'overview', position: section.position, data: { ...section }, style: { width: section.size.width, height: section.size.height, pointerEvents: 'none' }, draggable: false, selectable: false, zIndex: -100 + index })), ...boundaries, ...graph.nodes.map(node => ({
+  const classicCard = !compactCards(graph), drawn = new Map(presentationGraph(graph).nodes.map(node => [node.id, node])), drifted = driftedElements(graph), diff = diffOf(graph);
+  return [...boundaries, ...graph.nodes.map(node => ({
     id: node.id,
     type: 'diagram',
     className: diagramType === 'sequence' ? 'sequence-column' : undefined,
     position: node.position,
-    data: { ...node, diagramType, locale: graph.meta.locale, classicCard },
+    data: { ...drawn.get(node.id), diagramType, locale: graph.meta.locale, classicCard, drifted: drifted.has(node.id), diff: diff(node.id) },
     style: { width: node.size.width, height: node.size.height, ...(diagramType === 'sequence' ? { pointerEvents: 'none' } : {}) },
     zIndex: 2
   }))];
 }
 
 export function initialEdges(graph, diagramType) {
+  const drifted = driftedElements(graph), diff = diffOf(graph);
   return visibleEdges(graph).map(edge => ({
     id: edge.id,
     source: edge.source,
@@ -121,6 +130,6 @@ export function initialEdges(graph, diagramType) {
     type: 'routed',
     zIndex: diagramType === 'sequence' ? 3 : 0,
     markerEnd: hasArrow(edge, diagramType) ? { type: MarkerType.ArrowClosed } : undefined,
-    data: { ...edge, diagramType }
+    data: { ...edge, diagramType, drifted: drifted.has(edge.id), diff: diff(edge.id) }
   }));
 }

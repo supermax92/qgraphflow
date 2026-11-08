@@ -1,4 +1,3 @@
-import { overviewSections } from '../architecture-overview.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isCore } from '../visual-style.js';
 import { searchNodes } from '../search.js';
@@ -9,7 +8,7 @@ export function useSelection(graph, { focusNode, panels, isFullscreen = false, t
   const [selectionPulse, setSelectionPulse] = useState(0);
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim().toLowerCase();
-  const items = useMemo(() => [...graph.nodes, ...overviewSections(graph).map(section => ({ ...section, label: section.title, kind: 'annotation', section: true, overviewText: section.text ?? [] }))], [graph]);
+  const items = graph.nodes;
   const results = useMemo(() => normalizedQuery ? searchNodes(items, normalizedQuery) : graph.nodes, [graph, items, normalizedQuery]);
   const selected = items.find(node => node.id === selectedId);
   const selectedEdge = graph.edges.find(edge => edge.id === selectedEdgeId);

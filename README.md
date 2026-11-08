@@ -2,121 +2,119 @@
 
 <h1><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/brand/qgraphflow-lockup-dark.svg"><img src="docs/images/brand/qgraphflow-lockup-light.svg" alt="QGraphFlow" height="64"></picture></h1>
 
-### Turn complex code into diagrams you can explore.
+### 把复杂代码，变成可以探索的图。
 
-Follow the path. Inspect the evidence. Share one offline file.
+跟随路径，查看证据，用一个离线文件分享。
 
-<sub>💡 Inspired by <a href="https://github.com/Cocoon-AI/architecture-diagram-generator">Cocoon-AI/architecture-diagram-generator</a> — thanks to the original author for the idea.</sub>
+<sub>💡 灵感来自 <a href="https://github.com/Cocoon-AI/architecture-diagram-generator">Cocoon-AI/architecture-diagram-generator</a>，感谢原作者的启发。</sub>
 
-[English](README.md) · [中文](docs/readme/README.zh-CN.md) · [Русский](docs/readme/README.ru.md) · [Português](docs/readme/README.pt.md) · [日本語](docs/readme/README.ja.md) · [Deutsch](docs/readme/README.de.md) · [Español](docs/readme/README.es.md)
+[中文](README.md) · [English](README.en.md)
 
-[Live demo](https://supermax92.github.io/qgraphflow/) · [Getting started](#getting-started) · [Client installation](#installation-guide) · [Report an issue](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
+[在线演示](https://supermax92.github.io/qgraphflow/) · [快速入门](#快速入门) · [客户端安装](#安装指南) · [反馈问题](https://github.com/supermax92/qgraphflow/issues) · [MIT](LICENSE)
 
 </div>
 
-*Eleven diagram types: platform capability architecture, engineering layer architecture, component relationship architecture, flowchart, sequence, ER, deployment, class, state, use case and data flow.*
+![Jeepay 多视图交互演示：组件关系架构图、时序图与 ER 图](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.hero.gif)
 
-QGraphFlow turns source code, schemas, configuration and requirements into interactive software diagrams, with evidence you can inspect and an offline HTML file you can share.
+以 Jeepay 真实源码为例：整图缩小后仍能读出组件名，点开卡片就是对应的源码行，同一个文件里切换组件关系、时序与 ER 图。[观看 MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.hero.mp4)
 
-**What sets it apart:** eleven diagram types from one skill, an evidence kind on every relationship and the source line behind each code-backed one, automatic layout, editing in the page, and no network requests from the plugin scripts or the Viewer itself.
+*支持九类图：【组件关系架构图、流程图、时序图、ER 图、部署图、类图、状态图、用例图、数据流图】*
 
-![Jeepay multi-view interaction demo: component relationship architecture, sequence and ER diagrams](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+QGraphFlow 从源码、数据结构、配置和需求生成交互式软件图，让关系有据可查，并将结果交付为可分享的离线 HTML。
 
-Using real Jeepay source code, switch between component relationship architecture, sequence and ER diagrams to explore components and call relationships. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/jeepay.en.hero.gif)
+**差异在哪：** 一个技能覆盖九类图，每条关系都标明证据类别，有代码支撑的关系还记录对应的源码行，自动布局，能直接在页面里编辑，插件脚本和 Viewer 本身不发任何网络请求。
 
-**Complex sequence diagram showcase**
+![代码改动标到图上：新增组件带绿框，改名的调用带蓝框，右侧列出本次更新](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.changes.gif)
 
-![Complex sequence diagram drawn step by step: participants, lifelines, messages, activation bars and nested combined fragments](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
-
-A fictional e-commerce scenario contains 9 participants, 29 messages and 6 combined fragments, covering stock retries, nested branches, parallel processing, failure compensation and asynchronous callbacks. The animation progressively reveals the generated diagram to show its structure and details. [View full-size GIF](https://github.com/supermax92/qgraphflow/releases/download/showcase-v2/checkout.en.sequence-drawing.gif)
+代码变了，图上直接标出变了什么：`generate --compare` 对比上一版，把新增、改动和删除的元素标在图上，并列在右侧"本次更新"里，每一项都能点开看源码出处。演示里的上一版是虚构的，用来展示三种标记。[在线体验](https://supermax92.github.io/qgraphflow/jeepay/changes/zh-CN/) · [观看 MP4](https://github.com/supermax92/qgraphflow/releases/download/showcase-v3/jeepay.zh-CN.changes.mp4)
 
 ```bash
 npx skills add supermax92/qgraphflow
 ```
 
-One command installs the skill for Claude Code, Codex, Cursor and Qoder; the [installation guide](#installation-guide) covers the plugin installations and the other clients.
+一条命令即可为 Claude Code、Codex、Cursor 和 Qoder 装好技能；以插件方式安装和其他客户端见[安装指南](#安装指南)。
 
-- **Explore:** search, zoom and pan; inspect responsibilities and upstream/downstream relationships.
+- **探索：** 搜索定位、缩放和平移画布，查看组件职责与上下游关系。
 
-- **Verify:** inspect nodes and edges for source files, lines, symbols and explicitly marked uncertainty.
+- **核验：** 从节点或连线查看详情，核对源码文件、行号、符号和明确标注的不确定性。
 
-- **Edit:** unlock the layout, change text and move elements; reset when needed.
+- **编辑：** 解锁后修改文字、移动元素；不满意时一键重置。
 
-- **Share:** open offline HTML or export the complete diagram as SVG / PNG.
+- **分享：** 打开离线 HTML，或将完整图导出为 SVG / PNG。
 
-The real-source [Jeepay corpus](examples/jeepay) contains all eleven views used by CI and the live demo.
+基于真实源码的 [Jeepay 语料](examples/jeepay)包含 CI 和在线演示用到的全部九个视图。
 
-## Getting started
+## 快速入门
 
-After installation, open your application project in the client and select the `q-flow` skill. These examples use Claude Code's `/q-flow`; in Codex, use the `$q-flow` or `$qgraphflow:q-flow` entry actually provided by your client. Not installed yet? Read the [installation guide](#installation-guide) first.
+安装后，在客户端打开你的业务项目，选择 `q-flow` 技能。以下以 Claude Code 的 `/q-flow` 为例；Codex 中使用客户端实际提供的 `$q-flow` 或 `$qgraphflow:q-flow` 入口。还未安装？先看[安装指南](#安装指南)。
 
-### 1. Empty input: Not sure where to start
+### 1. 空白输入：不知道从哪里开始
 
-Invoke the skill without adding a request:
+只调用技能，不附加需求：
 
 ```text
 /q-flow
 ```
 
-The skill guides you to choose the part to analyze and the question the diagram should answer. Drawing starts once the necessary information is clear.
+技能会引导你选择要分析的部分，以及希望图回答的问题；必要信息明确后开始绘图。
 
-### 2. Ask about capabilities: Learn what it can draw
-
-```text
-/q-flow What types of diagrams can you draw? What questions does each type answer? I have just taken over a project; introduce your capabilities and suggest a starting point.
-```
-
-Learn what the eleven diagram types are for, then decide whether to explore project structure, call order, data relationships or something else.
-
-### 3. Vague input: Only a general goal
+### 2. 询问能力：先了解能画什么
 
 ```text
-/q-flow Help me draw this project. I want to understand it as quickly as possible.
+/q-flow 你能绘制哪些类型的图？每类图适合回答什么问题？我刚接手一个项目，请先介绍能力并建议一个起点。
 ```
 
-You do not need to specify a diagram type first. The skill selects a suitable view based on the project and your goal, and asks follow-up questions when necessary information is missing.
+先了解九类图的用途，再决定看项目结构、调用顺序、数据关系还是其他内容。
 
-### 4. Precise input: Define the scope and request drawing details
-
-Replace the business names and steps below with flows that actually exist in your project:
+### 3. 模糊输入：只有一个大致目标
 
 ```text
-/q-flow Analyze the order creation flow in the current project and generate a sequence diagram in Chinese.
-Cover the request entry point, pricing, stock reservation, payment authorization and order persistence.
-Retain the synchronous calls, asynchronous messages, paired returns, activation bars, conditional branches, retries and failure compensation that actually exist in the source. Do not omit details for brevity.
-Mark the source files and line numbers for components and calls, and save the result to docs/qgraphflow/order-sequence/.
+/q-flow 帮我画一下这个项目，我想尽快看懂它。
 ```
 
-State the subject, question, level of detail and output location clearly to start directly. The diagram retains only facts supported by evidence.
+不用先指定图类型。技能会根据项目和你的目标确定合适的视图，缺少必要信息时再追问。
 
-### 5. Refine further: Expand part of the previous diagram
+### 4. 精准输入：明确范围并要求绘制细节
 
-After the result is generated, continue in the same conversation:
+将下面的业务名称和步骤替换成项目中实际存在的流程：
 
 ```text
-/q-flow Expand the stock reservation step in the previous sequence diagram into a separate flowchart in Chinese.
-Show all branches for stock validation, successful reservation, retryable failures, the retry limit and stock release. Follow the source code and add no steps absent from it.
+/q-flow 分析当前项目的订单创建流程，生成中文时序图。
+覆盖请求入口、价格计算、库存预占、支付授权和订单落库。
+保留源码中实际存在的同步调用、异步消息、成对返回、激活条、条件分支、重试和失败补偿，不要为了简洁省略细节。
+标明组件与调用的源码文件和行号，将结果保存到 docs/qgraphflow/order-sequence/。
 ```
 
-Start with the overall picture, then explore one step in depth. You can also request more detail in an existing diagram or verify its relationships.
+把对象、问题、详细程度和输出位置说清楚，就能直接开始；图中只保留有证据支持的事实。
 
-## Installation guide
+### 5. 继续细化：展开上一张图的局部
 
-You need Node.js 22 or later and a plugin-capable client with model access configured.
+在生成结果后，于同一对话中继续：
 
-### Quick install
+```text
+/q-flow 展开上一张时序图中的库存预占步骤，单独生成中文流程图。
+完整展示库存校验、预占成功、可重试失败、重试上限和释放库存的分支，以源码为准，不添加代码中没有的步骤。
+```
+
+先看整体，再深入一个步骤；也可以继续要求补充已有图的细节或核验其中的关系。
+
+## 安装指南
+
+准备 Node.js 22 及以上版本，以及已配置好模型访问、支持插件功能的客户端。
+
+### 快速安装
 
 ```bash
 npx skills add supermax92/qgraphflow
 ```
 
-Tested with `skills` 1.7.0 for Claude Code, Codex, Cursor and Qoder. It asks which clients to install to; `-a claude-code` names one, and `-g` installs for your user instead of the current project. The skill installs as `q-flow`, without the `qgraphflow:` prefix of the plugin installations below.
+已用 `skills` 1.7.0 在 Claude Code、Codex、Cursor 和 Qoder 上实测。命令会询问装到哪些客户端；`-a claude-code` 可直接指定，`-g` 改为装到当前用户而不是当前项目。这样装上的技能名是 `q-flow`，不带下文插件安装方式里的 `qgraphflow:` 前缀。
 
-To install it as a plugin instead, follow the steps below. [Qoder Desktop](#qoder-desktop) users can install from the marketplace and skip step 1.
+如需以插件方式安装，按以下步骤操作。[Qoder Desktop](#qoder-desktop) 可直接从插件商城安装，跳过第 1 步。
 
-### 1. Download the plugin
+### 1. 下载插件
 
-Get the plugin from npmjs.com; no account, login or token is needed. Create a separate directory outside your application project:
+从 npmjs.com 获取插件，无需账号、登录或令牌。在业务项目之外创建独立目录：
 
 ```bash
 mkdir qgraphflow-install
@@ -125,22 +123,22 @@ npm install qgraphflow --ignore-scripts
 cd node_modules/qgraphflow
 ```
 
-You are now in the plugin root. **Downloading through npm does not automatically install the plugin in your client;** continue with step 2. The package also provides the `qgraphflow` command used in [Keep diagrams in sync with code](#keep-diagrams-in-sync-with-code).
+此时已进入插件根目录。**npm 下载不会自动完成客户端安装**，请继续第 2 步。这个包还提供 `qgraphflow` 命令，[让图和代码保持同步](#让图和代码保持同步)一节会用到。
 
-Run the following terminal commands from **the plugin root containing `skills/`**.
+以下终端命令均在**包含 `skills/` 的插件根目录**执行。
 
-### 2. Install in your client
+### 2. 选择客户端安装
 
 #### Codex App / CLI
 
-Codex CLI must be installed and available in your terminal:
+终端需已安装 Codex CLI：
 
 ```bash
 codex plugin marketplace add .
 codex plugin add qgraphflow@supermax92
 ```
 
-Start a new session, type `$`, and select `qgraphflow:q-flow`.
+新建会话，输入 `$`，选择 `qgraphflow:q-flow`。
 
 #### Claude Code
 
@@ -149,7 +147,7 @@ claude plugin marketplace add ./
 claude plugin install qgraphflow@supermax92 --scope user
 ```
 
-Start a new session and enter `/q-flow` (or the fully qualified `/qgraphflow:q-flow`).
+新建会话，输入 `/q-flow`（或完整名称 `/qgraphflow:q-flow`）。
 
 #### Qoder CLI
 
@@ -157,70 +155,70 @@ Start a new session and enter `/q-flow` (or the fully qualified `/qgraphflow:q-f
 qodercli plugins install .
 ```
 
-Start a new session and select `q-flow`.
+新建会话，选择 `q-flow`。
 
 #### Qoder Desktop
 
-**Recommended:** Open **Settings → Plugins → Marketplace**, search for **QGraphFlow** or **代码图谱可视化**, and install the plugin. Start a new session and select `q-flow`.
+**推荐：**打开 **Settings → Plugins → Marketplace**，搜索 **QGraphFlow** 或 **代码图谱可视化**，安装插件。新建会话，选择 `q-flow`。
 
-For local installation, complete step 1, then open **Settings → Plugins → Custom → Import** and import the complete plugin root directory. Start a new session and select `q-flow`.
+如需本地安装，先完成第 1 步，再打开 **Settings → Plugins → Custom → Import**，导入完整的插件根目录。新建会话，选择 `q-flow`。
 
 #### Cursor
 
-Copy everything in the plugin root, including hidden files, into:
+将插件根目录中的全部内容（含隐藏文件）复制到：
 
 ```text
 ~/.cursor/plugins/local/qgraphflow/
 ```
 
-Confirm that `.cursor-plugin/plugin.json` exists there, reload the window, and find `q-flow` in **Customize**. Back up any previous version first; do not mix old and new files.
+确认其中存在 `.cursor-plugin/plugin.json`，重新加载窗口，在 **Customize** 中找到 `q-flow`。若已有旧版本，先备份，勿混合新旧文件。
 
-### 3. Start using it
+### 3. 开始使用
 
-Open your application project in the client, start a new session and select the skill. Describe your request using the [Getting started](#getting-started) examples. Open the generated HTML in your browser.
+在客户端打开你的业务项目，新建会话并选择技能，按[快速入门](#快速入门)中的示例描述需求。生成后，用浏览器打开输出的 HTML。
 
-Building it yourself? See the [source build instructions](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally).
+需要自行构建？参见[源码构建说明](https://github.com/supermax92/qgraphflow/blob/main/docs/distribution.md#prepare-locally)。
 
-## Quick usage
+## 快速使用
 
-These examples use `$qgraphflow:q-flow` in Codex. If your client shows `$q-flow`, select that entry instead. For other clients, use the skill entry described above.
+以下以 Codex 的 `$qgraphflow:q-flow` 入口为例；如果客户端显示 `$q-flow`，请选择它实际提供的入口。其他客户端使用上方对应的技能入口。
 
-**Not sure where to begin?** Invoke the skill and choose the subject and question when prompted.
+**不知道从哪里开始？** 直接调用，按提示选择要分析的部分和想了解的问题。
 
 ```text
 $qgraphflow:q-flow
 ```
 
-**Already have a goal?** Say which part to draw and what you want to understand. You do not need to choose a diagram type first.
+**目标已经明确？** 一句话说明“画哪个部分＋想看什么”，无需先选择图类型。
 
-### Example 1: Understand the architecture
-
-```text
-$qgraphflow:q-flow Analyze the current project and generate an architecture diagram in Chinese, showing the responsibilities of the main modules, dependencies and system boundaries.
-```
-
-Useful when joining a project and learning its overall structure.
-
-### Example 2: Trace a business flow
+### 示例一：看懂项目架构
 
 ```text
-$qgraphflow:q-flow Analyze order creation and generate a sequence diagram in Chinese, showing the call order for pricing, stock reservation, payment and order persistence, and mark failure branches.
+$qgraphflow:q-flow 分析当前项目，生成中文架构图，展示主要模块的职责、依赖关系和系统边界。
 ```
 
-Replace order creation and its steps with your project's actual flow. Continue in the same conversation:
+适合初次接触项目，先了解整体结构。
+
+### 示例二：追踪业务调用
 
 ```text
-$qgraphflow:q-flow Expand the stock reservation step in the previous diagram into a separate flowchart in Chinese, showing success and failure handling.
+$qgraphflow:q-flow 分析订单创建流程，生成中文时序图，展示价格计算、库存预占、支付和订单落库的调用顺序，并标明失败分支。
 ```
 
-Results go under `docs/qgraphflow/` by default. Open `index.html` to explore, edit and export; `graph.json` retains the graph data. Each view is also written as an SVG (`diagram.svg`, or `diagram-<n>-<type>.svg` for several views) that you can embed as an image in a README, pull request or wiki.
+将“订单创建”及相关步骤替换成项目中的实际业务流程。看完后，在同一对话中继续追问：
 
-After editing in the page, **More → Save changes** in Chrome or Edge rewrites the page, `graph.json` and the SVGs in place once you pick the diagram's folder. Other browsers save `graph.json` only: put it in the folder and regenerate the page and SVGs with `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force`.
+```text
+$qgraphflow:q-flow 展开上一张图中的库存预占步骤，单独生成中文流程图，展示成功与失败的处理流程。
+```
+
+结果默认保存在 `docs/qgraphflow/` 下：打开 `index.html` 即可交互查看、编辑和导出，`graph.json` 保留图数据。每个视图还会写出一份 SVG（`diagram.svg`，多视图时为 `diagram-<n>-<type>.svg`），可以直接作为图片嵌进 README、PR 或 Wiki。
+
+在页面里编辑后，用 Chrome 或 Edge 执行「更多 → 保存修改」并选一次图所在的文件夹，即可原地重写页面、`graph.json` 和 SVG。其他浏览器只能保存 `graph.json`：把它放回该文件夹，再用 `npx -y qgraphflow generate docs/qgraphflow/<name>/graph.json docs/qgraphflow/<name> --layout preserve --force` 重新生成页面和 SVG。
 
 <details>
-<summary>Run the eleven-view Jeepay source example</summary>
+<summary>运行基于 Jeepay 源码的九视图示例</summary>
 
-Select your Jeepay source checkout to verify the evidence:
+指定本机的 Jeepay 源码目录来核验证据：
 
 ```bash
 export JEEPAY_REPO_ROOT="<local Jeepay repository root>"
@@ -228,13 +226,13 @@ node skills/q-flow/scripts/validate-graph.mjs examples/jeepay/collection.graph.j
 node skills/q-flow/scripts/generate-viewer.mjs examples/jeepay/collection.graph.json output/jeepay --repo-root "$JEEPAY_REPO_ROOT"
 ```
 
-Open `output/jeepay/index.html`; its eleven SVGs are in the same directory. See the [corpus README](examples/jeepay) for the source revision and refresh procedure.
+打开 `output/jeepay/index.html`，九个 SVG 在同一目录。源码版本和刷新步骤见[语料 README](examples/jeepay)。
 
 </details>
 
-## Keep diagrams in sync with code
+## 让图和代码保持同步
 
-A diagram generated with a repository root records where each component is defined and the line behind each code-backed relationship (a call, a foreign key). Validating it with `--repo-root` fails when a recorded file is gone, a line range no longer fits, or a recorded symbol has left its lines, and the error names the lines where the symbol is now. Add this job to your CI; it needs no build, login or token:
+带仓库根目录生成的图会记下每个组件定义在哪里、每条有代码支撑的关系所在的那一行（调用、外键等），以及它指向的每个文件的内容指纹。用 `--repo-root` 校验时，只是挪了位置的行会自动对上、照常通过；只有图背后的代码真的变了才会失败：记录的那一行被改写、某个调用被删掉、新代码碰到了图里画的组件却没有对应的关系，或者图里用到的名字已经不存在。错误里会给出改动前后的代码，并指出要更新的元素和文字。把下面这个任务加进 CI，不需要构建、登录或令牌；拉取完整历史（`fetch-depth: 0`）才能和这些指纹比对：
 
 ```yaml
 name: Diagrams
@@ -244,6 +242,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -254,33 +254,35 @@ jobs:
           exit ${failed:-0}
 ```
 
-When it fails, ask the skill to refresh that diagram:
+想在 PR 里直接看到受影响的地方，就在 validate 那一行加上 `--changes changes.md`，失败时把这个文件贴成评论，例如 `gh pr comment "$PR" --body-file changes.md`（需要 `pull-requests: write` 权限）。它按视图列出每处改动碰到的元素、文件和行号，以及改动前后的代码。执行 `--fix` 后重新生成的页面也会标出这些元素，并在要点旁列出这些改动。
+
+失败后，让技能刷新这张图：
 
 ```text
-$qgraphflow:q-flow CI says docs/qgraphflow/order-sequence is out of date. Refresh it.
+$qgraphflow:q-flow CI 提示 docs/qgraphflow/order-sequence 的图过时了，刷新一下。
 ```
 
-The skill moves anchors whose symbol it finds once, corrects only the anchors still reported, and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
+技能会把所有锚点对齐到当前代码，把每处改动列进图的 `meta.sourceDrift`，只更新这些条目指出的元素，再保留你调整过的位置和文字，重新生成页面和 SVG；不会重画整张图。
 
-## What each of the eleven diagram types answers
+重新生成时加上 `--compare HEAD`，就能看出这次刷新改了什么：页面把新增和改动的元素着色，在要点旁列出删掉的元素，`graph.json` 不受影响。
 
-| View · PNG | Main question | Example scope |
+## 九类图各自回答什么
+
+| 视图 · PNG | 主要问题 | 本示例范围 |
 | --- | --- | --- |
-| Platform capability architecture | What capabilities does the platform provide? | Capability zones and matrices |
-| Engineering layer architecture | How is the engineering code organized? | Engineering layers and shared support |
-| Component relationship architecture | Which responsibility boundaries collaborate in the system? | Channels, transaction orchestration, pricing, risk, stock, payment, orders, events and fulfillment |
-| Flowchart | How does each decision point branch and converge? | Stock shortage, risk rejection, compensation for payment failure and successful commit |
-| Sequence | In what order does a request make calls and receive returns? | Successful checkout main flow and asynchronous OrderPaid |
-| ER | How does core data relate? | Cart, orders, items, payments, stock reservations and parcels |
-| Deployment | Where are runtime units placed and how are they connected? | Edge, Kubernetes, data services, payment and warehouse/logistics networks |
-| Class | How do domain objects and code contracts depend on each other? | Checkout application service, Order and four ports |
-| State | Which events and guards advance an order? | Payment, fulfillment, cancellation, refund and closure |
-| Use case | What capabilities does each actor have? | Buyer, merchant, warehouse and customer support |
-| Data flow | What transformations and stores do data assets pass through? | Cart, transaction decisions, order events, warehouse/logistics and delivery receipts |
+| 组件关系架构图 | 系统由哪些责任边界协作？ | 渠道、交易编排、价格、风控、库存、支付、订单、事件与履约 |
+| 流程图 | 每个决策点如何分支和收敛？ | 缺货、风控拒绝、支付失败补偿与成功提交 |
+| 时序图 | 一次请求按什么顺序调用和返回？ | 成功结算主链及异步 OrderPaid |
+| ER 图 | 核心数据如何关联？ | 购物车、订单、明细、支付、库存预占和包裹 |
+| 部署图 | 运行单元放在哪里、怎样连接？ | 边缘、Kubernetes、数据服务、支付和仓配网络 |
+| 类图 | 领域对象和代码契约怎样依赖？ | Checkout 应用服务、Order 与四个端口 |
+| 状态图 | 订单受哪些事件和守卫条件推进？ | 支付、履约、取消、退款和关闭 |
+| 用例图 | 每类参与者拥有哪些能力？ | 买家、商家、仓库与客服 |
+| 数据流图 | 数据资产经过哪些变换和存储？ | 购物车、交易决策、订单事件、仓配和物流回执 |
 
-This is a concept model demonstrating QGraphFlow, not a particular e-commerce repository. The example `graph.json` invents no source paths and marks relationship evidence as `inference`. Real project diagrams need traceable source, DDL, configuration, tests and accepted requirements.
+这是用于展示 QGraphFlow 能力的概念模型，不对应某个电商仓库。`graph.json` 不伪造源码路径，关系证据统一标记为 `inference`；对真实项目绘图时，应改用源码、DDL、配置、测试和已接受需求中的可追溯证据。
 
-## Develop and contribute
+## 开发与参与
 
 ```bash
 npm ci --prefix skills/q-flow/assets/viewer
@@ -288,24 +290,12 @@ npm run build --prefix skills/q-flow/assets/viewer
 node --test tests/*.test.mjs skills/q-flow/scripts/*.test.mjs
 ```
 
-Development needs Node.js 22 or later, npm, tar, zip and unzip. Include a minimal redacted graph, client/browser versions and reproduction steps in issue reports.
+开发需要 Node.js 22 及以上版本、npm、tar、zip 和 unzip。反馈问题时，请附最小脱敏图数据、客户端和浏览器版本，以及复现步骤。
 
-Reference documentation (English): [Evidence sources](skills/q-flow/references/evidence-sources.md) · [Graph data format](skills/q-flow/references/graph-schema.md) · [Guided intake](skills/q-flow/references/guided-intake.md) · [Viewer development and acceptance](skills/q-flow/references/viewer-development.md) · [Visual conventions](skills/q-flow/references/visual-contract.md)
+参考文档（英文）：[证据来源](skills/q-flow/references/evidence-sources.md) · [图数据格式](skills/q-flow/references/graph-schema.md) · [需求引导](skills/q-flow/references/guided-intake.md) · [Viewer 开发与验收](skills/q-flow/references/viewer-development.md) · [图形表达约定](skills/q-flow/references/visual-contract.md)
 
-## License and attribution
+## 许可证与归属
 
-[MIT](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+[MIT](LICENSE) · [第三方声明](THIRD_PARTY_NOTICES.md)
 
-QGraphFlow is an independent MIT-licensed project. The scenarios in this document are conceptual examples and do not represent any real company's production architecture.
-
-## Architecture overviews
-
-Architecture now includes component relations, platform capabilities and engineering layers. Describe the subject and question; the skill chooses the template. Requested collections can contain multiple architecture views with independent edits.
-
-```text
-$qgraphflow:q-flow Analyze this project's platform capabilities and business integration methods, and generate a platform capability overview in Chinese.
-$qgraphflow:q-flow Analyze the organization and component layers of the current project, and generate Chinese overviews of the whole project and a cross-section of one component.
-$qgraphflow:q-flow Generate an English platform capability overview of this project and show how application modules integrate.
-```
-
-See [examples/jeepay](examples/jeepay) for real-source platform, engineering and component relationship architecture views. Unlock an overview to reorder cards within a layer or edit text. Save keeps all views; reset restores only the current one.
+QGraphFlow 是采用 MIT 许可证的独立项目。本文场景为概念示例，不代表任何真实公司的生产架构。

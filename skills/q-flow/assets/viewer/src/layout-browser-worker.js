@@ -4,15 +4,16 @@ import { routeOrthogonal } from './orthogonal-routing.js';
 import { compileSequence } from '../../../scripts/compile-sequence.mjs';
 import { layoutMetrics } from './layout-refinement.js';
 import { refineDiagramLayout, refineWithLegacySeed } from './layout-refinement.js';
-import { fitArchitectureOverview, maintainArchitectureOverview } from './architecture-overview.js';
 import { requireDiagramQuality } from './layout-quality.js';
+import { hasSharedDependencies, presentationGraph, restorePresentation } from './presentation-graph.js';
 
 // Bundled inline into the offline page. The algorithm is exactly the generator's pure source.
-self.onmessage = ({ data }) => {
+self.onmessage = ({ data: message }) => {
   try {
+    // Shared dependencies: lay out the drawn graph, then hand back the authored model (every edge, no display tags).
+    const folded = hasSharedDependencies(message.graph), data = folded ? { ...message, graph: presentationGraph(message.graph) } : message;
     let result;
-    if (data.overview) result = { graph: data.options?.relayout ? fitArchitectureOverview(data.graph, requireDiagramQuality) : maintainArchitectureOverview(data.graph, data.reference ?? data.graph, requireDiagramQuality) };
-    else if (data.options?.relayout && data.graph.meta.diagramType === 'sequence') {
+    if (data.options?.relayout && data.graph.meta.diagramType === 'sequence') {
       const candidates = [];
       for (let i = 0; i < 6; i++) { try { const graph = compileSequence(data.graph, i); graph.layout = { ...graph.layout, version: LAYOUT_VERSION }; requireDiagramQuality(graph); candidates.push({ graph }); } catch { /* Retain the original on complete failure. */ } }
       candidates.sort((a, b) => layoutMetrics(a.graph).cost - layoutMetrics(b.graph).cost);
@@ -28,7 +29,7 @@ self.onmessage = ({ data }) => {
       if (!candidates.length) throw new Error('No valid semantic layout');
       result = refineWithLegacySeed(candidates[0].graph, data.graph, { global: true, evaluations: 60 });
     } else result = refineDiagramLayout(data.options?.relayout ? { ...data.graph, layout: { ...data.graph.layout, version: LAYOUT_VERSION } } : data.graph, { ...data.options, global: Boolean(data.options?.relayout) });
-    self.postMessage({ result: { graph: result.graph, movedNodeIds: result.movedNodeIds ?? [] } });
+    self.postMessage({ result: { graph: folded ? restorePresentation(message.graph, result.graph) : result.graph, movedNodeIds: result.movedNodeIds ?? [] } });
   } catch (error) {
     self.postMessage({ error: { message: error.message, diagnostics: error.diagnostics ?? [], routingReport: error.routingReport } });
   }
