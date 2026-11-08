@@ -96,6 +96,7 @@ test('--fix realigns, renews the baseline and keeps the change as a worklist unt
   assert.equal(sequence.edges.find(edge => edge.id === 'm3').site.lineStart, anchor.lineStart + 1);
   assert.equal(sequence.meta.sourceDrift[0].file, anchor.file);
   assert.ok(sequence.meta.sourceDrift[0].elements.includes('m3'), 'the worklist names the element ids it touches');
+  for (const item of fixed.diagrams.flatMap(other => other.meta.sourceDrift ?? [])) assert.ok(item.elements.length, 'a view that only anchors the changed file gets no item');
   assert.ok(driftedElements(sequence).has('m3'), 'the Viewer marks the named elements');
   assert.equal(sequence.meta.sourceFiles[anchor.file], git(dir, 'hash-object', anchor.file).trim());
   assert.throws(() => verifySourceEvidence(fixed, dir), /Unresolved source drift/);

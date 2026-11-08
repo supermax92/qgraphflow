@@ -191,6 +191,11 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
         const item = alarm(file, hunk, 'new code not covered by the diagram');
         const fresh = new Set(touching.flatMap(({ line }) => line.match(/\b[A-Z]{2,}(?:_[A-Z0-9]+)+\b|\b[a-z][\w$]*[A-Z][\w$]{3,}\b/g) ?? []).filter(name => !word(name).test(diff.before ?? '')));
         for (const name of fresh) mention(item, text => word(name).test(text));
+        // The anchors whose symbol the new code uses are what it touches: only their views have to decide whether to draw it.
+        for (const other of based) {
+          const name = other.source.symbol && term(other.source.symbol);
+          if (name && terms.has(name) && touching.some(({ line }) => word(name).test(line))) item.refs.add(`${other.graphIndex}:${other.id}`);
+        }
       }
       // Rule 5: names gone from the code this diagram covers but still written in it.
       const addedText = hunk.added.join('\n');
@@ -254,8 +259,10 @@ export function formatDrift(alarms) {
   ].join('\n')).join('\n');
 }
 
-// Alarms touching view graphIndex: they name one of its elements or change a file it anchors.
-export const viewAlarms = (alarms, graphIndex, files) => alarms.filter(item => item.refs.some(ref => ref.startsWith(`${graphIndex}:`)) || files.has(item.file));
+// Alarms for view graphIndex: those that name one of its elements; an alarm that names no element anywhere (uncovered new
+// code nothing mentions) goes to every view anchoring its file. A view that only anchors the file of a change named
+// elsewhere gets nothing to resolve.
+export const viewAlarms = (alarms, graphIndex, files) => alarms.filter(item => item.refs.some(ref => ref.startsWith(`${graphIndex}:`)) || !item.refs.length && files.has(item.file));
 
 // The compact form kept in meta.sourceDrift until the author has updated the listed elements; `elements` holds the ids
 // in view graphIndex that the change touches (anchored there or whose text names what changed).
