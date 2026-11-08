@@ -11,7 +11,7 @@ import { initialNodes, initialEdges } from '../DiagramCanvas.jsx';
 import { graphBounds, occupiedBox } from '../edge-routing.js';
 import { qualityFailure, requireDiagramQuality } from '../layout-quality.js';
 import { nudgeGraphLayout } from '../layout-nudge.js';
-import { appleEase, readingPadding, readingRect, locateViewport, readableViewport, readingStart } from '../reading-area.js';
+import { appleEase, readingPadding, readingRect, locateViewport, readableViewport, readingStart, overviewFloor } from '../reading-area.js';
 import { constrainNodeChanges, currentGraphFromFlow, fitCard, placed } from '../session-graph.js';
 
 export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = graph) {
@@ -133,7 +133,7 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
     const canvas = canvasRef.current; if (!canvas) return;
     const bounds = graphBounds(targetGraph), navOpen = canvas.dataset.navOpen === 'true', drawerOpen = canvas.dataset.drawerOpen === 'true';
     // Fit canvas (overview) always shows everything; every other re-fit opens at the readable floor when everything is too small.
-    const viewport = (!overview && readableViewport(bounds, readingStart(targetGraph), readingRect(canvas, navOpen, drawerOpen)))
+    const viewport = (!overview && readableViewport(bounds, readingStart(targetGraph), readingRect(canvas, navOpen, drawerOpen), undefined, overviewFloor(targetGraph)))
       || getViewportForBounds(bounds, canvas.clientWidth, canvas.clientHeight, .08, 2, readingPadding(canvas, navOpen, drawerOpen));
     return setViewport(viewport, { duration, ease: appleEase });
   };

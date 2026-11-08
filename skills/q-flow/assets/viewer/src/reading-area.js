@@ -60,6 +60,9 @@ export const readingStart = graph => graph.nodes.find(node => node.id === graph.
   ?? (graph.meta?.diagramType === 'sequence' || !graph.nodes.every(node => node.position) ? undefined
     : graph.nodes.find(isCore) ?? [...graph.nodes].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)[0]);
 
+// A sequence is read top to bottom, so it opens whole only when the whole view already reads at the readable floor.
+export const overviewFloor = graph => graph.meta?.diagramType === 'sequence' ? READABLE_ZOOM : OVERVIEW_ZOOM;
+
 // Opening view. Fit-all stays the default while the whole view reads at OVERVIEW_ZOOM or more; a larger view opens at the
 // readable floor on a window that begins at the reading start instead: clamped to the graph, centred on an axis the graph
 // does not fill, and below the legend button. null means fit-all.
