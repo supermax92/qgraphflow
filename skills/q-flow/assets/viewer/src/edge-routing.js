@@ -227,8 +227,14 @@ function routeSequenceEdge(edge, source, target, selfIndex, context) {
   const sourceX = sourceExecution ? sourceExecution.x + (forward ? sourceExecution.width : 0) : center(source).x;
   const targetX = targetExecution ? targetExecution.x + (source.id === target.id || !forward ? targetExecution.width : 0) : center(target).x;
   const label = sequenceMessageLabel(graph, edge, pairs, scopes);
-  const available = source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, Math.abs(targetX - sourceX) - 32 - 12));
-  const layout = edgeLabelLayout(label, available);
+  const span = Math.abs(targetX - sourceX);
+  const narrow = edgeLabelLayout(label, source.id === target.id ? LAYOUT_TARGETS.labelWidth : Math.min(LAYOUT_TARGETS.labelWidth, Math.max(1, span - 32 - 12)));
+  // Spacing reserves a 320px label; a message across a wider gap uses that room when it saves lines and still passes the
+  // participant-gap and label-execution checks below, so stored layouts stay valid.
+  const wide = source.id === target.id ? null : edgeLabelLayout(label, Math.max(1, span - 64));
+  const wideAt = wide && (edge.route?.labelAt ?? { x: (sourceX + targetX) / 2, y: y - 6 - wide.height / 2 });
+  const layout = wide && wide.lines.length < narrow.lines.length && wide.width + 32 <= Math.abs(center(target).x - center(source).x)
+    && !executions.some(bar => intersects({ x: wideAt.x - wide.width / 2, y: wideAt.y - wide.height / 2, width: wide.width, height: wide.height }, bar, 2)) ? wide : narrow;
   const labelSize = { width: layout.width, height: layout.height };
   if (source.id === target.id) {
     const extent = 48 + selfIndex * LAYOUT_LIMITS.parallelGap;

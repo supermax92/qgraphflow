@@ -13,7 +13,8 @@ export function compileSequence(input, candidate) {
   for (const edge of [...graph.edges].sort((a, b) => a.order - b.order)) for (const id of [edge.source, edge.target]) if (!firstSeen.has(id)) firstSeen.set(id, firstSeen.size);
   const ordered = graph.layout?.participantOrder ?? [...graph.nodes].sort((a, b) => (a.layout?.order ?? 0) - (b.layout?.order ?? 0) || (firstSeen.get(a.id) ?? Infinity) - (firstSeen.get(b.id) ?? Infinity) || (a.id < b.id ? -1 : 1)).map(node => node.id);
   const nodes = ordered.map(id => graph.nodes.find(node => node.id === id));
-  const spacing = 32 + candidate * 8, gap = 12 + candidate * 4;
+  // Participant spacing starts at the quality floor, so the tightest message gap is not discarded with a too-narrow row.
+  const spacing = LAYOUT_LIMITS.nodeGap + candidate * 8, gap = 12 + candidate * 4;
   const guardText = (group, operand) => group.kind === 'par' ? operand.label : `${group.kind === 'loop' ? `${group.loop.min}..${group.loop.max} ` : ''}[${operand.guard}]`;
   const guardLayout = (group, operand) => layoutText(guardText(group, operand), LAYOUT_TARGETS.labelWidth, 14, 20);
   const bodyLayout = operand => layoutText(operand.body, LAYOUT_TARGETS.labelWidth, 16, 24);
