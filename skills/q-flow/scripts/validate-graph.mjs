@@ -12,7 +12,7 @@ import { graphsOf, needsSite, overviewWarnings, reviewComposition, validateGraph
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
 import { callsMissingExecutions } from '../assets/viewer/src/sequence-executions.js';
-import { detectDrift, driftItems, fingerprintFiles, formatDrift } from './source-drift.mjs';
+import { detectDrift, driftItems, fingerprintFiles, formatDrift, viewAlarms } from './source-drift.mjs';
 export { DIAGRAM_TYPES, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 export { graphsOf, reviewComposition, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 
@@ -24,6 +24,9 @@ const USAGE = `Usage: node validate-graph.mjs <graph.json> [options]
                         unambiguous replyTo, the callee activation bar of each answered sync call; with --repo-root,
                         anchors follow moved lines, source drift is listed in meta.sourceDrift and meta.sourceFiles is
                         renewed); prints each change; writes back only when the graph then passes
+  --changes <file.md>   with --repo-root, write the source changes that touch the diagram as Markdown for a pull request
+                        comment (per view: the elements, file:line, the change, the old and new code); the exit code is
+                        unchanged, so validation still fails while they remain
   --verbose             print the full receipt (layout composition, diagnostics) instead of one summary line
   -h, --help            this text
 Success prints one JSON line; failure prints the failing elements with rule, measurement and remediation.
@@ -168,10 +171,10 @@ export function sourceAnchors(input) {
   return graphsOf(input).flatMap((graph, graphIndex) => {
     const view = graph?.meta?.viewId ?? graph?.meta?.diagramType ?? `view ${graphIndex + 1}`;
     return [
-      ...overviewSections(graph).flatMap(section => section.source ? [{ source: section.source, label: `diagrams[${graphIndex}].sections.${section.id}.source`, graphIndex, element: `${view} ${section.id}` }] : []),
-      ...graph.nodes.flatMap((node, nodeIndex) => (node.badges ?? []).flatMap((badge, i) => badge.source ? [{ source: badge.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].badges[${i}].source`, graphIndex, element: `${view} ${node.id} badge` }] : [])),
-      ...graph.nodes.flatMap((node, nodeIndex) => node.source ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source`, graphIndex, element: `${view} ${node.id}` }] : []),
-      ...(graph.edges ?? []).flatMap((edge, edgeIndex) => edge.site ? [{ source: edge.site, label: `diagrams[${graphIndex}].edges[${edgeIndex}].site`, graphIndex, element: `${view} ${edge.id}` }] : [])];
+      ...overviewSections(graph).flatMap(section => section.source ? [{ source: section.source, label: `diagrams[${graphIndex}].sections.${section.id}.source`, graphIndex, id: section.id, element: `${view} ${section.id}` }] : []),
+      ...graph.nodes.flatMap((node, nodeIndex) => (node.badges ?? []).flatMap((badge, i) => badge.source ? [{ source: badge.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].badges[${i}].source`, graphIndex, id: node.id, element: `${view} ${node.id} badge` }] : [])),
+      ...graph.nodes.flatMap((node, nodeIndex) => node.source ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source`, graphIndex, id: node.id, element: `${view} ${node.id}` }] : []),
+      ...(graph.edges ?? []).flatMap((edge, edgeIndex) => edge.site ? [{ source: edge.site, label: `diagrams[${graphIndex}].edges[${edgeIndex}].site`, graphIndex, id: edge.id, element: `${view} ${edge.id}` }] : [])];
   });
 }
 
@@ -210,11 +213,9 @@ export function applyAnchorFixes(input, repoRoot) {
     for (const item of drift.alarms) for (const anchor of all) if (item.anchors.some(text => text === anchor.element || text.startsWith(`${anchor.element} (`))) exempt.add(anchor.label);
     if (drift.alarms.length) {
       // Each view keeps the items that name one of its elements, or that touch a file it anchors.
-      const items = driftItems(drift.alarms);
       graphs.forEach((graph, graphIndex) => {
-        const view = graph.meta.viewId ?? graph.meta.diagramType ?? `view ${graphIndex + 1}`;
         const files = new Set(all.filter(anchor => anchor.graphIndex === graphIndex).map(({ source }) => source.file));
-        const own = items.filter(item => [...(item.anchors ?? []), ...(item.mentions ?? [])].some(text => text.startsWith(`${view} `)) || files.has(item.file));
+        const own = driftItems(viewAlarms(drift.alarms, graphIndex, files), graphIndex);
         if (!own.length) return;
         graph.meta.sourceDrift = [...(graph.meta.sourceDrift ?? []), ...own];
         changes.push(`${Object.hasOwn(input, 'diagrams') ? `diagrams[${graphIndex}].` : ''}meta.sourceDrift + ${own.length} item${own.length === 1 ? '' : 's'}`);
@@ -239,6 +240,31 @@ export function applyAnchorFixes(input, repoRoot) {
     }
   }
   return { changes, blocked, drift: drift?.alarms ?? [], exempt };
+}
+
+// Markdown for a pull request comment: per view, every listed (meta.sourceDrift) or newly detected source change with
+// the readable names of the elements it touches, file:line, the change and the old and new code.
+export function changesReport(input, repoRoot) {
+  const graphs = graphsOf(input), anchors = sourceAnchors(input), { read } = sourceReader(repoRoot);
+  const live = detectDrift(graphs, { repoRoot, anchors, read, term: symbolTerm })?.alarms ?? [];
+  const title = input.meta?.title ?? graphs[0]?.meta?.title ?? 'diagram';
+  const sections = graphs.flatMap((graph, graphIndex) => {
+    const files = new Set(anchors.filter(anchor => anchor.graphIndex === graphIndex).map(({ source }) => source.file));
+    const items = [...(Array.isArray(graph.meta?.sourceDrift) ? graph.meta.sourceDrift : []), ...driftItems(viewAlarms(live, graphIndex, files), graphIndex)];
+    if (!items.length) return [];
+    const nodes = new Map(graph.nodes.map(node => [node.id, node]));
+    const name = id => {
+      const edge = (graph.edges ?? []).find(item => item.id === id);
+      if (edge) return `${nodes.get(edge.source)?.label ?? edge.source} → ${nodes.get(edge.target)?.label ?? edge.target}${edge.label ? `: ${edge.label}` : ''}`;
+      return nodes.get(id)?.label ?? (graph.groups ?? []).find(group => group.id === id)?.label ?? overviewSections(graph).find(section => section.id === id)?.label ?? id;
+    };
+    const tick = text => `\`${String(text).replaceAll('`', "'").replace(/\s+/g, ' ')}\``;
+    return [`### ${graph.meta.title ?? graph.meta.viewId ?? diagramTypeOf(graph)}${graph.meta.viewId ? ` (${tick(graph.meta.viewId)})` : ''}`, '',
+      ...items.flatMap(item => [`- **${tick(`${item.file}:${item.line}`)}** ${item.change}`,
+        ...(item.elements?.length ? [`  - Elements: ${item.elements.map(id => tick(name(id))).join(', ')}`] : []),
+        ...(item.removed?.length || item.added?.length ? ['  ```diff', ...(item.removed ?? []).map(line => `  - ${line}`), ...(item.added ?? []).map(line => `  + ${line}`), '  ```'] : [])]), ''];
+  });
+  return sections.length ? [`## Source changes affecting ${title}`, '', ...sections].join('\n') : `No source changes affect ${title}.\n`;
 }
 
 // ponytail: a whole-word text match on the symbol's last segment, not a definition parser. A mention left inside the
@@ -280,6 +306,8 @@ function sourceReader(repoRoot) {
 // `relations` counts the edges that should record a site, so a delivery can say how much of the diagram is traceable.
 // With meta.sourceFiles, anchors first follow the lines they moved with (in memory; generation writes them out) and
 // changed code fails as source drift; unresolved meta.sourceDrift items fail until the author removes them.
+// pendingDrift: 'fail' (validation), 'show' (generation: listed items pass and their elements skip the line check, so the
+// Viewer can mark them; unlisted drift still fails) or 'allow' (--fix, which lists the drift itself).
 export function verifySourceEvidence(input, repoRoot, { pendingDrift = 'fail', exempt = new Set() } = {}) {
   const graphs = graphsOf(input), edges = graphs.flatMap(graph => graph.edges ?? []);
   const anchors = sourceAnchors(input);
@@ -292,7 +320,8 @@ export function verifySourceEvidence(input, repoRoot, { pendingDrift = 'fail', e
     return { ...summary, status: anchors.length ? 'skipped' : 'not-applicable', ...(anchors.length ? { reason: 'repository-root-not-provided' } : {}) };
   }
   const { read, files } = sourceReader(repoRoot), errors = [];
-  const drift = pendingDrift === 'fail' ? detectDrift(graphs, { repoRoot, anchors, read, term: symbolTerm }) : null;
+  const drift = pendingDrift === 'allow' ? null : detectDrift(graphs, { repoRoot, anchors, read, term: symbolTerm });
+  const listed = pendingDrift === 'show' ? new Set(anchors.filter(({ graphIndex, id }) => (graphs[graphIndex].meta?.sourceDrift ?? []).some(item => item?.elements?.includes(id))).map(({ label }) => label)) : new Set();
   if (drift) {
     for (const file of drift.unchecked) console.warn(`Source drift not checked for ${file}: its baseline is not in this repository (fetch full history, e.g. actions/checkout fetch-depth: 0); checking the working tree only.`);
     if (drift.alarms.length) throw new Error(`Source drift: ${drift.alarms.length} change${drift.alarms.length === 1 ? '' : 's'} since this diagram's meta.sourceFiles baseline${drift.realigned ? ` (${drift.realigned} anchors only moved and follow their lines)` : ''}. Run validate --fix --repo-root to realign and list them in meta.sourceDrift, then update the named elements.\n${formatDrift(drift.alarms)}`);
@@ -300,7 +329,7 @@ export function verifySourceEvidence(input, repoRoot, { pendingDrift = 'fail', e
   }
   let symbols = 0;
   for (const { source, label } of anchors) {
-    if (exempt.has(label)) continue;
+    if (exempt.has(label) || listed.has(label)) continue;
     try {
       const lines = read(source.file), end = source.lineEnd ?? source.lineStart;
       if (end > lines.length) throw new Error(`line ${end} exceeds file length (${lines.length} lines)`);
@@ -321,7 +350,7 @@ export function verifySourceEvidence(input, repoRoot, { pendingDrift = 'fail', e
 
 if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   try {
-    const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'repo-root': { type: 'string' }, 'input-only': { type: 'boolean', default: false }, fix: { type: 'boolean', default: false }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
+    const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'repo-root': { type: 'string' }, changes: { type: 'string' }, 'input-only': { type: 'boolean', default: false }, fix: { type: 'boolean', default: false }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
     if (values.help) { console.log(USAGE); process.exit(0); }
     if (positionals.length !== 1) throw new Error(USAGE);
     if (values.fix) {
@@ -336,6 +365,11 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
       if (result.written && fs.existsSync(path.join(directory, 'index.html'))) {
         console.error(`regenerate the page and SVGs: node "${path.join(import.meta.dirname, 'generate-viewer.mjs')}" "${file}" "${directory}" --layout preserve --force${values['repo-root'] === undefined ? '' : ` --repo-root "${path.resolve(values['repo-root'])}"`}`);
       }
+    }
+    if (values.changes !== undefined) {
+      if (values['repo-root'] === undefined) throw new Error('--changes needs --repo-root');
+      fs.writeFileSync(values.changes, changesReport(JSON.parse(fs.readFileSync(positionals[0], 'utf8')), values['repo-root']));
+      console.error(`wrote ${path.resolve(values.changes)}`);
     }
     const graph = readAndValidateGraph(positionals[0], { inputOnly: values['input-only'] });
     const sourceEvidence = verifySourceEvidence(graph, values['repo-root']);

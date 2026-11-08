@@ -256,6 +256,8 @@ jobs:
           exit ${failed:-0}
 ```
 
+To see the impact on the pull request, add `--changes changes.md` to the validate line and post the file when it fails, for example `gh pr comment "$PR" --body-file changes.md` (needs `pull-requests: write`). It lists, per view, the elements each change touches, the file and line, and the old and new code. The page regenerated after `--fix` also marks those elements and lists the changes beside the key points.
+
 When it fails, ask the skill to refresh that diagram:
 
 ```text

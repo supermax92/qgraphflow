@@ -86,7 +86,9 @@ async function main() {
   if (selected.size && values.layout !== 'auto') throw new Error('--view requires --layout auto');
   const unknown = [...selected].filter(id => !views.some(graph => viewIdOf(graph) === id));
   if (unknown.length) throw new Error(`Unknown view: ${unknown.join(', ')}; available views: ${views.map(viewIdOf).join(', ')}`);
-  const sourceEvidence = verifySourceEvidence(input, values['repo-root']);
+  const sourceEvidence = verifySourceEvidence(input, values['repo-root'], { pendingDrift: 'show' });
+  const pendingDrift = views.reduce((sum, graph) => sum + (Array.isArray(graph.meta?.sourceDrift) ? graph.meta.sourceDrift.length : 0), 0);
+  if (pendingDrift) console.warn(`${pendingDrift} source change${pendingDrift === 1 ? '' : 's'} listed in meta.sourceDrift: the Viewer marks the named elements; validation fails until each item is resolved and deleted.`);
   const warnings = printCompositionReview(input, { print: false }); // already printed by the input validation step
   if (!fs.existsSync(shellPath)) throw new Error(`Viewer shell missing: ${shellPath}`);
 
@@ -125,6 +127,7 @@ async function main() {
   // Preserve repairs are reported so the author can see which routes or rows changed without rendering the page.
   const repaired = compiled.flatMap((item, i) => item.report?.repair ? [{ view: viewIdOf(views[i]) ?? i, ...(item.report.repair.rows ? { rows: true } : { rerouted: item.report.repair.rerouted, moved: item.report.repair.movedNodeIds }) }] : []);
   if (repaired.length) summary.repaired = repaired;
+  if (pendingDrift) summary.sourceDrift = pendingDrift;
   const detail = values.verbose ? { layoutComposition: graphs.map(layoutComposition), layout: compiled.map(item => item.report), quality } : {};
   console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')
     ? { generated: true, diagramType: diagramTypeOf(graphs[0]), outputDir, files, ...summary, ...detail, sourceEvidence }

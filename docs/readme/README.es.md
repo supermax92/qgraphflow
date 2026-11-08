@@ -256,6 +256,8 @@ jobs:
           exit ${failed:-0}
 ```
 
+Para ver el impacto en la pull request, añade `--changes changes.md` a la línea de validate y, si falla, publica el archivo como comentario, por ejemplo con `gh pr comment "$PR" --body-file changes.md` (requiere `pull-requests: write`). Enumera, por vista, los elementos que toca cada cambio, el archivo y la línea, y el código anterior y el nuevo. La página regenerada después de `--fix` también marca esos elementos y enumera los cambios junto a los puntos clave.
+
 Si falla, pedir a la habilidad que actualice ese diagrama:
 
 ```text

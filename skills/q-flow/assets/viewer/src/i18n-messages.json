@@ -184,7 +184,10 @@
     "Component relationship architecture": "组件关系架构图",
     "Platform capability architecture": "平台能力架构图",
     "Engineering layer architecture": "工程分层架构图",
-    "Shared dependencies": "公共依赖"
+    "Shared dependencies": "公共依赖",
+    "Source changes": "源码变化",
+    "Show source changes": "显示源码变化",
+    "Hide source changes": "隐藏源码变化"
   },
   "ja": {
     "Architecture": "アーキテクチャ",
@@ -371,7 +374,10 @@
     "Engineering layer architecture": "プロジェクト階層アーキテクチャ図",
     "Layout suggestions": "レイアウトの提案",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "このビューを整列すると、接続線の余白と間隔を改善できます。それまでは現在の位置が保持されます。",
-    "Shared dependencies": "共通の依存先"
+    "Shared dependencies": "共通の依存先",
+    "Source changes": "ソースの変更",
+    "Show source changes": "ソースの変更を表示",
+    "Hide source changes": "ソースの変更を隠す"
   },
   "ko": {
     "Architecture": "아키텍처",
@@ -558,7 +564,10 @@
     "Engineering layer architecture": "엔지니어링 계층 아키텍처",
     "Layout suggestions": "레이아웃 제안",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "이 보기를 정리하여 연결선의 여백과 간격을 개선하세요. 정리하기 전까지 기존 위치가 유지됩니다.",
-    "Shared dependencies": "공통 의존성"
+    "Shared dependencies": "공통 의존성",
+    "Source changes": "소스 변경",
+    "Show source changes": "소스 변경 표시",
+    "Hide source changes": "소스 변경 숨기기"
   },
   "de": {
     "Architecture": "Architektur",
@@ -745,7 +754,10 @@
     "Engineering layer architecture": "Schichtenarchitektur",
     "Layout suggestions": "Layoutvorschläge",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "Ordnen Sie diese Ansicht an, um Abstände der Verbindungslinien zu verbessern. Bis dahin bleiben die bisherigen Positionen erhalten.",
-    "Shared dependencies": "Gemeinsame Abhängigkeiten"
+    "Shared dependencies": "Gemeinsame Abhängigkeiten",
+    "Source changes": "Quellcode-Änderungen",
+    "Show source changes": "Quellcode-Änderungen anzeigen",
+    "Hide source changes": "Quellcode-Änderungen ausblenden"
   },
   "fr": {
     "Architecture": "Architecture",
@@ -932,7 +944,10 @@
     "Engineering layer architecture": "Architecture en couches",
     "Layout suggestions": "Suggestions de disposition",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "Réorganisez cette vue pour améliorer les dégagements et les espacements des connecteurs. Les positions actuelles sont conservées jusque-là.",
-    "Shared dependencies": "Dépendances partagées"
+    "Shared dependencies": "Dépendances partagées",
+    "Source changes": "Modifications du code",
+    "Show source changes": "Afficher les modifications du code",
+    "Hide source changes": "Masquer les modifications du code"
   },
   "es": {
     "Architecture": "Arquitectura",
@@ -1119,7 +1134,10 @@
     "Engineering layer architecture": "Arquitectura por capas",
     "Layout suggestions": "Sugerencias de diseño",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "Organiza esta vista para mejorar la separación y el espacio de los conectores. Las posiciones actuales se conservan hasta entonces.",
-    "Shared dependencies": "Dependencias compartidas"
+    "Shared dependencies": "Dependencias compartidas",
+    "Source changes": "Cambios en el código",
+    "Show source changes": "Mostrar cambios en el código",
+    "Hide source changes": "Ocultar cambios en el código"
   },
   "ru": {
     "Architecture": "Архитектура",
@@ -1306,7 +1324,10 @@
     "Engineering layer architecture": "Слоистая архитектура",
     "Layout suggestions": "Рекомендации по размещению",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "Упорядочьте эту схему, чтобы улучшить зазоры и расстояния между связями. До этого текущие позиции сохраняются.",
-    "Shared dependencies": "Общие зависимости"
+    "Shared dependencies": "Общие зависимости",
+    "Source changes": "Изменения в коде",
+    "Show source changes": "Показать изменения в коде",
+    "Hide source changes": "Скрыть изменения в коде"
   },
   "pt": {
     "Architecture": "Arquitetura",
@@ -1493,6 +1514,9 @@
     "Engineering layer architecture": "Arquitetura em camadas",
     "Layout suggestions": "Sugestões de disposição",
     "Arrange this view to improve connector clearance and spacing. Existing positions are preserved until then.": "Organize esta vista para melhorar as folgas e os espaçamentos das ligações. As posições atuais são preservadas até lá.",
-    "Shared dependencies": "Dependências compartilhadas"
+    "Shared dependencies": "Dependências compartilhadas",
+    "Source changes": "Alterações no código",
+    "Show source changes": "Mostrar alterações no código",
+    "Hide source changes": "Ocultar alterações no código"
   }
 }

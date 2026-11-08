@@ -256,6 +256,8 @@ jobs:
           exit ${failed:-0}
 ```
 
+想在 PR 里直接看到受影响的地方，就在 validate 那一行加上 `--changes changes.md`，失败时把这个文件贴成评论，例如 `gh pr comment "$PR" --body-file changes.md`（需要 `pull-requests: write` 权限）。它按视图列出每处改动碰到的元素、文件和行号，以及改动前后的代码。执行 `--fix` 后重新生成的页面也会标出这些元素，并在要点旁列出这些改动。
+
 失败后，让技能刷新这张图：
 
 ```text

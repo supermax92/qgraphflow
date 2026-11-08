@@ -6,7 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { collection, repoRoot, source } from '../../../tests/jeepay.mjs';
 import { mapLine, parseHunks } from './source-drift.mjs';
-import { fixGraphFile, stampSourceFiles, verifySourceEvidence } from './validate-graph.mjs';
+import { changesReport, fixGraphFile, stampSourceFiles, verifySourceEvidence } from './validate-graph.mjs';
+import { driftedElements } from '../assets/viewer/src/source-changes.js';
 
 const git = (dir, ...args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
 
@@ -94,10 +95,17 @@ test('--fix realigns, renews the baseline and keeps the change as a worklist unt
   const fixed = JSON.parse(fs.readFileSync(file, 'utf8')), sequence = view(fixed, 'sequence');
   assert.equal(sequence.edges.find(edge => edge.id === 'm3').site.lineStart, anchor.lineStart + 1);
   assert.equal(sequence.meta.sourceDrift[0].file, anchor.file);
+  assert.ok(sequence.meta.sourceDrift[0].elements.includes('m3'), 'the worklist names the element ids it touches');
+  assert.ok(driftedElements(sequence).has('m3'), 'the Viewer marks the named elements');
   assert.equal(sequence.meta.sourceFiles[anchor.file], git(dir, 'hash-object', anchor.file).trim());
   assert.throws(() => verifySourceEvidence(fixed, dir), /Unresolved source drift/);
+  assert.equal(verifySourceEvidence(structuredClone(fixed), dir, { pendingDrift: 'show' }).status, 'passed', 'generation shows listed items instead of failing');
+  const pending = structuredClone(fixed);
   for (const item of fixed.diagrams) delete item.meta.sourceDrift;
   assert.equal(verifySourceEvidence(fixed, dir).status, 'passed');
+  const other = site(pending, 'sequence', 'm1');
+  editLine(dir, other.file, other.lineStart, line => `${line} // changed`);
+  assert.throws(() => verifySourceEvidence(pending, dir, { pendingDrift: 'show' }), /Source drift: 1 change/, 'an unlisted change still fails generation');
 });
 
 test('graphs without a baseline keep the working-tree check unchanged', t => {
@@ -113,4 +121,16 @@ test('a baseline missing from the repository falls back to the working-tree chec
   insertAfter(dir, anchor.file, 70, '    // housekeeping comment');
   assert.equal(verifySourceEvidence(graph, dir).status, 'passed');
   assert.ok(warn.mock.calls.some(call => /fetch-depth: 0/.test(call.arguments[0])));
+});
+
+test('--changes reports each change with the readable elements it touches, or that nothing changed', t => {
+  const { dir, graph } = baseline(t), anchor = site(graph, 'sequence', 'm3'), sequence = view(graph, 'sequence');
+  assert.match(changesReport(graph, dir), /^No source changes affect /);
+  editLine(dir, anchor.file, anchor.lineStart, line => line.replace('payOrderService.save(', 'payOrderService.saveOrder('));
+  const edge = sequence.edges.find(item => item.id === 'm3'), label = id => sequence.nodes.find(node => node.id === id).label;
+  const report = changesReport(graph, dir);
+  assert.match(report, /^## Source changes affecting /);
+  assert.ok(report.includes(`\`${anchor.file}:${anchor.lineStart}\``), report);
+  assert.ok(report.includes(`${label(edge.source)} → ${label(edge.target)}`), report);
+  assert.ok(report.includes('+ payOrderService.saveOrder(payOrder);'), report);
 });

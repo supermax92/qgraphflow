@@ -256,6 +256,8 @@ jobs:
           exit ${failed:-0}
 ```
 
+Um die Auswirkungen im Pull Request zu sehen, ergänzen Sie die validate-Zeile um `--changes changes.md` und posten die Datei bei einem Fehler als Kommentar, etwa mit `gh pr comment "$PR" --body-file changes.md` (benötigt `pull-requests: write`). Sie listet je Ansicht die Elemente, die jede Änderung berührt, Datei und Zeile sowie alten und neuen Code. Die nach `--fix` neu erzeugte Seite markiert diese Elemente ebenfalls und listet die Änderungen neben den Kernaussagen.
+
 Schlägt er fehl, den Skill bitten, dieses Diagramm zu aktualisieren:
 
 ```text

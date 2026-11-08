@@ -65,18 +65,19 @@ function fileDiff(repoRoot, blob, file) {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
-// Every human-readable string of a view with the element that carries it; anchors and geometry are skipped.
-function textsOf(graph, view) {
+// Every human-readable string of a view with the element that carries it (id null for view-level text); anchors and
+// geometry are skipped.
+function textsOf(graph, view, graphIndex) {
   const texts = [];
-  const walk = (value, element, key) => {
-    if (Array.isArray(value)) return value.forEach(item => walk(item, element, key));
+  const walk = (value, element, id, key) => {
+    if (Array.isArray(value)) return value.forEach(item => walk(item, element, id, key));
     if (value && typeof value === 'object') {
       if (isAnchor(value)) return;
-      const here = typeof value.id === 'string' ? `${view} ${value.id}` : element;
-      for (const [name, item] of Object.entries(value)) if (!SKIP.has(name)) walk(item, here, name);
-    } else if (typeof value === 'string' && /\p{L}/u.test(value)) texts.push({ element, key, text: value });
+      const own = typeof value.id === 'string' ? value.id : id;
+      for (const [name, item] of Object.entries(value)) if (!SKIP.has(name)) walk(item, own === id ? element : `${view} ${own}`, own, name);
+    } else if (typeof value === 'string' && /\p{L}/u.test(value)) texts.push({ element, key, text: value, graphIndex, id });
   };
-  walk(graph, `${view} meta`, '');
+  walk(graph, `${view} meta`, null, '');
   return texts;
 }
 
@@ -112,7 +113,7 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
     return diffs.get(key);
   };
   const views = graphs.map((graph, i) => graph?.meta?.viewId ?? graph?.meta?.diagramType ?? `view ${i + 1}`);
-  const texts = graphs.flatMap((graph, i) => textsOf(graph, views[i]));
+  const texts = graphs.flatMap((graph, i) => textsOf(graph, views[i], i));
   const scope = [...new Set(anchors.map(({ source }) => source.file))];
   const scopeText = new Map(), scopeOf = file => { if (!scopeText.has(file)) { try { scopeText.set(file, read(file).join('\n')); } catch { scopeText.set(file, ''); } } return scopeText.get(file); };
   const terms = new Set(anchors.map(({ source }) => term(source.symbol ?? '')).filter(name => name && (name.length >= 6 || /[A-Z_]/.test(name.slice(1)))));
@@ -120,10 +121,10 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
   const alarms = new Map(), moves = new Map(), held = new Map(), reported = new Set();
   const alarm = (file, hunk, kind) => {
     const key = `${file}#${hunk.oldStart}`;
-    if (!alarms.has(key)) alarms.set(key, { file, oldLine: hunk.oldStart, newLine: hunk.newStart, kinds: new Set(), removed: hunk.removed.filter(isCode).map(line => line.trim()), added: hunk.added.filter(isCode).map(line => line.trim()), anchors: new Set(), mentions: new Set() });
+    if (!alarms.has(key)) alarms.set(key, { file, oldLine: hunk.oldStart, newLine: hunk.newStart, kinds: new Set(), removed: hunk.removed.filter(isCode).map(line => line.trim()), added: hunk.added.filter(isCode).map(line => line.trim()), anchors: new Set(), mentions: new Set(), refs: new Set() });
     const item = alarms.get(key); item.kinds.add(kind); return item;
   };
-  const mention = (item, test) => { for (const t of texts) if (test(t.text) && !reported.has(t)) { reported.add(t); item.mentions.add(`${t.element}${t.key ? ` ${t.key}` : ''}: "${[...t.text].slice(0, 80).join('')}"`); } };
+  const mention = (item, test) => { for (const t of texts) if (test(t.text) && !reported.has(t)) { reported.add(t); if (t.id !== null) item.refs.add(`${t.graphIndex}:${t.id}`); item.mentions.add(`${t.element}${t.key ? ` ${t.key}` : ''}: "${[...t.text].slice(0, 80).join('')}"`); } };
   let realigned = 0;
 
   // Rules 1-2: carry every anchor to its new lines; an anchor whose own line was rewritten is a change to report.
@@ -135,7 +136,7 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
     const rewritten = !container && Array.from({ length: end - source.lineStart + 1 }, (_, i) => mapLine(diff.hunks, source.lineStart + i)).find(result => result.hunk);
     if (rewritten) {
       const { hunk } = rewritten, item = alarm(source.file, hunk, 'anchored line rewritten');
-      item.anchors.add(`${anchor.element}${source.symbol ? ` (${source.symbol})` : ''}`);
+      item.anchors.add(`${anchor.element}${source.symbol ? ` (${source.symbol})` : ''}`); item.refs.add(`${anchor.graphIndex}:${anchor.id}`);
       const added = hunk.added.join('\n');
       for (const value of new Set(hunk.removed.join('\n').match(/(?<![\w$.])\d+(?:\.\d+)?(?![\w$])/g) ?? [])) if (!numberIn(value).test(added)) mention(item, text => numberIn(value).test(text));
       const lineStart = Math.max(1, hunk.newStart + Math.min(source.lineStart - hunk.oldStart, Math.max(0, hunk.newCount - 1)));
@@ -167,7 +168,7 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
         const item = alarm(file, hunk, `call removed: ${name}() has no remaining caller`);
         for (const other of based) if (other.source.file === file && (other.source.lineEnd ?? other.source.lineStart) - other.source.lineStart <= 3) {
           const line = moves.get(other.source)?.lineStart;
-          if (line >= span[0] && line <= span[1]) item.anchors.add(`${other.element}${other.source.symbol ? ` (${other.source.symbol})` : ''}`);
+          if (line >= span[0] && line <= span[1]) { item.anchors.add(`${other.element}${other.source.symbol ? ` (${other.source.symbol})` : ''}`); item.refs.add(`${other.graphIndex}:${other.id}`); }
         }
         // Names only this method uses (outside it and the imports they never appear) describe what it did.
         const body = lines.slice(span[0] - 1, span[1]).join('\n');
@@ -194,7 +195,7 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
     }
   }
   const list = [...alarms.values()].filter(item => item.anchors.size || item.mentions.size || [...item.kinds].some(kind => kind.startsWith('new code') || kind.startsWith('call removed')))
-    .map(item => ({ ...item, kinds: [...item.kinds], anchors: [...item.anchors], mentions: [...item.mentions] }));
+    .map(item => ({ ...item, kinds: [...item.kinds], anchors: [...item.anchors], mentions: [...item.mentions], refs: [...item.refs] }));
   return { files: new Set(based.map(({ source }) => source.file)).size, realigned, alarms: list, moves, unchecked: [...unchecked] };
 }
 
@@ -206,9 +207,14 @@ export function formatDrift(alarms) {
   ].join('\n')).join('\n');
 }
 
-// The compact form kept in meta.sourceDrift until the author has updated the listed elements.
-export const driftItems = alarms => alarms.map(item => ({
+// Alarms touching view graphIndex: they name one of its elements or change a file it anchors.
+export const viewAlarms = (alarms, graphIndex, files) => alarms.filter(item => item.refs.some(ref => ref.startsWith(`${graphIndex}:`)) || files.has(item.file));
+
+// The compact form kept in meta.sourceDrift until the author has updated the listed elements; `elements` holds the ids
+// in view graphIndex that the change touches (anchored there or whose text names what changed).
+export const driftItems = (alarms, graphIndex) => alarms.map(item => ({
   file: item.file, line: item.newLine, change: item.kinds.join('; '),
+  elements: [...new Set(item.refs.filter(ref => ref.startsWith(`${graphIndex}:`)).map(ref => ref.slice(ref.indexOf(':') + 1)))],
   ...(item.removed.length ? { removed: item.removed.slice(0, 6) } : {}), ...(item.added.length ? { added: item.added.slice(0, 6) } : {}),
   ...(item.anchors.length ? { anchors: item.anchors } : {}), ...(item.mentions.length ? { mentions: item.mentions } : {})
 }));

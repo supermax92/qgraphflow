@@ -9,6 +9,7 @@ import { visibleEdgeLabel, createEdgeRoutes } from './edge-routing.js';
 import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual-style.js';
 import { foldedEdges } from './presentation-graph.js';
+import { sourceChanges } from './source-changes.js';
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
@@ -58,9 +59,12 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
   // and it waits for that drawer (even while it slides out) to be gone before it appears. Fullscreen has no panels, so
   // there it simply floats over the canvas until it is hidden.
-  const notes = graph.meta.notes ?? [];
+  // Unresolved source changes (meta.sourceDrift) share the card: they follow the key points, or stand alone.
+  const notes = graph.meta.notes ?? [], changes = sourceChanges(graph);
+  const side = notes.length ? { title: t('Key points'), count: notes.length, hide: t('Hide key points'), show: t('Show key points') }
+    : { title: t('Source changes'), count: changes.length, hide: t('Hide source changes'), show: t('Show source changes') };
   const [notesOpen, setNotesOpen] = useState(true);
-  const notesShown = notes.length > 0 && notesOpen && !drawerShown;
+  const notesShown = side.count > 0 && notesOpen && !drawerShown;
   const rightReserved = drawerOpen || (notesShown && !isFullscreen);
   // The hide and show buttons replace each other, so a reader's toggle hands focus to whichever one appears.
   const notesToggled = useRef(false), notesFocusRef = useRef(null);
@@ -236,12 +240,20 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
             </div>}
           </div>
 
-          {notes.length > 0 && !drawerShown && (notesShown
-            ? <section className="float notes-anchor notes-card" aria-label={t('Key points')}>
-              <div className="side-head"><p className="panel-title">{t('Key points')} · {notes.length}</p><button className="side-close" ref={notesFocusRef} onClick={() => { notesToggled.current = true; setNotesOpen(false); }} aria-label={t('Hide key points')} title={t('Hide key points')}><Icon name="close" /></button></div>
-              <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>
+          {side.count > 0 && !drawerShown && (notesShown
+            ? <section className="float notes-anchor notes-card" aria-label={side.title}>
+              <div className="side-head"><p className="panel-title">{side.title} · {side.count}</p><button className="side-close" ref={notesFocusRef} onClick={() => { notesToggled.current = true; setNotesOpen(false); }} aria-label={side.hide} title={side.hide}><Icon name="close" /></button></div>
+              {notes.length > 0 && <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
+              {changes.length > 0 && <>{notes.length > 0 && <p className="panel-title source-changes-title">{t('Source changes')} · {changes.length}</p>}<ul className="source-changes">{changes.map((item, index) => <li key={index}>
+                <code>{String(item?.file ?? '').split('/').pop()}:{item?.line}</code> {item?.change}
+                {(item?.elements ?? []).map(id => {
+                  const node = currentGraph.nodes.find(entry => entry.id === id), edge = node ? null : currentGraph.edges.find(entry => entry.id === id);
+                  return node || edge ? <button key={id} type="button" className="folded-edge" onClick={() => node ? selectNode(node) : selectEdge(edge, true)}>{node ? node.label : edge.label ?? id}</button> : null;
+                })}
+                {(item?.removed?.length > 0 || item?.added?.length > 0) && <pre>{[...(item.removed ?? []).slice(0, 3).map(line => `- ${line}`), ...(item.added ?? []).slice(0, 3).map(line => `+ ${line}`)].join('\n')}</pre>}
+              </li>)}</ul></>}
             </section>
-            : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={t('Show key points')} title={t('Show key points')}><Icon name="notes" /><span>{t('Key points')} · {notes.length}</span></button>)}
+            : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={side.show} title={side.show}><Icon name="notes" /><span>{side.title} · {side.count}</span></button>)}
 
           {cardNode && <NodeCard node={{ ...cardNode.data, position: cardNode.position }} others={nodes} canvasRef={canvasRef} palette={palette} moduleColors={moduleColors} locale={graph.meta.locale} locked={locked} editor={editor} graph={currentGraph} isFullscreen={isFullscreen} onDetails={async () => {
             if (isFullscreen && !await toggleFullscreen()) return;

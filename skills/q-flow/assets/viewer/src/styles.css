@@ -187,6 +187,13 @@ button:disabled { cursor: not-allowed; }
 .notes-card ul { margin: 0; padding-left: 16px; color: var(--label-2); font-size: 13px; line-height: 1.6; }
 .notes-card li + li { margin-top: 5px; }
 .notes-card li::marker { color: var(--accent); }
+.notes-card .source-changes-title { margin: 12px 0 6px; }
+.notes-card .source-changes li::marker { color: var(--warm); }
+.source-changes code { font-size: 12px; color: var(--label); }
+.source-changes .folded-edge { display: block; margin-top: 2px; color: var(--warm); }
+.source-changes pre { margin: 4px 0 0; padding: 4px 6px; border-radius: var(--r-control); background: var(--fill); color: var(--label-2); font-size: 11px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.diagram-node.is-drifted { outline: 2px dashed var(--warm); outline-offset: 3px; }
+.edge-label.is-drifted { box-shadow: 0 0 0 1.5px var(--warm); }
 .workspace.nav-open .legend-anchor { left: calc(var(--side-w) + 2 * var(--gutter)); }
 .float-btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border: 0; border-radius: var(--r-field); color: var(--label); background: var(--material-thin); -webkit-backdrop-filter: var(--blur-thin); backdrop-filter: var(--blur-thin); box-shadow: 0 0 0 .5px var(--sep), var(--shadow-1); cursor: pointer; font-size: 12px; transition: background var(--fast) var(--ease), transform 100ms ease-out; }
 .float-btn .ic { width: 14px; height: 14px; color: var(--label-2); }
