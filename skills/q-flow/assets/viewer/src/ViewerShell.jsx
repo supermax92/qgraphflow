@@ -1,4 +1,4 @@
-import { isArchitectureOverview, viewIdOf, viewTypeOf, viewTypeLabel } from './view-identity.js';
+import { viewIdOf, viewTypeOf, viewTypeLabel } from './view-identity.js';
 import { translate } from './i18n.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ControlButton, Controls, MiniMap, ReactFlow, useReactFlow, useStore } from '@xyflow/react';
@@ -46,7 +46,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
     diagramType, palette, reduceMotion,
     hasFlow, flowRunning, setFlowEnabled,
     inspectedNode, inspectedEdge, selectedId, selectedEdgeId, selectionPulse, query, setQuery, normalizedQuery, results, selectNode, selectEdge, clearSelectedNode, handleCanvasKeyDown,
-    locked, setLocked, canvasRef, currentGraph, acceptedGraph, nodes, onNodesChange, onNodeDragStop, onOverviewKeyDown, layoutPending, cancelLayout, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
+    locked, setLocked, canvasRef, currentGraph, acceptedGraph, nodes, onNodesChange, onNodeDragStop, layoutPending, cancelLayout, updateNodeText, updateEdgeText, readGraph, focusDiagram, nudgeLayout,
     visibleNodes, visibleEdges, reset, exportDiagram, saveGraph, exportStatus, layoutProblem, layoutWarnings, focusProblem,
     boardRef, fullscreenButtonRef, isFullscreen, fullscreenPending, fullscreenSupported, toggleFullscreen,
     toolbarOpen, drawerOpen, toolbarButtonRef, drawerButtonRef, searchInputRef, inspectorRef, panelRef, toggleToolbar, toggleDrawer, openDetails
@@ -54,7 +54,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const [navShown, navState] = usePresence(toolbarOpen, reduceMotion, panelRef);
   const [drawerShown, drawerState] = usePresence(drawerOpen, reduceMotion, inspectorRef);
   const drawerFrozen = useRef(null);
-  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, isArchitectureOverview(graph), cancelLayout);
+  const editor = useTextEditor(inspectedNode, inspectedEdge, updateNodeText, updateEdgeText, graph.meta.locale, cancelLayout);
   const { open, toggle, close } = usePopover();
   // meta.notes: a card over the top of the right side, open on wide screens until the reader hides it. It is a panel in
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
@@ -116,10 +116,9 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   const drawerBody = <>
     <div className="side-head"><p className="panel-title">{t('Details')}</p><button className="side-close" onClick={() => clearSelectedNode(true)} aria-label={t('Close details')} title={t('Close details')}><Icon name="close" /></button></div>
     <section className="inspector-card drawer-body" data-node-id={inspectedNode?.id} data-edge-id={inspectedEdge?.id}>{inspectedNode ? <>
-        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(inspectedNode.section ? 'Section' : kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
+        <div className="node-kicker"><span className="node-dot" style={{ backgroundColor: nodeAppearance(inspectedNode, palette, moduleColors).stroke }} />{t(kindLabels[inspectedNode.kind] ?? inspectedNode.kind)}{inspectedNode.module ? ` · ${inspectedNode.module}` : ''}</div>
         <h2>{inspectedNode.label}</h2>
         <p className="drawer-subtitle">{inspectedNode.subtitle}</p>
-        {inspectedNode.overviewText?.length > 0 && <><h3>{t('Overview text')}</h3><ul>{inspectedNode.overviewText.map((line, i) => <li key={i}>{line}</li>)}</ul></>}
         {inspectedNode.badges?.length > 0 && <><h3>{t('Badges')}</h3><ul>{inspectedNode.badges.map((badge, i) => <li key={i}>{badge.label} · {t(evidenceLabels[badge.evidence])}{badge.source && <code className="source-path">{anchorText(badge.source)}</code>}</li>)}</ul></>}
         {(folded => folded.length > 0 && <><h3>{t('Shared dependencies')}</h3><ul>{folded.map(edge => <li key={edge.id}><button type="button" className="folded-edge" onClick={() => selectEdge(edge)}>{edge.label ?? edge.kind} → {currentGraph.nodes.find(node => node.id === edge.target)?.label}</button>{edge.site && <code className="source-path">{anchorText(edge.site)}</code>}</li>)}</ul></>)(foldedEdges(currentGraph).filter(edge => edge.source === inspectedNode.id))}
         {inspectedNode.fields?.length > 0 && <><h3>{t('Fields')}</h3><ul>{inspectedNode.fields.map(field => <li key={field.name}><code>{field.key} {field.name}: {field.type}{field.nullable === false ? ' · NOT NULL' : field.nullable === true ? ' · NULL' : ''}</code></li>)}</ul></>}
@@ -206,7 +205,7 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
 
       <figure ref={boardRef} className="board diagram-board">
         <svg className="relation-defs" width="0" height="0" aria-hidden="true"><style>{svgStyles(palette, ':is(.node-visual,.fragment-visual,.fragment-text) ')}</style><defs><filter id="node-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="7" floodColor={palette.ink} floodOpacity=".045"/></filter><marker id="codegraph-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" /></marker><marker id="codegraph-triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L11 6L1 11Z" fill="var(--canvas)" stroke="context-stroke"/></marker><marker id="codegraph-diamond-filled" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="context-stroke"/></marker><marker id="codegraph-diamond-open" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="10" orient="auto"><path d="M1 5L7 1L13 5L7 9Z" fill="var(--canvas)" stroke="context-stroke"/></marker></defs></svg>
-        <div ref={canvasRef} aria-busy={layoutPending} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={event => { onOverviewKeyDown(event); if (!event.defaultPrevented) handleCanvasKeyDown(event); }} aria-label={t('Interactive {type}', { type: t(viewTypeLabel(graph)) })}>
+        <div ref={canvasRef} aria-busy={layoutPending} className="canvas" style={{ '--sequence-flow-unit': `${Math.max(1, .6 / zoom)}px` }} data-nav-open={toolbarOpen} data-drawer-open={rightReserved} onKeyDownCapture={handleCanvasKeyDown} aria-label={t('Interactive {type}', { type: t(viewTypeLabel(graph)) })}>
           <ReactFlow
             nodeExtent={[[0, 0], [Infinity, Infinity]]}
             nodes={visibleNodes}

@@ -1,8 +1,8 @@
 # Installation guide
 
-[English](clients.md) · [中文](clients.zh-CN.md) · [Русский](clients.ru.md) · [Português](clients.pt.md) · [日本語](clients.ja.md) · [Deutsch](clients.de.md) · [Español](clients.es.md)
+[English](clients.md) · [中文](clients.zh-CN.md)
 
-[Back to README](../README.md)
+[Back to README](../README.en.md)
 
 Qoder Desktop can install the plugin from its marketplace and skip step 1 (see its section below). The other clients install the plugin package from npmjs.com.
 

@@ -40,7 +40,7 @@ export function currentGraphFromFlow(graph, nodes, edges) {
       const current = nodeState.get(node.id);
       if (!current) return node;
       const text = { label: current.data.label };
-      for (const key of ['overviewText', 'badges']) if (Object.hasOwn(current.data, key)) text[key] = current.data[key];
+      if (Object.hasOwn(current.data, 'badges')) text.badges = current.data.badges;
       if (Object.hasOwn(current.data, 'subtitle')) text.subtitle = current.data.subtitle;
       return { ...node, ...text, position: current.position, size: current.data.size };
     }),

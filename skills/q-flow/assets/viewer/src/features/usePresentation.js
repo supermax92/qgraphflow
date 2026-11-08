@@ -15,7 +15,7 @@ export function usePresentation(graph, layout, selection, flowRunning, palette, 
   const pairs = useMemo(() => sequencePairs(currentGraph), [currentGraph]);
   const executions = useMemo(() => sequenceExecutions(currentGraph), [currentGraph]);
   const groupAppearances = useMemo(() => groupAppearanceMap(currentGraph.groups ?? [], palette), [currentGraph, palette]);
-  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'overview' ? { ...node, draggable: false, data: { ...node.data, palette, onSelect: () => selectNode({ ...node.data, label: node.data.title, kind: 'annotation', section: true, overviewText: node.data.text ?? [] }) } } : node.type === 'boundary' ? { ...node, data: { ...node.data, appearance: groupAppearances.get(node.id), fragment: diagramType === 'sequence' ? sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) : null } } : ({
+  const visibleNodes = useMemo(() => nodes.map(node => node.type === 'boundary' ? { ...node, data: { ...node.data, appearance: groupAppearances.get(node.id), fragment: diagramType === 'sequence' ? sequenceFragment(node.data, routes, graph.meta.locale, currentGraph.groups ?? [], executions) : null } } : ({
     ...node,
     selected: node.id === selectedId,
     draggable: !locked,

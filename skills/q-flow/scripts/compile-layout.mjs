@@ -1,7 +1,5 @@
 import { routeOrthogonal, placeEdgeLabels } from '../assets/viewer/src/orthogonal-routing.js';
 import { refineDiagramLayout, refineWithLegacySeed, layoutMetrics } from '../assets/viewer/src/layout-refinement.js';
-import { isArchitectureOverview } from '../assets/viewer/src/view-identity.js';
-import { overviewSections, fitArchitectureOverview, overviewLayoutReports } from '../assets/viewer/src/architecture-overview.js';
 import { Worker } from 'node:worker_threads';
 import { createHash } from 'node:crypto';
 import { validateGraph, diagramTypeOf } from './validate-graph.mjs';
@@ -39,7 +37,6 @@ function semanticDigest(graph, migration = []) {
   for (const item of [...model.nodes, ...(model.groups ?? [])]) { delete item.position; delete item.size; }
   for (const edge of model.edges) delete edge.route;
   for (const item of migration) delete [...model.nodes, ...(model.groups ?? [])].find(element => element.id === item.elementId)[item.field];
-  for (const section of overviewSections(model)) { delete section.position; delete section.size; }
   if (model.layout) { delete model.layout.version; delete model.layout.strategy; delete model.layout.direction; if (!Object.keys(model.layout).length) delete model.layout; }
   const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
   return createHash('sha256').update(JSON.stringify(canonical(model))).digest('hex');
@@ -421,7 +418,7 @@ function preserveLayout(graph) {
   if (sequence) {
     try { return { graph: check(compileSequence(graph, Number(/^sequence-(\d+)$/.exec(graph.layout?.strategy ?? '')?.[1] ?? 0), { keepColumns: true })), repair: { rows: true, rerouted: [], movedNodeIds: [] } }; }
     catch { /* the original diagnostics below */ }
-  } else if (!isArchitectureOverview(graph)) {
+  } else {
     const shown = hasSharedDependencies(graph) ? presentationGraph(graph) : graph;
     const named = new Set((failure?.diagnostics ?? []).filter(item => item.severity === 'error').flatMap(item => item.elementIds));
     const edgeIds = shown.edges.filter(edge => !edge.route || named.has(edge.id)).map(edge => edge.id);
@@ -457,11 +454,6 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     const { graph: output, repair } = preserveLayout(graph);
     return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, migration, ...(repair ? { repair } : {}), semantics: semanticReport(output) } };
   }
-  if (isArchitectureOverview(graph)) {
-    let output;
-    try { output = fitArchitectureOverview(graph, requireDiagramQuality); } catch (error) { throw error.diagnostics ? error : Object.assign(qualityFailure(graph, 'geometry', error.message), { routingReport: error.routingReport }); }
-    return { graph: output, report: { version: LAYOUT_VERSION, mode: layout, template: { structure: templateOf(graph).structure, applied: true, fallback: null }, refinement: overviewLayoutReports.get(output), semantics: semanticReport(output) } };
-  }
   // Shared dependencies: lay out the drawn graph (folded edges out, their tags on source cards), then restore the model.
   if (hasSharedDependencies(graph)) {
     const { graph: laid, report } = await compileGraphLayout(presentationGraph(graph), { layout, timeoutMs });
@@ -487,7 +479,7 @@ export async function compileGraphLayout(input, { layout = 'auto', timeoutMs = L
     const evaluate = (candidate, index, errors = []) => {
       // New auto layouts obey tiers; preserve mode keeps legacy coordinates and their recorded version.
       if (diagramTypeOf(candidate) === 'deployment') candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
-      if (!sequence && !isArchitectureOverview(candidate)) {
+      if (!sequence) {
         candidate.layout = { ...candidate.layout, version: LAYOUT_VERSION };
         try { placeEdgeLabels(candidate); } catch { /* Routing below must supply an inline corridor. */ }
       }

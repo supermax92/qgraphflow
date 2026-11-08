@@ -23,7 +23,7 @@ test('CI, Pages and release smoke tests use only Jeepay inputs', () => {
 });
 
 test('all public README local links exist after replacing the old corpora', () => {
-  for (const file of ['README.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/readme/README.${locale}.md`)]) {
+  for (const file of ['README.md', 'README.en.md']) {
     const markdown = fs.readFileSync(path.join(root, file), 'utf8');
     for (const [, target] of markdown.matchAll(/!?\[[^\]]*\]\(([^\s)]+)\)/g)) {
       if (/^(https?:|#)/.test(target)) continue;

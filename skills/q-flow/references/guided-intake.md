@@ -33,13 +33,11 @@ For more than eight top-level directories, prefer candidates containing build ma
 
 ## Intent options
 
-Phrase choices as questions the diagram answers. Offer at most four relevant options, with one recommendation; use the user's words and available material. Default a repository overview to component relationships. Derive type/view from intent without an extra selection round.
+Phrase choices as questions the diagram answers. Offer at most four relevant options, with one recommendation; use the user's words and available material. Default a repository overview to component relationships. Derive the type from intent without an extra selection round.
 
-| Question | Type / architecture view | Subject |
+| Question | Type | Subject |
 | --- | --- | --- |
-| What capabilities does the platform provide and how does business connect? | `architecture` / `capabilities` | system or module |
-| How are engineering layers and components organized? | `architecture` / `engineering` | system or module |
-| What is the system made of and who depends on whom? | `architecture` / `relations` | system or module |
+| What is the system made of and who depends on whom? | `architecture` | system or module |
 | Where does it run? | `deployment` | system |
 | What is stored and how does it relate? | `er` | entity set or module |
 | Which types exist and how do they relate? | `class` | module |
@@ -49,7 +47,7 @@ Phrase choices as questions the diagram answers. Offer at most four relevant opt
 | How does data move and change? | `dataflow` | flow |
 | What states does something go through? | `state` | component |
 
-Select relevant alternatives from this table, not all eleven at once. A platform/integration question brings capability architecture forward; a layering question brings engineering architecture forward. Do not require the user to learn internal view names. Repository call/behaviour questions require execution tracing; do not promise that declarations alone prove dependencies or behaviour.
+Select relevant alternatives from this table, not all nine at once. Do not require the user to learn internal type names. Repository call/behaviour questions require execution tracing; do not promise that declarations alone prove dependencies or behaviour.
 
 ## Asking and follow-up
 
@@ -59,9 +57,9 @@ Ask subject and question together only when both are missing. Use the client's s
 Which part? 1 order  2 payment  3 inventory  4 whole repository (recommended)
 What should the diagram answer?
   1 system components and dependencies (recommended)
-  2 platform capabilities and business integration
-  3 engineering layers and components
-  4 the call order of a particular flow
+  2 the call order of a particular flow
+  3 the decisions a process makes
+  4 how stored data relates
 ```
 
 After asking, **end the turn and wait for the reply**. Do not assume an answer or create graph/output files while essential information is unresolved. Usually one or two rounds suffice; readiness, not a fixed round count, ends intake.

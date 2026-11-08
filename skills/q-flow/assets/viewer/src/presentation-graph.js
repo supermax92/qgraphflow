@@ -1,26 +1,6 @@
-import { isArchitectureOverview } from './view-identity.js';
-
-// Presentation categories do not change ownership or remove evidence from the saved model.
-export function overviewCategoryMap(graph) {
-  const categories = new Map(), groups = graph.groups ?? [];
-  const groupNodes = (id, seen = new Set()) => {
-    if (seen.has(id)) return [];
-    const next = new Set([...seen, id]);
-    return [...graph.nodes.filter(node => node.groupId === id).map(node => node.id), ...groups.filter(group => group.parentId === id).flatMap(group => groupNodes(group.id, next))];
-  };
-  const visit = section => {
-    for (const item of section.items ?? []) {
-      if (item.mode) visit(item);
-      else for (const id of item.nodeId ? [item.nodeId] : groupNodes(item.groupId)) categories.set(id, section.id);
-    }
-  };
-  (graph.layout?.sections ?? []).forEach(visit);
-  return categories;
-}
-
 // A relations view may name components nearly everything depends on (configuration, data access). Edges into them are
 // drawn as a tag on the source card instead of a line; the edges, their sites and details stay in the model.
-const sharedOf = graph => !isArchitectureOverview(graph) && (graph.meta?.diagramType ?? 'architecture') === 'architecture'
+const sharedOf = graph => (graph.meta?.diagramType ?? 'architecture') === 'architecture'
   && Array.isArray(graph.layout?.sharedDependencies) && graph.layout.sharedDependencies.length ? new Set(graph.layout.sharedDependencies) : null;
 export const hasSharedDependencies = graph => Boolean(sharedOf(graph));
 export function foldedEdges(graph) {
@@ -30,10 +10,7 @@ export function foldedEdges(graph) {
 
 export function visibleEdges(graph) {
   const shared = sharedOf(graph);
-  if (shared) return graph.edges.filter(edge => !shared.has(edge.target) || edge.source === edge.target);
-  if (!isArchitectureOverview(graph) || graph.layout?.overviewConnections === 'all') return graph.edges;
-  const categories = overviewCategoryMap(graph);
-  return graph.edges.filter(edge => categories.has(edge.source) && categories.get(edge.source) === categories.get(edge.target));
+  return shared ? graph.edges.filter(edge => !shared.has(edge.target) || edge.source === edge.target) : graph.edges;
 }
 
 // The graph as drawn and laid out. With shared dependencies it also drops layout.sharedDependencies and gives each source

@@ -7,7 +7,6 @@ import { graphBounds, occupiedBox } from './edge-routing.js';
 import { diagramTypeOf, getDiagram, canvasBudgetFor } from './diagrams/registry.js';
 import { layoutTargets, layoutLimits } from './layout-spacing.js';
 import { groupHeadingLayout } from './text-layout.js';
-import { isArchitectureOverview } from './view-identity.js';
 import { spreadParticipants } from './sequence-executions.js';
 import { preservesTemplateOrder } from './layout-templates.js';
 
@@ -189,11 +188,11 @@ export function refineDiagramLayout(input, { focusId = null, move = true, evalua
     return false;
   };
   if (evaluations > 0) evaluate(best);
-  if (move && focusId && metrics.errors && count < evaluations && !isArchitectureOverview(input)) {
+  if (move && focusId && metrics.errors && count < evaluations) {
     const repaired = repairEditedGaps(best, focusId, laneAxis);
     if (repaired && preservesOrder(origin, repaired)) evaluate(repaired);
   }
-  if (global && move && !isArchitectureOverview(input) && diagramTypeOf(input) !== 'sequence') {
+  if (global && move && diagramTypeOf(input) !== 'sequence') {
     let improved = true;
     while (improved && count < evaluations) {
       improved = false;
@@ -208,7 +207,7 @@ export function refineDiagramLayout(input, { focusId = null, move = true, evalua
     }
   }
   // Presentation grids are realigned by their section planner, never nudged across slots.
-  if (move && !global && !isArchitectureOverview(input)) {
+  if (move && !global) {
     const diagram = getDiagram(diagramTypeOf(input)), target = layoutTargets(diagram).nodeGap;
     let changed = true;
     while (changed && count < evaluations) {

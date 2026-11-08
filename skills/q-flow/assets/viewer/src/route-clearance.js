@@ -3,9 +3,8 @@ import { getDiagram, diagramTypeOf } from './diagrams/registry.js';
 import { routingBounds, groupBorders, groupHeadingBoxes, createEdgeRoutes, occupiedBox, segmentCrossesBox } from './edge-routing.js';
 import { actorTop } from './diagrams/usecase.js';
 import { layoutText } from './text-layout.js';
-import { isArchitectureOverview } from './view-identity.js';
 
-export const clearanceLimits = graph => ({ node: isArchitectureOverview(graph) ? 6 : 12, preferred: isArchitectureOverview(graph) ? 8 : 24, boundary: 6 });
+export const clearanceLimits = () => ({ node: 12, preferred: 24, boundary: 6 });
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const pointDistance = (p, a, b) => {
   const dx = b.x - a.x, dy = b.y - a.y, t = clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy || 1), 0, 1);
@@ -61,7 +60,7 @@ function polygonDistance(a, b, points) {
 // Compile once per node: the router checks many grid segments against the same visible geometry.
 const cache = new WeakMap();
 export function nodeClearance(node, type) {
-  const signature = JSON.stringify([type,node.position,node.size,node.kind,node.label,node.subtitle,node.overviewText,node.badges,node.overviewTone]);
+  const signature = JSON.stringify([type,node.position,node.size,node.kind,node.label,node.subtitle,node.badges]);
   const cached = cache.get(node); if (cached?.signature === signature) return cached.probe;
   const diagram = getDiagram(type), { x, y } = node.position;
   const outline = diagram.outline?.(node, x, y) ?? [];

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { overviewSections } from '../assets/viewer/src/architecture-overview.js';
 import { elementName } from '../assets/viewer/src/graph-diff.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -143,12 +142,51 @@ export function applyMechanicalFixes(input) {
 
 // Fix in memory, then judge with every check the run makes without --fix (geometry and the quality gate unless
 // --input-only, source evidence under a repository root), and write back only a graph that passes all of them.
+// The capability and engineering overviews were removed: an overview view becomes a component relations view. Each
+// section becomes an ownership group (nested sections nest, note sections join meta.notes), overviewText leads the node's
+// facts, and the overview geometry is dropped so the next generation lays the view out again (--layout auto): such a
+// graph is judged as input only, since its geometry no longer exists.
+export function migrateOverviews(input) {
+  const changes = [];
+  let relayout = false;
+  graphsOf(input).forEach((graph, index) => {
+    const prefix = Object.hasOwn(input, 'diagrams') ? `diagrams[${index}].` : '';
+    const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+    for (const node of nodes) {
+      if (Array.isArray(node.overviewText)) { node.facts = [...node.overviewText, ...(Array.isArray(node.facts) ? node.facts : [])]; changes.push(`${prefix}node ${node.id}.overviewText → facts`); }
+      if (node.overviewText !== undefined || node.overviewTone !== undefined || node.overviewAccent !== undefined) { delete node.overviewText; delete node.overviewTone; delete node.overviewAccent; }
+    }
+    const view = graph?.meta?.architectureView;
+    if (!['capabilities', 'engineering'].includes(view) && graph?.layout?.sections === undefined) return;
+    const byId = new Map(nodes.map(node => [node.id, node])), groups = graph.groups ??= [];
+    const walk = (section, parentId) => {
+      if (!section || typeof section !== 'object') return;
+      if (section.mode === 'note') { if (Array.isArray(section.text)) graph.meta.notes = [...(graph.meta.notes ?? []), ...section.text].slice(0, 6); return; }
+      groups.push({ id: section.id, kind: 'ownership', label: section.title ?? section.id, ...(parentId ? { parentId } : {}) });
+      for (const item of Array.isArray(section.items) ? section.items : []) {
+        if (item?.nodeId !== undefined) { const node = byId.get(item.nodeId); if (node && node.groupId === undefined) node.groupId = section.id; }
+        else if (item?.groupId !== undefined) { const group = groups.find(entry => entry.id === item.groupId); if (group && group.parentId === undefined) group.parentId = section.id; }
+        else walk(item, section.id);
+      }
+    };
+    for (const section of Array.isArray(graph.layout?.sections) ? graph.layout.sections : []) walk(section);
+    delete graph.meta.architectureView;
+    if (graph.layout) { delete graph.layout.sections; delete graph.layout.overviewConnections; delete graph.layout.version; delete graph.layout.strategy; }
+    for (const item of [...nodes, ...groups]) { delete item.position; delete item.size; }
+    for (const edge of Array.isArray(graph.edges) ? graph.edges : []) delete edge.route;
+    relayout = true;
+    changes.push(`${prefix}${view ?? 'overview'} view → component relations view (sections → ownership groups); regenerate it with --layout auto`);
+  });
+  return { changes, relayout };
+}
+
 export function fixGraphFile(inputPath, { repoRoot, ...options } = {}) {
   const absolute = path.resolve(inputPath);
   const original = fs.readFileSync(absolute, 'utf8');
   const graph = JSON.parse(original);
-  const mechanical = applyMechanicalFixes(graph), anchors = repoRoot === undefined ? { changes: [], blocked: [], drift: [], exempt: new Set() } : applyAnchorFixes(graph, repoRoot);
-  const changes = [...mechanical.changes, ...anchors.changes], blocked = [...mechanical.blocked, ...anchors.blocked];
+  const migrated = migrateOverviews(graph), mechanical = applyMechanicalFixes(graph), anchors = repoRoot === undefined ? { changes: [], blocked: [], drift: [], exempt: new Set() } : applyAnchorFixes(graph, repoRoot);
+  if (migrated.relayout) options = { ...options, inputOnly: true };
+  const changes = [...migrated.changes, ...mechanical.changes, ...anchors.changes], blocked = [...mechanical.blocked, ...anchors.blocked];
   let errors = validateGraphInput(graph, { ...options, inputOnly: true });
   if (!errors.length && !options.inputOnly) errors = validateGraphInput(graph, options);
   if (!errors.length && !options.inputOnly) for (const [index, item] of graphsOf(graph).entries()) {
@@ -159,20 +197,19 @@ export function fixGraphFile(inputPath, { repoRoot, ...options } = {}) {
   if (!errors.length && repoRoot !== undefined) {
     try { verifySourceEvidence(graph, repoRoot, { pendingDrift: 'allow', exempt: anchors.exempt }); } catch (error) { errors = error.message.split('\n- ').slice(1); }
   }
-  if (errors.length) return { changes, blocked, errors, written: false, drift: anchors.drift };
+  if (errors.length) return { changes, blocked, errors, written: false, drift: anchors.drift, relayout: migrated.relayout };
   if (repoRoot !== undefined) changes.push(...stampSourceFiles(graph, repoRoot));
   const text = `${JSON.stringify(graph, null, 2)}\n`;
   const written = changes.length > 0 && text !== original;
   if (written) fs.writeFileSync(absolute, text);
-  return { changes, blocked, errors: [], written, drift: anchors.drift };
+  return { changes, blocked, errors: [], written, drift: anchors.drift, relayout: migrated.relayout };
 }
 
-// Every node, edge, overview-section and badge anchor, with the view and element that own it.
+// Every node, edge and badge anchor, with the view and element that own it.
 export function sourceAnchors(input) {
   return graphsOf(input).flatMap((graph, graphIndex) => {
     const view = graph?.meta?.viewId ?? graph?.meta?.diagramType ?? `view ${graphIndex + 1}`;
     return [
-      ...overviewSections(graph).flatMap(section => section.source ? [{ source: section.source, label: `diagrams[${graphIndex}].sections.${section.id}.source`, graphIndex, id: section.id, element: `${view} ${section.id}` }] : []),
       ...graph.nodes.flatMap((node, nodeIndex) => (node.badges ?? []).flatMap((badge, i) => badge.source ? [{ source: badge.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].badges[${i}].source`, graphIndex, id: node.id, element: `${view} ${node.id} badge` }] : [])),
       ...graph.nodes.flatMap((node, nodeIndex) => node.source ? [{ source: node.source, label: `diagrams[${graphIndex}].nodes[${nodeIndex}].source`, graphIndex, id: node.id, element: `${view} ${node.id}` }] : []),
       ...(graph.edges ?? []).flatMap((edge, edgeIndex) => edge.site ? [{ source: edge.site, label: `diagrams[${graphIndex}].edges[${edgeIndex}].site`, graphIndex, id: edge.id, element: `${view} ${edge.id}` }] : [])];
@@ -254,7 +291,7 @@ export function changesReport(input, repoRoot) {
     const files = new Set(anchors.filter(anchor => anchor.graphIndex === graphIndex).map(({ source }) => source.file));
     const items = [...(Array.isArray(graph.meta?.sourceDrift) ? graph.meta.sourceDrift : []), ...driftItems(viewAlarms(live, graphIndex, files), graphIndex)];
     if (!items.length) return [];
-    const name = id => overviewSections(graph).find(section => section.id === id)?.label ?? elementName(graph, id);
+    const name = id => elementName(graph, id);
     const tick = text => `\`${String(text).replaceAll('`', "'").replace(/\s+/g, ' ')}\``;
     return [`### ${graph.meta.title ?? graph.meta.viewId ?? diagramTypeOf(graph)}${graph.meta.viewId ? ` (${tick(graph.meta.viewId)})` : ''}`, '',
       ...items.flatMap(item => [`- **${tick(`${item.file}:${item.line}`)}** ${item.change}`,
@@ -350,6 +387,7 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
     const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'repo-root': { type: 'string' }, changes: { type: 'string' }, 'input-only': { type: 'boolean', default: false }, fix: { type: 'boolean', default: false }, verbose: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h', default: false } } });
     if (values.help) { console.log(USAGE); process.exit(0); }
     if (positionals.length !== 1) throw new Error(USAGE);
+    let inputOnly = values['input-only'];
     if (values.fix) {
       const result = fixGraphFile(positionals[0], { inputOnly: values['input-only'], repoRoot: values['repo-root'] });
       for (const change of result.changes) console.error(`fixed: ${change}`);
@@ -358,8 +396,13 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
       if (result.errors.length) throw new Error(`Invalid graph after mechanical fixes (file left unchanged):\n- ${result.errors.join('\n- ')}`);
       const file = path.resolve(positionals[0]), directory = path.dirname(file);
       if (result.written) console.error(`wrote ${file} (${result.changes.length} change${result.changes.length === 1 ? '' : 's'})`);
+      // A migrated overview has no geometry left: judge it as input and lay it out again.
+      if (result.relayout) {
+        inputOnly = true;
+        console.error(`lay the converted view out again: node "${path.join(import.meta.dirname, 'generate-viewer.mjs')}" "${file}" <output-directory> --layout auto --force`);
+      }
       // A generated page and its SVGs still embed the old data: regenerate them from the fixed file, keeping the layout.
-      if (result.written && fs.existsSync(path.join(directory, 'index.html'))) {
+      else if (result.written && fs.existsSync(path.join(directory, 'index.html'))) {
         console.error(`regenerate the page and SVGs: node "${path.join(import.meta.dirname, 'generate-viewer.mjs')}" "${file}" "${directory}" --layout preserve --force${values['repo-root'] === undefined ? '' : ` --repo-root "${path.resolve(values['repo-root'])}"`}`);
       }
     }
@@ -368,20 +411,20 @@ if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process
       fs.writeFileSync(values.changes, changesReport(JSON.parse(fs.readFileSync(positionals[0], 'utf8')), values['repo-root']));
       console.error(`wrote ${path.resolve(values.changes)}`);
     }
-    const graph = readAndValidateGraph(positionals[0], { inputOnly: values['input-only'] });
+    const graph = readAndValidateGraph(positionals[0], { inputOnly });
     const sourceEvidence = verifySourceEvidence(graph, values['repo-root']);
-    const warnings = [...printCompositionReview(graph, { print: values['input-only'] }), ...(values['input-only'] ? [] : printViewReview(graph))];
+    const warnings = [...printCompositionReview(graph, { print: inputOnly }), ...(inputOnly ? [] : printViewReview(graph))];
     const graphs = graphsOf(graph);
     const totals = {
       nodes: graphs.reduce((sum, item) => sum + item.nodes.length, 0),
       edges: graphs.reduce((sum, item) => sum + item.edges.length, 0),
       groups: graphs.reduce((sum, item) => sum + (item.groups?.length ?? 0), 0),
       semantic: { status: 'passed' },
-      geometry: { status: values['input-only'] ? 'not-checked' : 'passed' },
+      geometry: { status: inputOnly ? 'not-checked' : 'passed' },
       rendering: { status: 'not-checked' },
       ...(warnings.length ? { warnings: warnings.length } : {}),
       // Informational diagnostics and composition figures only on request; a passing graph reads as one line.
-      ...(values.verbose ? { diagnostics: values['input-only'] ? [] : graphs.flatMap(item => requireDiagramQuality(item).diagnostics), layoutComposition: values['input-only'] ? null : graphs.map(layoutComposition) } : {})
+      ...(values.verbose ? { diagnostics: inputOnly ? [] : graphs.flatMap(item => requireDiagramQuality(item).diagnostics), layoutComposition: inputOnly ? null : graphs.map(layoutComposition) } : {})
     };
     console.log(JSON.stringify(graphs.length === 1 && !Object.hasOwn(graph, 'diagrams')
       ? { valid: true, diagramType: diagramTypeOf(graphs[0]), ...totals, sourceEvidence }

@@ -33,16 +33,6 @@
   },
   "views": [
     {
-      "id": "jeepay-capabilities",
-      "type": "architecture",
-      "architectureView": "capabilities"
-    },
-    {
-      "id": "jeepay-engineering",
-      "type": "architecture",
-      "architectureView": "engineering"
-    },
-    {
       "id": "jeepay-relations",
       "type": "architecture",
       "architectureView": "relations"

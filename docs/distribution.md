@@ -42,7 +42,7 @@ Track marketplace releases separately from GitHub Releases and npm packages. For
 
 ## Online demo
 
-`.github/workflows/pages.yml` checks out the Jeepay revision recorded in `examples/jeepay/source.json`, builds all eleven coordinate-free views with the committed prebuilt Viewer and verifies their source anchors with `--repo-root`. It serves `site/jeepay/zh-CN/` and uses `docs/pages/index.html` as the home page. The page folder also serves its `graph.json` and SVGs.
+`.github/workflows/pages.yml` checks out the Jeepay revision recorded in `examples/jeepay/source.json`, builds all nine coordinate-free views with the committed prebuilt Viewer and verifies their source anchors with `--repo-root`. It serves `site/jeepay/zh-CN/` and uses `docs/pages/index.html` as the home page. The page folder also serves its `graph.json` and SVGs.
 
 Pull requests that touch the examples, the generator, the prebuilt Viewer, `docs/pages/` or the workflow run the build as a smoke test; pushes to `main` also deploy it. The site is uploaded as a Pages artifact and never enters a branch, and a failed build leaves the previous deployment online. Before the first deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 

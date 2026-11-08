@@ -60,7 +60,7 @@ test('every locale has the same UI messages and preserves substitution parameter
   }
 });
 
-test('all README and legacy languages reach exports and formatted interface messages', () => {
+test('all interface languages reach exports and formatted interface messages', () => {
   const serviceLabels = { en: 'Service', 'zh-CN': '服务', ja: 'サービス', ru: 'Сервис', pt: 'Serviço', de: 'Dienst', es: 'Servicio', ko: '서비스', fr: 'Service' };
   for (const [locale, service] of Object.entries(serviceLabels)) {
     const localized = { ...graph, meta: { ...graph.meta, locale } };

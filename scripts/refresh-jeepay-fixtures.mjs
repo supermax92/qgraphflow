@@ -9,8 +9,6 @@ const repo = process.argv[2];
 if (!repo) throw new Error('Usage: node scripts/refresh-jeepay-fixtures.mjs <Jeepay repository root>');
 const root = fs.realpathSync(repo), destination = path.resolve(import.meta.dirname, '../examples/jeepay');
 const views = [
-  ['capabilities', 'jeepay-platform-capability-architecture'],
-  ['engineering', 'jeepay-engineering-layer-architecture'],
   ['relations', 'jeepay-component-relation-architecture'],
   ['flowchart', 'jeepay-unified-order-flowchart'],
   ['sequence', 'jeepay-unified-order-sequence'],

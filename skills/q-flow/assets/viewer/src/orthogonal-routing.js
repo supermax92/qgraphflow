@@ -2,8 +2,6 @@ import { layoutWeights } from './layout-policy.js';
 import { clearanceProbe, clearanceLimits } from './route-clearance.js';
 import { diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { createEdgeRoutes, nodeAnchor, occupiedBox, routingBounds, segmentCrossesNode, segmentCrossesBox, groupHeadingBoxes, groupBorders, sharedSegmentLength, visibleEdgeLabel, routeCrossings } from './edge-routing.js';
-import { overviewSections, sectionTextBoxes } from './architecture-overview.js';
-import { isArchitectureOverview } from './view-identity.js';
 import { estimateLabelSize } from './text-layout.js';
 import { layoutLimits } from './layout-spacing.js';
 
@@ -60,7 +58,7 @@ export function routingLimits(graph) {
   const limits = { ...layoutLimits(getDiagram(diagramTypeOf(graph))), preferredClearance: clearanceLimits(graph).preferred };
   const unit = Math.sqrt(graph.nodes.reduce((sum, n) => { const r=occupiedBox(n,diagramTypeOf(graph)); return sum+r.width*r.height; }, 0) / Math.max(1, graph.nodes.length));
   const crossingCost = layoutWeights.crossings * unit, bendCost = layoutWeights.bends * unit;
-  return isArchitectureOverview(graph) ? { ...limits, labelGap: 6, parallelGap: 8, nodeGap: 14, crossingCost, bendCost } : { ...limits, crossingCost, bendCost };
+  return { ...limits, crossingCost, bendCost };
 }
 
 function ports(node, other, side, type, limits, graph, edge) {
@@ -314,7 +312,7 @@ export function placeEdgeLabels(graph, edgeIds = null) {
     return [{ x: r.x, y: r.y, width: r.width, height: 1 }, { x: r.x, y: r.y + r.height, width: r.width, height: 1 },
       { x: r.x, y: r.y, width: 1, height: r.height }, { x: r.x + r.width, y: r.y, width: 1, height: r.height }];
   });
-  const headings = [...borders, ...(graph.groups ?? []).flatMap(groupHeadingBoxes), ...overviewSections(graph).flatMap(sectionTextBoxes)];
+  const headings = [...borders, ...(graph.groups ?? []).flatMap(groupHeadingBoxes)];
   const nodeBoxes = graph.nodes.map(n => occupiedBox(n, type));
   for (const edge of [...graph.edges].filter(e => !edgeIds || edgeIds.has(e.id)).sort(stable)) {
     const route = routes.get(edge.id); if (!route.label) continue;
@@ -371,7 +369,7 @@ export function routeOrthogonal(input, { passes = 3, accept = null, edgeIds = nu
   }
   const limits = routingLimits(input), initial = createEdgeRoutes(input);
   const frozen = edgeIds ? [...initial].filter(([id]) => !edgeIds.has(id)).map(([, r]) => r) : [];
-  const headings = [...frozen.filter(r => r.label).map(r => expand(r.labelBox, limits.labelEdgeGap)), ...(input.groups ?? []).flatMap(groupHeadingBoxes), ...overviewSections(input).flatMap(sectionTextBoxes)].map(r => expand(r, 8));
+  const headings = [...frozen.filter(r => r.label).map(r => expand(r.labelBox, limits.labelEdgeGap)), ...(input.groups ?? []).flatMap(groupHeadingBoxes)].map(r => expand(r, 8));
   const primary = input.layout?.primaryPath ?? [];
   const span = edge => {
     const a = input.nodes.find(n => n.id === edge.source), b = input.nodes.find(n => n.id === edge.target);

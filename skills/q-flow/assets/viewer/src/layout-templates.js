@@ -127,8 +127,6 @@ function dataflow(items, graph) {
 }
 
 export const LAYOUT_TEMPLATES = Object.freeze({
-  capabilities: { structure: 'capability-bands', existing: 'overview' },
-  engineering: { structure: 'engineering-layers', existing: 'overview' },
   relations: { structure: 'component-clusters', arrange: components },
   flowchart: { structure: 'workflow-spine', arrange: workflow },
   sequence: { structure: 'lifelines', existing: 'sequence' },

@@ -1,4 +1,3 @@
-import { isArchitectureOverview } from './view-identity.js';
 import { DEPLOYMENT_TIERS } from './layout-semantics.js';
 import { SUPPORTED_LOCALES } from './i18n.js';
 import { auditGraphLayout, graphBounds } from './edge-routing.js';
@@ -6,7 +5,6 @@ import { MAX_SCREENS, OVERVIEW_AREA, READABLE_ZOOM, layeredDirections } from './
 import { missingCallExecutions, validateExecutions } from './sequence-executions.js';
 import { validateOperands } from './sequence-fragments.js';
 import { viewIdOf } from './view-identity.js';
-import { validateOverview } from './architecture-overview.js';
 import { DIAGRAM_TYPES, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 
 const EVIDENCE_KINDS = new Set(['source', 'code', 'config', 'schema', 'test', 'document', 'framework', 'inference']);
@@ -22,6 +20,25 @@ function optionalString(value, label, errors) {
 }
 
 // A node `source` and an edge `site` share one anchor shape, so one check and one --repo-root verification serve both.
+// Badges (status, version or requirement tags on a card) and the overview fields --fix converts.
+function validateBadges(graph) {
+  const errors = [];
+  for (const node of graph.nodes ?? []) {
+    for (const key of ['overviewText', 'overviewTone', 'overviewAccent']) if (node[key] !== undefined) errors.push(`node ${node.id}.${key} belonged to the removed overview views: run validate --fix to move it into facts`);
+    if (node.badges === undefined) continue;
+    if (!Array.isArray(node.badges)) { errors.push(`node ${node.id}.badges must be an array`); continue; }
+    for (const [i, badge] of node.badges.entries()) {
+      const path = `node ${node.id}.badges[${i}]`;
+      if (!isObject(badge) || typeof badge.label !== 'string' || !badge.label.trim() || !['status', 'version', 'requirement'].includes(badge.role) || !EVIDENCE_KINDS.has(badge.evidence)) errors.push(`${path} needs label, role (status/version/requirement) and evidence`);
+      if (badge?.source !== undefined) {
+        if (!isObject(badge.source)) errors.push(`${path}.source must be an object`);
+        else { validateAnchor(badge.source, `${path}.source`, errors); if (badge.source.kind !== undefined && !EVIDENCE_KINDS.has(badge.source.kind)) errors.push(`${path}.source.kind is unsupported`); }
+      }
+    }
+  }
+  return errors;
+}
+
 function validateAnchor(anchor, label, errors) {
   requireString(anchor.file, `${label}.file`, errors);
   optionalString(anchor.symbol, `${label}.symbol`, errors);
@@ -84,7 +101,9 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
   requireString(graph.meta?.title, 'meta.title', errors);
   requireString(graph.meta?.sourceRef, 'meta.sourceRef', errors);
   if (graph.meta?.viewId !== undefined) requireString(graph.meta.viewId, 'meta.viewId', errors);
-  if (graph.meta?.architectureView !== undefined && ((graph.meta.diagramType ?? 'architecture') !== 'architecture' || !['relations', 'capabilities', 'engineering'].includes(graph.meta.architectureView))) errors.push('meta.architectureView is unsupported');
+  // Only the component relations view remains; an older capability or engineering overview is converted by --fix.
+  if (['capabilities', 'engineering'].includes(graph.meta?.architectureView)) errors.push(`meta.architectureView "${graph.meta.architectureView}" was removed: run validate --fix to convert this view into a component relations view (sections become ownership groups, overviewText becomes facts), then regenerate it with --layout auto`);
+  else if (graph.meta?.architectureView !== undefined && ((graph.meta.diagramType ?? 'architecture') !== 'architecture' || graph.meta.architectureView !== 'relations')) errors.push('meta.architectureView is unsupported');
   for (const key of ['subtitle', 'scope']) optionalString(graph.meta?.[key], `meta.${key}`, errors);
   validateNotes(graph.meta?.notes, errors);
   if (graph.meta?.locale !== undefined && !SUPPORTED_LOCALES.includes(graph.meta.locale)) errors.push('meta.locale is unsupported');
@@ -174,7 +193,7 @@ export function validateGraph(graph, { inputOnly = false, audit = true } = {}) {
     if (diagramType === 'sequence' && !inputOnly && edge.route?.messageY === undefined) errors.push(`${label}.route.messageY is required for a positioned sequence message; regenerate with --layout auto`);
     rules.validateEdge?.(edge, label, errors, { requireString, sequenceOrders });
   }
-  if (errors.length === 0) errors.push(...validateOverview(graph, { inputOnly, validateAnchor, evidenceKinds: EVIDENCE_KINDS }));
+  if (errors.length === 0) errors.push(...validateBadges(graph));
   if (errors.length === 0) errors.push(...validateLayoutSemantics(graph));
   if (errors.length === 0) errors.push(...validateOperands(graph));
   if (errors.length === 0) errors.push(...validateExecutions(graph, { inputOnly }));
@@ -208,11 +227,11 @@ function validateLayoutSemantics(graph) {
   }
   if (graph.layout !== undefined && !isObject(graph.layout)) errors.push('layout must be an object');
   else if (graph.layout?.direction !== undefined && !layeredDirections(type).includes(graph.layout.direction)) errors.push(`layout.direction must be one of ${layeredDirections(type).join(', ')} for ${type}`);
-  if (graph.layout?.overviewConnections !== undefined && (!isArchitectureOverview(graph) || !['within-category', 'all'].includes(graph.layout.overviewConnections))) errors.push('layout.overviewConnections requires an architecture overview and within-category or all');
+  for (const key of ['sections', 'overviewConnections']) if (graph.layout?.[key] !== undefined) errors.push(`layout.${key} belonged to the removed overview views: run validate --fix to convert the view, then regenerate it with --layout auto`);
   if (graph.layout?.sharedDependencies !== undefined) {
     // Edges into these nodes are drawn as tags on their source cards; a path through one would lose its line.
     const list = graph.layout.sharedDependencies;
-    if (type !== 'architecture' || isArchitectureOverview(graph)) errors.push('layout.sharedDependencies requires an architecture relations view');
+    if (type !== 'architecture') errors.push('layout.sharedDependencies requires an architecture relations view');
     else if (!Array.isArray(list) || !list.length || list.some(id => typeof id !== 'string' || !nodes.has(id)) || new Set(list).size !== list.length) errors.push('layout.sharedDependencies must be a non-empty list of distinct node IDs');
     else if (Array.isArray(graph.layout.primaryPath) && graph.layout.primaryPath.slice(1).some(id => list.includes(id))) errors.push('layout.primaryPath cannot enter a shared dependency');
   }

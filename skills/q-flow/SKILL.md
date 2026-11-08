@@ -25,9 +25,9 @@ For every ready request, apply [Granularity](references/graph-common.md#granular
 
 ## Author
 
-Eleven templates: three architecture views (`meta.architectureView`: `capabilities`, `engineering`, `relations`) and eight other types below.
+Nine templates, one per type: architecture is drawn as component relations, plus the eight other types below.
 
-1. Choose `meta.diagramType` by intent: structure → `architecture`; decisions → `flowchart`; ordered calls → `sequence`; stored data → `er`; runtime placement → `deployment`; types → `class`; lifecycle → `state`; actors/capabilities → `usecase`; data movement → `dataflow`. Default to `architecture` when ambiguous. Architecture: platform capabilities / business integration → `capabilities`; engineering organization / component layers → `engineering`; component calls / dependencies → `relations`. Use one graph unless the user explicitly requests multiple views.
+1. Choose `meta.diagramType` by intent: structure → `architecture`; decisions → `flowchart`; ordered calls → `sequence`; stored data → `er`; runtime placement → `deployment`; types → `class`; lifecycle → `state`; actors/capabilities → `usecase`; data movement → `dataflow`. Default to `architecture` when ambiguous. Use one graph unless the user explicitly requests multiple views.
 2. Each view uses [graph-common.md](references/graph-common.md) and its matching page in [references/types/](references/types/) (`types/<diagramType>.md`); reuse loaded references across views. Do not read `graph-schema.md`, `visual-contract.md`, `examples/`, `scripts/`, `assets/` or tests to learn rules. Use the type skeleton and validator messages for fields.
 3. Write the evidenced graph at the chosen granularity, without coordinates. Record level/coverage in `meta.scope` and check every user requirement before layout. Apply the common rules for names, evidence, ownership, order and business centre. Across views reuse the same non-empty `module` value for the same business module. Preserve ER keys/cardinalities, class members/multiplicities, sequence pairing/fragments/executions, state guards and architecture/deployment boundaries required at this level. Write once; correct only reported fields.
 4. Templates measure text and preserve order; routes use feasible outlines and independent labels. Never remove facts.
@@ -72,6 +72,6 @@ Between the two, work only what `--fix` left: update just the elements each `met
 
 ## Viewer maintenance
 
-For Viewer changes or interaction audits, read [viewer-development.md](references/viewer-development.md), including its maintained visual/interaction contract. Changes to Viewer source, routing, schema behavior, or validation require the full eleven-view browser matrix described there. Graph-only delivery uses the single-page check in [acceptance.md](references/acceptance.md).
+For Viewer changes or interaction audits, read [viewer-development.md](references/viewer-development.md), including its maintained visual/interaction contract. Changes to Viewer source, routing, schema behavior, or validation require the full nine-view browser matrix described there. Graph-only delivery uses the single-page check in [acceptance.md](references/acceptance.md).
 
 Publishing the plugin or creating a remote repository requires separate user authorization.

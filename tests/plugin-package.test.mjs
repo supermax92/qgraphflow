@@ -9,7 +9,7 @@ import test from 'node:test';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const manifests = ['.codex-plugin', '.claude-plugin', '.qoder-plugin', '.cursor-plugin'];
-const guides = ['docs/clients.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/clients.${locale}.md`)];
+const guides = ['docs/clients.md', 'docs/clients.zh-CN.md'];
 
 test('the distributed package declares and ships its license notices', t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-license-'));
@@ -144,19 +144,16 @@ test('the distributed plugin runs independently from its installed location', t 
     'skills/q-flow/assets/viewer/src/radix-colors.js',
     'skills/q-flow/assets/viewer/src/edge-routing.js', 'skills/q-flow/assets/viewer/src/diagrams/registry.js',
     'skills/q-flow/assets/viewer/src/export-svg.js', 'skills/q-flow/assets/viewer/src/node-svg.js',
-    'README.md', ...guides, 'bin/qgraphflow.mjs'
+    'README.md', 'README.en.md', ...guides, 'bin/qgraphflow.mjs'
   ]) assert.ok(files.has(required), `Missing packaged file: ${required}`);
   assert.ok(![...files].some(file => file.startsWith('examples/')), 'Example corpora stay in the repository');
   assert.ok(!files.has('docs/images/order-flow.svg'));
   // Fixed ELK runtime adds about 1.6MB; retain a bounded total install budget.
   assert.ok(packed.unpackedSize < 4_000_000, `Unexpected install size: ${packed.unpackedSize}`);
-  for (const locale of ['zh-CN', 'ru', 'pt', 'ja', 'de', 'es']) {
-    assert.ok(files.has(`docs/readme/README.${locale}.md`));
-  }
   assert.deepEqual([...files].filter(file => file.startsWith('skills/q-flow/references/')).sort(),
     [...['acceptance', 'evidence-sources', 'graph-common', 'graph-schema', 'guided-intake', 'layout-routing'], ...['architecture', 'class', 'dataflow', 'deployment', 'er', 'flowchart', 'sequence', 'state', 'usecase'].map(type => `types/${type}`), 'viewer-development', 'visual-contract']
       .map(name => `skills/q-flow/references/${name}.md`).sort());
-  for (const locale of ['ko', 'fr']) assert.ok(!files.has(`docs/readme/README.${locale}.md`));
+  assert.ok(![...files].some(file => file.startsWith('docs/readme/') || /^docs\/clients\.(?!zh-CN)[^.]+\.md$/.test(file)), 'Only the Chinese and English READMEs and guides are published');
   for (const file of files) {
     assert.ok(!/(^|\/)(node_modules|\.git|\.idea|\.DS_Store)(\/|$)/.test(file), file);
     assert.ok(!/^(tests|openspec|docs\/(qa|qgraphflow|superpowers|references))\//.test(file), file);
@@ -175,7 +172,7 @@ test('the distributed plugin runs independently from its installed location', t 
     plugins: [{ name: pkg.name, source: { source: 'local', path: './' },
       policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, category: 'Productivity' }]
   });
-  for (const document of ['README.md', ...['zh-CN', 'ru', 'pt', 'ja', 'de', 'es'].map(locale => `docs/readme/README.${locale}.md`), ...guides]) {
+  for (const document of ['README.md', 'README.en.md', ...guides]) {
     assert.deepEqual(fs.readFileSync(path.join(plugin, document)), fs.readFileSync(path.join(root, document)), document);
   }
   // Compare the shared payload, including transitive JS imports, with the source being packaged.
@@ -196,7 +193,7 @@ test('the distributed plugin runs independently from its installed location', t 
   run(process.execPath, args, temp);
   assert.deepEqual(fs.readdirSync(output).sort(), ['diagram.svg', 'graph.json', 'index.html'], 'the installed package renders SVG without a build');
   run(process.execPath, [path.join(scripts, 'generate-viewer.mjs'), path.join(root, 'examples/jeepay/collection.graph.json'), path.join(temp, 'jeepay')], temp);
-  assert.equal(readJson(path.join(temp, 'jeepay/graph.json')).diagrams.length, 11);
+  assert.equal(readJson(path.join(temp, 'jeepay/graph.json')).diagrams.length, 9);
   const before = fs.readdirSync(output).map(file => fs.readFileSync(path.join(output, file)));
   const again = spawnSync(process.execPath, args, { cwd: temp, encoding: 'utf8', timeout: 30_000 });
   assert.equal(again.status, 1, again.stderr);

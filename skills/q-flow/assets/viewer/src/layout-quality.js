@@ -2,8 +2,6 @@ import { currentLayout, alignedLayout, tieredLayout } from './layout-policy.js';
 import { clearanceLimits, nodeClearance, boundaryClearance } from './route-clearance.js';
 import { deploymentTierOf } from './layout-semantics.js';
 import { presentationGraph } from './presentation-graph.js';
-import { isArchitectureOverview } from './view-identity.js';
-import { overviewGeometryErrors, overviewSections } from './architecture-overview.js';
 import { auditGraphLayout, boxDistance, occupiedBox, graphBounds, segmentCrossesBox } from './edge-routing.js';
 import { cardText, compactCards, diagramTypeOf, getDiagram } from './diagrams/registry.js';
 import { layoutText, groupHeadingLayout } from './text-layout.js';
@@ -21,7 +19,6 @@ export function qualityFailure(graph, phase, message, diagnostics = []) {
     const elements = ['nodes', 'edges', 'groups'].flatMap(key => (Array.isArray(graph?.[key]) ? graph[key] : []).filter((item, index) => item && typeof item === 'object' && (
       detail.includes(`${key}[${index}]`) || new RegExp(`(^|[^\\w.-])${String(item.id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\w.-])`).test(detail))));
     for (const edge of elements.filter(item => item.source && item.target)) elements.push(...(graph.nodes ?? []).filter(node => node.id === edge.source || node.id === edge.target));
-    elements.push(...overviewSections(graph ?? {}).filter(item => String(detail).includes(item.id)));
     return { ruleId: `${phase}.invalid`, severity: 'error', diagramType: diagramTypeOf(graph),
       elementIds: elements.map(item => item.id), measured: detail, required: `Valid ${phase} content and complete notation`,
       bounds: elements.filter(item => item.position && item.size).map(item => ({ ...item.position, ...item.size })),
@@ -46,7 +43,7 @@ export function requireDiagramQuality(graph, options = {}) {
 
 export function auditLayoutQuality(graph, { strictEdgeIds = null } = {}) {
   graph = presentationGraph(graph);
-  const legacy = auditGraphLayout(graph), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = isArchitectureOverview(graph) ? { ...layoutLimits(diagram), nodeGap: 14, labelGap: 6, parallelGap: 8, groupInset: 22, groupHeadingGap: 14 } : layoutLimits(diagram);
+  const legacy = auditGraphLayout(graph), type = diagramTypeOf(graph), diagram = getDiagram(type), limits = layoutLimits(diagram);
   const diagnostics = [...legacy.diagnostics, ...legacy.crossings];
   const issue = (ruleId, ids, measured, required, boxes, remediation) => diagnostics.push({ ruleId, severity: 'error', diagramType: type, elementIds: ids, measured, required, bounds: boxes, remediation });
   const nodeBoxes = new Map(graph.nodes.map(node => [node.id, occupiedBox(node, type)]));
@@ -204,7 +201,6 @@ export function auditLayoutQuality(graph, { strictEdgeIds = null } = {}) {
     }
   }
   // Existing shape/fragment/marker checks stay blocking; new rules carry structured locations above.
-  for (const detail of overviewGeometryErrors(graph, legacy.routes)) { const elements = overviewSections(graph).filter(item => detail.includes(item.id)); issue('overview.section', elements.map(item => item.id), detail, 'Complete section text and contained items', elements.map(bounds), 'Expand and re-layout the identified section without removing facts.'); }
   const errors = [...diagnostics.filter(item => item.severity === 'error').map(item => `${item.ruleId}: ${item.elementIds.join(', ')} (${JSON.stringify(item.measured)}; required ${JSON.stringify(item.required)})`)];
   return { ...legacy, errors, diagnostics, routeMetrics, bounds: graphBounds(graph, legacy.routes) };
 }
