@@ -1,7 +1,7 @@
 import { presentationGraph, visibleEdges } from './presentation-graph.js';
 import { overviewSections, sectionSvg } from './architecture-overview.js';
 import React, { useId } from 'react';
-import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position, useStore } from '@xyflow/react';
 import SelectionOutline from './SelectionOutline.jsx';
 import { renderNode } from './node-svg.js';
 import { compactCards, getDiagram, hasArrow, edgeMarkers } from './diagrams/registry.js';
@@ -29,10 +29,14 @@ function NodeHandles({ sequence = false }) {
   </>;
 }
 
+// Cards whose body text would read under 10px on screen draw only their name, enlarged (diagrams/card.js summaryCard).
+// The boolean subscription redraws a card only when zoom crosses that point, not on every zoom step.
+const SUMMARY_TYPES = new Set(['architecture', 'deployment']);
 function DiagramNode({ data, selected }) {
   const moduleColor = data.moduleColors?.get(data.module);
-  const markup = renderNode({ ...data, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
-  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${data.diff ? `is-${data.diff}` : ''} ${data.drifted ? 'is-drifted' : ''} ${selected ? 'is-selected' : ''}`} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
+  const summary = useStore(state => SUMMARY_TYPES.has(data.diagramType) && state.transform[2] * TYPOGRAPHY.body < 10);
+  const markup = renderNode({ ...data, summary, position: { x: 0, y: 0 } }, data.diagramType, 0, 0, data.palette, data.locale, data.moduleColors);
+  return <article className={`diagram-node diagram-${data.diagramType} kind-${data.kind} ${moduleColor ? 'has-module' : ''} ${isCore(data) ? 'is-core' : ''} ${data.dimmed ? 'is-dimmed' : ''} ${data.diff ? `is-${data.diff}` : ''} ${data.drifted ? 'is-drifted' : ''} ${selected ? 'is-selected' : ''}`} data-summary={summary || undefined} style={moduleColor ? { '--node-module': moduleColor.accent } : undefined} title={data.label}>
     <NodeHandles sequence={getDiagram(data.diagramType).sequence} />
     <svg className="node-visual" viewBox={`0 0 ${data.size.width} ${data.size.height}`} aria-label={data.label} dangerouslySetInnerHTML={{ __html: markup }} />
     {selected && <SelectionOutline key={data.selectionPulse} data={data} pulse={data.selectionPulse} />}

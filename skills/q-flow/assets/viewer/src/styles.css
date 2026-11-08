@@ -415,7 +415,8 @@ button:disabled { cursor: not-allowed; }
 
 .fragment-visual { color: var(--label-2); overflow: visible; }
 
-.layout-problems { position:absolute; top:calc(var(--tb-h) + 12px); left:50%; transform:translateX(-50%); z-index:21; width:min(420px,calc(100% - 112px)); max-height:35%; overflow:auto; padding:10px 14px; border:1px solid var(--sep); border-radius:10px; background:var(--material-thick); font-size:13px; }
+/* Author-facing; the bottom strip is outside the reading area, so it never covers the fitted diagram. */
+.layout-problems { position:absolute; bottom:var(--gutter); left:50%; transform:translateX(-50%); z-index:21; width:min(420px,calc(100% - 112px)); max-height:35%; overflow:auto; padding:10px 14px; border:1px solid var(--sep); border-radius:10px; background:var(--material-thick); font-size:13px; }
 .layout-problems summary { cursor:pointer; }
 .layout-problems button { text-align:left; overflow-wrap:anywhere; }
 .layout-problems pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }

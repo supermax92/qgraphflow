@@ -1,8 +1,10 @@
-import { CARD, cardTag } from '../text-layout.js';
+import { CARD, cardTag, layoutText } from '../text-layout.js';
+import { TYPOGRAPHY } from '../visual-style.js';
 import { cardTextLayout, text, coreNode, dataKinds, paint } from './drawing.js';
 
 export function genericCard(node, x, y, fill, stroke, palette, locale, outline, contentInset = 0, corner = 0) {
   if (node.classicCard) return classicCard(node, x, y, fill, stroke, palette, locale, outline, contentInset);
+  if (node.summary) return summaryCard(node, x, y, fill, stroke, palette, locale, outline, contentInset, corner);
   const { title, subtitle, source, tag, chips, contentHeight } = cardTextLayout({ ...node, size: { ...node.size, width: node.size.width - contentInset * 2 } }, locale, false, corner);
   // Baselines sit 20/17/14px below the top of their 26/24/20px lines.
   const left = x + contentInset, row = y + Math.max(0, (node.size.height - contentHeight) / 2) + CARD.pad, column = left + CARD.textX;
@@ -14,6 +16,23 @@ export function genericCard(node, x, y, fill, stroke, palette, locale, outline, 
   const sourceText = source.lines.map((line, index) => text(column, sourceTop + 14 + index * source.lineHeight, line, 'meta')).join('');
   const plate = { x: left + CARD.pad, y: row + (CARD.titleLine - CARD.plate) / 2 }, tagX = x + node.size.width - contentInset - CARD.pad - tag.width - corner;
   return `<g filter="url(#node-shadow)">${frame(node, x, y, fill, stroke, outline)}${iconPlate(node, plate.x, plate.y, CARD.plate, palette)}<rect x="${tagX}" y="${row + 3}" width="${tag.width}" height="20" rx="6" fill="${palette.badge}"/>${text(tagX + tag.width / 2, row + 18, tag.text, 'stereotype', ' text-anchor="middle"')}${titleText}${subtitleText}${sourceText}${chipText}</g>`;
+}
+
+// Zoomed out (DiagramCanvas sets node.summary when card body text would read under 10px): the same frame, icon and kind
+// tag, and only the name, enlarged up to 1.8x as far as the card holds it and centred below the tag row. Size, layout and
+// exports are untouched; zooming in restores the full card.
+function summaryCard(node, x, y, fill, stroke, palette, locale, outline, contentInset, corner) {
+  const tag = cardTag(node, locale), left = x + contentInset, width = node.size.width - contentInset * 2 - 2 * CARD.pad;
+  const top = y + CARD.pad + CARD.titleLine, room = node.size.height - 2 * CARD.pad - CARD.titleLine;
+  let title;
+  for (let scale = 1.8; scale >= 1; scale -= .1) {
+    title = layoutText(node.label, width, TYPOGRAPHY.title * scale, CARD.titleLine * scale);
+    if (title.height <= room) break;
+  }
+  const size = title.lineHeight / CARD.titleLine * TYPOGRAPHY.title, first = top + (room - title.height) / 2 + title.lineHeight * .77;
+  const titleText = title.lines.map((line, index) => text(left + CARD.pad + width / 2, first + index * title.lineHeight, line, 'title', ` text-anchor="middle" style="font-size:${size}px"`)).join('');
+  const plate = { x: left + CARD.pad, y: y + CARD.pad + (CARD.titleLine - CARD.plate) / 2 }, tagX = x + node.size.width - contentInset - CARD.pad - tag.width - corner;
+  return `<g filter="url(#node-shadow)">${frame(node, x, y, fill, stroke, outline)}${iconPlate(node, plate.x, plate.y, CARD.plate, palette)}<rect x="${tagX}" y="${y + CARD.pad + 3}" width="${tag.width}" height="20" rx="6" fill="${palette.badge}"/>${text(tagX + tag.width / 2, y + CARD.pad + 18, tag.text, 'stereotype', ' text-anchor="middle"')}${titleText}</g>`;
 }
 
 const frame = (node, x, y, fill, stroke, outline) => paint(outline(node, x, y), { fill, stroke, 'stroke-width': node.appearance?.moduleColor || node.appearance?.ring ? 1.5 : 1 });

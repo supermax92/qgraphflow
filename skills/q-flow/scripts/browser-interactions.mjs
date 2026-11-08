@@ -429,7 +429,10 @@ async function assertNodeDrawing(page, graph, colorTheme) {
     assert.equal(await page.locator(`[data-edge-id=${JSON.stringify(id)}] .pair-label`).innerText(), pair.label);
   }
   for (const node of graph.nodes) {
-    const expected = renderNode({ ...node, classicCard: !compactCards(graph), executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
+    // Zoomed out, cards draw their summary (diagrams/card.js): the page states which drawing it shows, and the shared
+    // renderer must produce exactly that one.
+    const summary = await nodeElement(page, node.id).locator('.diagram-node').getAttribute('data-summary') === 'true';
+    const expected = renderNode({ ...node, summary, classicCard: !compactCards(graph), executionRects: sequenceExecutions(graph).filter(item => item.participantId === node.id).map(item => ({ ...item, x: item.x - node.position.x, y: item.y - node.position.y, color: sequenceGroupColor(sequencePairs(graph).get(item.start.edgeId), palette) ?? palette.edge })) }, graph.meta.diagramType, -node.position.x, -node.position.y, palette, graph.meta.locale, moduleColors);
     const same = await nodeElement(page, node.id).locator('.node-drawing').evaluate((element, xml) => {
       const expected = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${xml}</svg>`, 'image/svg+xml').querySelector('.node-drawing');
       // Compare parsed DOMs: serialization differences must not hide drawing differences.
@@ -1369,7 +1372,8 @@ async function nodePointerTarget(page, node) {
   if (!point) {
     const shift = await element.evaluate(element => {
       const node = element.getBoundingClientRect(), banner = document.querySelector('.layout-problems')?.getBoundingClientRect();
-      return banner && node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top ? banner.bottom - node.top + 24 : 0;
+      // The banner sits at the bottom of the canvas: lift a node it covers above it.
+      return banner && node.left < banner.right && node.right > banner.left && node.top < banner.bottom && node.bottom > banner.top ? banner.top - node.bottom - 24 : 0;
     });
     if (shift) {
       const blank = await blankPoint(page);
