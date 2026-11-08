@@ -18,7 +18,7 @@ function harness(overview = false) {
     LayoutWorker:class {constructor(){workers.push(this);}postMessage(data){this.data=data;}terminate(){this.terminated=true;}},
     initialNodes:g=>g.nodes,initialEdges:g=>g.edges,currentGraphFromFlow:()=>dragging,
     affectedRouteIds:()=>new Set(),diagramTypeOf:()=> 'architecture',isArchitectureOverview:()=>overview,
-    overviewSections:()=>[],requireDiagramQuality:()=>({diagnostics:[]}),translate:(_locale,text)=>text,
+    overviewSections:()=>[],reorderOverview:graph=>graph,requireDiagramQuality:()=>({diagnostics:[]}),translate:(_locale,text)=>text,
     requestAnimationFrame:()=>{},
   };
   const source=fs.readFileSync(new URL('../assets/viewer/src/features/useGraphLayout.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace('export function useGraphLayout','function useGraphLayout');

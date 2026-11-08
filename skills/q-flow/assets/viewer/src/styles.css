@@ -302,6 +302,8 @@ button:disabled { cursor: not-allowed; }
 .flow-edge--sequence .selection-feedback.is-animated .selection-edge-shine { animation-name: sequence-line-jelly; }
 .selection-feedback.has-flow .selection-edge-halo { stroke-opacity: .5; }
 .selection-feedback.has-flow .selection-edge-shine { opacity: .1; }
+/* Under running flow the shine stays still: its widening keyframes would fill the dash gaps and wash out the motion. */
+.selection-feedback.has-flow .selection-edge-shine { animation: none; }
 @keyframes selection-glow {
   0% { stroke-width: 2px; opacity: 0; }
   24% { stroke-width: 18px; opacity: .27; }

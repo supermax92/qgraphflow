@@ -76,7 +76,8 @@ export function useGraphLayout(graph, reduceMotion, setStatus, originalGraph = g
   const onNodeDragStop = async (_, node) => {
     if (node.type !== 'diagram') return;
     if (isArchitectureOverview(currentGraph)) {
-      try { const result = await applyShared(currentGraph, {}, true); if (result.error && !result.superseded) { installOverview(graphDraft); if (!result.cancelled) setStatus(result.error); } }
+      // A dragged card reorders its section like the arrow keys do; the drop point only picks the new slot.
+      try { const result = await applyShared(reorderOverview(graphDraft, node.id, node.position), {}, true); if (result.error && !result.superseded) { installOverview(graphDraft); if (!result.cancelled) setStatus(result.error); } }
       catch (error) { installOverview(graphDraft); setStatus(error.message); }
     } else {
       const result = await applyShared(currentGraph, { growBoundaries: true });
