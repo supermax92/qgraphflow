@@ -10,7 +10,7 @@ Calls and returns along one flow, with activation bars and fragments. Read with 
 
 - One node per lifeline: `actor` for the human or caller, `service` / `participant` for code you read, `external` for systems outside the repository, `database` for a store. Participants never have `groupId`.
 - Left-to-right order follows first appearance in the messages; `layout.participantOrder` (all ids, once) only reproduces an existing convention.
-- 8 participants / 20 messages is advisory; user detail wins. Follow common splitting rules.
+- Over 8 participants / 20 messages: split by phase into sequence views; keep every message.
 
 ## Messages (edges)
 
