@@ -266,6 +266,8 @@ $qgraphflow:q-flow CI 提示 docs/qgraphflow/order-sequence 的图过时了，�
 
 技能会把所有锚点对齐到当前代码，把每处改动列进图的 `meta.sourceDrift`，只更新这些条目指出的元素，再保留你调整过的位置和文字，重新生成页面和 SVG；不会重画整张图。
 
+重新生成时加上 `--compare HEAD`，就能看出这次刷新改了什么：页面把新增和改动的元素着色，在要点旁列出删掉的元素，`graph.json` 不受影响。
+
 ## 十一类图各自回答什么
 
 | 视图 · PNG | 主要问题 | 本示例范围 |

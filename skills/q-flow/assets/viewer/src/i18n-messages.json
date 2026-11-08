@@ -187,7 +187,14 @@
     "Shared dependencies": "公共依赖",
     "Source changes": "源码变化",
     "Show source changes": "显示源码变化",
-    "Hide source changes": "隐藏源码变化"
+    "Hide source changes": "隐藏源码变化",
+    "This update": "本次更新",
+    "Show this update": "显示本次更新",
+    "Hide this update": "隐藏本次更新",
+    "Added": "新增",
+    "Changed": "改动",
+    "Removed": "删除",
+    "View notes updated": "视图说明已更新"
   },
   "ja": {
     "Architecture": "アーキテクチャ",
@@ -377,7 +384,14 @@
     "Shared dependencies": "共通の依存先",
     "Source changes": "ソースの変更",
     "Show source changes": "ソースの変更を表示",
-    "Hide source changes": "ソースの変更を隠す"
+    "Hide source changes": "ソースの変更を隠す",
+    "This update": "今回の更新",
+    "Show this update": "今回の更新を表示",
+    "Hide this update": "今回の更新を隠す",
+    "Added": "追加",
+    "Changed": "変更",
+    "Removed": "削除",
+    "View notes updated": "ビューの説明を更新"
   },
   "ko": {
     "Architecture": "아키텍처",
@@ -567,7 +581,14 @@
     "Shared dependencies": "공통 의존성",
     "Source changes": "소스 변경",
     "Show source changes": "소스 변경 표시",
-    "Hide source changes": "소스 변경 숨기기"
+    "Hide source changes": "소스 변경 숨기기",
+    "This update": "이번 업데이트",
+    "Show this update": "이번 업데이트 표시",
+    "Hide this update": "이번 업데이트 숨기기",
+    "Added": "추가",
+    "Changed": "변경",
+    "Removed": "삭제",
+    "View notes updated": "뷰 설명이 갱신됨"
   },
   "de": {
     "Architecture": "Architektur",
@@ -757,7 +778,14 @@
     "Shared dependencies": "Gemeinsame Abhängigkeiten",
     "Source changes": "Quellcode-Änderungen",
     "Show source changes": "Quellcode-Änderungen anzeigen",
-    "Hide source changes": "Quellcode-Änderungen ausblenden"
+    "Hide source changes": "Quellcode-Änderungen ausblenden",
+    "This update": "Diese Aktualisierung",
+    "Show this update": "Diese Aktualisierung anzeigen",
+    "Hide this update": "Diese Aktualisierung ausblenden",
+    "Added": "Hinzugefügt",
+    "Changed": "Geändert",
+    "Removed": "Entfernt",
+    "View notes updated": "Ansichtsbeschreibung aktualisiert"
   },
   "fr": {
     "Architecture": "Architecture",
@@ -947,7 +975,14 @@
     "Shared dependencies": "Dépendances partagées",
     "Source changes": "Modifications du code",
     "Show source changes": "Afficher les modifications du code",
-    "Hide source changes": "Masquer les modifications du code"
+    "Hide source changes": "Masquer les modifications du code",
+    "This update": "Cette mise à jour",
+    "Show this update": "Afficher cette mise à jour",
+    "Hide this update": "Masquer cette mise à jour",
+    "Added": "Ajouté",
+    "Changed": "Modifié",
+    "Removed": "Supprimé",
+    "View notes updated": "Description de la vue mise à jour"
   },
   "es": {
     "Architecture": "Arquitectura",
@@ -1137,7 +1172,14 @@
     "Shared dependencies": "Dependencias compartidas",
     "Source changes": "Cambios en el código",
     "Show source changes": "Mostrar cambios en el código",
-    "Hide source changes": "Ocultar cambios en el código"
+    "Hide source changes": "Ocultar cambios en el código",
+    "This update": "Esta actualización",
+    "Show this update": "Mostrar esta actualización",
+    "Hide this update": "Ocultar esta actualización",
+    "Added": "Añadido",
+    "Changed": "Modificado",
+    "Removed": "Eliminado",
+    "View notes updated": "Descripción de la vista actualizada"
   },
   "ru": {
     "Architecture": "Архитектура",
@@ -1327,7 +1369,14 @@
     "Shared dependencies": "Общие зависимости",
     "Source changes": "Изменения в коде",
     "Show source changes": "Показать изменения в коде",
-    "Hide source changes": "Скрыть изменения в коде"
+    "Hide source changes": "Скрыть изменения в коде",
+    "This update": "Это обновление",
+    "Show this update": "Показать это обновление",
+    "Hide this update": "Скрыть это обновление",
+    "Added": "Добавлено",
+    "Changed": "Изменено",
+    "Removed": "Удалено",
+    "View notes updated": "Описание представления обновлено"
   },
   "pt": {
     "Architecture": "Arquitetura",
@@ -1517,6 +1566,13 @@
     "Shared dependencies": "Dependências compartilhadas",
     "Source changes": "Alterações no código",
     "Show source changes": "Mostrar alterações no código",
-    "Hide source changes": "Ocultar alterações no código"
+    "Hide source changes": "Ocultar alterações no código",
+    "This update": "Esta atualização",
+    "Show this update": "Mostrar esta atualização",
+    "Hide this update": "Ocultar esta atualização",
+    "Added": "Adicionado",
+    "Changed": "Alterado",
+    "Removed": "Removido",
+    "View notes updated": "Descrição da visão atualizada"
   }
 }

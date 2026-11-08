@@ -15,7 +15,7 @@ const word = term => new RegExp(`(?<![\\w$])${term.replace(/[$.]/g, '\\$&')}(?![
 const numberIn = value => new RegExp(`(?<![\\w.])${value.replace('.', '\\.')}(?![\\d.])`);
 const isAnchor = value => value && typeof value === 'object' && typeof value.file === 'string' && Number.isInteger(value.lineStart);
 // Geometry, the drift bookkeeping itself, and fields that hold ids or enum values rather than prose.
-const SKIP = new Set(['layout', 'route', 'position', 'size', 'sourceFiles', 'sourceDrift', 'id', 'source', 'target', 'replyTo', 'edgeId', 'edgeIds',
+const SKIP = new Set(['layout', 'route', 'position', 'size', 'sourceFiles', 'sourceCommit', 'sourceDrift', 'id', 'source', 'target', 'replyTo', 'edgeId', 'edgeIds',
   'participantId', 'parentId', 'groupId', 'module', 'kind', 'evidence', 'viewId', 'diagramType', 'architectureView', 'locale', 'direction', 'at', 'sourceRef']);
 
 // Blob hashes of the given repository-relative files as they are now, or null outside a git work tree.
@@ -25,6 +25,12 @@ export function fingerprintFiles(repoRoot, files) {
   if (result.status !== 0) return null;
   const hashes = result.stdout.trim().split('\n');
   return Object.fromEntries(files.map((file, i) => [file, hashes[i]]));
+}
+
+// The commit a diagram was drawn at: it finds the files changed since then that the diagram does not anchor.
+export function headCommit(repoRoot) {
+  const result = git(repoRoot, ['rev-parse', 'HEAD']);
+  return result.status === 0 ? result.stdout.trim() : null;
 }
 
 // Hunks of a zero-context unified diff, in old-line order.
@@ -59,7 +65,8 @@ function fileDiff(repoRoot, blob, file) {
   try {
     const before = path.join(dir, 'before');
     fs.writeFileSync(before, old.stdout);
-    const result = spawnSync('git', ['diff', '--no-index', '--no-color', '--no-ext-diff', '-U0', before, path.resolve(repoRoot, file)], { encoding: 'utf8', maxBuffer: 64 << 20 });
+    const current = path.resolve(repoRoot, file);
+    const result = spawnSync('git', ['diff', '--no-index', '--no-color', '--no-ext-diff', '-U0', before, fs.existsSync(current) ? current : os.devNull], { encoding: 'utf8', maxBuffer: 64 << 20 });
     if (result.status !== 0 && result.status !== 1) return null;
     return { hunks: parseHunks(result.stdout), before: old.stdout };
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -191,6 +198,46 @@ export function detectDrift(graphs, { repoRoot, anchors, read, term }) {
         if (scope.some(other => word(name).test(scopeOf(other)))) continue;
         const item = alarm(file, hunk, `name no longer in the code: ${name}`);
         mention(item, text => word(name).test(text));
+      }
+    }
+  }
+  // Files changed since the commit the diagram was drawn at that it does not anchor (same languages as the anchored ones).
+  // Only text-backed alarms come from them: a removed call whose now-dead method alone used a name the diagram writes, or
+  // a name the diagram writes that is gone from the whole repository; anything else there is not this diagram's business.
+  // ponytail: the commit is HEAD at stamping, so uncommitted edits made before drawing count as changes since then; record
+  // the working-tree blobs of mentioned files if that ever reports a stale alarm.
+  const commit = graphs.map(graph => graph?.meta?.sourceCommit).find(value => typeof value === 'string');
+  if (commit) {
+    const extensions = new Set(scope.map(file => path.extname(file))), anchored = new Set(scope);
+    const changed = git(repoRoot, ['diff', '--name-only', '--no-renames', commit]);
+    const files = changed.status === 0 ? changed.stdout.split('\n').filter(file => file && !anchored.has(file) && extensions.has(path.extname(file))) : [];
+    const mentioned = name => texts.some(t => word(name).test(t.text));
+    if (changed.status !== 0) unchecked.add(`files the diagram does not anchor (commit ${commit.slice(0, 7)})`);
+    else if (files.length > 100) unchecked.add(`${files.length} changed files the diagram does not anchor (over 100)`);
+    else for (const file of files) {
+      const diff = fileDiff(repoRoot, `${commit}:${file}`, file);
+      if (!diff?.hunks.length) continue;
+      let lines; try { lines = read(file); } catch { lines = []; }
+      for (const hunk of diff.hunks) {
+        const addedCalls = new Set(hunk.added.flatMap(callsIn)), addedText = hunk.added.join('\n');
+        for (const name of new Set(hunk.removed.filter(isCode).flatMap(callsIn))) {
+          if (addedCalls.has(name) || name.length < 6) continue;
+          const span = methodSpan(lines, name);
+          if (!span) continue;
+          const body = lines.slice(span[0] - 1, span[1]).join('\n');
+          const rest = [...lines.slice(0, span[0] - 1), ...lines.slice(span[1])].filter(line => !/^\s*import\b/.test(line)).join('\n');
+          const described = [...new Set([...(body.match(/\b[A-Z][a-z][\w$]{6,}\b/g) ?? []), ...(body.match(/\b[A-Z]{2,}(?:_[A-Z0-9]+)+\b/g) ?? [])])].filter(other => !word(other).test(rest) && mentioned(other));
+          if (!described.length) continue;
+          const found = git(repoRoot, ['grep', '-n', '-w', '-F', name]);
+          const callers = (found.status === 0 ? found.stdout.split('\n') : []).filter(line => word(name).test(line) && new RegExp(`${name}\\s*\\(`).test(line) && !new RegExp(`(public|private|protected)\\b[^;=]*\\b${name}\\s*\\(`).test(line));
+          if (callers.length) continue;
+          const item = alarm(file, hunk, `call removed: ${name}() has no remaining caller`);
+          for (const other of described) mention(item, text => word(other).test(text));
+        }
+        for (const name of new Set(hunk.removed.filter(isCode).flatMap(line => line.match(/\b(?:[a-z][\w$]*[A-Z]|[A-Z][a-z][\w$]*[A-Z])[\w$]*\b/g) ?? []))) {
+          if (name.length < 6 || word(name).test(addedText) || !mentioned(name) || git(repoRoot, ['grep', '-q', '-w', '-F', name]).status === 0) continue;
+          mention(alarm(file, hunk, `name no longer in the code: ${name}`), text => word(name).test(text));
+        }
       }
     }
   }

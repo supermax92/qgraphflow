@@ -10,6 +10,7 @@ import { svgStyles, groupFrameSvg } from './diagrams/drawing.js';
 import { anchorText, evidenceLabels, kindLabels, nodeAppearance } from './visual-style.js';
 import { foldedEdges } from './presentation-graph.js';
 import { sourceChanges } from './source-changes.js';
+import { comparisonOf, elementName, updateCount } from './graph-diff.js';
 import { graphLegend, rampGradient } from './legend.js';
 import { useViewerController } from './features/useViewerController.js';
 import { usePopover } from './features/usePopover.js';
@@ -59,10 +60,17 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
   // everything but name: while it shows, the reading area gives up the right edge exactly as it does for the details drawer,
   // and it waits for that drawer (even while it slides out) to be gone before it appears. Fullscreen has no panels, so
   // there it simply floats over the canvas until it is hidden.
-  // Unresolved source changes (meta.sourceDrift) share the card: they follow the key points, or stand alone.
-  const notes = graph.meta.notes ?? [], changes = sourceChanges(graph);
+  // Unresolved source changes (meta.sourceDrift) and what generate --compare found changed share the card: they follow
+  // the key points, or the first of them stands alone.
+  const notes = graph.meta.notes ?? [], changes = sourceChanges(graph), update = comparisonOf(graph), updates = updateCount(update);
   const side = notes.length ? { title: t('Key points'), count: notes.length, hide: t('Hide key points'), show: t('Show key points') }
-    : { title: t('Source changes'), count: changes.length, hide: t('Hide source changes'), show: t('Show source changes') };
+    : changes.length ? { title: t('Source changes'), count: changes.length, hide: t('Hide source changes'), show: t('Show source changes') }
+    : { title: t('This update'), count: updates, hide: t('Hide this update'), show: t('Show this update') };
+  const elementButton = id => {
+    const node = currentGraph.nodes.find(entry => entry.id === id), edge = node ? null : currentGraph.edges.find(entry => entry.id === id);
+    return node || edge ? <button key={id} type="button" className="folded-edge" onClick={() => node ? selectNode(node) : selectEdge(edge, true)}>{elementName(currentGraph, id)}</button>
+      : <span key={id} className="update-group">{currentGraph.groups?.find(group => group.id === id)?.label ?? id}</span>;
+  };
   const [notesOpen, setNotesOpen] = useState(true);
   const notesShown = side.count > 0 && notesOpen && !drawerShown;
   const rightReserved = drawerOpen || (notesShown && !isFullscreen);
@@ -246,12 +254,15 @@ export default function ViewerShell({ graph, originalGraph, graphForSave, allDia
               {notes.length > 0 && <ul>{notes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
               {changes.length > 0 && <>{notes.length > 0 && <p className="panel-title source-changes-title">{t('Source changes')} · {changes.length}</p>}<ul className="source-changes">{changes.map((item, index) => <li key={index}>
                 <code>{String(item?.file ?? '').split('/').pop()}:{item?.line}</code> {item?.change}
-                {(item?.elements ?? []).map(id => {
-                  const node = currentGraph.nodes.find(entry => entry.id === id), edge = node ? null : currentGraph.edges.find(entry => entry.id === id);
-                  return node || edge ? <button key={id} type="button" className="folded-edge" onClick={() => node ? selectNode(node) : selectEdge(edge, true)}>{node ? node.label : edge.label ?? id}</button> : null;
-                })}
+                {(item?.elements ?? []).map(elementButton)}
                 {(item?.removed?.length > 0 || item?.added?.length > 0) && <pre>{[...(item.removed ?? []).slice(0, 3).map(line => `- ${line}`), ...(item.added ?? []).slice(0, 3).map(line => `+ ${line}`)].join('\n')}</pre>}
               </li>)}</ul></>}
+              {updates > 0 && <>{(notes.length > 0 || changes.length > 0) && <p className="panel-title source-changes-title">{t('This update')} · {updates}</p>}<ul className="graph-update">
+                {update.added.length > 0 && <li className="update-added">{t('Added')} · {update.added.length}{update.added.map(elementButton)}</li>}
+                {update.changed.length > 0 && <li className="update-changed">{t('Changed')} · {update.changed.length}{update.changed.map(elementButton)}</li>}
+                {update.removed.length > 0 && <li className="update-removed">{t('Removed')} · {update.removed.length}{update.removed.map(item => <s key={item.id}>{item.label}</s>)}</li>}
+                {update.meta && <li>{t('View notes updated')}</li>}
+              </ul></>}
             </section>
             : <button className="float notes-anchor float-btn" ref={notesFocusRef} aria-expanded="false" onClick={() => { notesToggled.current = true; setNotesOpen(true); if (!isFullscreen) reveal(selectedId, selectedEdgeId, toolbarOpen, true); }} aria-label={side.show} title={side.show}><Icon name="notes" /><span>{side.title} · {side.count}</span></button>)}
 

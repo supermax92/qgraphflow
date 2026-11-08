@@ -266,6 +266,8 @@ $qgraphflow:q-flow CI says docs/qgraphflow/order-sequence is out of date. Refres
 
 The skill realigns every anchor, lists each change in the graph's `meta.sourceDrift`, updates only the elements those items name and regenerates the page and SVGs with your edited positions and text kept. It does not redraw the diagram.
 
+Add `--compare HEAD` when regenerating to see what a refresh changed: the page colors added and changed elements, lists removed ones beside the key points, and leaves `graph.json` untouched.
+
 ## What each of the eleven diagram types answers
 
 | View · PNG | Main question | Example scope |

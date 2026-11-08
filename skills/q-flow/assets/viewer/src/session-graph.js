@@ -10,6 +10,16 @@ import { presentationGraph } from './presentation-graph.js';
 const DATA_ELEMENT = /(<script\b[^>]*\bid="graph-data"[^>]*>)([\s\S]*?)(<\/script>)/;
 export const safeJson = graph => JSON.stringify(graph).replaceAll('&', '\\u0026').replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
 
+// generate-viewer --compare: the structural comparison sits in its own element after the graph, so a page saved from the
+// Viewer (which rewrites only graph-data) keeps it and graph.json never carries it.
+const COMPARE_ELEMENT = /<script\b[^>]*\bid="graph-compare"[^>]*>[\s\S]*?<\/script>/;
+export function pageWithComparison(html, comparison) {
+  const element = `<script id="graph-compare" type="application/json">${safeJson(comparison)}</script>`;
+  if (COMPARE_ELEMENT.test(html)) return html.replace(COMPARE_ELEMENT, () => element);
+  if (!DATA_ELEMENT.test(html)) throw new Error('page has no graph-data element');
+  return html.replace(DATA_ELEMENT, match => `${match}${element}`);
+}
+
 export function pageWithGraph(html, graph) {
   if (!DATA_ELEMENT.test(html)) throw new Error('page has no graph-data element');
   return html.replace(DATA_ELEMENT, (match, open, data, close) => `${open}${safeJson(graph)}${close}`);

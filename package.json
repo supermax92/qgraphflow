@@ -64,6 +64,7 @@
     "skills/q-flow/assets/viewer/src/layout-refinement.js",
     "skills/q-flow/assets/viewer/src/layout-templates.js",
     "skills/q-flow/assets/viewer/src/presentation-graph.js",
+    "skills/q-flow/assets/viewer/src/graph-diff.js",
     "skills/q-flow/assets/viewer/src/layout-semantics.js"
   ],
   "scripts": {

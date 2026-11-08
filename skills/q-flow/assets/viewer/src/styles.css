@@ -15,6 +15,8 @@
   --accent: #5753c6;
   --accent-soft: #f8f8ff;
   --warm: #c44b00;
+  --diff-added: #218358;
+  --diff-changed: #0d74ce;
   --font-body: 16px;
   --font-small: 14px;
   --edge-line-height: 24px;
@@ -53,6 +55,8 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --diff-added: #3dd68c;
+  --diff-changed: #70b8ff;
   --material-thick: color-mix(in srgb, var(--panel) 92%, transparent);
   --material: color-mix(in srgb, var(--panel) 86%, transparent);
   --material-thin: color-mix(in srgb, var(--panel) 74%, transparent);
@@ -192,6 +196,16 @@ button:disabled { cursor: not-allowed; }
 .source-changes code { font-size: 12px; color: var(--label); }
 .source-changes .folded-edge { display: block; margin-top: 2px; color: var(--warm); }
 .source-changes pre { margin: 4px 0 0; padding: 4px 6px; border-radius: var(--r-control); background: var(--fill); color: var(--label-2); font-size: 11px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.graph-update { margin: 0; padding-left: 16px; color: var(--label-2); font-size: 13px; line-height: 1.6; }
+.graph-update li + li { margin-top: 5px; }
+.graph-update .folded-edge, .graph-update s, .graph-update .update-group { display: block; margin-top: 2px; }
+.graph-update .update-added::marker, .graph-update .update-added .folded-edge { color: var(--diff-added); }
+.graph-update .update-changed::marker, .graph-update .update-changed .folded-edge { color: var(--diff-changed); }
+.graph-update s { color: var(--label-3); }
+.diagram-node.is-added { outline: 2px solid var(--diff-added); outline-offset: 3px; }
+.diagram-node.is-changed { outline: 2px solid var(--diff-changed); outline-offset: 3px; }
+.edge-label.is-added { box-shadow: 0 0 0 1.5px var(--diff-added); }
+.edge-label.is-changed { box-shadow: 0 0 0 1.5px var(--diff-changed); }
 .diagram-node.is-drifted { outline: 2px dashed var(--warm); outline-offset: 3px; }
 .edge-label.is-drifted { box-shadow: 0 0 0 1.5px var(--warm); }
 .workspace.nav-open .legend-anchor { left: calc(var(--side-w) + 2 * var(--gutter)); }

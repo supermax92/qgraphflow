@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { overviewSections } from '../assets/viewer/src/architecture-overview.js';
+import { elementName } from '../assets/viewer/src/graph-diff.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +13,7 @@ import { graphsOf, needsSite, overviewWarnings, reviewComposition, validateGraph
 import { requireDiagramQuality, qualityFailure } from '../assets/viewer/src/layout-quality.js';
 import { operandScopes } from '../assets/viewer/src/sequence-fragments.js';
 import { callsMissingExecutions } from '../assets/viewer/src/sequence-executions.js';
-import { detectDrift, driftItems, fingerprintFiles, formatDrift, viewAlarms } from './source-drift.mjs';
+import { detectDrift, driftItems, fingerprintFiles, formatDrift, headCommit, viewAlarms } from './source-drift.mjs';
 export { DIAGRAM_TYPES, diagramTypeOf } from '../assets/viewer/src/diagrams/registry.js';
 export { graphsOf, reviewComposition, validateGraph, validateGraphInput } from '../assets/viewer/src/graph-validation.js';
 
@@ -184,9 +185,10 @@ export function stampSourceFiles(input, repoRoot) {
   const changes = [];
   graphsOf(input).forEach((graph, graphIndex) => {
     const files = [...new Set(sourceAnchors(graph).map(({ source }) => source.file))].sort();
-    const stamp = fingerprintFiles(repoRoot, files);
-    if (!stamp || JSON.stringify(stamp) === JSON.stringify(graph.meta.sourceFiles)) return;
+    const stamp = fingerprintFiles(repoRoot, files), commit = stamp && headCommit(repoRoot);
+    if (!stamp || JSON.stringify(stamp) === JSON.stringify(graph.meta.sourceFiles) && (!commit || commit === graph.meta.sourceCommit)) return;
     graph.meta.sourceFiles = stamp;
+    if (commit) graph.meta.sourceCommit = commit;
     changes.push(`${Object.hasOwn(input, 'diagrams') ? `diagrams[${graphIndex}].` : ''}meta.sourceFiles → ${files.length} file${files.length === 1 ? '' : 's'}`);
   });
   return changes;
@@ -252,12 +254,7 @@ export function changesReport(input, repoRoot) {
     const files = new Set(anchors.filter(anchor => anchor.graphIndex === graphIndex).map(({ source }) => source.file));
     const items = [...(Array.isArray(graph.meta?.sourceDrift) ? graph.meta.sourceDrift : []), ...driftItems(viewAlarms(live, graphIndex, files), graphIndex)];
     if (!items.length) return [];
-    const nodes = new Map(graph.nodes.map(node => [node.id, node]));
-    const name = id => {
-      const edge = (graph.edges ?? []).find(item => item.id === id);
-      if (edge) return `${nodes.get(edge.source)?.label ?? edge.source} → ${nodes.get(edge.target)?.label ?? edge.target}${edge.label ? `: ${edge.label}` : ''}`;
-      return nodes.get(id)?.label ?? (graph.groups ?? []).find(group => group.id === id)?.label ?? overviewSections(graph).find(section => section.id === id)?.label ?? id;
-    };
+    const name = id => overviewSections(graph).find(section => section.id === id)?.label ?? elementName(graph, id);
     const tick = text => `\`${String(text).replaceAll('`', "'").replace(/\s+/g, ' ')}\``;
     return [`### ${graph.meta.title ?? graph.meta.viewId ?? diagramTypeOf(graph)}${graph.meta.viewId ? ` (${tick(graph.meta.viewId)})` : ''}`, '',
       ...items.flatMap(item => [`- **${tick(`${item.file}:${item.line}`)}** ${item.change}`,

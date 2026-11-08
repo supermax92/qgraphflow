@@ -134,3 +134,23 @@ test('--changes reports each change with the readable elements it touches, or th
   assert.ok(report.includes(`${label(edge.source)} → ${label(edge.target)}`), report);
   assert.ok(report.includes('+ payOrderService.saveOrder(payOrder);'), report);
 });
+
+test('a removed call in a file the diagram does not anchor marks the element whose text names what only it did', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qgraphflow-drift-')); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(dir, 'Orders.java'), 'public class Orders {\n    public void open() {}\n}\n');
+  fs.writeFileSync(path.join(dir, 'Payments.java'), ['public class Payments {', '    public void confirm(Order order) {', '        notifyMerchant(order);', '        this.autoDivision(order);', '    }', '    private void autoDivision(Order order) {', '        mqSender.send(PayOrderDivisionMQ.build(order.getId()));', '    }', '    private void notifyMerchant(Order order) {}', '}', ''].join('\n'));
+  const commit = message => { git(dir, 'add', '-A'); git(dir, '-c', 'user.name=drift', '-c', 'user.email=drift@example.invalid', 'commit', '-qm', message); };
+  git(dir, 'init', '-q'); commit('baseline');
+  const graph = { meta: { title: 'Order states', sourceRef: 'test', diagramType: 'state' },
+    nodes: [{ id: 'open', label: 'Open', kind: 'state', source: { file: 'Orders.java', lineStart: 2, lineEnd: 2, symbol: 'open', kind: 'source' } },
+      { id: 'paid', label: 'Paid', kind: 'state', facts: ['confirm sends PayOrderDivisionMQ'] }], edges: [] };
+  stampSourceFiles(graph, dir);
+  assert.equal(graph.meta.sourceCommit, git(dir, 'rev-parse', 'HEAD').trim());
+  assert.equal(verifySourceEvidence(structuredClone(graph), dir).status, 'passed');
+  editLine(dir, 'Payments.java', 4, () => '');
+  commit('stop dividing');
+  assert.throws(() => verifySourceEvidence(structuredClone(graph), dir), error => /call removed: autoDivision\(\) has no remaining caller/.test(error.message) && /paid facts/.test(error.message));
+  assert.match(changesReport(graph, dir), /Payments\.java:4`\*\* call removed[\s\S]*Elements: `Paid`/);
+  const unstamped = structuredClone(graph); delete unstamped.meta.sourceCommit;
+  assert.equal(verifySourceEvidence(unstamped, dir).status, 'passed', 'without the commit only anchored files are compared');
+});

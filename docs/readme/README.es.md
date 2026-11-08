@@ -266,6 +266,8 @@ $qgraphflow:q-flow La CI dice que docs/qgraphflow/order-sequence está desactual
 
 La habilidad realinea todos los anclajes, enumera cada cambio en `meta.sourceDrift` del grafo, actualiza solo lo que esas entradas señalan y vuelve a generar la página y los SVG conservando las posiciones y los textos editados. No redibuja el diagrama.
 
+Añade `--compare HEAD` al regenerar para ver qué cambió una actualización: la página colorea los elementos añadidos y modificados, enumera los eliminados junto a los puntos clave y no toca `graph.json`.
+
 ## Qué responde cada uno de los once tipos de diagramas
 
 | Vista · PNG | Pregunta principal | Alcance del ejemplo |

@@ -266,6 +266,8 @@ $qgraphflow:q-flow Laut CI ist docs/qgraphflow/order-sequence veraltet. Bitte ak
 
 Der Skill richtet alle Anker am aktuellen Code aus, listet jede Änderung in `meta.sourceDrift` des Graphen, aktualisiert nur die dort genannten Elemente und erzeugt Seite und SVGs neu, wobei bearbeitete Positionen und Texte erhalten bleiben. Er zeichnet das Diagramm nicht neu.
 
+Mit `--compare HEAD` beim Neuerzeugen sehen Sie, was eine Aktualisierung geändert hat: Die Seite färbt hinzugefügte und geänderte Elemente, listet entfernte neben den Kernaussagen und lässt `graph.json` unverändert.
+
 ## Welche Fragen die elf Diagrammarten beantworten
 
 | Ansicht · PNG | Hauptfrage | Umfang des Beispiels |

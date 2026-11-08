@@ -59,16 +59,16 @@ Ordinary graph delivery ends with the three commands above. Run the browser chec
 
 ## Refresh an existing diagram
 
-Read the supplied graph and collection metadata. Inherit type, scope, granularity, view count and directory. An explicit update approves `--force` for that directory; audit findings alone do not. Resolve only the requested views; ask if their identity is ambiguous.
+Read the supplied graph and collection metadata. An explicit update approves `--force` for that directory; audit findings alone do not. Resolve only the requested views; ask if their identity is ambiguous.
 
-Simplification uses verified facts in Author. Expansion returns to Evidence before Author. Preserve stable IDs; report gaps, aggregations, additions and exclusions. These changes authorize `--layout auto --force` for the requested views only. In a collection add `--view <view-id>` for each changed view; omit it only when all views need layout. Unselected views must pass preserve; never relayout them to clear a failure. Ordinary refresh preserves geometry:
+Simplification uses verified facts in Author. Expansion returns to Evidence before Author. Preserve stable IDs; report gaps, aggregations, additions and exclusions. These changes authorize `--layout auto --force` for the requested views only. In a collection add `--view <view-id>` per changed view (omit only when all need layout); never relayout unselected views to clear a failure. Ordinary refresh preserves geometry:
 
 ```bash
 node scripts/validate-graph.mjs "<dir>/graph.json" --input-only --fix --repo-root "<root>"
-node scripts/generate-viewer.mjs "<dir>/graph.json" "<dir>" --layout preserve --force --repo-root "<root>"
+node scripts/generate-viewer.mjs "<dir>/graph.json" "<dir>" --layout preserve --force --repo-root "<root>" --compare HEAD
 ```
 
-Between the two, work only what `--fix` left: update just the elements each `meta.sourceDrift` item names (relate uncovered new code), then delete the item; fix anchors still reported and report a symbol you cannot place. Validate the output as above. `preserve` keeps node positions and reroutes new or crowded edges; if that fails, report the nodes and ask before `--layout auto`. Regenerate a sequence view that lost messages with `--layout auto --view <id>`; columns stay. Reply with the changed elements and every artifact path. If a browser could only download `graph.json`, put it in `<dir>` and regenerate the page and SVGs.
+Between the two, work only what `--fix` left: update just the elements each `meta.sourceDrift` item names (relate uncovered new code), then delete the item; fix anchors still reported; report symbols you cannot place. Validate the output as above. `--compare HEAD` marks what changed; an uncommitted graph compares with a pre-edit copy. `preserve` keeps node positions and reroutes new or crowded edges; if that fails, report the nodes and ask before `--layout auto`. Regenerate a sequence view that lost messages with `--layout auto --view <id>`; columns stay. Reply with the changed elements and every artifact path. If a browser could only download `graph.json`, put it in `<dir>` and regenerate the page and SVGs.
 
 ## Viewer maintenance
 
